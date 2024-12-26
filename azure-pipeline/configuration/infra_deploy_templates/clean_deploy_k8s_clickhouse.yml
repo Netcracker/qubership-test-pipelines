@@ -1,0 +1,92 @@
+|
+  clickhouseOperator='
+  nodeselector:
+    app: clickhouse
+  ';
+  clickhouseCluster='
+  replicasCount: 2
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: ''
+                operator: In
+                values:
+                  - cluster
+          topologyKey: kubernetes.io/hostname
+  pvSize: 5Gi
+  zookeeperHost: zookeeper.zookeeper-service.svc
+  storageClassName: azurefile-csi-nfs
+  serviceMonitor: enable
+  securityContext:
+    pod:
+      runAsUser: 101
+      fsGroup: 101
+  ';
+  backupDaemon='
+  install: yes
+  storage:
+    remote: none
+  orchestrator:
+    securityContext:
+      runAsUser: 101
+      fsGroup: 101
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+    pvSize: 2Gi
+    storageClassName: azurefile-csi-nfs
+    envs:
+      BACKUP_SCHEDULE: 0 * * * *
+      EVICTION_POLICY: 7d/7d,1y/delete
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 56m
+      memory: 250Mi
+  ';
+  dbaas='
+  install: true
+  podLabels: {}
+  multiUsers: true
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    registrationUsername: cluster-dba
+    registrationAuthPassword: ''
+  labels:
+    clusterName: clickhouse
+  clickhouse:
+    username: nc_dbaas_user
+    password: ''
+  adapter:
+    username: dbaas-aggregator
+    password: ''
+  resources:
+    limits:
+      cpu: 200m
+      memory: 32Mi
+    requests:
+      cpu: 100m
+      memory: 32Mi
+  ';
+  integrationTests='
+  install: false
+  tags: clickhouse
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 400m
+  ';
+  CUSTOM_TIMEOUT_MIN='30';  
+  
+  ESCAPE_SEQUENCE=true;

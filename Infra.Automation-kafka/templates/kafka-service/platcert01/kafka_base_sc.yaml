@@ -1,0 +1,65 @@
+|
+  global='
+  name: kafka
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: ''
+      clientUsername: client
+      clientPassword: ''
+      zookeeperClientUsername: zclient
+      zookeeperClientPassword: ''
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: ''
+  ';
+  kafka='
+  install: true
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: ''
+                operator: In
+                values:
+                  - kafka
+          topologyKey: kubernetes.io/hostname
+  replicas: 3
+  storage:
+    size: 1Gi
+    className:
+      - custom-csi-cinder-delete
+  zookeeperConnect: zookeeper.zookeeper-service:2181
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  monitoring='
+  install: true
+  securityContext:
+    runAsUser: 1000
+  ';
+  akhq='
+  install: true
+  ingress:
+    host: akhq-kafka-service.platcert01.kubernetes.sdntest.qubership.org
+  ';
+  backupDaemon='
+  install: true
+  storage: 1Gi
+  storageClass: custom-csi-cinder-delete
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  integrationTests='
+  install: true
+  waitForResult: true
+  tags: kafka_crudORkafka_images
+  ';
+  
+  ESCAPE_SEQUENCE=true;

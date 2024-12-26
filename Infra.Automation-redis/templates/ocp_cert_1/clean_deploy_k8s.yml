@@ -1,0 +1,14 @@
+|
+  dbaas='
+  install: true
+  aggregator:
+    physicalDatabaseIdentifier: redis
+  ';
+  monitoringAgent='
+  install: true
+  metricCollector: prometheus
+  ';
+  robotTests='
+  install: true
+  ';
+  ESCAPE_SEQUENCE=true;

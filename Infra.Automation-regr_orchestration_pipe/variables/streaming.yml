@@ -1,0 +1,15 @@
+MAN_DP_OLD: ""
+MAN_DP_NEW: ""
+N2_RELEASE: ''
+N1_RELEASE: ''
+PREVIOUS_SPRINT: ''
+LATEST_SPRINT: ''
+# TLS KAFKA
+KAFKA_PROJECT: kafka-service
+KAFKA_VERSION: kafka:release-2024.4-1.11.0-delivery_kafka_3.8.0-20241203.090841-1-RELEASE
+# Profiler integration
+DIAGNOSTIC_AGENT_VERSION: nc-diagnostic-agent:release-1.3.0-20240820.074150-1-RELEASE
+# Restricted user
+DEPLOY_SCHEME: full  # basic or full
+LATEST_SPRINT_TAG:
+PREVIOUS_SPRINT_TAG: release-2024.4-4.7.6

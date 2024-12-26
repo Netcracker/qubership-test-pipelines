@@ -1,0 +1,71 @@
+|
+  global='
+  name: streaming
+  secrets:
+    streamingPlatform:
+      username: admin
+      password: ''
+      kafkaAuthUsername: client
+      kafkaAuthPassword: client
+    monitoring:
+      prometheusUsername: prometheus
+      prometheuspassword: ''
+  ';
+  streamingPlatform='
+  install: true
+  replicas: 1
+  ingress:
+    host: streaming-platform-streaming-service.qa-kubernetes.openshift.sdntest.qubership.org
+  bootstrapServers: kafka.kafka-service:9092
+  ';
+  monitoring='
+  install: true
+  securityContext:
+    runAsUser: 1000
+  ';
+  integrationTests='
+  secrets:
+    postgres:
+      user: postgres
+      password: ''
+    oracleSource:
+      user: oracle
+      password: ''
+    mongo:
+      user: root
+      password: ''
+    zookeeper:
+      adminUser: zadmin
+      adminPassword: ''
+      clientUser: zclient
+      clientPassword: ''
+    opensearch:
+      user: admin
+      password: ''
+  install: true
+  tags: smokeORstreaming_connector_configuratorORstreaming_images
+  timeout: 2400
+  url: https://dashboard.qa-kubernetes.openshift.sdntest.qubership.org:6443
+  kafkaIsManagedByOperator: "true"
+  streamingPlatformIsManagedByOperator: true
+  kafkaOsProject: kafka-service
+  kafkaHost: kafka
+  kafkaPort: 9092
+  kafkaVolumeSize: 2
+  kafkaPvNames: ""
+  kafkaMeasurementPrefixName: kafka
+  streamingPlatformHost: streaming-platform
+  streamingPlatformPort: 8083
+  postgresHost: pg-patroni.postgres
+  postgresPort: 5432
+  postgresDb: postgres
+  mongoHost: mongos.mongo
+  mongoPort: 27017
+  mongoDb: public
+  oracleSourceHost: ***.***.***.***
+  oracleSourcePort: 1521
+  oracleSourceDb: xe
+  oracleSourceLogmnrContinuousMineEnabled: false
+  opensearchUrl: http://opensearch.opensearch-cloud:9200
+  ';
+  ESCAPE_SEQUENCE=true;

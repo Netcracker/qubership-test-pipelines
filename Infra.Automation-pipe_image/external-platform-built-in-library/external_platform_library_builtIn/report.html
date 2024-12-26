@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Report</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+</head>
+<body>
+
+<div class="container mt-2">
+    <h4>Pipeline Summary</h4>
+</div>
+
+<div class="container border bg-light text-dark mb-4">
+    <div class="container mt-4">
+        <div class="row justify-content-center mt-4">
+            <div class="col-md-4">
+                <div class="ml-4 mb-2">
+                    <canvas id="chartContainer" width="200" height="200"></canvas>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <table class="table table-bordered table-sm table-striped">
+                    <thead>
+                    <tr><th>Info</th><th>Value  </th></tr>
+                    </thead>
+                    <tbody>
+                    <tr><td>Total jobs</td><td>var_total_jobs</td>
+                    <tr><td>Pass rate</td><td>var_pass_rate</td>
+                    <tr><td>Pipeline total time</td><td>var_elapsed_time</td>
+                    <tr><td>Pipeline link</td><td><a href="var_pipeline_link">Pipeline Web Url</a></td>
+                    <tr><td>Author</td><td>var_author</td>
+                    <tr><td>Date</td><td>var_date</td>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+        var successJobs = 0;
+        var failedJobs = 0;
+        var notRunJobs = 0;
+        var canvas = document.getElementById('chartContainer');
+        var ctx = canvas.getContext('2d');
+
+        var colors = ['#5cb85c', '#d9534f', '#898989'];
+        var totalJobs = successJobs + failedJobs + notRunJobs;
+
+        var successAngle = (successJobs / totalJobs) * 2 * Math.PI;
+        var failedAngle = (failedJobs / totalJobs) * 2 * Math.PI;
+        var notRunAngle = (notRunJobs / totalJobs) * 2 * Math.PI;
+
+        function drawPieChart() {
+            var centerX = canvas.width / 2;
+            var centerY = canvas.height / 2;
+            var radius = Math.min(canvas.width, canvas.height) / 2;
+            var innerRadius = radius * 0.8; // Adjust inner radius for inner padding
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, 0, successAngle);
+            ctx.closePath();
+            ctx.fillStyle = colors[0];
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, successAngle, successAngle + failedAngle);
+            ctx.closePath();
+            ctx.fillStyle = colors[1];
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.arc(centerX, centerY, radius, successAngle + failedAngle, successAngle + failedAngle + notRunAngle);
+            ctx.closePath();
+            ctx.fillStyle = colors[2];
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, innerRadius, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffffff'; // White color for inner circle
+            ctx.fill();
+
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#333333'; // Text color
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Success: ' + successJobs, centerX, centerY - 20);
+            ctx.fillText('Failed: ' + failedJobs, centerX, centerY);
+            ctx.fillText('Not Run: ' + notRunJobs, centerX, centerY + 20);
+        }
+
+        window.onload = function() {
+            drawPieChart();
+        };
+    </script>
+
+    <div class="container mt-4" id="status_table">
+
+    </div>
+
+    <div class="container mt-4" id="versions_table">
+
+    </div>
+</div>
+</body>
+</html>

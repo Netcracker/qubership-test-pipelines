@@ -1,0 +1,37 @@
+|
+  externalRabbitmq='
+  enabled: true
+  url: aws
+  username: rabbitmq-admin
+  password: ''
+  replicas: 1
+  clusterName:
+  ';
+  telegraf='
+  install: true
+  metricCollectionInterval: 30s
+  securityContext:
+    runAsUser: 5000
+    fsGroup: 5000
+  ';
+  backupDaemon='
+  enabled: true
+  s3:
+    enabled: true
+    url: https://s3.amazonaws.com
+    bucket: rabbitmq-qa
+    keyId: ''
+    keySecret: ''
+  ';
+  rabbitmqPrometheusMonitoring=false;
+  tests='
+  runTests: true
+  runTestsOnly: false
+  tags: smokeORbackupNOTs3_storage
+  waitTestResultOnJob: true
+  ';
+  statusProvisioner='
+    podReadinessTimeout: 1200
+  ';
+  ESCAPE_SEQUENCE=true;
+  

@@ -1,0 +1,11 @@
+|
+  dbaas='
+    install: false
+  ';
+  monitoringAgent='
+    install: true
+    metricCollector: prometheus
+  ';
+  robotTests='
+    install: false
+  ';

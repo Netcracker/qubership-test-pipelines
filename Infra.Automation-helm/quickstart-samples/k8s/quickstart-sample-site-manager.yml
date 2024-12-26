@@ -1,0 +1,13 @@
+name: site-manager
+namespace: site-manager
+ingress.name: site-manager.{{env_pipe_domain_name}}
+crd.install: true
+serviceAccount.create: true
+serviceAccount.name: site-manager-sa
+metricCollector.install: true
+tls:
+  enabled: {{env_pipe_tls_enabled}}
+  generateCerts:
+    enabled: true
+    executor: cert-manager
+    clusterIssuerName: {{env_pipe_cluster_issuer_name}}

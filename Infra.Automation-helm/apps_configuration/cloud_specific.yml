@@ -1,0 +1,9 @@
+clusterIssuerName=custom-clusterissuer                                                  # {{env_pipe_cluster_issuer_name}}
+storage_class=custom-csi-cinder-delete                                                  # {{env_pipe_storage_class}}
+domain_name=platcert01.kubernetes.sdntest.qubership.org                                # {{env_pipe_domain_name}}
+s3_minio=http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org   # {{env_pipe_s3_minio}}
+s3_keyId=Z4nz2bxWnWM36lf3K21y                                                           # {{env_pipe_s3_keyId}}
+s3_keySecret=oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr                                   # {{env_pipe_s3_keySecret}}
+dbaas_aggregator_registration_address=http://dbaas-aggregator.dbaas-core:8080           # {{env_pipe_dbaas_aggregator_registration_address}}
+publicCloudName=                                                                        # {{env_pipe_public_cloud_name}}
+tls_enabled=true                                                                        # {{env_pipe_tls_enabled}}

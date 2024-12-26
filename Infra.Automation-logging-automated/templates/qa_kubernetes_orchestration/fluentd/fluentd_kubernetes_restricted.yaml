@@ -1,0 +1,29 @@
+|
+  name=logging-service-test;
+  createClusterAdminEntities=false;
+  logLevel=debug;
+  fluentd='
+  install: true
+  systemLogType: varlogsyslog
+  graylogHost: <graylog_host>
+  graylogPort: 12201
+  securityResources:
+    name: logging-fluentd
+    install: false
+  ';
+  cloudEventsReader='
+  install: true
+  ';
+  integrationTests='
+  install: true
+  service:
+    name: logging-integration-tests-runner
+  tags: smoke
+  externalGraylogServer: "true"
+  graylogHost: <graylog_host>
+  graylogProtocol: https
+  graylogPort: "443"
+  ';
+  ESCAPE_SEQUENCE=true;
+  
+  DISABLE_CRD=true;

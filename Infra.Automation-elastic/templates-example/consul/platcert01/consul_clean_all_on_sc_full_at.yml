@@ -1,0 +1,73 @@
+|
+  
+  ENABLE_PRIVILEGED_PSS=true;
+  global='
+  enabled: true
+  ';
+  server='
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app: consul
+              release: consul-service
+              component: server
+          topologyKey: kubernetes.io/hostname
+  replicas: 3
+  bootstrapExpect: 3
+  storage: 1Gi
+  storageClass: custom-csi-cinder-delete
+  resources:
+    limits:
+      memory: 300Mi
+      cpu: 100m
+  ';
+  consulAclConfigurator='
+  enabled: true
+  ';
+  dns='
+  enabled: false
+  ';
+  monitoring='
+  enabled: true
+  ';
+  ui='
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: consul-consul-service.platcert01.kubernetes.sdntest.qubership.org
+  service:
+    enabled: true
+  ';
+  client='
+  enabled: true
+  nodeSelector:
+    node-role.kubernetes.io/worker: worker
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 25m
+    limits:
+      memory: 256Mi
+      cpu: 25m
+  ';
+  backupDaemon='
+  enabled: true
+  storage: 1Gi
+  storageClass: custom-csi-cinder-delete
+  backupSchedule: "*/15 * * * *"
+  evictionPolicy: 1h/1d,7d/delete
+  ';
+  integrationTests='
+  enabled: true
+  tags: backupORcrudORhaORalertsORbackupORconsul_images
+  prometheusUrl: http://vmsingle-k8s.prometheus-operator:8429
+  ';
+  statusProvisioner='
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 1800
+  podReadinessTimeout: 1200
+  ;
+  ESCAPE_SEQUENCE=true;

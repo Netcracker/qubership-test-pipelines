@@ -1,0 +1,131 @@
+|
+  operator='
+  replicas: 1
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  ';
+  dashboards='
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: dashboards-opensearch.azureclpl.qubership.org
+        paths:
+          - path: /
+  ';
+  opensearch='
+  sysctl:
+    enabled: true
+  securityConfig:
+    authc:
+      basic:
+        username: admin
+        password: ''
+  securityContextCustom:
+    fsGroup: 1000
+  main:
+    replicas: 3
+    resources:
+      limits:
+        cpu: 700m
+        memory: 2048Mi
+      requests:
+        cpu: 200m
+        memory: 2048Mi
+    javaOpts: -Xms1024m -Xmx1024m
+    persistence:
+      storageClass: default
+      size: 2Gi
+  snapshots:
+    enabled: true
+    storageClass: azurefile-csi-nfs
+    size: 2Gi
+  client:
+    enabled: true
+    ingress:
+      enabled: true
+      hosts:
+        - opensearch-opensearch.azureclpl.qubership.org
+  ';
+  monitoring='
+  enabled: true
+  includeIndices: true
+  slowQueries:
+    enabled: true
+    topNumber: 10
+    processingIntervalMinutes: 5
+    minSeconds: 5
+    indicesPattern: "*"
+  thresholds:
+    slowQuerySecondsAlert: 10
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+  ';
+  dbaasAdapter='
+  enabled: true
+  dbaasAdapterAddress: http://dbaas.opensearch-cluster:8080
+  dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas:8080
+  dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
+  opensearchRepo: snapshots
+  opensearchRepoRoot: /usr/share/opensearch/snapshots
+  opensearchPort: 9200
+  opensearchProtocol: http
+  dbaasUsername: dbaas-adapter
+  dbaasPassword: ''
+  registrationAuthUsername: user
+  registrationAuthPassword: ''
+  securityContext:
+    fsGroup: 1000
+  resources:
+    requests:
+      memory: 32Mi
+      cpu: 100m
+    limits:
+      memory: 32Mi
+      cpu: 200m
+  ';
+  curator='
+  enabled: true
+  backupSchedule: 0 * * * *
+  evictionPolicy: 0/1d,7d/delete
+  username: backup
+  password: ''
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+  ';
+  integrationTests='
+  enabled: true
+  tags: smokeORbackup
+  prometheusUrl: http://vmsingle.azureclpl.qubership.org
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 400m
+  ';
+  statusProvisioner='
+  podReadinessTimeout: 1200
+  integrationTestsTimeout: 1200
+  ';
+  ESCAPE_SEQUENCE=true;
+  

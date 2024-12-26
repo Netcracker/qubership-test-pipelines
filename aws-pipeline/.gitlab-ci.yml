@@ -1,0 +1,327 @@
+variables:
+  INSTANCE_TYPE: single
+  DELETE_PIPELINE: "false"
+  CCI_INTEGRATION: "true"
+  IGNORE_ERRORS: "true"
+  # Value should be in format: Infra <Release_number> Sprint <Sprint_number>. https://cci.qubership.org/project/project-view/2
+  RELEASE: "Infra 2024.3 Sprint 4 LTS"
+
+  AWS_MANAGED_OPENSEARCH_URL: "https://vpc-opensearch-qa-p5bcwqwj3hgkuyansf7obwgeqm.us-east-1.es.amazonaws.com"
+  AWS_MANAGED_KAFKA_URL: "b-2.kafkamsk.y1cfpy.c20.kafka.us-east-1.amazonaws.com:9092,b-1.kafkamsk.y1cfpy.c20.kafka.us-east-1.amazonaws.com:9092"
+  AWS_MANAGED_RABBIT_URL: "https://b-2e48427e-4053-45b0-a65a-8f68275c1b3e.mq.us-east-1.amazonaws.com"
+  AWS_MANAGED_RABBIT_CLUSTER_NAME: "broker-ctqfx"
+
+  AWS_MANAGED_OPENSEARCH_VERSION: "OpenSearch_2.11"
+  AWS_MANAGED_MSK_VERSION: "3.7"
+  AWS_MANAGED_MQ_VERSION: "3.12.13"
+
+  #Clean or Rolling Update
+  DEPLOY_MODE: Clean
+
+stages:
+  - get_versions_from_cci
+  - check_versions
+  - start_eks
+  - create_aws_managed_service
+  - deploy_monitoring
+  - deploy_services_with_managed
+  - deploy_pg_logging_redis_zookeeper
+  - deploy_streaming_jaeger_consul
+  - delete_components
+  - stop_eks
+
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+    - chmod +x $KUBECTL
+    - echo "$KUBECONFIG" > kubeconfig.env
+    - export KUBECONFIG=/builds/qa-group/aws-pipeline/kubeconfig.env
+    - chmod +x ./custom_scripts/get_version.sh
+
+
+.test-case: &test-case
+  image: ${PYTHON_IMAGE}
+  tags:
+    - ''
+  allow_failure: true
+  when: manual
+  #when: on_success
+
+include:
+  - local: 'configuration/aws_specific_configuration.yml'
+  - local: 'configuration/services_specific.yml'
+
+.clean_vm_objects: &clean_vm_objects
+  - chmod +x ./custom_scripts/clean_vm_objects.sh
+  - ./custom_scripts/clean_vm_objects.sh
+
+CCI Integration:
+  <<: *test-case
+  stage: get_versions_from_cci
+  script:
+    - python3 ./scripts/cci_integration.py --release="${RELEASE}" --user="${CCI_USER}" --password="${CCI_PASSWORD}" --ignore_errors="${IGNORE_ERRORS}";
+    - cat .env_cci
+  artifacts:
+    paths:
+      - ./.env_cci
+  only: { variables: [ $CCI_INTEGRATION == "true" ] }
+
+1-Start EKS Cluster In AWS:
+  <<: *test-case
+  stage: start_eks
+  script:
+    - python3 ./scripts/create_instance_class.py --configuration="./configuration/managed_services_configuration/start_eks.json" --aws-url="${AWS_URL_START_EKS}" --aws-access_key="${AWS_ACCESS_KEY}" --aws-secret-access-key="${AWS_SECRET_ACCESS_KEY}" --aws-region="${AWS_REGION}" --aws-service="${AWS_SERVICE}"
+    - sleep 5m
+  only: { variables: [ $DELETE_PIPELINE != "true" ] }
+  when: manual
+
+# AWS Managed Services
+2-Create Amazon MQ Instance In AWS:
+  <<: *test-case
+  stage: create_aws_managed_service
+  script:
+    - |
+      if [ $AWS_MANAGED_MQ_VERSION ]; then
+      sed -i 's,"EngineVersion":\ "[0-9,.]*","EngineVersion":\ "'$AWS_MANAGED_MQ_VERSION'",' ./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_mq.json
+      fi
+    - cat ./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_mq.json
+    - python3 ./scripts/create_instance_class.py --configuration="./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_mq.json" --aws-url="${AWS_URL_MQ}" --aws-access_key="${AWS_ACCESS_KEY}" --aws-secret-access-key="${AWS_SECRET_ACCESS_KEY}" --aws-region="${AWS_REGION}" --aws-service="${AWS_SERVICE}"
+  artifacts:
+    when: always
+    paths:
+      - ./.env_mq
+    expire_in: 1 day
+  only: { variables: [ $DELETE_PIPELINE != "true" ] }
+
+2-1-Deploy RabbitMQ Components To AWS:
+  <<: *test-case
+  stage: deploy_services_with_managed
+  script:
+    - source ./custom_scripts/get_version.sh "Rabbit"
+    - |
+      if [ -f ./.env_mq ]; then
+        source ./.env_mq;
+        mqUrl=$url;
+        mqClusterName=$clusterName
+      else
+        mqUrl=$AWS_MANAGED_RABBIT_URL;
+        mqClusterName=$AWS_MANAGED_RABBIT_CLUSTER_NAME
+      fi
+    - sed -i 's,url:\ aws,url:\ '$mqUrl',' ./configuration/infra_deploy_templates/clean_deploy_k8s_rabbit.yml
+    - sed -i 's,clusterName:*,clusterName:\ '$mqClusterName',' ./configuration/infra_deploy_templates/clean_deploy_k8s_rabbit.yml
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_rabbit.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="rabbitmq:${VERSION}" --project="${PREFIX}-${Rabbit_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Rabbit_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Rabbit_install == "true"
+
+3-Create Amazon MSK Instance In AWS:
+  <<: *test-case
+  stage: create_aws_managed_service
+  script:
+    - |
+      if [ $AWS_MANAGED_MSK_VERSION ]; then
+      sed -i 's,"KafkaVersion":\ "[0-9,.]*","KafkaVersion":\ "'$AWS_MANAGED_MSK_VERSION'",' ./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_msk.json
+      fi
+    - cat ./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_msk.json
+    - python3 ./scripts/create_instance_class.py --configuration="./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_msk.json" --aws-url="${AWS_URL_MSK}" --aws-access_key="${AWS_ACCESS_KEY}" --aws-secret-access-key="${AWS_SECRET_ACCESS_KEY}" --aws-region="${AWS_REGION}" --aws-service="${AWS_SERVICE}"
+  artifacts:
+    when: always
+    paths:
+      - ./.env_msk
+    expire_in: 1 day
+  only: { variables: [ $DELETE_PIPELINE != "true" ] }
+
+3-1-Deploy Kafka Components To AWS:
+  <<: *test-case
+  stage: deploy_services_with_managed
+  script:
+    - source ./custom_scripts/get_version.sh "Kafka"
+    - |
+      if [ -f ./.env_msk ]; then
+        source ./.env_msk;
+        mskUrl=$url
+      else
+        mskUrl=$AWS_MANAGED_KAFKA_URL
+      fi
+    - echo URL TO AWS MSK $mskUrl
+    - sed -i 's/bootstrapServers:\ aws/bootstrapServers:\ '$mskUrl'/' ./configuration/infra_deploy_templates/clean_deploy_k8s_kafka.yml
+    - sed -i 's/kafkaBootstrapServers:*/kafkaBootstrapServers:\ '$mskUrl'/' ./configuration/infra_deploy_templates/clean_deploy_k8s_kafka.yml
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_kafka.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="kafka-services:${VERSION}" --project="${PREFIX}-${Kafka_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Kafka_ns}" --timeout="1800"
+    - $KUBECTL delete servicemonitor kafka-service-monitor-jmx-exporter -n $Kafka_ns || true #delete after bug fix
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Kafka_install == "true"
+
+4-Create Amazon OpenSearch Instance In AWS:
+  <<: *test-case
+  stage: create_aws_managed_service
+  script:
+    - | 
+      if [ $AWS_MANAGED_OPENSEARCH_VERSION ]; then 
+      sed -i 's,"EngineVersion":\ "[a-zA-Z0-9,._]*","EngineVersion":\ "'$AWS_MANAGED_OPENSEARCH_VERSION'",' ./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_opensearch.json
+      fi
+    - cat ./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_opensearch.json
+    - python3 ./scripts/create_instance_class.py --configuration="./configuration/managed_services_configuration/${INSTANCE_TYPE}_amazon_opensearch.json" --aws-url="${AWS_URL_OPENSEARCH}" --aws-access_key="${AWS_ACCESS_KEY}" --aws-secret-access-key="${AWS_SECRET_ACCESS_KEY}" --aws-region="${AWS_REGION}" --aws-service="${AWS_SERVICE}"
+  artifacts:
+    when: always
+    paths:
+      - ./.env_opensearch
+    expire_in: 1 day
+  only: { variables: [ $DELETE_PIPELINE != "true" ] }
+
+4-1-Deploy OpenSearch Components To AWS:
+  <<: *test-case
+  stage: deploy_services_with_managed
+  script:
+    - source ./custom_scripts/get_version.sh "Opensearch"
+    - |
+      if [ -f ./.env_opensearch ]; then
+        source ./.env_opensearch;
+        openSearchUrl=`echo $url`
+      else
+        openSearchUrl=`echo $AWS_MANAGED_OPENSEARCH_URL`
+      fi
+    - sed -i 's,url:\ aws,url:\ '$openSearchUrl',' ./configuration/infra_deploy_templates/clean_deploy_k8s_opensearch.yml
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_opensearch.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="opensearch-service:${VERSION}" --project="${PREFIX}-${Opensearch_ns}" --deploy-mode="${DEPLOY_MODE}"
+    # uncomment after fixing tests
+    #- python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Opensearch_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Opensearch_install == "true"
+# Block END - AWS Managed Services
+
+5-Deploy Monitoring Components To AWS:
+  <<: *test-case
+  stage: deploy_monitoring
+  script:
+    - *clean_vm_objects
+    - source ./custom_scripts/get_version.sh "Monitoring"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_monitoring.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="MONITORING:${VERSION}" --project="${PREFIX}-${Monitoring_ns}" --deploy-mode="${DEPLOY_MODE}" --request-type="post"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Monitoring_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Monitoring_install == "true"
+
+6-Deploy PostgreSQL Components To AWS:
+  <<: *test-case
+  stage: deploy_pg_logging_redis_zookeeper
+  script:
+    - source ./custom_scripts/get_version.sh "Postgres"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_postgres.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="postgres-services:${VERSION}" --project="${PREFIX}-${Postgres_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Postgres_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Postgres_install == "true"
+
+7-Deploy Logging Components To AWS:
+  <<: *test-case
+  stage: deploy_pg_logging_redis_zookeeper
+  script:
+    - source ./custom_scripts/get_version.sh "Logging"
+    - echo FINAL $service version $VERSION;
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_logging.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="logging-service:${VERSION}" --project="${PREFIX}-${Logging_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Logging_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Logging_install == "true"
+
+8-Deploy Redis Components To AWS:
+  <<: *test-case
+  stage: deploy_pg_logging_redis_zookeeper
+  script:
+    - source ./custom_scripts/get_version.sh "Redis"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_redis.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="dbaas-redis:${VERSION}" --project="${PREFIX}-${Redis_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Redis_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Redis_install == "true"
+
+9-Deploy Zookeeper Components To AWS:
+  <<: *test-case
+  stage: deploy_pg_logging_redis_zookeeper
+  script:
+    - source ./custom_scripts/get_version.sh "Zookeeper"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_zookeeper.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="zookeeper-service:${VERSION}" --project="${PREFIX}-${Zookeeper_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Zookeeper_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Zookeeper_install == "true"
+
+
+10-Deploy Streaming Components To AWS:
+  <<: *test-case
+  stage: deploy_streaming_jaeger_consul
+  script:
+    - source ./custom_scripts/get_version.sh "Streaming"
+    - |
+      if [ -f ./.env_msk ]; then
+        source ./.env_msk;
+        mskUrl=$url
+      else
+        mskUrl=$AWS_MANAGED_KAFKA_URL
+      fi
+    - echo URL TO AWS MSK $mskUrl
+    - sed -i 's~bootstrapServers:\ aws~bootstrapServers:\ '$mskUrl'~' ./configuration/infra_deploy_templates/clean_deploy_k8s_streaming.yml
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_streaming.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="streaming-service:${VERSION}" --project="${PREFIX}-${Streaming_ns}" --deploy-mode="${DEPLOY_MODE}"
+    #- python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Streaming_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Streaming_install == "true"
+
+11-Deploy Jaeger Components To AWS:
+  <<: *test-case
+  stage: deploy_streaming_jaeger_consul
+  script:
+    - source ./custom_scripts/get_version.sh "Jaeger"
+    - | 
+      if [ -f ./.env_opensearch ]; then
+        source ./.env_opensearch;
+        openSearchUrl=`echo $url | sed 's/https:[/][/]//'`
+      else
+        openSearchUrl=`echo $AWS_MANAGED_OPENSEARCH_URL | sed 's/https:[/][/]//'`
+      fi
+    - echo URL TO AWS OpenSearch $openSearchUrl
+    - sed -i 's,url:\ aws,url:\ '$openSearchUrl',' ./configuration/infra_deploy_templates/clean_deploy_k8s_jaeger.yml
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_jaeger.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="jaeger:${VERSION}" --project="${PREFIX}-${Jaeger_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Jaeger_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Jaeger_install == "true"
+
+12-Deploy Consul Components To AWS:
+  <<: *test-case
+  stage: deploy_streaming_jaeger_consul
+  script:
+    - source ./custom_scripts/get_version.sh "Consul"
+    - python3 "${DEPLOY_SCRIPT_APP}"  -f "./configuration/infra_deploy_templates/clean_deploy_k8s_consul.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="consul-service:${VERSION}" --project="${PREFIX}-${Consul_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Consul_ns}" --timeout="1800"
+  only:
+    variables:
+      - $DELETE_PIPELINE != "true" && $Consul_install == "true"
+
+13-Delete Components In AWS Kubernetes:
+  <<: *test-case
+  image: pipe_image_latest
+  stage: delete_components
+  script:
+    - |
+      namespaces="$Postgres_ns $Opensearch_ns $Rabbit_ns $Streaming_ns $Zookeeper_ns $Kafka_ns $Consul_ns $Jaeger_ns $Logging_ns $Redis_ns";
+      for ns in $namespaces; do
+        $KUBECTL delete namespace $ns || true;
+      done
+    - *clean_vm_objects
+  only: { variables: [ $DELETE_PIPELINE == "true" ] }
+
+14-Stop EKS Cluster In AWS:
+  <<: *test-case
+  stage: stop_eks
+  script:
+    - python3 ./scripts/create_instance_class.py --configuration="./configuration/managed_services_configuration/stop_eks.json" --aws-url="${AWS_URL_STOP_EKS}" --aws-access_key="${AWS_ACCESS_KEY}" --aws-secret-access-key="${AWS_SECRET_ACCESS_KEY}" --aws-region="${AWS_REGION}" --aws-service="${AWS_SERVICE}"
+  only: { variables: [ $DELETE_PIPELINE != "true" ] }
+  when: manual

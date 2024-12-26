@@ -1,0 +1,40 @@
+{
+  "AdvancedSecurityOptions": {
+    "Enabled": true,
+    "InternalUserDatabaseEnabled": true,
+    "MainUserOptions": {
+      "MainUserName": "Opensearch-admin",
+      "MainUserPassword": ""
+    },
+    "SAMLOptions": {
+      "Enabled": false
+    }
+  },
+  "ClusterConfig": {
+    "ColdStorageOptions": {
+      "Enabled": false
+    },
+    "InstanceCount": 3,
+    "InstanceType": "t3.small.search"
+  },
+  "DomainEndpointOptions": {
+    "EnforceHTTPS": true
+  },
+  "DomainName": "testdomain",
+  "EBSOptions": {
+    "EBSEnabled": true,
+    "VolumeSize": 10
+  },
+  "AccessPolicies": "{\"Version\": \"2012-10-17\",\"Statement\": [{\"Effect\": \"Allow\",\"Principal\": {\"AWS\": \"*\"},\"Action\": \"es:*\",\"Resource\": \"arn:aws:es:us-east-1:*:domain/*/*\"}]}",
+  "EncryptionAtRestOptions": {
+    "Enabled": true
+  },
+  "NodeToNodeEncryptionOptions": {
+    "Enabled": true
+  },
+  "EngineVersion": "OpenSearch_2.9",
+  "VPCOptions": {
+    "SecurityGroupIds": [ "sg-00937803f730f7622" ],
+    "SubnetIds": [ "subnet-04f92aeeda2d2d771" ]
+  }
+}

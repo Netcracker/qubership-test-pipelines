@@ -1,0 +1,19 @@
+dbaas:
+  install: true
+patroni:
+  postgreSQLParams:
+    - "max_connections: 150"
+    - "shared_preload_libraries: pg_stat_statements, pg_hint_plan, decoderbufs, pg_cron"
+    - "wal_level: logical"
+  storage:
+    type: provisioned
+    size: 1Gi
+    storageClass: {{env_pipe_storage_class}}
+backupDaemon:
+  storage:
+    type: provisioned
+    size: 1Gi
+    storageClass: {{env_pipe_storage_class}}
+metricCollector:
+  prometheusMonitoring: true
+  applyGrafanaDashboard: true

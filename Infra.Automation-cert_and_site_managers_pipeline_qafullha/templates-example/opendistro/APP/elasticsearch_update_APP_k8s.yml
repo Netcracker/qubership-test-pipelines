@@ -1,0 +1,86 @@
+JENKINS_URL: ''
+JOB_NAME: ''
+PROJECT: qa_kubernetes-elastic-opendistro
+OPENSHIFT_CREDENTIALS: 77795f9d-c2c0-4d8d-83b4-83f4711343ac
+ARTIFACT_DESCRIPTOR_VERSION: opendistro-elasticsearch-service:1.13.2-1.1_20210721-112333_charts
+# Use DESCRIPTOR_NAME to set version as script argument
+DESCRIPTOR_NAME: ARTIFACT_DESCRIPTOR_VERSION
+|
+|
+  kibana='
+    enabled: true
+    ingress: 
+      enabled: true
+      hosts: 
+        - "kibana-elasticsearch-cluster.qa-kubernetes.openshift.sdntest.qubership.org"
+  ';
+  elasticsearch='
+    securityConfig: 
+      authc: 
+        basic: 
+          username: "admin"
+          password: ''
+    securityContextCustom: 
+      fsGroup: 1000
+    main: 
+      replicas: 3
+      nodeSelector: 
+        role: "compute"
+      resources: 
+        limits: 
+          cpu: "600m"
+          memory: "1024Mi"
+        requests: 
+          cpu: "200m"
+          memory: "698Mi"
+      javaOpts: "-Xms512m -Xmx512m"
+      persistence: 
+        persistentVolumes: 
+          - "pv-opendistro-1"
+          - "pv-opendistro-2"
+          - "pv-opendistro-3"
+        nodes: 
+          - "worker1"
+          - "worker2"
+          - "worker3"
+        size: "2Gi"
+    client: 
+      ingress: 
+        enabled: true
+        hosts: 
+          - "elasticsearch-elasticsearch-cluster.qa-kubernetes.openshift.sdntest.qubership.org"
+    snapshots: 
+      enabled: true
+      persistentVolume: "opendistro-snapshots-nfs"
+      size: "2Gi"
+  ';
+  podScheduler='
+    securityContext: 
+      runAsUser: 1000
+    nodeSelector: 
+      role: "compute"
+  ';
+  monitoring.enabled=true;
+  monitoring.monitoringType=prometheus;
+  monitoring.nodeSelector='
+    role: "compute"
+  ';
+  dbaasAdapter.enabled=true;
+  dbaasAdapter.dbaasUsername=user;
+  dbaasAdapter.dbaasPassword=pass;
+  dbaasAdapter.nodeSelector='
+    role: "compute"
+  ';
+  dbaasAdapter.securityContext='{"runAsUser":1000}';
+  curator.enabled=true;
+  curator.backupSchedule="0 0 0 * *";
+  curator.evictionPolicy="0/1d,7d/delete";
+  curator.username=backup;
+  curator.password=backup;
+  curator.nodeSelector='
+    role: "compute"
+  ';
+  curator.securityContext='{"fsGroup":1000,"runAsUser":1000}';
+  integrationTests.enabled=true;
+  integrationTests.tags=smoke;
+  ESCAPE_SEQUENCE=true;

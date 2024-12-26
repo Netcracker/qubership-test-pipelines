@@ -1,0 +1,11 @@
+| 
+  
+  INTEGRATION_TESTS=true;
+  NC_DIAGNOSTIC_AGENT_SERVICE=esc-collector-service;
+  ES_PORT=9200;
+  ES_PASSWORD=admin;
+  ES_USERNAME=admin;
+  ESCAPE_SEQUENCE=true;
+  ES_REPLICAS=1;
+  ES_HOST=opensearch.opensearch-cloud.svc;
+  ES_SHARDS=5;

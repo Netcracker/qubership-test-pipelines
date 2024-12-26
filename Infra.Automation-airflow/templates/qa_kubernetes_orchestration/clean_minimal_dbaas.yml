@@ -1,0 +1,22 @@
+|
+  webserverSecretKey=''
+  fernetKey=''
+  ingress='
+  enabled: true
+  web:
+    hosts:
+      - web.qa-kubernetes.openshift.sdntest.qubership.org
+  ';
+  integrationTests='
+    enabled: true
+    tags: smokeORairflow_images
+  ';
+  statusProvisioner='
+    lifetimeAfterCompletion: 60
+    integrationTestsTimeout: 3000
+  ';
+  config='
+  api:
+    auth_backend: airflow.api.auth.backend.basic_auth
+  ';
+  ESCAPE_SEQUENCE=true;

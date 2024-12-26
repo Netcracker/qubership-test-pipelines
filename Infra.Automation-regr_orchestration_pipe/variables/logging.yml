@@ -1,0 +1,30 @@
+#N2_RELEASE: ''
+#N1_RELEASE: ''
+#PREVIOUS_SPRINT: ''
+#LATEST_SPRINT: ''
+#
+## Manifest Graylog 4
+#MAN_APP_GR4_LATEST: logging-service:14.9.0-delivery_graylog4-20240403.192359-4-RELEASE
+## Scheme for testing: graylog_fluentd, graylog_fluentbit, only_fluentd, fluentbit, ha; graylog_5
+#SCHEME_GRAYLOG_FLUENTD: "true"
+#SCHEME_GRAYLOG_FLUENTBIT: "true"
+#SCHEME_ONLY_FLUENTD: "true"
+#SCHEME_ONLY_FLUENTBIT: "true"
+#SCHEME_HA: "true"
+## Restricted
+#LATEST_SPRIN_TAG: "release-2024.4-14.19.0"
+#PREVIOUS_SPRINT_TAG: ''
+
+N2_RELEASE:
+N1_RELEASE:
+PREVIOUS_SPRINT:
+LATEST_SPRINT:
+# Scheme for testing: graylog_fluentd, graylog_fluentbit, only_fluentd, fluentbit, ha; graylog_5
+SCHEME_GRAYLOG_FLUENTD: "true"
+SCHEME_GRAYLOG_FLUENTBIT: "true"
+SCHEME_ONLY_FLUENTD: "true"
+SCHEME_ONLY_FLUENTBIT: "true"
+SCHEME_HA: "true"
+# Restricted
+LATEST_SPRIN_TAG:
+PREVIOUS_SPRINT_TAG:

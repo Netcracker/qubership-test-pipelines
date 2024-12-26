@@ -1,0 +1,357 @@
+#[Kafka] Regression sprint pipeline R2024.4 Sprint 4  (qa_kubernetes)
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+  KUBECTL: /builds/PROD.Platform.HA/Infra.Automation/binary/kubectl
+  JOB_NAME_CLEAN: ''
+  JOB_NAME_UPDATE: ''
+  DEPLOY_SCRIPT_APP: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  DEPLOY_SCRIPT_DP: /scripts/external_platform_library_builtIn/deploy_with_helmdeployer.py
+  UPGRADE_CRD_SCRIPT: /scripts/external_platform_library_builtIn/upgrade_crd.py
+  APPLY_RESOURCES_SCRIPT: /scripts/external_platform_library_builtIn/prepare_restricted_resources.py
+  CLEAN_NS_SCRIPT: /scripts/external_platform_library_builtIn/clean_namespace.py
+  PATCH_NS_SCRIPT: /scripts/external_platform_library_builtIn/patch_ns_restricted.py
+  REPORT_SCRIPT: /scripts/external_platform_library_builtIn/report.py
+  ### ----------------------------------- Cloud specific configuration ----------------------------------- ###
+  ### ----------------------------------- ocp_cert_1 configuration --------------------------------------- ###
+  PREFIX: ocp_cert_1
+  JENKINS_URL: ''
+  JENKINS_USER: ''
+  JENKINS_PASS: ''
+  CREDS_IN_DEPLOYER: ''
+  RESTRICTED_USER_APP: ''
+  CLOUD_HOST_OVERALL: ${OCP_CERT_1_HOST}
+  CLOUD_TOKEN_OVERALL: ${OCP_CERT_1_TOKEN}
+  PROJECT: kafka-service
+  KUBECONFIG: $OCP_CERT_1_KUBECONFIG
+  ### ----------------------------------- platcert01 configuration ----------------------------------- ###
+  # PREFIX: platcert01
+  # JENKINS_URL: ''
+  # JENKINS_USER: ''
+  # JENKINS_PASS: ''
+  # CREDS_IN_DEPLOYER: ''
+  # RESTRICTED_USER_APP: ''
+  # CLOUD_HOST_OVERALL: ${PLATCERT01_HOST}
+  # CLOUD_TOKEN_OVERALL: ${PLATCERT01_TOKEN_ADMIN}
+  # PROJECT: kafka-service
+  ### ----------------------------------- qa_kubernetes configuration ----------------------------------- ###
+  # PREFIX: qa_kubernetes_orchestration
+  # JENKINS_URL: ''
+  # JENKINS_USER: ''
+  # JENKINS_PASS: ''
+  # CREDS_IN_DEPLOYER: ''
+  # RESTRICTED_USER_APP: ''
+  # CLOUD_HOST_OVERALL: ${QA_KUBER_HOST}
+  # CLOUD_TOKEN_OVERALL: ${QA_KUBER_TOKEN}
+  # PROJECT: kafka-service
+  # KUBECONFIG: $QA_KUBER_KUBECONFIG
+  ### ----------------------------------------- Manifests ------------------------------------------ ###
+  # Manifest versions
+  N2_RELEASE: ''
+  N2_SUPPL_RELEASE: kafka-services:1.7.0-delivery_kafka-services-20240516.130049-1-RELEASE
+
+  N1_RELEASE: ''
+  N1_SUPPL_RELEASE: kafka-services:release-2024.3-1.8.2-delivery_kafka-services-20240910.063748-1-RELEASE
+
+  PREVIOUS_SPRINT: ''
+  PREVIOUS_SUPPL_SPRINT: kafka-services:release-2024.4-1.10.0-delivery_kafka-services-20241114.001405-1-RELEASE
+  
+  LATEST_SPRINT: ''
+  LATEST_SUPPL_SPRINT: kafka-services:release-2024.4-1.11.0-delivery_kafka-services-20241203.090835-1-RELEASE
+# Zookeeper
+  ZOOKEEPER_LATEST: zookeeper-service:release-2024.4-0.9.0-delivery_3.8.4-20241203.090306-1-RELEASE
+  ZOO_PROJECT: zookeeper-service
+
+  LATEST_SPRINT_TAG: ''
+  PREVIOUS_SPRINT_TAG: ''
+
+  # Upgrade from 2.x to 3.x
+  PREVIOUS_3PARTY: ''
+  PREVIOUS_SUPPL_3PARTY: ""
+
+stages:
+  - clean_zookeeper_latest_tls
+  - clean_latest_sprint_tls_zookeeper_tls
+  - clean_zookeeper_latest_non_tls
+  - clean_previous_sprint
+  - upgrade_from_previous_sprint_to_latest_sprint
+  - clean_latest_sprint
+  - upgrade_latest_sprint_diff_params
+  - clean_latest_sprint_non_kraft_schema
+  - migration_latest_sprint_to_kraft_schema
+  - clean_latest_sprint_consul_integration_kraft_cruisecontrol_full_at
+  - clean_latest_sprint_zoo_kafka_infra_passport
+  - clean_previous_sprint_non_tls
+  - migration_from_previous_sprint_non_tls_to_latest_sprint_tls
+  - clean_latest_sprint_drd_tls_secrets
+  - upgrade_latest_sprint_drd_tls_certs
+  - clean_previous_sprint_s3
+  - upgrade_from_previous_sprint_to_latest_sprint_s3
+  - clean_n1_release
+  - upgrade_from_n1_release_to_latest_sprint
+  - clean_n2_release
+  - upgrade_from_n2_release_to_latest_sprint
+  - clean_previous_sprint_restricted
+  - upgrade_from_previous_sprint_to_latest_sprint_restricted
+  - clean_latest_sprint_restircted
+  - clean_previous_3rdparty
+  - migration_from_previous_3rdparty_to_latest_sprint
+  - create_report
+
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+    - apk add openssh-client --update-cache --repository ${REPOSITORY_URL} --allow-untrusted
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - chmod +x $KUBECTL
+    - echo "$KUBECONFIG" > kubeconfig.env
+    - export KUBECONFIG=/builds/PROD.Platform.HA/Infra.Automation/kubeconfig.env
+
+.test-case: &test-case
+  image: ${PYTHON_IMAGE}
+  extends: .check_state_logs_script.run
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: ${PROJECT}
+    ALLOWED_ERROR_LOGS_AMOUNT: 200
+  tags:
+    - ''
+  allow_failure: true
+  when: on_success
+
+.clean_ns_and_pv: &clean_ns_and_pv
+  - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --pv-list="pv-kafka-1,pv-kafka-2,pv-kafka-3" --cr-list="kafkaservices"
+  - ssh -o StrictHostKeyChecking=no ubuntu@***.***.***.*** "sudo su; sudo rm -rf /mnt/data/pv-kafka-1/*; echo 'PV pv-kafka-1 is cleaned'; ls -l /mnt/data/pv-kafka-1/"
+  - ssh -o StrictHostKeyChecking=no ubuntu@***.***.***.*** "sudo su; sudo rm -rf /mnt/data/pv-kafka-2/*; echo 'PV pv-kafka-2 is cleaned'; ls -l /mnt/data/pv-kafka-2/"
+  - ssh -o StrictHostKeyChecking=no ubuntu@***.***.***.*** "sudo su; sudo rm -rf /mnt/data/pv-kafka-3/*; echo 'PV pv-kafka-3 is cleaned'; ls -l /mnt/data/pv-kafka-3/"
+
+include:
+  - project: 'PROD.Platform.HA/Infra.Automation'
+    ref: pipe_image
+    file: 'api2.yaml'
+
+# Kafka + Zookeeper Deploy in TLS
+1-Clean [ZOOKEEPER_LATEST] TLS:
+  <<: *test-case
+  stage: clean_zookeeper_latest_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/zookeeper/${PREFIX}/zookeeper_install_tls_APP_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${ZOOKEEPER_LATEST}" --project="${PREFIX}-${ZOO_PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $ZOOKEEPER_LATEST != "" ] }
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: ${ZOO_PROJECT}
+    ALLOWED_ERROR_LOGS_AMOUNT: 200
+
+2-Clean [LATEST_SPRINT] TLS ZookeeperTLS:
+  <<: *test-case
+  stage: clean_latest_sprint_tls_zookeeper_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_zoo_tls.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $ZOOKEEPER_LATEST != "" ] }
+
+# With StorageClass
+3-Clean [ZOOKEEPER_LATEST] non-TLS:
+  <<: *test-case
+  stage: clean_zookeeper_latest_non_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/zookeeper/${PREFIX}/zookeeper_install_APP_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${ZOOKEEPER_LATEST}" --project="${PREFIX}-${ZOO_PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $ZOOKEEPER_LATEST != "" ] }
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: ${ZOO_PROJECT}
+    ALLOWED_ERROR_LOGS_AMOUNT: 200
+
+4-Clean [PREVIOUS_SPRINT]:
+  <<: *test-case
+  stage: clean_previous_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT} ${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+
+5-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_previous_sprint_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+6-Clean [LATEST_SPRINT]:
+  <<: *test-case
+  stage: clean_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+7-Upgrade [LATEST_SPRINT] Diff Params:
+  <<: *test-case
+  stage: upgrade_latest_sprint_diff_params
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_updated_resources.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+# KRaft
+8-Clean [LATEST_SPRINT] non-KRaft schema:
+  <<: *test-case
+  stage: clean_latest_sprint_non_kraft_schema
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_s3.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+9-Migration [LATEST_SPRINT] To Kraft Schema:
+  <<: *test-case
+  stage: migration_latest_sprint_to_kraft_schema
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kraft_migration_sc_s3_tls.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+10-Clean [LATEST_SPRINT] Consul Integration KRaft CruiseControl Full-AT:
+  <<: *test-case
+  stage: clean_latest_sprint_consul_integration_kraft_cruisecontrol_full_at
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_test_cc_kraft.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+# Infra Passport
+11-Clean [LATEST_SPRINT] Zoo+Kafka Infra Passport:
+  <<: *test-case
+  stage: clean_latest_sprint_zoo_kafka_infra_passport
+  script:
+    - *clean_ns_and_pv
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/infra_passport.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${ZOOKEEPER_LATEST} ${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+12-Clean [PREVIOUS_SPRINT] non-TLS:
+  <<: *test-case
+  stage: clean_previous_sprint_non_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT} ${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+
+14-Migration From [PREVIOUS_SPRINT] Non-TLS To [LATEST_SPRINT] TLS:
+  <<: *test-case
+  stage: migration_from_previous_sprint_non_tls_to_latest_sprint_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_tls.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+15-Clean [LATEST_SPRINT] DRD TLS Secrets:
+  <<: *test-case
+  stage: clean_latest_sprint_drd_tls_secrets
+  script:
+    - *clean_ns_and_pv 
+    - $KUBECTL create -f ./resources/kafka_tls_secret.yml -n ${PROJECT} || true
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_sc_drd_tls_secret.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+
+16-Upgrade [LATEST_SPRINT] DRD TLS Certs:
+  <<: *test-case
+  stage: upgrade_latest_sprint_drd_tls_certs
+  script:
+    - $KUBECTL delete secrets kafka-tls-test-secret kafka-drd-tls-test-secret kafka-backup-daemon-tls-test-secret -n ${PROJECT} || true
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_sc_drd_tls_certs.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="1166a846603576efa37a4ab945f5002153" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update" --request-type="post"
+    - !reference [.template_job_status, script]
+
+17-Clean [PREVIOUS_SPRINT] S3:
+  <<: *test-case
+  stage: clean_previous_sprint_s3
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_s3.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT} ${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+
+18-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] S3:
+  <<: *test-case
+  stage: upgrade_from_previous_sprint_to_latest_sprint_s3
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_s3.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+19-Clean [N1_RELEASE]:
+  <<: *test-case
+  stage: clean_n1_release
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N1_RELEASE} ${N1_SUPPL_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+
+20-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_n1_release_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+21-Clean [N2_RELEASE]:
+  <<: *test-case
+  stage: clean_n2_release
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N2_RELEASE} ${N2_SUPPL_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+
+22-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_n2_release_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+# Restricted
+23-Clean [PREVIOUS_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_previous_sprint_restricted
+  script:
+    - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --pv-list="pv-kafka-1,pv-kafka-2,pv-kafka-3" --cr-list="kafkaservices"
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${PREVIOUS_SPRINT_TAG}" --service="kafka"
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${ZOO_PROJECT}" --service="zoo_f"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_restricted.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PREVIOUS_SPRINT} ${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+24-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: upgrade_from_previous_sprint_to_latest_sprint_restricted
+  script:
+    - python3 "${UPGRADE_CRD_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --crd-tag="${LATEST_SPRINT_TAG}" --service="kafka"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_restricted.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+25-Clean [LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_latest_sprint_restircted
+  script:
+    - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --pv-list="pv-kafka-1,pv-kafka-2,pv-kafka-3" --cr-list="kafkaservices"
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${LATEST_SPRINT_TAG}" --service="kafka"
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${ZOO_PROJECT}" --service="zoo_f"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_restricted.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+# Thirdparty update
+26-Clean [PREVIOUS_3RDPARTY]:
+  <<: *test-case
+  stage: clean_previous_3rdparty
+  script:
+    - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --pv-list="pv-kafka-1,pv-kafka-2,pv-kafka-3" --cr-list="kafkaservices"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_3PARTY} ${PREVIOUS_SUPPL_3PARTY}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $PREVIOUS_3PARTY != "" && $PREVIOUS_SUPPL_3PARTY != "" ] }
+
+27-Migration From [PREVIOUS_3RDPARTY] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: migration_from_previous_3rdparty_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PREVIOUS_3PARTY != "" && $PREVIOUS_SUPPL_3PARTY != "" ] }
+
+Report:
+  image: ${PYTHON_IMAGE}
+  tags:
+    - ''
+  when: manual
+  stage: create_report
+  script:
+    - python3 ${REPORT_SCRIPT} --pipeline_id="${CI_PIPELINE_ID}" --token="${GIT_TOKEN}" --webex-room-id="${WEBEX_CI_ROOM_ID}" --webex-token="${WEBEX_CI_TOKEN}" --versions="LATEST_SPRINT=${LATEST_SPRINT},PREVIOUS_SPRINT=${PREVIOUS_SPRINT},N1_RELEASE=${N1_RELEASE},N2_RELEASE=${N2_RELEASE}, LATEST_SPRINT_TAG=${LATEST_SPRINT_TAG}, PREVIOUS_SPRINT_TAG=${PREVIOUS_SPRINT_TAG}, ZOOKEEPER_LATEST=${ZOOKEEPER_LATEST}"
+  artifacts:
+    paths:
+      - "*.html"

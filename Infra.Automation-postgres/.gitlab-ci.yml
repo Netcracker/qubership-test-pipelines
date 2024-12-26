@@ -1,0 +1,371 @@
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+  DEPLOY_SCRIPT_APP: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  UPGRADE_CRD_SCRIPT: /scripts/external_platform_library_builtIn/upgrade_crd.py
+  APPLY_RESOURCES_SCRIPT: /scripts/external_platform_library_builtIn/prepare_restricted_resources.py
+  CLEAN_NS_SCRIPT: /scripts/external_platform_library_builtIn/clean_namespace.py
+  REPORT_SCRIPT: /scripts/external_platform_library_builtIn/report.py
+  JOB_NAME_CLEAN: ''
+  JOB_NAME_UPDATE: ''
+  ### ----------------------------------- Cloud specific configuration ----------------------------------- ###
+  ### ----------------------------------- ocp_cert_1 configuration --------------------------------------- ###
+#  PREFIX: ocp_cert_1
+#  JENKINS_URL: ''
+#  JENKINS_USER: ''
+#  JENKINS_PASS: ''
+#  CREDS_IN_DEPLOYER: ''
+#  RESTRICTED_USER_APP: ''
+#  CLOUD_HOST_OVERALL: ${OCP_CERT_1_HOST}
+#  CLOUD_TOKEN_OVERALL: ${OCP_CERT_1_TOKEN}
+#  PROJECT: postgres
+  ### ----------------------------------- platcert01 configuration ----------------------------------- ###
+#  PREFIX: platcert01
+#  JENKINS_URL: ''
+#  JENKINS_USER: ''
+#  JENKINS_PASS: ''
+#  CREDS_IN_DEPLOYER: ''
+#  RESTRICTED_USER_APP: ''
+#  CLOUD_HOST_OVERALL: ${PLATCERT01_HOST}
+#  CLOUD_TOKEN_OVERALL: ${PLATCERT01_TOKEN_ADMIN}
+#  PROJECT: postgres-test
+  ### ----------------------------------- qa_kubernetes configuration ----------------------------------- ###
+  PREFIX: qa_kubernetes_orchestration
+  JENKINS_URL: ''
+  JENKINS_USER: ''
+  JENKINS_PASS: ''
+  CREDS_IN_DEPLOYER: ''
+  RESTRICTED_USER_APP: ''
+  CLOUD_HOST_OVERALL: ${QA_KUBER_HOST}
+  CLOUD_TOKEN_OVERALL: ${QA_KUBER_TOKEN}
+  PROJECT: postgres-test
+  ### ----------------------------------------- Manifests New Approach ------------------------------------------ ###
+  PG15_LATEST_SPRINT: ''
+  PG16_LATEST_SPRINT: ''
+  LATEST_SUPPL_SPRINT: postgres-services:release-2024.4-1.41.0-delivery_postgres-services-20241205.043518-5-RELEASE
+  PG15_PREVIOUS_SPRINT: ''
+  PG16_PREVIOUS_SPRINT: ''
+  PREVIOUS_SUPPL_SPRINT: postgres-services:release-2024.4-1.40.0-delivery_postgres-services-20241111.034700-1-RELEASE
+  PG15_N1_RELEASE: ''
+  N1_SUPPL_RELEASE: postgres-services:release-2024.3-1.38.1-delivery_postgres-services-20241021.072945-3-RELEASE
+  PG15_N2_RELEASE: ''
+  N2_SUPPL_RELEASE: postgres-services:1.35.8-delivery_postgres-services-20241014.091033-5-RELEASE
+  ### ----------------------------------------- Tags For Restricted ------------------------------------------ ###
+  LATEST_SPRIN_TAG: "1.41.0"
+  PREVIOUS_SPRINT_TAG: ''
+
+stages:
+  - clean_pg15_previous_sprint
+  - upgrade_from_pg15_previous_sprint_to_pg15_latest_sprint
+  - clean_pg15_latest_sprint
+  - upgrade_pg15_latest_sprint_diff_params
+  - clean_pg16_previous_sprint
+  - upgrade_from_pg16_previous_sprint_to_pg16_latest_sprint
+  - clean_pg16_latest_sprint
+  - upgrade_pg16_latest_sprint_diff_params
+  - clean_pg16_latest_sprint_restricted
+  - clean_pg15_previous_sprint_restricted
+  - upgrade_from_pg15_previous_sprint_to_pg15_latest_sprint_restricted
+  - clean_pg15_latest_sprint_restricted
+  - upgrade_pg15_latest_sprint_from_non_tls_to_tls
+  - clean_pg15_latest_sprint_tls
+  - clean_pg16_latest_sprint_tls
+  - clean_pg15_n2_release_appropriate_crd
+  - upgrade_from_pg15_n2_release_to_pg15_n1_release_appropriate_crd
+  - clean_pg15_n1_release_appropriate_crd
+  - upgrade_from_pg15_n1_release_to_pg16_latest_sprint_appropriate_crd
+  - clean_pg15_n2_release
+  - upgrade_from_pg15_n2_release_to_pg15_latest_sprint
+  - upgrade_from_pg15_latest_to_pg16_latest_sprint
+  - clean_pg15_n1_release
+  - upgrade_from_pg15_n1_release_to_pg16_latest_sprint
+  - migration_from_pg15_latest_sprint_to_pg16_latest_sprint
+  - create_report
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+
+.test-case: &test-case
+  image: ${PYTHON_IMAGE}
+  extends: .check_state_logs_script.run
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: ${PROJECT}
+    ALLOWED_RESTARTS_AMOUNT: 7
+    ALLOWED_ERROR_LOGS_AMOUNT: 1000
+  tags:
+    - ''
+  allow_failure: true
+  when: on_success
+  # when: manual
+
+.clean_ns: &clean_ns
+  - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --pv-list="" --cr-list="patronicores,patroniservices"
+
+include:
+  - project: 'PROD.Platform.HA/Infra.Automation'
+    ref: pipe_image
+    file: 'api2.yaml'
+
+
+# --------------------------------------------- New approach for PG ---------------------------------------------
+# PG15
+1-Clean [PG15_PREVIOUS_SPRINT]:
+  <<: *test-case
+  stage: clean_pg15_previous_sprint
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+  only: { variables: [ $PG15_PREVIOUS_SPRINT != "" && $PREVIOUS_SUPPL_SPRINT != "" ] }
+
+2-Upgrade From [PG15_PREVIOUS_SPRINT] To [PG15_LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_pg15_previous_sprint_to_pg15_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG15_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" && $PG15_PREVIOUS_SPRINT != "" && $PREVIOUS_SUPPL_SPRINT != "" ] }
+
+3-Clean [PG15_LATEST_SPRINT]:
+  <<: *test-case
+  stage: clean_pg15_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tests.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tests.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG15_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+
+4-Upgrade [PG15_LATEST_SPRINT] Diff Params:
+  <<: *test-case
+  stage: upgrade_pg15_latest_sprint_diff_params
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/update.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/update.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG15_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+
+# PG16
+5-Clean [PG16_PREVIOUS_SPRINT]:
+  <<: *test-case
+  stage: clean_pg16_previous_sprint
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+  only: { variables: [ $PG16_PREVIOUS_SPRINT != "" && $PREVIOUS_SUPPL_SPRINT != "" ] }
+
+6-Upgrade From [PG16_PREVIOUS_SPRINT] To [PG16_LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_pg16_previous_sprint_to_pg16_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" && $PG16_PREVIOUS_SPRINT != "" && $PREVIOUS_SUPPL_SPRINT != "" ] }
+
+7-Clean [PG16_LATEST_SPRINT]:
+  <<: *test-case
+  stage: clean_pg16_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tests.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tests.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+
+8-Upgrade [PG16_LATEST_SPRINT] Diff Params:
+  <<: *test-case
+  stage: upgrade_pg16_latest_sprint_diff_params
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/update.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/update.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+
+# Restricted PG16 - need to replace to PG15
+9-Clean [PG16_LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_pg16_latest_sprint_restricted
+  script:
+    - *clean_ns
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${LATEST_SPRIN_TAG}"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+
+10-Clean [PG15_PREVIOUS_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_pg15_previous_sprint_restricted
+  script:
+    - *clean_ns
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${PREVIOUS_SPRINT_TAG}"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PG15_PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+  only: { variables: [ $PG15_PREVIOUS_SPRINT != "" && $PREVIOUS_SUPPL_SPRINT != "" ] }
+
+11-Upgrade From [PG15_PREVIOUS_SPRINT] To [PG15_LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: upgrade_from_pg15_previous_sprint_to_pg15_latest_sprint_restricted
+  script:
+    - python3 "${UPGRADE_CRD_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --crd-tag="${LATEST_SPRIN_TAG}"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG15_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" && $PG15_PREVIOUS_SPRINT != "" && $PREVIOUS_SUPPL_SPRINT != "" ] }
+
+12-Clean [PG15_LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_pg15_latest_sprint_restricted
+  script:
+    - *clean_ns
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${LATEST_SPRIN_TAG}"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG15_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+
+# TLS - need to replace to PG15 + clean TLS 16
+13-Upgrade [PG15_LATEST_SPRINT] From Non-TLS To TLS:
+  <<: *test-case
+  stage: upgrade_pg15_latest_sprint_from_non_tls_to_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG15_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+
+14-Clean [PG15_LATEST_SPRINT] TLS:
+  <<: *test-case
+  stage: clean_pg15_latest_sprint_tls
+  script:
+    - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --cr-list="postgresservices"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG15_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+
+15-Clean [PG16_LATEST_SPRINT] TLS:
+  <<: *test-case
+  stage: clean_pg16_latest_sprint_tls
+  script:
+    - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --cr-list="postgresservices"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" ] }
+#
+## Releases PG15
+## Check with Appropriate CRD
+#16-Clean [PG15_N2_RELEASE] Appropriate CRD:
+#  <<: *test-case
+#  stage: clean_pg15_n2_release_appropriate_crd
+#  script:
+#    - python3 ./scripts/full_clean_resources.py --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --cloud-namespace="${PROJECT}" --crd-list="patroniservices.qubership.org,patronicores.qubership.org"
+#    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_N2_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+#    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N2_SUPPL_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+#  only: { variables: [ $PG15_N2_RELEASE != "" && $N2_SUPPL_RELEASE != "" ] }
+#
+#17-Upgrade From [PG15_N2_RELEASE] To [PG15_N1_RELEASE] Appropriate CRD:
+#  <<: *test-case
+#  stage: upgrade_from_pg15_n2_release_to_pg15_n1_release_appropriate_crd
+#  script:
+#    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_N1_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+#    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N1_SUPPL_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+#    - !reference [.template_job_status, script]
+#  only: { variables: [ $PG15_N1_RELEASE != "" && $N1_SUPPL_RELEASE != "" && $PG15_N2_RELEASE != "" && $N2_SUPPL_RELEASE != "" ] }
+#
+#18-Clean [PG15_N1_RELEASE] Appropriate CRD:
+#  <<: *test-case
+#  stage: clean_pg15_n1_release_appropriate_crd
+#  script:
+#    - python3 ./scripts/full_clean_resources.py --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --cloud-namespace="${PROJECT}" --crd-list="patroniservices.qubership.org,patronicores.qubership.org"
+#    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_N1_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+#    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N1_SUPPL_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+#  only: { variables: [ $PG15_N1_RELEASE != "" && $PG15_N2_RELEASE == "" ] }
+#
+#19-Upgrade From [PG15_N1_RELEASE] To [PG16_LATEST_SPRINT] Appropriate CRD:
+#  <<: *test-case
+#  stage: upgrade_from_pg15_n1_release_to_pg16_latest_sprint_appropriate_crd
+#  script:
+#    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+#    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+#    - !reference [.template_job_status, script]
+#  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" && $PG15_N1_RELEASE != "" && $N1_SUPPL_RELEASE != "" ] }
+#
+# Check with Last CRD
+20-Clean [PG15_N2_RELEASE]:
+  <<: *test-case
+  stage: clean_pg15_n2_release
+  script:
+    - echo "  DISABLE_CRD=true;" >> "./templates/${PREFIX}/clean.yml"
+    - cat "./templates/${PREFIX}/clean.yml"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_N2_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N2_SUPPL_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+  only: { variables: [ $PG15_N2_RELEASE != "" && $N2_SUPPL_RELEASE != "" ] }
+
+21-Upgrade From [PG15_N2_RELEASE] To [PG15_LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_pg15_n2_release_to_pg15_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG15_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" && $PG15_N2_RELEASE != "" && $N2_SUPPL_RELEASE != "" ] }
+
+22-Upgrade From [PG15_LATEST_SPRINT] To [PG16_LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_pg15_latest_to_pg16_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" && $PG15_N2_RELEASE != "" && $N2_SUPPL_RELEASE != "" ] }
+
+23-Clean [PG15_N1_RELEASE]:
+  <<: *test-case
+  stage: clean_pg15_n1_release
+  script:
+    - echo "  DISABLE_CRD=true;" >> "./templates/${PREFIX}/clean.yml"
+    - cat "./templates/${PREFIX}/clean.yml"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_N1_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N1_SUPPL_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+  only: { variables: [ $PG15_N1_RELEASE != "" && $N1_SUPPL_RELEASE != "" ] }
+
+24-Upgrade From [PG15_N1_RELEASE] To [PG16_LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_pg15_n1_release_to_pg16_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" && $PG15_N1_RELEASE != "" && $N1_SUPPL_RELEASE != "" ] }
+
+# Migration procedure
+25-Migration From [PG15_LATEST_SPRINT] To [PG16_LATEST_SPRINT]:
+  <<: *test-case
+  stage: migration_from_pg15_latest_sprint_to_pg16_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG15_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PG16_LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $PG16_LATEST_SPRINT != "" && $LATEST_SUPPL_SPRINT != "" && $PG15_LATEST_SPRINT != "" ] }
+
+Report:
+  image: ${PYTHON_IMAGE}
+  tags:
+    - ''
+  when: manual
+  stage: create_report
+  script:
+    - python3 ${REPORT_SCRIPT} --pipeline_id="${CI_PIPELINE_ID}" --token="${GIT_TOKEN}" --webex-room-id="${WEBEX_CI_ROOM_ID}" --webex-token="${WEBEX_CI_TOKEN}" --versions="PG15_LATEST_SPRINT=${PG15_LATEST_SPRINT},PG16_LATEST_SPRINT=${PG16_LATEST_SPRINT},LATEST_SUPPL_SPRINT=${LATEST_SUPPL_SPRINT},PG15_PREVIOUS_SPRINT=${PG15_PREVIOUS_SPRINT},PG16_PREVIOUS_SPRINT=${PG16_PREVIOUS_SPRINT},PREVIOUS_SUPPL_SPRINT=${PREVIOUS_SUPPL_SPRINT},PG15_N1_RELEASE=${PG15_N1_RELEASE},N1_SUPPL_RELEASE=${N1_SUPPL_RELEASE},PG15_N2_RELEASE=${PG15_N2_RELEASE},N2_SUPPL_RELEASE=${N2_SUPPL_RELEASE}"
+  artifacts:
+    paths:
+      - "*.html"

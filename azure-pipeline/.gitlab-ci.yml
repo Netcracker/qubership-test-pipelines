@@ -1,0 +1,252 @@
+variables:
+  CCI_INTEGRATION: "true"
+  IGNORE_ERRORS: "true"
+  # Value should be in format: Infra <Release_number> Sprint <Sprint_number>. https://cci.qubership.org/project/project-view/2
+  RELEASE: "Infra 2024.3 Sprint 4 LTS"
+
+  #Clean or Rolling Update
+  DEPLOY_MODE: Clean
+
+stages:
+  - get_versions_from_cci
+  - start_aks
+  - deploy_monitoring
+  - deploy_postgres_opensearch_zookeeper
+  - deploy_rabbit_logging_kafka
+  - deploy_mongo_clickhouse_mistral_redis
+  - deploy_streaming_consul_cassandra
+  - deploy_arango_jaeger_profiler
+  - stop_aks
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+    - chmod +x $KUBECTL
+    - echo "$KUBECONFIG" > kubeconfig.env
+    - export KUBECONFIG=/builds/qa-group/azure-pipeline/kubeconfig.env
+    - chmod +x ./scripts/get_version.sh
+
+.test-case: &test-case
+  image: ${PYTHON_IMAGE}
+  tags:
+    - ''
+  allow_failure: true
+  when: manual
+  # when: on_success
+
+include:
+  - local: 'configuration/azure_specific_configuration.yml'
+  - local: 'configuration/services_specific.yml'
+
+CCI Integration:
+  <<: *test-case
+  stage: get_versions_from_cci
+  script:
+    - python3 "${CCI_INTEGRATION_SCRIPT}" --release="${RELEASE}" --user="${CCI_USER}" --password="${CCI_PASSWORD}" --ignore_errors="${IGNORE_ERRORS}";
+    - cat .env_cci
+  artifacts:
+    paths:
+      - ./.env_cci
+  only: { variables: [ $CCI_INTEGRATION == "true" ] }
+
+Azure Start AKS Cluster:
+  <<: *test-case
+  stage: start_aks
+  script:
+    - apk add curl
+    - chmod +x ./scripts/trigger_func_azure_cloud.sh
+    - ./scripts/trigger_func_azure_cloud.sh start $AZURE_START_TOKEN
+    - sleep 5m
+  when: manual
+
+1-Deploy Monitoring Components To Azure:
+  <<: *test-case
+  stage: deploy_monitoring
+  script:
+    - |
+      if [ "$DEPLOY_MODE" == "Clean" ]; then
+        chmod +x ./scripts/clean_vm_objects.sh;
+        ./scripts/clean_vm_objects.sh;
+      fi
+    - source ./scripts/get_version.sh "Monitoring"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_monitoring.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="MONITORING:${VERSION}" --project="${PREFIX}-${Monitoring_ns}" --deploy-mode="${DEPLOY_MODE}" --request-type="post"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Monitoring_ns}" --timeout="1800"
+  only: { variables: [ $Monitoring_install == "true" ] }
+
+2-Deploy PostgreSQL Components To Azure:
+  <<: *test-case
+  stage: deploy_postgres_opensearch_zookeeper
+  script:
+    - source ./scripts/get_version.sh "Postgres"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_postgres.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="postgres-services:${VERSION}" --project="${PREFIX}-${Postgres_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Postgres_ns}" --timeout="1800"
+  only: { variables: [ $Postgres_install == "true" ] }
+
+3-Deploy OpenSearch Components To Azure:
+  <<: *test-case
+  stage: deploy_postgres_opensearch_zookeeper
+  script:
+    - source ./scripts/get_version.sh "Opensearch"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_opensearch.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="opensearch-service:${VERSION}" --project="${PREFIX}-${Opensearch_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Opensearch_ns}" --timeout="1800"
+  only: { variables: [ $Opensearch_install == "true" ] }
+
+4-Deploy Zookeeper Components To Azure:
+  <<: *test-case
+  stage: deploy_postgres_opensearch_zookeeper
+  script:
+    - source ./scripts/get_version.sh "Zookeeper"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_zookeeper.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="zookeeper-service:${VERSION}" --project="${PREFIX}-${Zookeeper_ns}" --deploy-mode="${DEPLOY_MODE}" --request-type="post"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Zookeeper_ns}" --timeout="1800"
+  only: { variables: [ $Zookeeper_install == "true" ] }
+
+5-Deploy RabbitMQ Components To Azure:
+  <<: *test-case
+  stage: deploy_rabbit_logging_kafka
+  script:
+    - source ./scripts/get_version.sh "Rabbit"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_rabbit.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="rabbitmq:${VERSION}" --project="${PREFIX}-${Rabbit_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Rabbit_ns}" --timeout="1800"
+  only: { variables: [ $Rabbit_install == "true" ] }
+
+6-Deploy Logging Components To Azure:
+  <<: *test-case
+  #prerequisites: to start logging-vm
+  stage: deploy_rabbit_logging_kafka
+  script:
+    - source ./scripts/get_version.sh "Logging"
+    - echo FINAL $service version $VERSION;
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_logging.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="logging-service:${VERSION}" --project="${PREFIX}-${Logging_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Logging_ns}" --timeout="1800"
+  only: { variables: [ $Logging_install == "true" ] }
+
+7-Deploy Kafka Components To Azure:
+  <<: *test-case
+  stage: deploy_rabbit_logging_kafka
+  script:
+    - source ./scripts/get_version.sh "Kafka"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_kafka.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="kafka:${VERSION}" --project="${PREFIX}-${Kafka_ns}" --deploy-mode="${DEPLOY_MODE}" --request-type="post"
+    - source ./scripts/get_version.sh "Kafka_services"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_kafka.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="kafka-services:${VERSION}" --project="${PREFIX}-${Kafka_ns}" --deploy-mode="Rolling Update" --request-type="post"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Kafka_ns}" --timeout="1800"
+  only: { variables: [ $Kafka_install == "true" ] }
+
+8-Deploy Mongo Components To Azure:
+  <<: *test-case
+  stage: deploy_mongo_clickhouse_mistral_redis
+  script:
+    - source ./scripts/get_version.sh "Mongo"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_mongo.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="mongodb:${VERSION}" --project="${PREFIX}-${Mongo_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Mongo_ns}" --timeout="1800"
+  only: { variables: [ $Mongo_install == "true" ] }
+
+9-Deploy Clickhouse Components To Azure:
+  <<: *test-case
+  stage: deploy_mongo_clickhouse_mistral_redis
+  script:
+    - |
+      if [ "$DEPLOY_MODE" == "Clean" ]; then
+        chmod +x ./scripts/clean_clickhouse_objects.sh;
+        ./scripts/clean_clickhouse_objects.sh ${Clickhouse_ns};
+      fi
+    - source ./scripts/get_version.sh "Clickhouse"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_clickhouse.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="clickhouse:${VERSION}" --project="${PREFIX}-${Clickhouse_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - source ./scripts/get_version.sh "Clickhouse_services"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_clickhouse.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="clickhouse-services:${VERSION}" --project="${PREFIX}-${Clickhouse_ns}" --deploy-mode="Rolling Update"
+    #- python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Clickhouse_ns}" --timeout="1800"
+  only: { variables: [ $Clickhouse_install == "true" ] }
+
+10-Deploy Mistral Components To Azure:
+  <<: *test-case
+  stage: deploy_mongo_clickhouse_mistral_redis
+  script:
+    - source ./scripts/get_version.sh "Mistral"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_mistral.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="mistral:${VERSION}" --project="${PREFIX}-${Mistral_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Mistral_ns}" --timeout="1800"
+  only: { variables: [ $Mistral_install == "true" ] }
+
+11-Deploy Redis Components To Azure:
+  <<: *test-case
+  stage: deploy_mongo_clickhouse_mistral_redis
+  script:
+    - source ./scripts/get_version.sh "Redis"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_redis.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="dbaas-redis:${VERSION}" --project="${PREFIX}-${Redis_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Redis_ns}" --timeout="1800"
+  only: { variables: [ $Redis_install == "true" ] }
+
+12-Deploy Streaming Components To Azure:
+  <<: *test-case
+  stage: deploy_streaming_consul_cassandra
+  script:
+    - source ./scripts/get_version.sh "Streaming"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_streaming.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="streaming-service:${VERSION}" --project="${PREFIX}-${Streaming_ns}" --deploy-mode="${DEPLOY_MODE}"
+    #- python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Streaming_ns}" --timeout="1800"
+  only: { variables: [ $Streaming_install == "true" ] }
+
+13-Deploy Consul Components To Azure:
+  <<: *test-case
+  stage: deploy_streaming_consul_cassandra
+  script:
+    - source ./scripts/get_version.sh "Consul"
+    - python3 "${DEPLOY_SCRIPT_APP}"  -f "./configuration/infra_deploy_templates/clean_deploy_k8s_consul.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="consul-service:${VERSION}" --project="${PREFIX}-${Consul_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Consul_ns}" --timeout="1800"
+  only: { variables: [ $Consul_install == "true" ] }
+
+14-Deploy Cassandra Components To Azure:
+  <<: *test-case
+  stage: deploy_streaming_consul_cassandra
+  script:
+    - source ./scripts/get_version.sh "Cassandra"
+    - python3 "${DEPLOY_SCRIPT_APP}"  -f "./configuration/infra_deploy_templates/clean_deploy_k8s_cassandra.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="CASSANDRA:${VERSION}" --project="${PREFIX}-${Cassandra_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - source ./scripts/get_version.sh "Cassandra_services"
+    - python3 "${DEPLOY_SCRIPT_APP}"  -f "./configuration/infra_deploy_templates/clean_deploy_k8s_cassandra.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="cassandra-services:${VERSION}" --project="${PREFIX}-${Cassandra_ns}" --deploy-mode="Rolling Update"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Cassandra_ns}" --timeout="1800"
+  only: { variables: [ $Cassandra_install == "true" ] }
+
+15-Deploy Arango Components To Azure:
+  <<: *test-case
+  stage: deploy_arango_jaeger_profiler
+  script:
+    - source ./scripts/get_version.sh "Arango"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_arango.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="arangodb-operator:${VERSION}" --project="${PREFIX}-${Arango_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Arango_ns}" --timeout="1800"
+  only: { variables: [ $Arango_install == "true" ] }
+
+16-Deploy Jaeger Components With Opensearch To Azure:
+  <<: *test-case
+  stage: deploy_arango_jaeger_profiler
+  script:
+    - source ./scripts/get_version.sh "Jaeger"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_jaeger_with_opensearch.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="jaeger:${VERSION}" --project="${PREFIX}-${Jaeger_ns_opensearch}" --deploy-mode="${DEPLOY_MODE}" --request-type="post"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Jaeger_ns_opensearch}" --timeout="1800"
+  only: { variables: [ $Jaeger_install == "true" ] }
+
+17-Deploy Jaeger Components With Cassandra To Azure:
+  <<: *test-case
+  stage: deploy_arango_jaeger_profiler
+  script:
+    - source ./scripts/get_version.sh "Jaeger"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_jaeger_with_cassandra.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="jaeger:${VERSION}" --project="${PREFIX}-${Jaeger_ns_cassandra}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 "${CHECK_TEST_RESULT}" --kubeconfig="${KUBECONFIG}" --namespace="${Jaeger_ns_cassandra}" --timeout="1800"
+  only: { variables: [ $Jaeger_install == "true" ] }
+
+18-Deploy Profiler Components To Azure:
+  <<: *test-case
+  stage: deploy_arango_jaeger_profiler
+  script:
+    - source ./scripts/get_version.sh "Profiler"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./configuration/infra_deploy_templates/clean_deploy_k8s_profiler.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_TOKEN}" --job-name="${JOB_NAME}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="Cloud-Diagnostic-Toolset:${VERSION}" --project="${PREFIX}-${Profiler_ns}" --deploy-mode="${DEPLOY_MODE}"
+    - python3 ./scripts/profiler_tests.py --url="${PROFILER_TEST_INGRESS}" --kubeconfig="${KUBECONFIG}" --namespace="${Profiler_ns}"
+  only: { variables: [ $Profiler_install == "true" ] }
+
+Azure Stop AKS Cluster:
+  <<: *test-case
+  stage: stop_aks
+  script:
+    - apk add curl
+    - chmod +x ./scripts/trigger_func_azure_cloud.sh
+    - ./scripts/trigger_func_azure_cloud.sh stop $AZURE_STOP_TOKEN
+  when: manual

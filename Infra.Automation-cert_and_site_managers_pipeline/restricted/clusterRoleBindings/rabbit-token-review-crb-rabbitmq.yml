@@ -1,0 +1,17 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: token-review-crb-rabbitmq
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: rabbitmq
+    meta.helm.sh/release-namespace: rabbitmq
+subjects:
+  - kind: ServiceAccount
+    name: rabbitmq-operator
+    namespace: rabbitmq
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:auth-delegator

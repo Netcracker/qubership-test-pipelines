@@ -1,0 +1,69 @@
+|
+  name=rabbitmq-service;
+  loglevel=INFO;
+  rabbitmqPrometheusMonitoring=true;
+  operator='
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      cpu: 100m
+      memory: 100Mi
+  ';
+  rabbitmq='
+  runAsUser: 5000
+  fsGroup: 5000
+  hostpath_configuration: false
+  validate_state: false
+  clean_rabbitmq_pvs: false
+  auto_reboot: true
+  ingress:
+    enabled: true
+    host: rabbitmq.azureclpl.qubership.org
+  custom_params:
+    rabbitmq_vm_memory_high_watermark: 90%
+    rabbitmq_default_user: admin
+    rabbitmq_default_password: ''
+  replicas: 3
+  resources:
+    requests:
+      cpu: 250m
+      memory: 550Mi
+    limits:
+      cpu: 700m
+      memory: 850Mi
+    storageclass: default
+    storage: 1024Mi
+  enabledPlugins:
+    - rabbitmq_prometheus
+  perQueueMetrics: true
+  ';
+  backupDaemon='
+  enabled: true
+  storageClass: azurefile-csi-nfs
+  storage: 1Gi
+  securityContext:
+    runAsUser: 5000
+    fsGroup: 5000
+  ';
+  tests='
+  runAsUser: 5000
+  runTests: true
+  runTestsOnly: false
+  timeout: 900
+  tags: smokeORbackup
+  waitTestResultOnJob: true
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 400m
+  ';
+  statusProvisioner='
+  podReadinessTimeout: 600
+  ';
+  ESCAPE_SEQUENCE=true;
+  

@@ -1,0 +1,72 @@
+|
+  postgresUser=psqladmin;
+  postgresPassword='';
+  externalDataBase='
+  type: azure
+  project: cloudplatform
+  instance: psqlcloudplatform
+  port: 5432
+  region: us-east
+  connectionName: psqlcloudplatform15.postgres.database.azure.com
+  applyGrafanaDashboard: true
+  authSecretName: azure-config
+  secret:
+    create: true
+    secretContents:
+      config.json: >
+        {"tenantId": "88ceb8ab-7983-4e26-b989-45db8530aa99",
+        "subscriptionId": "51aea1eb-2a19-4202-94cf-422dc4ba4bbf", "clientId":
+        "638df935-4295-4f57-94bb-32a5f471df2c", "clientSecret":
+        "" }
+  ';
+  patroni='
+  install: false
+  ';
+  tls='
+  enabled: false
+  ';
+  metricCollector='
+  install: true
+  pgHost: psqlcloudplatform15.postgres.database.azure.com
+  prometheusMonitoring: true
+  applyGrafanaDashboard: true
+  metricsProfile: dev
+  resources:
+    requests:
+      cpu: 260m
+      memory: 500Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  ';
+  backupDaemon='
+  install: true
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+    requests:
+      cpu: 140m
+      memory: 275Mi
+  storage:
+    type: ephemeral
+  ';
+  dbaas='
+  install: true
+  apiVersion: v2
+  pgHost: psqlcloudplatform15.postgres.database.azure.com
+  multiUsers: true
+  ';
+  tests='
+  install: true
+  runTestScenarios: basic
+  ';
+  INTERNAL_TLS_ENABLED=false;
+  ESCAPE_SEQUENCE=true;
+  DISABLE_CRD=false;
+  NC_CH_SLEEP_TIME=30;
+  NC_DBAAS_ADAPTER_WAIT_TIMEOUT=900s;
+  

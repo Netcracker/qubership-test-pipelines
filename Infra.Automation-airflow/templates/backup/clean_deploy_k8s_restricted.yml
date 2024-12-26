@@ -1,0 +1,177 @@
+|
+  webserverSecretKey=''
+  fernetKey=''
+  ingress='
+  enabled: true
+  web:
+    hosts:
+      - web2.fenrir-k8s.openshift.sdntest.qubership.org
+  flower:
+    hosts:
+      - flower2.fenrir-k8s.openshift.sdntest.qubership.org
+  ';
+  customPreinstallJob='
+  enabled: true
+  resources: {}
+  env: []
+  serviceAccount:
+    create: false
+  role:
+    create: false
+  command: null
+  args:
+    - python
+    - /bin/createdb.py
+  extraSecrets:
+    postgres-conn:
+      stringData: |
+        POSTGRES_HOST: {{ .Values.data.metadataConnection.host }}
+        POSTGRES_PORT: "{{ .Values.data.metadataConnection.port }}"
+        DB_NAME: {{ .Values.data.metadataConnection.db }}
+        DB_USER: {{ .Values.data.metadataConnection.user }}
+        POSTGRES_PASSWORD: {{ .Values.data.metadataConnection.pass }}
+        POSTGRES_ADMIN_USER: postgres
+        POSTGRES_ADMIN_PASSWORD: ''
+  extraEnvFrom: |
+    - secretRef:
+        name: 'postgres-conn'
+  ';
+  data='
+  metadataSecretName: ~
+  brokerUrlSecretName: ~ 
+  metadataConnection:
+    user: airflowdb
+    pass: ''
+    host: pg-patroni.postgres.svc
+    port: "5432"
+    db: airflow_regr
+    sslmode: disable
+    protocol: postgresql
+  brokerUrl: redis://default:airflow@airflow2.redis.svc:6379/2
+  ;
+  workers='
+  replicas: 1
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 1500m
+      memory: 1.5Gi
+  terminationGracePeriodSeconds: 60
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClassName: local-path
+  command: null
+  ';  
+  serviceMonitorStatsd='
+  enabled: true
+  ';
+  statsd='
+  enabled: true
+  ';
+  scheduler='
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 1.51Gi
+    requests:
+      cpu: 800m
+      memory: 1Gi
+  ';
+  images='
+  airflow:
+    pullPolicy: Always
+  flower:
+    pullPolicy: Always
+  ';
+  flower='
+  enabled: false
+  replicas: 1
+  ';
+  webserver='
+  replicas: 1
+  resources:
+    requests:
+      cpu: 1100m
+      memory: 1.1Gi
+  defaultUser:
+    enabled: true
+    role: Admin
+    username: admin
+    email: admin@example.com
+    firstName: admin
+    lastName: user
+    password: ''
+  ';
+  platformAirflowMonitoring=true;
+  serviceMonitor='
+  enabled: true
+  selector:
+    app.kubernetes.io/component: monitoring
+  path: /admin/metrics
+  interval: 30s
+  ';
+  prometheusRule='
+  enabled: true
+  kubeAlerts: true
+  additionalLabels:
+    app.kubernetes.io/component: monitoring
+  groups:
+    - name: general.rules
+      rules:
+        - alert: Scheduler CPU load
+          annotations:
+            description: Scheduler CPU load is over 35%
+            summary: Scheduler has CPU load over 35%
+          expr: max(rate(container_cpu_usage_seconds_total{namespace="airflow",pod=~".*-scheduler-.*"}[1m])) / max(kube_pod_container_resource_limits_cpu_cores{exported_namespace="airflow",exported_pod=~".*-scheduler-.*"}) > 0.35
+          for: 1m
+          labels:
+            severity: major
+        - alert: Scheduler CPU load
+          annotations:
+            description: Scheduler CPU load is over 55%
+            summary: Scheduler has CPU load over 55%
+          expr: max(rate(container_cpu_usage_seconds_total{namespace="airflow",pod=~".*-scheduler-.*"}[1m])) / max(kube_pod_container_resource_limits_cpu_cores{exported_namespace="airflow",exported_pod=~".*-scheduler-.*"}) > 0.55
+          for: 1m
+          labels:
+            severity: major
+        - alert: Scheduler CPU load
+          annotations:
+            description: Scheduler CPU load is over 75%
+            summary: Scheduler has CPU load over 75%
+          expr: max(rate(container_cpu_usage_seconds_total{namespace="airflow",pod=~".*-scheduler-.*"}[1m])) / max(kube_pod_container_resource_limits_cpu_cores{exported_namespace="airflow",exported_pod=~".*-scheduler-.*"}) > 0.75
+          for: 1m
+          labels:
+            severity: major
+  ';
+  airflowLocalSettings={{ .Files.Get "nc_files/nc_platform_logging_config.py" }};
+  config='
+  core:
+    security: kerberos
+  webserver:
+    expose_config: "True"
+  api:
+    auth_backend: airflow.api.auth.backend.basic_auth
+  logging:
+    nc_logging_type: stdoutfilesystem
+    remote_logging: '{{- ternary "True" "False" .Values.elasticsearch.enabled }}'
+    colored_console_log: "False"
+    task_log_reader: task
+    audit_log_level: INFO
+    logging_config_class: airflow_local_settings.NC_DEFAULT_LOGGING_CONFIG
+    task_log_prefix_template: "[DAG_ID]:'{{ \"{{ ti.dag_id }}\" }}' [TASK_ID]:'{{
+      \"{{ ti.task_id }}\" }}' [TIMESTAMP]:'{{ \"{{ ts }}\" }}' [TRY_NUMBER]:'{{
+      \"{{ ti.try_number }}\" }}'"
+  ';
+  airflow-integration-tests='
+    enabled: false
+  ';
+  statusProvisioner='
+    lifetimeAfterCompletion: 60
+  ';
+  
+  ESCAPE_SEQUENCE=true;
+  DISABLE_CRD=true;

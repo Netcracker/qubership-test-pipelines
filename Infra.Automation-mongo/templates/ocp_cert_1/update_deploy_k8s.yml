@@ -1,0 +1,28 @@
+|
+  mongodb='
+  install: true
+  dataResources:
+    limits:
+      memory: 1Gi
+      cpu: 500m
+    requests:
+      memory: 255Mi
+      cpu: 105m
+  storage:
+    storageClasses:
+      - csi-cinder-sc-delete
+  ';
+  backup='
+  install: true
+  storage:
+    storageClasses:
+      - csi-cinder-sc-delete
+  ';
+  dbaas='
+  install: true
+  ';
+  robotTests='
+  install: true
+  tags: backupORsmokeORdbaasORdbaas backupORha
+  ';
+  ESCAPE_SEQUENCE=true;

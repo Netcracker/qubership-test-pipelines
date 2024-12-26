@@ -1,0 +1,52 @@
+|
+  configurator='
+  install: false
+  ';
+  streamingPlatform='
+  install: true
+  replicas: 1
+  storageReplicationFactor: 2
+  advancedConfiguration:
+    deleteTopicsOnConnectorDeletion: "true"
+  ingress:
+    host: streaming-platform-streaming.cloudplatform-eks.k8s.qubership.org
+  bootstrapServers: aws
+  kafkaEnableSsl: true
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 45%
+      maxSurge: 0
+  ';
+  global='
+  name: streaming
+  podReadinessTimeout: 900
+  secrets:
+    streamingPlatform:
+      username: admin
+      password: ''
+      kafkaAuthUsername: null
+      kafkaAuthPassword: null
+    monitoring:
+      prometheusUsername: prometheus
+      prometheusPassword: ''
+  ';
+  vaultSecretManagement='
+  enabled: false
+  ';
+  monitoring='
+  install: true
+  monitoringType: prometheus
+  installDashboard: true
+  securityContext:
+    runAsUser: 1000
+  ';
+  operator='
+  replicas: 1
+  connectorConfigurator:
+    enabled: true
+    watchNamespace: ""
+    reconcilePeriod: 100
+  ';
+  ESCAPE_SEQUENCE=true;
+  

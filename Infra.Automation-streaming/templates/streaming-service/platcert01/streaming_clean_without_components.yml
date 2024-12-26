@@ -1,0 +1,34 @@
+|
+  global='
+  name: streaming
+  secrets:
+    streamingPlatform:
+      username: admin
+      password: ''
+      kafkaAuthUsername: client
+      kafkaAuthPassword: client
+    monitoring:
+      prometheusUsername: prometheus
+      prometheuspassword: ''
+  tls:
+    enabled: true
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      durationDays: 365
+      clusterIssuerName: qa-clusterissuer
+  ';
+  streamingPlatform='
+  install: true
+  replicas: 1
+  ingress:
+    host: streaming-platform-streaming-service.platcert01.kubernetes.sdntest.qubership.org
+  bootstrapServers: kafka.kafka-service:9092
+  ';
+  monitoring='
+  install: false
+  ';
+  integrationTests='
+  install: false
+  ';
+  ESCAPE_SEQUENCE=true;

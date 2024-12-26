@@ -1,0 +1,10 @@
+dbaas:
+  install: true
+  aggregator:
+    physicalDatabaseIdentifier: redis-helm
+    dbaasAggregatorRegistrationAddress: {{env_pipe_dbaas_aggregator_registration_address}}
+
+monitoringAgent:
+  install: true
+robotTests:
+  install: true

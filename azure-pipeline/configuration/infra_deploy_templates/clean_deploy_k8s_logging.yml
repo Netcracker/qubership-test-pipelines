@@ -1,0 +1,48 @@
+|
+  createClusterAdminEntities=true;
+  name=logging-service;
+  containerRuntimeType=containerd;
+  cloudEventsReader='
+  install: true
+  resources:
+    requests:
+      cpu: 30m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  ';
+  fluentd='
+  graylogHost: ***.***.***.***
+  graylogPort: 12201
+  install: true
+  securityResources:
+    name: logging-fluentd
+    install: true
+  systemLogging: true
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 10m
+    limits:
+      memory: 512Mi
+      cpu: 500m
+  ';
+  integrationTests='
+  install: true
+  service:
+    name: logging-integration-tests-runner
+  tags: smoke
+  externalGraylogServer: "true"
+  graylogHost: ***.***.***.***
+  graylogPort: "80"
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 10m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+  ';
+  ESCAPE_SEQUENCE=true;
+  

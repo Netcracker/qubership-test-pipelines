@@ -1,0 +1,16 @@
+LATEST_SPRINT: ''
+LATEST_SUPPL_SPRINT: mongodb-services:release-2024.4-0.2.0-charts-20241111.072445-2-RELEASE
+PREVIOUS_SPRINT: ''
+PREVIOUS_SUPPL_SPRINT: mongodb-services:release-2024.4-0.1.0-charts-20241021.150856-2-RELEASE
+N1_RELEASE:
+N2_RELEASE:
+LATEST_SPRIN_TAG: "release-2024.4-2.1.0"
+PREVIOUS_SPRINT_TAG: ''
+
+# Version for migration from 4.4 to 7.0
+MONGO_5: ""
+MONGO_6: ""
+MONGO_7: ""
+# Vault
+VAULT_URL: http://vault-operator.apps.qa-kubernetes.openshift.sdntest.qubership.org/
+VAULT_TOKEN: "root"

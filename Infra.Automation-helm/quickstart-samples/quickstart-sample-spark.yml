@@ -1,0 +1,11 @@
+sparkJobNamespace: spark-apps
+securityContext:
+  runAsUser: 185
+webhook:
+  enable: true
+spark-history-server:
+  enabled: true
+spark-integration-tests:
+  enabled: true
+  sparkOperatorDeploymentName: spark-operator
+  sparkAppsServiceAccount: spark-operator-spark

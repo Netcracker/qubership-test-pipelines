@@ -1,0 +1,151 @@
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+  JENKINS_URL: ''
+  JOB_NAME_CLEAN: ''
+  JOB_NAME_UPDATE: ''
+  JENKINS_USER: ''
+  JENKINS_PASS: ''
+  CLOUD_HOST: ${FENRIR_KUBER_HOST}
+  CLOUD_TOKEN: ${FENRIR_KUBER_TOKEN}
+  PREFIX: fenrir
+  HIVE_PROJECT: hive-metastore
+  TRINO_PROJECT: trino
+  CREDS_IN_DEPLOYER: ''
+  DEPLOY_SCRIPT_APP: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  UPGRADE_CRD_SCRIPT: /scripts/external_platform_library_builtIn/upgrade_crd.py
+  APPLY_RESOURCES_SCRIPT: /scripts/external_platform_library_builtIn/prepare_restricted_resources.py
+  CLEAN_NS_SCRIPT: /scripts/external_platform_library_builtIn/clean_namespace.py
+# Manifests
+  HIVE_APP_MANIFEST: hive-metastore:3.1.3_0.6.0-delivery_paas_deployer-20240620.080103-1-RELEASE
+  HIVE_APP_MANIFEST_OLD: hive-metastore:3.1.3_0.5.0-delivery_paas_deployer-20240327.125044-1-RELEASE
+  HIVE_APP_MANIFEST_RELEASE_N_1: hive-metastore:3.1.3_0.5.0-delivery_paas_deployer-20240327.125044-1-RELEASE
+  HIVE_APP_MANIFEST_RELEASE_N_2: hive-metastore:3.1.3_0.3.0-delivery_paas_deployer-20231218.093625-1-RELEASE
+  TRINO_APP_MANIFEST: trino:449_0.1.0-delivery_paas_deployer-20240624.095952-1-RELEASE
+  TRINO_APP_MANIFEST_OLD: trino:440_1.1.0-delivery_paas_deployer-20240514.094649-1-RELEASE
+  TRINO_APP_MANIFEST_RELEASE_N_1: trino:440_1.0.0-delivery_paas_deployer-20240325.114212-2-RELEASE
+  TRINO_APP_MANIFEST_RELEASE_N_2: trino:434_1.0.0-delivery_paas_deployer-20231218.111041-1-RELEASE
+
+
+stages:
+  - hive_clean_previous_sprint
+  - hive_upgrade_to_new_version
+  - hive_clean_new_version_minimal
+  - hive_clean_new_version
+  - hive_clean_new_version_tls
+  - trino_clean_previous_sprint
+  - trino_upgrade_to_new_version
+  - trino_clean_new_version_minimal
+  - trino_clean_new_version_w_o
+  - trino_clean_new_version
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+    - apk add openssh-client --update-cache --repository ${REPOSITORY_URL} --allow-untrusted
+
+.test-case-hive: &test-case-hive
+  image: ${PYTHON_IMAGE}
+  extends: .check_state_logs_script.run
+  variables:
+    CLOUD_HOST: ${FENRIR_KUBER_HOST}
+    CLOUD_TOKEN: ${FENRIR_KUBER_TOKEN}
+    ARRAY_NS: ${HIVE_PROJECT}
+    ALLOWED_RESTARTS_AMOUNT: 1
+    ALLOWED_ERROR_LOGS_AMOUNT: 100
+  tags:
+    - ''
+  allow_failure: true
+  when: manual
+
+.test-case-trino: &test-case-trino
+  image: ${PYTHON_IMAGE}
+  extends: .check_state_logs_script.run
+  variables:
+    CLOUD_HOST: ${FENRIR_KUBER_HOST}
+    CLOUD_TOKEN: ${FENRIR_KUBER_TOKEN}
+    ARRAY_NS: ${TRINO_PROJECT}
+    ALLOWED_RESTARTS_AMOUNT: 1
+    ALLOWED_ERROR_LOGS_AMOUNT: 100
+  tags:
+    - ''
+  allow_failure: true
+  when: manual
+
+
+include:
+  - project: 'PROD.Platform.HA/Infra.Automation'
+    ref: pipe_image
+    file: 'api2.yaml'
+
+# Hive-metastore
+1-Hive Clean Previous Sprint:
+  <<: *test-case-hive
+  stage: hive_clean_previous_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/hive_clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${HIVE_APP_MANIFEST_OLD}" --project="${PREFIX}-${HIVE_PROJECT}" --deploy-mode="Clean Deploy"
+
+2-Hive Upgrade To Current Version:
+  <<: *test-case-hive
+  stage: hive_upgrade_to_new_version
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/hive_clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${HIVE_APP_MANIFEST}" --project="${PREFIX}-${HIVE_PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+3-Hive Clean New Version Minimal Parameters:
+  <<: *test-case-hive
+  stage: hive_clean_new_version_minimal
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/hive_minimal.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${HIVE_APP_MANIFEST}" --project="${PREFIX}-${HIVE_PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+4-Hive Clean New Version:
+  <<: *test-case-hive
+  stage: hive_clean_new_version
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/hive_clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${HIVE_APP_MANIFEST}" --project="${PREFIX}-${HIVE_PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+5-Hive Clean New Version TLS:
+  <<: *test-case-hive
+  stage: hive_clean_new_version_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/hive_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${HIVE_APP_MANIFEST}" --project="${PREFIX}-${HIVE_PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+# Trino
+6-Trino Clean Previous Sprint:
+  <<: *test-case-trino
+  stage: trino_clean_previous_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/trino_clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${TRINO_APP_MANIFEST_OLD}" --project="${PREFIX}-${TRINO_PROJECT}" --deploy-mode="Clean Deploy"
+
+7-Trino Upgrade To Current Version:
+  <<: *test-case-trino
+  stage: trino_upgrade_to_new_version
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/trino_clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${TRINO_APP_MANIFEST}" --project="${PREFIX}-${TRINO_PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+8-Trino Clean New Version Minimal Parameters:
+  <<: *test-case-trino
+  stage: trino_clean_new_version_minimal
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/trino_minimal.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${TRINO_APP_MANIFEST}" --project="${PREFIX}-${TRINO_PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+9-Trino Clean New Version W/O Parameters:
+  <<: *test-case-trino
+  stage: trino_clean_new_version_w_o
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/trino_w_o_parameters.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${TRINO_APP_MANIFEST}" --project="${PREFIX}-${TRINO_PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+10-Trino Clean New Version:
+  <<: *test-case-trino
+  stage: trino_clean_new_version
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/trino_clean.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${TRINO_APP_MANIFEST}" --project="${PREFIX}-${TRINO_PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]

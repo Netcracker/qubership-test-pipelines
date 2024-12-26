@@ -1,0 +1,55 @@
+|
+  global='
+  name: "zookeeper"
+  secrets: 
+    zooKeeper: 
+      adminUsername: "zadmin"
+      adminPassword: ''
+      clientUsername: "zclient"
+      clientPassword: ''
+    backupDaemon: 
+      username: "admin"
+      password: ''
+  ';
+  operator='
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  zooKeeper='
+  replicas: 3
+  storage:
+    className:
+      - custom-csi-cinder-delete
+    size: 1Gi
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  monitoring='
+    install: true
+    securityContext: 
+      runAsUser: 1000
+      fsGroup: 1000
+  ';
+  backupDaemon='
+    install: true
+    backupStorage:
+      persistentVolumeType: "standalone"
+      storageClass: custom-csi-cinder-delete
+      volumeSize: 1Gi
+    securityContext: 
+      runAsUser: 1000
+      fsGroup: 1000
+  ';
+  integrationTests='
+  install: true
+  tags: "zookeeper_crudORzookeeper_images"
+  timeout: 600
+  pvType: "standalone"
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  ESCAPE_SEQUENCE=true;
+   

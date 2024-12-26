@@ -1,0 +1,43 @@
+|
+  name=logging-service-test;
+  createClusterAdminEntities=false;
+  logLevel=debug;
+  fluentd='
+  install: false
+  ';
+  fluentd='
+  install: false
+  systemLogType: varlogsyslog
+  graylogHost: graylog-service.logging-operator.svc
+  graylogPort: 12201
+  ';
+  fluentbit='
+  install: true
+  graylogHost: <graylog_host>
+  graylogPort: 12201
+  systemLogging: true
+  systemLogType: varlogsyslog
+  securityResources:
+    name: logging-fluentbit
+    install: false
+  aggregator:
+    install: false
+    graylogHost: graylog-service.logging-operator.svc
+    graylogPort: 12201
+  ';
+  cloudEventsReader='
+  install: true
+  ';
+  integrationTests='
+  install: true
+  service:
+    name: logging-integration-tests-runner
+  tags: smoke
+  externalGraylogServer: "true"
+  graylogHost: <graylog_host>
+  graylogProtocol: https
+  graylogPort: "443"
+  ';
+  ESCAPE_SEQUENCE=true;
+  
+  DISABLE_CRD=true;

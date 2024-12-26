@@ -1,0 +1,14 @@
+PG15_LATEST_SPRINT: ''
+PG16_LATEST_SPRINT: ''
+LATEST_SUPPL_SPRINT: postgres-services:release-2024.4-1.42.0-delivery_postgres-services-20241223.005014-1
+PG15_PREVIOUS_SPRINT: ''
+PG16_PREVIOUS_SPRINT: ''
+PREVIOUS_SUPPL_SPRINT: postgres-services:release-2024.4-1.41.0-delivery_postgres-services-20241205.043518-5-RELEASE
+PG15_N1_RELEASE: ''
+N1_SUPPL_RELEASE: postgres-services:release-2024.3-1.38.1-delivery_postgres-services-20241021.072945-3-RELEASE
+PG15_N2_RELEASE: ''
+N2_SUPPL_RELEASE: postgres-services:1.35.8-delivery_postgres-services-20241014.091033-5-RELEASE
+
+### ----------------------------------------- Tags For Restricted ------------------------------------------ ###
+LATEST_SPRINT_TAG: ''
+PREVIOUS_SPRINT_TAG: ''

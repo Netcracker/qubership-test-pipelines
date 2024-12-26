@@ -1,0 +1,114 @@
+|
+  global='
+  name: streaming
+  podReadinessTimeout: 900
+  secrets:
+    streamingPlatform:
+      username: admin
+      password: ''
+      kafkaAuthUsername: client
+      kafkaAuthPassword: client
+    monitoring:
+      prometheusUsername: prometheus
+      prometheusPassword: ''
+    configurator:
+      serverUsername: admin
+      serverPassword: admin
+      elasticsearchUsername: admin
+      elasticsearchPassword: admin
+      postgresUsername: postgres
+      postgresPassword: ''
+      mongoUsername: root
+      mongoPassword: root
+  ';
+  operator='
+  replicas: 1
+  connectorConfigurator:
+    enabled: true
+    watchNamespace: ""
+    reconcilePeriod: 100
+  ';
+  streamingPlatform='
+  install: true
+  replicas: 1
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: ''
+                operator: In
+                values:
+                  - streaming-platform
+          topologyKey: kubernetes.io/hostname
+  tolerations:
+    - key: ''
+      operator: Equal
+      value: value1
+      effect: NoExecute
+      tolerationSeconds: 3600
+  bootstrapServers: kafka.kafka-service:9092
+  kafkaEnableSsl: false
+  ';
+  monitoring='
+  install: true
+  monitoringType: prometheus
+  installDashboard: true
+  securityContext:
+    runAsUser: 1000
+  ';
+  vaultSecretManagement='
+  enabled: false
+  ';
+  integrationTests='
+  secrets:
+    postgres:
+      user: postgres
+      password: ''
+    oracleSource:
+      user: oracle
+      password: ''
+    oracleSink:
+      user: oracle
+      password: ''
+    elasticsearch:
+      user: admin
+      password: ''
+    mongo:
+      user: root
+      password: ''
+    opensearch:
+      user: admin
+      password: ''
+  waitForResult: true
+  timeout: 1200
+  service:
+    name: streaming-integration-tests-runner
+  install: false
+  tags: smoke
+  url: cloudplatform-aks01-c3da779e.hcp.eastus.azmk8s.io:443
+  streamingPlatformIsManagedByOperator: true
+  kafkaOsProject: kafka-service
+  kafkaHost: kafka
+  kafkaPort: 9092
+  streamingPlatformHost: streaming-platform
+  streamingPlatformPort: 8083
+  postgresHost: null
+  postgresPort: 5432
+  postgresDb: postgres
+  mongoHost: mongos.mongo
+  mongoPort: 27017
+  mongoDb: public
+  elasticsearchHost: null
+  elasticsearchHttpPort: null
+  opensearchUrl: http://opensearch.opensearch:9200
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 400m
+  ';
+  ESCAPE_SEQUENCE=true;
+  

@@ -1,0 +1,40 @@
+|
+  global='
+  name: "zookeeper"
+  secrets: 
+    zooKeeper: 
+      adminUsername: "zadmin"
+      adminPassword: ''
+      clientUsername: "zclient"
+      clientPassword: ''
+  ';
+  operator='
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  zooKeeper='
+  replicas: 3
+  storage:
+    className:
+      - csi-cinder-sc-delete
+    size: 1Gi
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  monitoring='
+    install: false
+  ';
+  backupDaemon='
+    install: false
+  ';
+  integrationTests='
+  install: true
+  tags: "zookeeper_crudORzookeeper_images"
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  ESCAPE_SEQUENCE=true;
+  

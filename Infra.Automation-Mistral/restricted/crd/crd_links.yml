@@ -1,0 +1,5 @@
+id: 10869
+tag: "main"
+old-tag: "release-2024.2-002-2"
+crds:
+  - "deployments/charts/mistral-operator/crds"

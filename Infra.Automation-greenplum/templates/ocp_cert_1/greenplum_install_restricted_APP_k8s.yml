@@ -1,0 +1,111 @@
+|
+  name=greenplumdb-service;
+  operator='
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+  resources:
+    limits:
+      cpu: 59m
+      memory: 59Mi
+    requests:
+      cpu: 49m
+      memory: 49Mi
+  logLevel: logical
+  ';
+  greenplum='
+  install: true
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+  postgreSQLParams:
+    - shared_buffers= 256MB
+    - effective_cache_size= 768MB
+    - work_mem= 4MB
+    - maintenance_work_mem= 64MB
+    - max_connections= 100
+    - max_prepared_transactions= 100
+  main:
+    storage:
+      type: pv
+      size: 5Gi
+      storageClass: csi-cinder-sc-delete
+    count: 2
+    resources:
+      requests:
+        cpu: 500m
+        memory: 500Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+  segment:
+    storage:
+      type: pv
+      size: 5Gi
+      storageClass: csi-cinder-sc-delete
+    count: 2
+    resources:
+      requests:
+        cpu: 120m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+  ';
+  metricCollector='
+  install: true
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+  prometheusRules:
+    backupAlertThreshold: 5
+    backupWarningThreshold: 20
+    alertDelay: 3m
+    maxLastBackupAge: 86400
+    locksThreshold: 500
+    queryMaxTimeThreshold: 3600
+  collectionInterval: 59
+  telegrafPluginTimeout: 59
+  metricsProfile: prod
+  prometheusMonitoring: true
+  applyGrafanaDashboard: true
+  ';
+  backupDaemon='
+  install: true
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+  walArchiving: false
+  evictionPolicy: 1h/delete
+  resources:
+    limits:
+      cpu: 259m
+      memory: 519Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  storage:
+    type: pv
+    size: 5Gi
+    storageClass: csi-cinder-sc-delete
+  ';
+  dbaas='
+  install: true
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+  pgHost: pg-gpdb
+  dbName: postgres
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+  resources:
+    limits:
+      cpu: "1"
+      memory: 909Mi
+    requests:
+      cpu: 256m
+      memory: 900Mi
+  ';
+  ESCAPE_SEQUENCE=true;
+  
+  DISABLE_CRD=true;

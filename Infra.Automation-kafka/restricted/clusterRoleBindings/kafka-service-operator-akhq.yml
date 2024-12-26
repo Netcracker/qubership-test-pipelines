@@ -1,0 +1,12 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: kafka-service-operator-akhq
+subjects:
+  - kind: ServiceAccount
+    name: kafka-service-operator
+    namespace: kafka-service
+roleRef:
+  kind: ClusterRole
+  name: kafka-service-operator-akhq
+  apiGroup: rbac.authorization.k8s.io

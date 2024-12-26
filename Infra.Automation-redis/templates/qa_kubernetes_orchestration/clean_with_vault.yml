@@ -1,0 +1,20 @@
+|
+  dbaas='
+    install: true
+    aggregator:
+      physicalDatabaseIdentifier: redis    
+  ';
+  vaultRegistration='
+    enabled: true
+    url: 
+    token:
+  ';
+  vaultDBEngine='
+    enabled: true
+  ';
+  monitoringAgent='
+    install: true
+  ';
+  robotTests='
+    install: true
+  ';

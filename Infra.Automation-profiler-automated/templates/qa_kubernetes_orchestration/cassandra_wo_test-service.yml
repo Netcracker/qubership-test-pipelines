@@ -1,0 +1,8 @@
+| 
+  
+  CASSANDRA_USERNAME=cassandra;
+  CASSANDRA_KEYSPACE=profiler;
+  CASSANDRA_PORT=9042;
+  CASSANDRA_PASSWORD='';
+  CASSANDRA_HOST=cassandra.cassandra-operations.svc;
+  CASSANDRA_DC=datacenter1;

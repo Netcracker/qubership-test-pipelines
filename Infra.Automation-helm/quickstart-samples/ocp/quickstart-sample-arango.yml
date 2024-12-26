@@ -1,0 +1,17 @@
+arangoDb:
+  agency:
+    storage:
+      type: provisioned
+      storageClass: {{env_pipe_storage_class}}
+  dbServers:
+    storage:
+      type: provisioned
+      storageClass: {{env_pipe_storage_class}}
+backupDaemon:
+  install: false
+metricCollector:
+  install: true
+dbaas:
+  install: true
+tests:
+  install: true

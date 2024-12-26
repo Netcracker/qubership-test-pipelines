@@ -1,0 +1,368 @@
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+  JOB_NAME_CLEAN: ''
+  JOB_NAME_UPDATE: ''
+  DEPLOY_SCRIPT_APP: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  UPGRADE_CRD_SCRIPT: /scripts/external_platform_library_builtIn/upgrade_crd.py
+  APPLY_RESOURCES_SCRIPT: /scripts/external_platform_library_builtIn/prepare_restricted_resources.py
+  CLEAN_NS_SCRIPT: /scripts/external_platform_library_builtIn/clean_namespace.py
+  PATCH_NS: /scripts/external_platform_library_builtIn/patch_ns_restricted.py
+  REPORT_SCRIPT: /scripts/external_platform_library_builtIn/report.py
+  ### ----------------------------------- Cloud specific configuration ----------------------------------- ###
+  ### ----------------------------------- ocp_cert_1 configuration --------------------------------------- ###
+#  PREFIX: ocp_cert_1
+#  JENKINS_URL: ''
+#  JENKINS_USER: ''
+# JENKINS_PASS: ''
+#  CREDS_IN_DEPLOYER: ''
+#  RESTRICTED_USER_APP: ''
+#  CLOUD_HOST_OVERALL: ${OCP_CERT_1_HOST}
+#  CLOUD_TOKEN_OVERALL: ${OCP_CERT_1_TOKEN}
+#  PROJECT: mongo-test
+  ### ----------------------------------- platcert01 configuration ----------------------------------- ###
+#  PREFIX: platcert01
+#  JENKINS_URL: ''
+#  JENKINS_USER: ''
+#  JENKINS_PASS: ''
+#  CREDS_IN_DEPLOYER: ''
+#  RESTRICTED_USER_APP: ''
+#  CLOUD_HOST_OVERALL: ${PLATCERT01_HOST}
+#  CLOUD_TOKEN_OVERALL: ${PLATCERT01_TOKEN_ADMIN}
+#  PROJECT: mongo
+  ### ----------------------------------- qa_kubernetes configuration ----------------------------------- ###
+  PREFIX: qa_kubernetes_orchestration
+  JENKINS_URL: ''
+  JENKINS_USER: ''
+  JENKINS_PASS: ''
+  CREDS_IN_DEPLOYER: ''
+  RESTRICTED_USER_APP: ''
+  CLOUD_HOST_OVERALL: ${QA_KUBER_HOST}
+  CLOUD_TOKEN_OVERALL: ${QA_KUBER_TOKEN}
+  PROJECT: mongo
+  ### ----------------------------------------- Manifests ------------------------------------------ ###
+  LATEST_SPRINT: ''
+  LATEST_SUPPL_SPRINT: mongodb-services:release-2024.4-0.2.0-charts-20241111.072445-2-RELEASE
+  PREVIOUS_SPRINT: ''
+  PREVIOUS_SUPPL_SPRINT: mongodb-services:release-2024.4-0.1.0-charts-20241021.150856-2-RELEASE
+  N1_RELEASE: ''
+  N2_RELEASE: ''
+  LATEST_SPRIN_TAG: "release-2024.4-2.1.0"
+  PREVIOUS_SPRINT_TAG: ''
+  # Version for migration
+  MONGO_6: ""
+  # Vault
+  VAULT_URL: http://vault-operator.apps.qa-kubernetes.openshift.sdntest.qubership.org/
+  VAULT_TOKEN: "root"
+
+
+stages:
+  - clean_previous_sprint
+  - upgrade_from_previous_sprint_to_latest_sprint
+  - clean_latest
+  - update_to_latest_sprint_diff_params
+  - clean_previous_for_migration
+  - update_to_mongo6
+  - update_to_mongo7
+  - clean_previous_restricted
+  - update_to_latest_restricted
+  - clean_latest_restricted
+  - clean_n1_release
+  - upgrade_from_n1_to_latest_sprint
+  - clean_n2_release
+  - upgrade_from_n2_to_latest_sprint
+  - clean_latest_not_default_creds
+  - clean_latest_custom_config
+  - clean_latest_backup_s3
+  - clean_latest_without_dbaas_or_backup
+  - clean_latest_single_schema
+  - clean_latest_arbiter_schema
+  - clean_latest_simple_schema
+  - upgrade_from_non_tls_to_tls
+  - clean_latest_tls
+  # - clean_latest_vault
+  # - clean_latest_vault_tls
+  - clean_latest_multiusers
+  - create_report
+
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+    - echo CLOUD_HOST $CLOUD_HOST_OVERALL
+
+
+.test-case: &test-case
+  image: ${PYTHON_IMAGE}
+  extends: .check_state_logs_script.run
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: ${PROJECT}
+    ALLOWED_RESTARTS_AMOUNT: 1
+    ALLOWED_ERROR_LOGS_AMOUNT: 10000
+    LOGS_TO_DISPLAY: 50
+  tags:
+    - ''
+  allow_failure: true
+  #when: manual
+  when: on_success
+
+.clean_ns: &clean_ns
+  - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --cr-list="mongoservices"
+  - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --cr-list="mongoservices"
+
+include:
+  - project: 'PROD.Platform.HA/Infra.Automation'
+    ref: pipe_image
+    file: 'api2.yaml'
+
+1-Clean [PREVIOUS_SPRINT]:
+  <<: *test-case
+  stage: clean_previous_sprint
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT} ${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+
+2-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_previous_sprint_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+3-Clean [LATEST_SPRINT]:
+  <<: *test-case
+  stage: clean_latest
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+4-Upgrade [LATEST_SPRINT] Diff Params:
+  <<: *test-case
+  stage: update_to_latest_sprint_diff_params
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/update_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+# Migration
+4.1-Clean [PREVIOUS_SPRINT] Before Migration:
+  <<: *test-case
+  stage: clean_previous_for_migration
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT} ${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $MONGO_6 != "" ] }
+
+4.2-Update From [PREVIOUS_SPRINT] To [MONGO_6]:
+  <<: *test-case
+  stage: update_to_mongo6
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${MONGO_6}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $MONGO_6 != "" ] }
+
+4.3-Update From [MONGO_6] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: update_to_mongo7
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $MONGO_6 != "" ] }
+
+# Restricted
+5-Clean [PREVIOUS_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_previous_restricted
+  script:
+    - *clean_ns
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${PREVIOUS_SPRINT_TAG}"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PREVIOUS_SPRINT} ${PREVIOUS_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+6-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: update_to_latest_restricted
+  script:
+    - python3 "${UPGRADE_CRD_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --crd-tag="${LATEST_SPRIN_TAG}"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+7-Clean [LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_latest_restricted
+  script:
+    - *clean_ns
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${LATEST_SPRIN_TAG}"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+# Releases
+8-Clean [N1_RELEASE]:
+  <<: *test-case
+  stage: clean_n1_release
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N1_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+
+9-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_n1_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+10-Clean [N2_RELEASE]:
+  <<: *test-case
+  stage: clean_n2_release
+  script:
+    - *clean_ns
+    - python3 "${PATCH_NS}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --namespace="${PROJECT}" --label="add"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N2_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${PATCH_NS}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --namespace="${PROJECT}" --label="remove"
+
+11-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_n2_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+# Custom
+12-Clean [LATEST_SPRINT] Not Default Creds:
+  <<: *test-case
+  stage: clean_latest_not_default_creds
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/not_default_creds.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+13-Clean [LATEST_SPRINT] Custom Config:
+  <<: *test-case
+  stage: clean_latest_custom_config
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/custom_configuration.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+14-Clean [LATEST_SPRINT] Backuper On S3:
+  <<: *test-case
+  stage: clean_latest_backup_s3
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/backup_and_s3.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+15-Clean [LATEST_SPRINT] Without Dbaas Or Backup:
+  <<: *test-case
+  stage: clean_latest_without_dbaas_or_backup
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/without_dbaas_or_backup.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+16-Clean [LATEST_SPRINT] Single Schema:
+  <<: *test-case
+  stage: clean_latest_single_schema
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/single_schema.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+17-Clean [LATEST_SPRINT] Arbiter Schema:
+  <<: *test-case
+  stage: clean_latest_arbiter_schema
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/arbiter_schema.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+18-Clean [LATEST_SPRINT] Simple Schema:
+  <<: *test-case
+  stage: clean_latest_simple_schema
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/simple_schema.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+19-Upgrade [LATEST_SPRINT] From Non-TLS To TLS:
+  <<: *test-case
+  stage: upgrade_from_non_tls_to_tls
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_deploy_k8s.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/deploy_with_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+20-Clean [LATEST_SPRINT] TLS:
+  <<: *test-case
+  stage: clean_latest_tls
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/deploy_with_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+
+# Dont use Legacy solution
+# 21-Clean [LATEST_SPRINT] Vault:
+#   <<: *test-case
+#   stage: clean_latest_vault
+#   script:
+#     - |
+#       apk add curl
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/static-roles/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_operator_backup
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/static-roles/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_operator_dbaas
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/static-roles/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_operator_restore
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/static-roles/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_operator_root
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/config/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_mongodb 
+#       token="${VAULT_TOKEN}"
+#       vurl="${VAULT_URL}"
+#       sed -i 's,token:*,token:\ '$token',' ./templates/${PREFIX}/deploy_with_vault.yml
+#       sed -i 's,url:*,url:\ '$vurl',' ./templates/${PREFIX}/deploy_with_vault.yml
+#       python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/deploy_with_vault.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+#   only: { variables: [ $VAULT_TOKEN != "" ] }
+
+# 22-Clean [LATEST_SPRINT] Vault TLS:
+#   <<: *test-case
+#   stage: clean_latest_vault_tls
+#   script:
+#     - |
+#       apk add curl
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/static-roles/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_operator_backup
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/static-roles/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_operator_dbaas
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/static-roles/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_operator_restore
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/static-roles/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_operator_root
+#       curl --header "X-Vault-Token: ${VAULT_TOKEN}" --request DELETE ${VAULT_URL}/v1/database/config/nc-qa-kubernetes.openshift.sdntest.qubership.org_mongo_mongodb 
+#       token="${VAULT_TOKEN}"
+#       vurl="${VAULT_URL}"
+#       sed -i 's,token:*,token:\ '$token',' ./templates/${PREFIX}/deploy_with_tls_and_vault.yml
+#       sed -i 's,url:*,url:\ '$vurl',' ./templates/${PREFIX}/deploy_with_tls_and_vault.yml
+#       python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/deploy_with_tls_and_vault.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+#   only: { variables: [ $VAULT_TOKEN != "" ] }
+
+
+23-Clean [LATEST_SPRINT] multiUsers:
+  <<: *test-case
+  stage: clean_latest_multiusers
+  script:
+    - *clean_ns
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/${PREFIX}/clean_with_multiusers.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${LATEST_SUPPL_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+Report:
+  image: ${PYTHON_IMAGE}
+  tags:
+    - ''
+  when: on_success
+  stage: create_report
+  script:
+    - python3 ${REPORT_SCRIPT} --pipeline_id="${CI_PIPELINE_ID}" --token="${GIT_TOKEN}" --webex-room-id="${WEBEX_CI_ROOM_ID}" --webex-token="${WEBEX_CI_TOKEN}" --versions="LATEST_SPRINT=${LATEST_SPRINT}, PREVIOUS_SPRINT=${PREVIOUS_SPRINT},N1_RELEASE=${N1_RELEASE},N2_RELEASE=${N2_RELEASE},LATEST_SPRINT_TAG=${LATEST_SPRINT_TAG},PREVIOUS_SPRINT_TAG=${PREVIOUS_SPRINT_TAG}"
+  artifacts:
+    paths:
+      - "*.html"
+

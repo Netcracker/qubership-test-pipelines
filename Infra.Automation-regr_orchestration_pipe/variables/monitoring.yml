@@ -1,0 +1,29 @@
+#N2_RELEASE: ''
+#N1_RELEASE: ''
+#PREVIOUS_SPRINT: ''
+#LATEST_SPRINT: ''
+#
+#LATEST_SPRIN_TAG: "release-2024.4-0.74.1"
+#PREVIOUS_SPRINT_TAG: ''
+#N1_RELEASE_TAG: ''
+#N2_RELEASE_TAG: ''
+## Scheme for testing: cleans and upgrades from n-1, n-2 releases;
+#N1_RELEASES: "true"
+#N2_RELEASES: "true"
+#
+#DEPLOY_TIMEOUT: 1
+
+N2_RELEASE:
+N1_RELEASE:
+PREVIOUS_SPRINT:
+LATEST_SPRINT: ''
+
+LATEST_SPRINT_TAG:
+PREVIOUS_SPRINT_TAG:
+N1_RELEASE_TAG:
+N2_RELEASE_TAG:
+# Scheme for testing: cleans and upgrades from n-1, n-2 releases;
+N1_RELEASES: "true"
+N2_RELEASES: "true"
+
+DEPLOY_TIMEOUT: 1

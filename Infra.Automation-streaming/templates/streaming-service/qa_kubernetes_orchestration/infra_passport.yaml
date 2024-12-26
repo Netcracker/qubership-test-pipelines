@@ -1,0 +1,3 @@
+|
+  global.secrets.streamingPlatform.kafkaAuthUsername="client";
+  global.secrets.streamingPlatform.kafkaAuthPassword="client";

@@ -1,0 +1,9 @@
+LATEST_SPRINT: ''
+PREVIOUS_SPRINT: ''
+N1_RELEASE: ''
+N2_RELEASE: ''
+# For upgrade from previous 3-party version
+PREVIOUS_3PARTY: ''
+# or ""
+LATEST_SPRINT_TAG: ''
+PREVIOUS_SPRINT_TAG: ''

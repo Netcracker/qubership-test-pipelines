@@ -1,0 +1,24 @@
+s3:
+  endpoint: {{env_pipe_s3_minio}}
+  accessKey: {{env_pipe_s3_keyId}}
+  secretKey: {{env_pipe_s3_keySecret}}
+  warehouseDir: s3a://hive/warehouse
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  seccompProfile:
+    type: RuntimeDefault
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  runAsUser: 10002
+hive:
+  user: hive_chart
+  password: ''
+  db: metastore_test
+postgres:
+  user: postgres
+  password: ''
+  host: pg-patroni.postgres-helm.svc
+  port: 5432
+  driver: org.postgresql.Driver

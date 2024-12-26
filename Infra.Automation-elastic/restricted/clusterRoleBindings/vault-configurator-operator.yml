@@ -1,0 +1,17 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: vault-configurator-operator
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: vault-operator
+    meta.helm.sh/release-namespace: vault-test
+subjects:
+  - kind: ServiceAccount
+    name: vault-operator-service-account
+    namespace: vault-test
+roleRef:
+  kind: ClusterRole
+  name: vault-configurator-operator
+  apiGroup: rbac.authorization.k8s.io

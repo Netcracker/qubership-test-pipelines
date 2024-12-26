@@ -1,0 +1,65 @@
+|
+  name=greenplumdb-service;
+  operator='
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+  resources:
+    limits:
+      cpu: 59m
+      memory: 59Mi
+    requests:
+      cpu: 49m
+      memory: 49Mi
+  logLevel: logical
+  ';
+  greenplum='
+  install: true
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+  postgreSQLParams:
+    - shared_buffers= 256MB
+    - effective_cache_size= 768MB
+    - work_mem= 4MB
+    - maintenance_work_mem= 64MB
+    - max_connections= 100
+    - max_prepared_transactions= 100
+  main:
+    storage:
+      type: pv
+      size: 5Gi
+      storageClass: custom-csi-cinder-delete
+    count: 2
+    resources:
+      requests:
+        cpu: 500m
+        memory: 500Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+  segment:
+    storage:
+      type: pv
+      size: 5Gi
+      storageClass: custom-csi-cinder-delete
+    count: 2
+    resources:
+      requests:
+        cpu: 120m
+        memory: 256Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+  ';
+  metricCollector='
+  install: false
+  ';
+  backupDaemon='
+  install: false
+  ';
+  dbaas='
+  install: false
+  ';
+  ESCAPE_SEQUENCE=true;
+  

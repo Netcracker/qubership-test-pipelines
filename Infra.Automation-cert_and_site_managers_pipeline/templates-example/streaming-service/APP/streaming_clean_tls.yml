@@ -1,0 +1,69 @@
+|
+  global='
+  name: streaming
+  secrets:
+    streamingPlatform:
+      username: admin
+      password: ''
+      kafkaAuthUsername: client
+      kafkaAuthPassword: client
+    monitoring:
+      prometheusUsername: prometheus
+      prometheusPassword: ''
+  tls:
+    enabled: true
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      durationDays: 365
+      clusterIssuerName: qa-issuer-self
+  ';
+  streamingPlatform='
+  install: true
+  replicas: 3
+  ingress:
+    host: streaming-platform-streaming-service.qa-kubernetes.openshift.sdntest.qubership.org
+  bootstrapServers: kafka.kafka-service:9092
+  tls:
+    enabled: true
+    caCertOnly: true
+  ';
+  monitoring='
+  install: true
+  securityContext:
+    runAsUser: 1000
+  ';
+  integrationTests='
+  secrets:
+    postgres:
+      user: postgres
+      password: ''
+    mongo:
+      user: root
+      password: ''
+    oracleSource:
+      user: oracle
+      password: ''
+    elasticsearch:
+      user: admin
+      password: ''
+    opensearch:
+      user: admin
+      password: ''
+  install: true
+  tags: smoke
+  postgresHost: pg-patroni.postgres
+  postgresPort: 5432
+  postgresDb: postgres
+  elasticsearchHost: elasticsearch.elasticsearch-cluster
+  elasticsearchHttpPort: 9200
+  elasticsearchTransportPort: 9300
+  mongoHost: null
+  mongoPort: 27017
+  mongoDb: public
+  oracleSourceHost: ***.***.***.***
+  oracleSourcePort: 1521
+  oracleSourceDb: xe
+  opensearchUrl: https://opensearch.opensearch:9200
+  ';
+  ESCAPE_SEQUENCE=true;

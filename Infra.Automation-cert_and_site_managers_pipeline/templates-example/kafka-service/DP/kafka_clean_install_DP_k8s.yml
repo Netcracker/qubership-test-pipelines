@@ -1,0 +1,51 @@
+DEPLOYMENT_PARAMETERS: |
+  global:
+    name: kafka
+    secrets:
+      kafka:
+        adminUsername: 'admin'
+        adminPassword: ''
+        clientUsername: 'client'
+        clientPassword: ''
+        zookeeperClientUsername: 'zclient'
+        zookeeperClientPassword: ''
+      monitoring:
+        prometheusUsername: 'prometheus'
+        prometheusPassword: 'prometheus'
+      akhq:
+        defaultUsername: 'admin'
+        defaultPassword: 'admin'
+  kafka:
+    install: true
+    replicas: 3
+    securityContext:
+      runAsUser: 1000
+      fsGroup: 1000
+    storage:
+      size: 1Gi
+      className:
+        - csi-cinder-sc-delete
+    zookeeperConnect: zookeeper.zookeeper-service-qa:2181
+  monitoring:
+    install: true
+    securityContext:
+      runAsUser: 1000
+  akhq:
+    install: true
+    securityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+  backupDaemon:
+    install: true
+    storage: 1Gi
+    storageClass: csi-cinder-sc-delete
+    backupSchedule: "0 0 * * *"
+    evictionPolicy: "0/1d,7d/delete"
+    securityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+  integrationTests:
+    install: true
+    waitForResult: true
+    tags: "kafka_crud"
+

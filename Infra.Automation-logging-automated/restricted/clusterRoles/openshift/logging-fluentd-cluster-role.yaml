@@ -1,0 +1,30 @@
+apiVersion: rbac.authorization.k8s.io/v1 
+kind: ClusterRole
+metadata:
+  name: logging-fluentd-cluster-role
+  labels:
+    name: logging-fluentd-cluster-role
+    app.kubernetes.io/name: logging-fluentd-cluster-role
+    app.kubernetes.io/component: fluentd
+    app.kubernetes.io/part-of: logging
+    app.kubernetes.io/managed-by: manually
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+      - namespaces
+      - events
+      - endpoints
+    verbs:
+      - get
+      - list
+      - watch
+  - verbs:
+      - use
+    apiGroups:
+      - security.openshift.io
+    resources:
+      - securitycontextconstraints
+    resourceNames:
+      - logging-fluentd

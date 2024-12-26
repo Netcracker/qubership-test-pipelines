@@ -1,0 +1,61 @@
+|
+  jaeger='
+  serviceName: jaeger-service
+  prometheusMonitoring: true
+  prometheusMonitoringDashboard: true
+  storage:
+    type: cassandra
+  ';
+  cassandraSchemaJob='
+  install: true
+  host: cassandra.cassandra.svc
+  keyspace: jaeger
+  username: admin
+  password: ''
+  datacenter: dc1
+  mode: prod
+  ';
+  agent='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ';
+  collector='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ';
+  hotrod='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  agent:
+    host: jaeger-app-agent.jaeger-cassandra.svc
+    port: 6831
+  ingress:
+    install: true
+    host: hotrod-jaeger-cassandra.azureclpl.qubership.org
+  ';
+  query='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ingress:
+    install: true
+    host: query-jaeger-cassandra.azureclpl.qubership.org
+  ';
+  integrationTests='
+  install: true
+  tags: smoke
+  jaegerServiceName: jaeger-service
+  ';
+  statusProvisioner='
+  enabled: true
+  lifetimeAfterCompletion: 100
+  ';
+  ESCAPE_SEQUENCE=true;
+  

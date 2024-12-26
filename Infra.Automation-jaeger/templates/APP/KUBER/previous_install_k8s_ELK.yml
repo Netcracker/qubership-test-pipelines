@@ -1,0 +1,60 @@
+| 
+    jaeger='
+    storage:
+      type: elasticsearch
+    ';
+    elasticsearch='
+    client:
+      username: admin
+      password: ''
+      url: opensearch.opensearch-cloud.svc:9200
+    indexCleaner:
+      install: true
+      securityContext:
+        runAsUser: 2000
+        fsGroup: 2000
+    lookback:
+      install: true
+      securityContext:
+        runAsUser: 2000
+        fsGroup: 2000
+    rollover:
+      install: true
+      securityContext:
+        runAsUser: 2000
+        fsGroup: 2000
+    ';
+    agent='
+    install: true
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+    ';
+    collector='
+    install: true
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+    ';
+    hotrod='
+    install: true
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+    agent:
+      host: jaeger-app-agent.jaeger.svc
+      port: 6831
+    ingress:
+      install: true
+      host: hotrod.qa-kubernetes.openshift.sdntest.qubership.org
+    ';
+    query='
+    install: true
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+    ingress:
+      install: true
+      host: jaeger.qa-kubernetes.openshift.sdntest.qubership.org
+    ';
+    ESCAPE_SEQUENCE=true;

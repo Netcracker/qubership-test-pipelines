@@ -1,0 +1,141 @@
+SERVICE_NAME: "airflow"
+ARTIFACT_DESCRIPTOR_VERSION: "***.***.***.***-1"
+webserverSecretKey:''
+fernetKey:''
+executor: KubernetesExecutor
+ingress:
+  enabled: true
+  web:
+    hosts:
+      - web3.airflow-helm.{{env_pipe_domain_name}}
+customPreinstallJob:
+  enabled: true
+  serviceAccount:
+    create: false
+  role:
+    create: false
+  command: null
+  args:
+    - python
+    - /bin/createdb.py
+  extraSecrets:
+    postgres-conn:
+      stringData: |
+        POSTGRES_HOST: {{ .Values.data.metadataConnection.host }}
+        POSTGRES_PORT: "{{ .Values.data.metadataConnection.port }}"
+        DB_NAME: {{ .Values.data.metadataConnection.db }}
+        DB_USER: {{ .Values.data.metadataConnection.user }}
+        POSTGRES_PASSWORD: {{ .Values.data.metadataConnection.pass }}
+        POSTGRES_ADMIN_USER: postgres
+        POSTGRES_ADMIN_PASSWORD: ''
+  extraEnvFrom: |
+    - secretRef:
+        name: 'postgres-conn'
+data:
+  metadataSecretName: null
+  brokerUrlSecretName: null
+  metadataConnection:
+    user: airflowdb
+    pass: ''
+    host: pg-patroni.postgres-helm.svc
+    port: "5432"
+    db: airflowdb7779
+    sslmode: disable
+    protocol: postgresql
+  brokerUrl: redis://default:airflow@airflow.redis-helm.svc:6379/2
+workers:
+  replicas: 1
+  command: null
+  resources:
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+webserver:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 1.5Gi
+    requests:
+      cpu: 1000m
+      memory: 1Gi
+  defaultUser:
+    enabled: true
+    role: Admin
+    username: admin
+    email: admin@example.com
+    firstName: admin
+    lastName: user
+    password: ''
+platformAirflowMonitoring: true
+airflowLocalSettings: '{{ .Files.Get "nc_files/nc_platform_logging_config.py" }}'
+config:
+  logging:
+    remote_logging: "False"
+    remote_base_log_folder: s3://source
+    remote_log_conn_id: test_s3
+    encrypt_s3_logs: "False"
+    logging_config_class: airflow_local_settings.NC_DEFAULT_LOGGING_CONFIG
+    nc_logging_type: stdout
+    task_log_reader: stdout_task
+  secrets:
+    backend: null
+  api:
+    auth_backend: airflow.api.auth.backend.basic_auth
+scheduler:
+  replicas: 1
+  resources:
+    limits:
+      cpu: 1500m
+      memory: 1.5Gi
+    requests:
+      cpu: 800m
+      memory: 1Gi
+enableBuiltInSecretEnvVars:
+  AIRFLOW__CORE__FERNET_KEY: true
+  AIRFLOW__CORE__SQL_ALCHEMY_CONN: true
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: true
+  AIRFLOW_CONN_AIRFLOW_DB: true
+  AIRFLOW__WEBSERVER__SECRET_KEY: true
+  AIRFLOW__CELERY__CELERY_RESULT_BACKEND: true
+  AIRFLOW__CELERY__RESULT_BACKEND: true
+  AIRFLOW__CELERY__BROKER_URL: true
+  AIRFLOW__ELASTICSEARCH__HOST: true
+  AIRFLOW__ELASTICSEARCH__ELASTICSEARCH_HOST: true
+extraSecrets:
+  git-credentials:
+    stringData: |
+      GITSYNC_USERNAME: 'CloudPlatformCIUser'
+      GITSYNC_PASSWORD: ''
+      GIT_SYNC_USERNAME: 'CloudPlatformCIUser'
+      GIT_SYNC_PASSWORD: ''   
+  dbaas-connection-params-main: null
+extraEnvFrom: null
+dags:
+  gitSync:
+    wait: 5
+    subPath: tests_dags_image/dags
+    repo: https://git.qubership.org/Services/airflow.git
+    branch: main
+    credentialsSecret: git-credentials
+    uid: null
+    enabled: true
+    maxFailures: 0
+    securityContexts:
+      container:
+        capabilities:
+          drop:
+            - ALL
+        allowPrivilegeEscalation: false
+integrationTests:
+  enabled: true
+  tags: smokeNOTpg_connection_dagORairflow_images
+  executorType: KubernetesExecutor
+statusProvisioner:
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 3000
+rbac:
+  create: true

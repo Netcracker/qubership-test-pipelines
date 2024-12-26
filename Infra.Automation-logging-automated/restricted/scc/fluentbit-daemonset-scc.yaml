@@ -1,0 +1,33 @@
+kind: SecurityContextConstraints
+apiVersion: security.openshift.io/v1
+priority: 3
+metadata:
+  name: logging-fluentbit
+allowPrivilegedContainer: true
+allowHostDirVolumePlugin: true
+runAsUser:
+  type: RunAsAny
+seLinuxContext:
+  type: RunAsAny
+fsGroup:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+users:
+  - system:serviceaccount:logging-operator:logging-fluentbit
+defaultAddCapabilities: []
+requiredDropCapabilities: []
+allowedCapabilities: []
+volumes:
+  - configMap
+  - downwardAPI
+  - emptyDir
+  - hostPath
+  - persistentVolumeClaim
+  - projected
+  - secret
+allowHostNetwork: false
+allowHostPorts: false
+allowHostPID: false
+allowHostIPC: false
+readOnlyRootFilesystem: false

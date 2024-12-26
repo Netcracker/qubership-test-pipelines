@@ -1,0 +1,29 @@
+arangoDb:
+  agency:
+    storage:
+      type: provisioned
+      storageClass: {{env_pipe_storage_class}}
+    securityContext:
+      runAsUser: 100600
+      fsGroup: 100600
+  dbServers:
+    securityContext:
+      runAsUser: 100600
+      fsGroup: 100600
+    storage:
+      type: provisioned
+      storageClass: {{env_pipe_storage_class}}
+backupDaemon:
+  install: false
+metricCollector:
+  install: true
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+dbaas:
+  install: true
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+tests:
+  install: true

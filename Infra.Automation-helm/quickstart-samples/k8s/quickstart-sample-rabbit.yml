@@ -1,0 +1,25 @@
+rabbitmqPrometheusMonitoring: true
+rabbitmq:
+  auto_reboot: true
+  resources:
+    storageclass: {{env_pipe_storage_class}}
+  ingress:
+    enabled: true
+    host: rabbitmq.rabbit-helm.{{env_pipe_domain_name}}
+  custom_params:
+    rabbitmq_default_user: admin
+    rabbitmq_default_password: ''
+  enabledPlugins:
+    - rabbitmq_prometheus
+  perQueueMetrics: true
+  securityContext:
+    fsGroup: 5000
+    runAsUser: 5000
+backupDaemon:
+  enabled: true
+  securityContext:
+    fsGroup: 5000
+    runAsUser: 5000
+  storageClass: {{env_pipe_storage_class}}
+tests:
+  runTests: true

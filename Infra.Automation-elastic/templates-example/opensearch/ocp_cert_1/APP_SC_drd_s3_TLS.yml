@@ -1,0 +1,108 @@
+|
+  global='
+  cloudIntegrationEnabled: false
+  tls:
+    enabled: true
+    generateCerts:
+      certProvider: cert-manager
+      clusterIssuerName: dev-clusterissuer
+  disasterRecovery:
+    mode: active
+    indicesPattern: ha_*
+    siteManagerEnabled: true
+    httpAuth:
+      enabled: true
+      smNamespace: site-manager
+      smServiceAccountName: sm-auth-sa
+      restrictedEnvironment: false
+  velero:
+    preHookBackupEnabled: true
+  ';
+  opensearch='
+  securityConfig:
+    authc:
+      basic:
+        username: admin
+        password: ''
+  securityContextCustom:
+    runAsUser: 1000
+    fsGroup: 1000
+  main:
+    resources:
+      requests:
+        cpu: 300m
+        memory: 2Gi
+      limits:
+        cpu: 700m
+        memory: 2Gi
+    javaOpts: -Xms1024m -Xmx1024m
+    persistence:
+      storageClass: csi-cinder-sc-delete
+      size: 2Gi
+  snapshots:
+    enabled: true
+    size: 2Gi
+    s3:
+      enabled: true
+      pathStyleAccess: true
+      url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org/
+      bucket: opensearch-ocp-dr
+      keyId: ''
+      keySecret: ''
+  client:
+    enabled: true
+    ingress:
+      enabled: true
+      hosts:
+        - opensearch-cluster.apps.ocp-cert-1.openshift.sdntest.qubership.org
+  ';
+  dashboards='
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: dashboard-opensearch-service.apps.ocp-cert-1.openshift.sdntest.qubership.org
+        paths:
+          - path: /
+  ';
+  dbaasAdapter='
+  enabled: false
+  dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
+  opensearchRepo: snapshots
+  opensearchRepoRoot: /usr/share/opensearch/snapshots
+  opensearchPort: 9200
+  opensearchProtocol: http
+  dbaasUsername: dbaas-adapter
+  dbaasPassword: ''
+  registrationAuthUsername: cluster-dba
+  registrationAuthPassword: ''
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  monitoring='
+  enabled: true
+  includeIndices: true
+  slowQueries:
+    enabled: true
+  ';
+  curator='
+  enabled: true
+  backupSchedule: 0 * * * *
+  evictionPolicy: 0/1d,7d/delete
+  username: backup
+  password: ''
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  integrationTests='
+  enabled: true
+  tags: smokeORbackupORdbaasORauthenticationORopensearch_imagesORha
+  ';
+  statusProvisioner='
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 2100
+  ';
+  ESCAPE_SEQUENCE=true;
+  

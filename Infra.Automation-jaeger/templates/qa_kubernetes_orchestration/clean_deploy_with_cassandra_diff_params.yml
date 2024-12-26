@@ -1,0 +1,79 @@
+| 
+  jaeger='
+  prometheusMonitoring: true
+  prometheusMonitoringDashboard: true
+  storage:
+    type: cassandra
+  ';
+  cassandraSchemaJob='
+  install: true
+  host: cassandra.cassandra-operations.svc
+  port: 9042
+  keyspace: jaeger
+  password: ''
+  username: cassandra
+  datacenter: dc1
+  mode: test
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ';
+  agent='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ';
+  collector='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  resources:
+    limits:
+      cpu: 1
+      memory: 200Mi
+    requests:
+      cpu: 101m
+      memory: 101Mi
+  ';
+  hotrod='
+  install: false
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  agent:
+    host: jaeger-agent.jaeger.svc
+    port: 6831
+  ingress:
+    install: true
+    host: hotrod-jaeger-test.qa-kubernetes.openshift.sdntest.qubership.org
+  ';
+  query='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ingress:
+    install: true
+    host: query-jaeger-test.qa-kubernetes.openshift.sdntest.qubership.org
+  resources:
+    requests:
+      cpu: 101m
+      memory: 121Mi
+    limits:
+      cpu: 208m
+      memory: 258Mi
+  ';
+  statusProvisioner='
+  lifetimeAfterCompletion: 100
+  podReadinessTimeout: 100
+  integrationTestsTimeout: 100
+  ';
+  integrationTests='
+  install: true
+  tags: smokeORha
+  statusWriting:
+    enabled: true
+  ';
+  ESCAPE_SEQUENCE=true;

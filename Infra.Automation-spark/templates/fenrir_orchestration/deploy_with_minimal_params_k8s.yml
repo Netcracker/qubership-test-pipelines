@@ -1,0 +1,26 @@
+|
+  spark='
+  jobNamespaces:
+    - spark-apps
+  ';
+  controller='
+  enable: true
+  batchScheduler:
+    enable: true
+    kubeSchedulerNames:
+      - volcano
+  ';
+  webhook='
+  enable: true
+  ';
+  spark-integration-tests='
+    enabled: true
+    sparkOperatorControllerDeploymentName: sparkoperator-spark-operator-controller
+    sparkOperatorWebhookDeploymentName: sparkoperator-spark-operator-webhook
+    sparkAppsServiceAccount: sparkapps-sa
+  ';
+  statusProvisioner='
+    lifetimeAfterCompletion: 60
+    integrationTestsTimeout: 3000
+  ';
+  HELM_RESOURCE_TIMEOUT=20m;

@@ -1,0 +1,465 @@
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+  JOB_NAME_CLEAN: ''
+  JOB_NAME_UPDATE: ''
+  DEPLOY_SCRIPT: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  UPGRADE_CRD_SCRIPT: /scripts/external_platform_library_builtIn/upgrade_crd.py
+  APPLY_RESOURCES_SCRIPT: /scripts/external_platform_library_builtIn/prepare_restricted_resources.py
+  CLEAN_NS_SCRIPT: /scripts/external_platform_library_builtIn/clean_namespace.py
+  PATCH_NS_SCRIPT: /scripts/external_platform_library_builtIn/patch_ns_restricted.py
+  REPORT_SCRIPT: /scripts/external_platform_library_builtIn/report.py
+
+### ----------------------------------- Cloud specific configuration ----------------------------------- ###
+### ----------------------------------- qa_kubernetes configuration ------------------------------------ ###
+#  PREFIX: qa_kubernetes_orchestration
+#  JENKINS_URL: ''
+#  JENKINS_USER: ''
+#  JENKINS_PASS: ''
+#  CREDS_IN_DEPLOYER: ''
+#  RESTRICTED_USER_APP: ''
+#  CLOUD_HOST_OVERALL: ${QA_KUBER_HOST}
+#  CLOUD_TOKEN_OVERALL: ${QA_KUBER_TOKEN}
+#  KUBECONFIG_OVERALL: ${QA_KUBER_KUBECONFIG}
+#  PROJECT: mistral
+#  CORE_PROJECT: ""
+
+  ### --------------------------------------- fenrir configuration --------------------------------------- ###
+  PREFIX: fenrir_orchestration
+  JENKINS_URL: ''
+  JENKINS_USER: ''
+  JENKINS_PASS: ''
+  CREDS_IN_DEPLOYER: ''
+  RESTRICTED_USER_APP: ''
+  CLOUD_HOST_OVERALL: ${FENRIR_KUBER_HOST}
+  CLOUD_TOKEN_OVERALL: ${FENRIR_KUBER_TOKEN}
+  KUBECONFIG_OVERALL: ${FENRIR_KUBECONFIG}
+  PROJECT: mistral
+  CORE_PROJECT: cloudcore
+
+### ----------------------------------- ocp_cert_1 configuration --------------------------------------- ###
+  # PREFIX: ocp_cert_1
+  # JENKINS_URL: ''
+  # JENKINS_USER: ''
+  # JENKINS_PASS: ''
+  # CREDS_IN_DEPLOYER: ''
+  # RESTRICTED_USER_APP: ''
+  # CLOUD_HOST_OVERALL: https://api.ocp-cert-1.openshift.sdntest.qubership.org:6443
+  # CLOUD_TOKEN_OVERALL:
+  # KUBECONFIG_OVERALL: ${OCP_CERT_1_KUBECONFIG}
+  # PROJECT: mistral
+  # CORE_PROJECT: ""
+
+### ----------------------------------------- Manifests ------------------------------------------ ###
+  PREVIOUS_SPRINT: ''
+  LATEST_SPRINT: ''
+  N1_RELEASE: ''
+  N2_RELEASE: ''
+  LATEST_SPRINT_TAG: ''
+  PREVIOUS_SPRINT_TAG: ''
+  CHECK_MISTAL_LITE: "false"
+  CHECK_TLS: "true"
+
+
+stages:
+  - get_kubeconfig
+  - uninstall_mistral
+  - rollingupdate_in_clean_namespace
+  - clean_previous_sprint
+  - upgrade_from_previous_to_latest
+  - clean_latest_sprint
+  - upgrade_to_latest_diff_params
+  - clean_n1_release
+  - upgrade_from_n1_to_latest
+  - clean_n2_release
+  - upgrade_from_n2_to_latest
+  - update_latest_sprint_tls
+  - clean_latest_sprint_tls
+  - clean_latest_sprint_without_components
+  - clean_previous_os
+  - upgrade_from_previous_to_latest_os
+  - clean_latest_os
+  - clean_previous_sprint_restricted
+  - update_from_previous_to_latest_restricted
+  - clean_latest_sprint_restricted
+  - uninstall_mistral_2
+  - install_previous_core
+  - upgrade_from_previous_to_latest_core
+  - uninstall_mistral_3
+  - install_latest_core
+  - create_report
+
+.create_new_db_name: &create_new_db_name
+  - now="$(date +"%y%m%d%H%M%S")"
+  - DB_NAME="mistral_regr_$now"
+  - echo "$DB_NAME" > db_name.txt
+  - echo "$(<db_name.txt)"
+
+.clear_namespace: &clear_namespace
+  - python3 "$CLEAN_NS_SCRIPT" --cloud-token="${CLOUD_TOKEN}" --cloud-host="$CLOUD_HOST" --cloud-namespace="$PROJECT"
+
+.update_template: &update_template
+  - DB_NAME=$(cat db_name.txt)
+  - db_name="$DB_NAME"
+  - sed -i 's,dbName\:.[a-z0-9\_\ \"]*,dbName\:\ "'$db_name'",' $TEMPLATE_FILE_NAME
+  - sed -i 's,vhost\:.[a-z0-9\_\ \"]*,vhost\:\ "'$db_name'",' $TEMPLATE_FILE_NAME
+  - echo "$DB_NAME"
+  - echo "$(<$TEMPLATE_FILE_NAME)"
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+    - apk add openssh-client --update-cache --repository ${REPOSITORY_URL} --allow-untrusted
+    - eval $(ssh-agent -s)
+    - echo "$FENRIR_SSH_KEY" | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo $PREFIX
+
+
+.test-case: &test-case
+  image: ${PYTHON_IMAGE}
+  extends: .check_state_logs_script.run
+  tags:
+    - ''
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: mistral
+    ALLOWED_ERROR_LOGS_AMOUNT: 200000
+  allow_failure: true
+  when: on_success
+  # when: manual
+  artifacts:
+    paths:
+      - db_name.txt
+    expire_in: 1 day
+    when: always
+
+include:
+  - project: 'PROD.Platform.HA/Infra.Automation'
+    ref: pipe_image
+    file: 'api2.yaml'
+
+kubernetes_get_kubeconfig:
+  extends: .test-case
+  stage: get_kubeconfig
+  script:
+    - KUBECONFIG=${KUBECONFIG_OVERALL}
+    - echo "$KUBECONFIG" > kubeconfig.env
+  only: { variables: [ $CORE_PROJECT != "" ] }
+  when: always
+  artifacts:
+    paths:
+      - kubeconfig.env
+  allow_failure: false
+
+Uninstall Mistral:
+  extends: .test-case
+  stage: uninstall_mistral
+  script:
+    - chmod +x binary/helm
+    - chmod +x binary/kubectl
+    - export KUBECONFIG=kubeconfig.env
+    - binary/helm uninstall mistral-operator -n mistral
+  only: { variables: [ $CORE_PROJECT != "" ] }
+
+1-Update [LATEST_SPRINT] In Clean Namespace:
+  extends: .test-case
+  stage: rollingupdate_in_clean_namespace
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean.yml
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+2-Clean [PREVIOUS_SPRINT]:
+  extends: .test-case
+  stage: clean_previous_sprint
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean.yml
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+3-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT]:
+  extends: .test-case
+  stage: upgrade_from_previous_to_latest
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean.yml
+  script:
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+4-Clean [LATEST_SPRINT]:
+  extends: .test-case
+  stage: clean_latest_sprint
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean.yml
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+5-Upgrade [LATEST_SPRINT] Diff Params:
+  extends: .test-case
+  stage: upgrade_to_latest_diff_params
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/update-with-changes-params.yml
+  script:
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+6-Clean [N1_RELEASE]:
+  extends: .test-case
+  stage: clean_n1_release
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean.yml
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N1_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]:
+  extends: .test-case
+  stage: upgrade_from_n1_to_latest
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean.yml
+  script:
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+8-Clean [N2_RELEASE]:
+  extends: .test-case
+  stage: clean_n2_release
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean.yml
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N2_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $N2_RELEASE != "" ] }
+
+9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]:
+  extends: .test-case
+  stage: upgrade_from_n2_to_latest
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean.yml
+  script:
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $N2_RELEASE != "" ] }
+
+10-Update [LATEST_SPRINT] TLS:
+  extends: .test-case
+  stage: update_latest_sprint_tls
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/tls.yml
+  script:
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $CHECK_TLS == "true" ] }
+
+11-Clean [LATEST_SPRINT] TLS:
+  extends: .test-case
+  stage: clean_latest_sprint_tls
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/tls.yml
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $CHECK_TLS == "true" ] }
+
+12-Clean [LATEST_SPRINT] W/O Components:
+  extends: .test-case
+  stage: clean_latest_sprint_without_components
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean-without-components.yml
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+
+## Mistral Openshift
+# 13-Clean [PREVIOUS_SPRINT] OS:
+#  extends: .test-case
+#  stage: clean_previous_os
+#  variables:
+#    CLOUD_HOST: $CLOUD_OS_HOST
+#    CLOUD_TOKEN: $CLOUD_OS_TOKEN
+#    ARRAY_NS: $PROJECT_OS
+#    TEMPLATE_FILE_NAME: ./example-common-params/mistral/App/basic/oc-clean.yml
+#  script:
+#    - *create_new_db_name
+#    - *update_template
+#    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER_OS}" --artifact="${PREVIOUS_SPRINT}" --project="${PREFIX_OS}-${PROJECT_OS}" --deploy-mode="Clean Deploy"
+#    - !reference [.template_job_status, script]
+#  only: { variables: [ $CHECK_MISTAL_OPENSHIFT == "true" ] }
+
+# 14-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] OS:
+#  extends: .test-case
+#  stage: upgrade_from_previous_to_latest_os
+#  variables:
+#    CLOUD_HOST: $CLOUD_OS_HOST
+#    CLOUD_TOKEN: $CLOUD_OS_TOKEN
+#    ARRAY_NS: $PROJECT_OS
+#    TEMPLATE_FILE_NAME: ./example-common-params/mistral/App/basic/oc-clean.yml
+#  script:
+#    - *update_template
+#    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER_OS}" --artifact="${LATEST_SPRINT}" --project="${PREFIX_OS}-${PROJECT_OS}" --deploy-mode="Rolling Update"
+#    - !reference [.template_job_status, script]
+#  only: { variables: [ $CHECK_MISTAL_OPENSHIFT == "true" ] }
+
+# 15-Clean [LATEST_SPRINT] OS:
+#  extends: .test-case
+#  stage: clean_latest_os
+#  variables:
+#    CLOUD_HOST: $CLOUD_OS_HOST
+#    CLOUD_TOKEN: $CLOUD_OS_TOKEN
+#    ARRAY_NS: $PROJECT_OS
+#    TEMPLATE_FILE_NAME: ./example-common-params/mistral/App/basic/oc-clean.yml
+#  script:
+#    - *create_new_db_name
+#    - *update_template
+#    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER_OS}" --artifact="${LATEST_SPRINT}" --project="${PREFIX_OS}-${PROJECT_OS}" --deploy-mode="Clean Deploy"
+#    - !reference [.template_job_status, script]
+#  only: { variables: [ $CHECK_MISTAL_OPENSHIFT == "true" ] }
+
+## Restricted
+16-Clean [PREVIOUS_SPRINT] Restricted:
+  extends: .test-case
+  stage: clean_previous_sprint_restricted
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean-restricted.yml
+  script:
+    - *clear_namespace
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${PREVIOUS_SPRINT_TAG}"
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+17-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted:
+  extends: .test-case
+  stage: update_from_previous_to_latest_restricted
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean-restricted.yml
+  script:
+    - python3 "${UPGRADE_CRD_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --crd-tag="${LATEST_SPRINT_TAG}"
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+18-Clean [LATEST_SPRINT] Restricted:
+  extends: .test-case
+  stage: clean_latest_sprint_restricted
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/clean-restricted.yml
+  script:
+    - *clear_namespace
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${LATEST_SPRINT_TAG}"
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+# Core + Mistral in 1 namespace cases
+19-Uninstall Mistral 2:
+  extends: .test-case
+  stage: uninstall_mistral_2
+  script:
+    - chmod +x binary/helm
+    - chmod +x binary/kubectl
+    - export KUBECONFIG=kubeconfig.env
+    - binary/helm uninstall mistral-operator -n cloudcore
+  only: { variables: [ $CORE_PROJECT != "" ] }
+
+20-Core Namespace Install [PREVIOUS_SPRINT]:
+  extends: .test-case
+  stage: install_previous_core
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/core-namespace.yml
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: mistral 
+    ALLOWED_ERROR_LOGS_AMOUNT: 200000
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT}" --project="${PREFIX}-${CORE_PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $CORE_PROJECT != "" ] }
+
+21-Core Namespace Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT]:
+  extends: .test-case
+  stage: upgrade_from_previous_to_latest_core
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/core-namespace.yml
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: mistral 
+    ALLOWED_ERROR_LOGS_AMOUNT: 200000
+  script:
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${CORE_PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $CORE_PROJECT != "" ] }
+
+22-Uninstall Mistral 3:
+  extends: .test-case
+  stage: uninstall_mistral_3
+  script:
+    - chmod +x binary/helm
+    - chmod +x binary/kubectl
+    - export KUBECONFIG=kubeconfig.env
+    - binary/helm uninstall mistral-operator -n cloudcore
+  only: { variables: [ $CORE_PROJECT != "" ] }
+
+23-Core Namespace Install [LATEST_SPRINT]:
+  extends: .test-case
+  stage: install_latest_core
+  variables:
+    TEMPLATE_FILE_NAME: ./templates/${PREFIX}/basic/core-namespace.yml
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: mistral 
+    ALLOWED_ERROR_LOGS_AMOUNT: 200000
+  script:
+    - *create_new_db_name
+    - *update_template
+    - python3 "${DEPLOY_SCRIPT}" -f "${TEMPLATE_FILE_NAME}" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${CORE_PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $CORE_PROJECT != "" ] }
+
+Report:
+  image: ${PYTHON_IMAGE}
+  tags:
+    - ''
+  when: on_success
+  stage: create_report
+  script:
+    - python3 ${REPORT_SCRIPT} --pipeline_id="${CI_PIPELINE_ID}" --token="${GIT_TOKEN}" --webex-room-id="${WEBEX_CI_ROOM_ID}" --webex-token="${WEBEX_CI_TOKEN}" --versions="LATEST_SPRINT=${LATEST_SPRINT}, PREVIOUS_SPRINT=${PREVIOUS_SPRINT}, N1_RELEASE=${N1_RELEASE}, N2_RELEASE=${N2_RELEASE}, LATEST_SPRINT_TAG=${LATEST_SPRINT_TAG}, PREVIOUS_SPRINT_TAG=${PREVIOUS_SPRINT_TAG}"
+  artifacts:
+    paths:
+      - "*.html"

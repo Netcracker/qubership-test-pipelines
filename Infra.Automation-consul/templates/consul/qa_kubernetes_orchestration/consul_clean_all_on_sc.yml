@@ -1,0 +1,76 @@
+|
+  
+  ENABLE_PRIVILEGED_PSS=true;
+  global='
+  enabled: true
+  ';
+  server='
+  nodeSelector:
+    nodeladel: temporary
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app: consul
+              release: consul-service
+              component: server
+          topologyKey: kubernetes.io/hostname
+  replicas: 3
+  bootstrapExpect: 3
+  storage: 1Gi
+  storageClass: csi-cinder-sc-delete
+  resources:
+    limits:
+      memory: 300Mi
+      cpu: 100m
+  ';
+  consulAclConfigurator='
+  enabled: true
+  ';
+  dns='
+  enabled: false
+  ';
+  monitoring='
+  enabled: true
+  ';
+  ui='
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: consul-consul-service.qa-kubernetes.openshift.sdntest.qubership.org
+  service:
+    enabled: true
+  ';
+  client='
+  enabled: true
+  nodeSelector:
+    role: compute
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 25m
+    limits:
+      memory: 256Mi
+      cpu: 25m
+  ';
+  backupDaemon='
+  enabled: true
+  storage: 1Gi
+  storageClass: csi-cinder-sc-delete
+  backupSchedule: "*/15 * * * *"
+  evictionPolicy: 1h/1d,7d/delete
+  nodeSelector:
+    nodeladel: temporary
+  ';
+  integrationTests='
+  enabled: true
+  tags: backupORcrudORconsul_images
+  ';
+  statusProvisioner='
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 600
+  podReadinessTimeout: 900
+  ;
+  ESCAPE_SEQUENCE=true;

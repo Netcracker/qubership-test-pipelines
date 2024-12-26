@@ -1,0 +1,26 @@
+ENABLE_PRIVILEGED_PSS: "true"
+global:
+  enabled: true
+  openshift:
+    enabled: true
+server:
+  bootstrapExpect: 3
+  storage: 1Gi
+  storageClass: {{env_pipe_storage_class}}
+ui:
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: consul-consul-helm.{{env_pipe_domain_name}}
+client:
+  enabled: true
+  nodeSelector:
+    node-role.kubernetes.io/worker: worker
+backupDaemon:
+  enabled: true
+  storageClass: {{env_pipe_storage_class}}
+dns:
+  enabled: "-"
+integrationTests:
+  enabled: true

@@ -1,0 +1,60 @@
+| 
+  jaeger='
+  prometheusMonitoring: true
+  prometheusMonitoringDashboard: true
+  serviceName: jaeger-service
+  storage:
+    type: elasticsearch
+  ';
+  cassandraSchemaJob='
+  install: false
+  ';
+  elasticsearch='
+  client:
+    username: admin
+    password: ''
+    scheme: http
+    url: opensearch.opensearch-service.svc:9200
+
+  indexCleaner:
+    install: true
+  lookback:
+    install: true
+  rollover:
+    install: true
+    initHook:
+      ttlSecondsAfterFinished: 120
+    schedule: "*/10 * * * *"
+    successfulJobsHistoryLimit: 5
+    failedJobsHistoryLimit: 5
+    ttlSecondsAfterFinished: 600
+  ';
+  agent='
+  install: true
+  ';
+  collector='
+  install: true
+  ';
+  hotrod='
+  install: true
+  agent:
+    host: jaeger-agent.jaeger.svc
+    port: 6831
+  ingress:
+    install: true
+    host: hotrod-jaeger.apps.ocp4-qa.openshift.sdntest.qubership.org
+  ';
+  query='
+  install: true
+  ingress:
+    install: true
+    host: query-jaeger.apps.ocp4-qa.openshift.sdntest.qubership.org
+  ';
+  integrationTests='
+  install: true
+  jaegerServiceName: jaeger-service
+  tags: smoke
+  statusWriting:
+    enabled: true
+  ';
+  ESCAPE_SEQUENCE=true;

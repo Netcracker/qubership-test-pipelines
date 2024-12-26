@@ -1,0 +1,251 @@
+JOB_NAME: ''
+JENKINS_URL: ''
+TOKEN_NAME: CLOUD_TOKEN
+CLOUD_URL: ''
+CLOUD_NAMESPACE: elasticsearch-cluster
+DESCRIPTOR_URL: ''
+DESCRIPTOR_NAME: DESCRIPTOR_URL
+DEPL\_MODE\: clean
+KUBECTL_VERSION: 1.18.4
+HELM_VERSION: 3.2.1
+ADDITIONAL_OPTIONS: []
+DEPLOYMENT_PARAMETERS: |
+  name: elasticsearch
+  enablePersistentVolumeCreation: false
+  global:
+    waitForPodsReady: true
+    podReadinessTimeout: 300
+  elasticsearch:
+    install: true
+    affinity:
+      { 
+        "podAntiAffinity" : { 
+          "requiredDuringSchedulingIgnoredDuringExecution" : [ 
+            { 
+              "labelSelector" : { 
+                "matchExpressions" : [ 
+                  { 
+                    "key": "component", 
+                    "operator" : "In", 
+                    "values" : [ 
+                      "elasticsearch" 
+                    ] 
+                  } 
+                ] 
+              }, 
+              "topologyKey" : "kubernetes.io/hostname" 
+            } 
+          ] 
+        } 
+      } 
+    installationMode: "joint"
+    nodesCount: 3
+    storage:
+      size: 5Gi
+      volumes:
+        - elasticsearch-1
+        - elasticsearch-2
+        - elasticsearch-3
+      nodes:
+        - worker1
+        - worker2
+        - worker3
+    snapshotStorage:
+      persistentVolumeType: predefined
+      persistentVolumeName: pv-nfs-elasticsearch-backup-1
+      persistentVolumeClaimName: pvc-elasticsearch-snapshots
+      volumeSize: 1Gi
+    sequenceStart: 0
+    heapSize: 512
+    resources:
+      requests:
+        memory: 650Mi
+        cpu: 200m
+      limits:
+        memory: 2048Mi
+        cpu: 400m
+    initialReadinessProbeCount: 10
+    livenessProbeInitialDelay: 60
+    readinessProbeInitialDelay: 40
+    tlsHttpEnabled: false
+    tlsTransportEnabled: false
+    securityContext: { "fsGroup": 100, "runAsUser": 100 }  
+    securityConfigurationUsers: [ {"username" : "admin", "password": "admin" } ]
+    allowPrivileged: false
+  dbaasAdapter:
+    install: true
+    affinity: 
+      {
+        "podAffinity": {
+          "preferredDuringSchedulingIgnoredDuringExecution": [
+            {
+              "podAffinityTerm": {
+                "labelSelector": {
+                  "matchExpressions": [
+                    {
+                      "key": "component",
+                      "operator": "In",
+                      "values": [
+                        "elasticsearch"
+                      ]
+                    }
+                  ]
+                },
+                "topologyKey": "kubernetes.io/hostname"
+              },
+              "weight": 100
+            }
+          ]
+        },
+        "podAntiAffinity": {
+          "requiredDuringSchedulingIgnoredDuringExecution": [
+            {
+              "labelSelector": {
+                "matchExpressions": [
+                  {
+                    "key": "component",
+                    "operator": "In",
+                    "values": [
+                      "dbaas-elasticsearch-adapter"
+                    ]
+                  }
+                ]
+              },
+              "topologyKey": "kubernetes.io/hostname"
+            }
+          ]
+        }
+      }
+    dbaasAdapterAddress: "http://dbaas.elasticsearch-service:8080"
+    dbaasAggregatorRegistrationAddress: "http://dbaas-aggregator.dbaas:8080"
+    dbaasAggregatorPhysicalDatabaseIdentifier: "elasticsearch-service"
+    elasticsearchInstallationMode: joint
+    elasticsearchClusterVersion: ""
+    cloudElasticsearchClusterVersion: ""  
+    elasticsearchRepo: snapshots
+    elasticsearchRepoRoot: /usr/share/elasticsearch/snapshots
+    elasticsearchHost: "elasticsearch"
+    elasticsearchPort: 9200
+    elasticsearchProtocol: http
+    elasticsearchNodesCount: 3
+    dbaasUsername: "dbaas-adapter"
+    dbaasPassword: ''
+    elasticsearchUsername: "admin"
+    elasticsearchPassword: "admin"
+    securityContext: { "runAsUser": 100 } 
+  monitoring:
+    install: true
+    affinity: 
+      {
+        "podAffinity": {
+          "preferredDuringSchedulingIgnoredDuringExecution": [
+            {
+              "podAffinityTerm": {
+                "labelSelector": {
+                  "matchExpressions": [
+                    {
+                      "key": "component",
+                      "operator": "In",
+                      "values": [
+                        "elasticsearch"
+                      ]
+                    }
+                  ]
+                },
+                "topologyKey": "kubernetes.io/hostname"
+              },
+              "weight": 100
+            }
+          ]
+        }
+      }
+    monitoringType: prometheus
+    installDashboard: true
+    elasticsearchHost: elasticsearch
+    elasticsearchPort: 9200
+    elasticsearchNodesCount: 3
+    elasticsearchDataNodesCount: 3
+    elasticsearchExecPluginTimeout: 15s
+    tlsHttpEnabled: false
+    elasticsearchDbaasAdapterHost: dbaas-elasticsearch-adapter
+    elasticsearchDbaasAdapterPort: 8080
+    smDbHost: "http://***.***.***.***:8086"
+    smDbName: "cloud_helm"
+    securityContext: { "fsGroup": 100, "runAsUser": 100 }
+    esCredForInternalClients: "user:pass"
+  curator:
+    install: true
+    affinity: 
+      {
+        "podAffinity": {
+          "preferredDuringSchedulingIgnoredDuringExecution": [
+            {
+              "podAffinityTerm": {
+                "labelSelector": {
+                  "matchExpressions": [
+                    {
+                      "key": "component",
+                      "operator": "In",
+                      "values": [
+                        "elasticsearch"
+                      ]
+                    }
+                  ]
+                },
+                "topologyKey": "kubernetes.io/hostname"
+              },
+              "weight": 100
+            }
+          ]
+        }
+      }
+    elasticsearchHost: elasticsearch:9200
+    tlsHttpEnabled: false
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 200m
+      limits:
+        memory: 256Mi
+        cpu: 200m
+    backupStorage:
+      volumeSize: 1Gi 
+      persistentVolumeType: predefined
+      persistentVolumeName: pv-nfs-elasticsearch-backup-1
+      persistentVolumeClaimName: pvc-elasticsearch-snapshots
+    backupSchedule: "0 0 * * *"
+    securityContext: { "fsGroup": 100, "runAsUser": 100 } 
+  integrationTests:
+    install: true
+    service:
+      name: elasticsearch-integration-tests-runner
+    waitForResult: true
+    timeout: 300
+    secret:
+      idp:
+        username: ""
+        password: ''
+        registrationToken: ""
+      token: "eyJhbGciOiJSUzI1NiIsImtpZCI6Ik9lZmZvVG5LUEFDdDFkdHJFUWxpSFJyWE1ud0J4UkV5S0ZGNC1Tby1yWTAifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJzdXBlcmFkbWluLXRva2VuLWM1ZmJsIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InN1cGVyYWRtaW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJkMWU1OGYyZC03YjRiLTQ4MGMtODI3My0wNzlhMTMyOTYyY2IiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06c3VwZXJhZG1pbiJ9.XD5l9U-WHBeX6rE53m4V4GCCkfV0fKziitTvJBWVK_zEOI6jkmX8uArId49XnQlNLEjQsmnZMmwG2skVNtYDYTXXuxgFy6PcH3J7na_nay_CyHrabl5B-gCoj_QQAHSTHzlZZiftYJe8EWvizQrfITcSaUKyRSOHjOF-mDL3oDcIp4bBj_RuANUQ9Kr1eUijCjXFay5jNhngqMNm3yKU6TtAjljWZ1SRAxAv3XyhLvLikJj_eHZfWJ8cyPPhdzyHOaozX6fcrla1ya86FpA4Q7Bz2PsM30lkWwIlKYAPDEAdt3AgNOsUaPSA1crRUVH0gHh5kCtwqeGtJM9yMC0N8A"
+      zabbix:
+        username: "Admin"
+        password: ''
+    tags: "smoke"
+    url: "https://dashboard.qa-kubernetes.openshift.sdntest.qubership.org:6443"
+    elasticsearchIsManagedByOperator: "true"
+    elasticsearchHttpPort: 9200
+    elasticsearchCuratorPort: 8080
+    curatorDeploymentConfig: "elasticsearch-curator"
+    indicesCleanerConfigurationKey: "patterns_to_delete"
+    elasticsearchDbaasAdapterPort: 8080
+    dbaasAdapterRepository: "snapshots"
+    cloudDb: "cloud_db"
+    sequenceStartWith: 0
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 200m
+      limits:
+        memory: 256Mi
+        cpu: 400m
+    securityContext: { "runAsUser": 100 }

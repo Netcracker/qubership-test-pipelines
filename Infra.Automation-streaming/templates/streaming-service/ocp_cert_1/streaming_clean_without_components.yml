@@ -1,0 +1,51 @@
+|
+  global='
+  name: streaming
+  secrets:
+    streamingPlatform:
+      username: admin
+      password: ''
+      kafkaAuthUsername: client
+      kafkaAuthPassword: client
+  tls:
+    enabled: true
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      clusterIssuerName: dev-clusterissuer
+  ';
+  streamingPlatform='
+  install: true
+  replicas: 1
+  ingress:
+    host: streaming-platform-streaming-service.apps.ocp-cert-1.openshift.sdntest.qubership.org
+  bootstrapServers: kafka.kafka-service:9092
+  ';
+  monitoring='
+  install: false
+  ';
+  integrationTests='
+  secrets:
+    postgres:
+      user: postgres
+      password: ''
+    oracleSource:
+      user: oracle
+      password: ''
+    opensearch:
+      user: admin
+      password: ''
+  install: false
+  tags: smokeORstreaming_images
+  postgresHost: pg-patroni.postgres
+  postgresPort: 5432
+  postgresDb: postgres
+  elasticsearchHost: null
+  mongoHost: null
+  oracleSourceHost: ***.***.***.***
+  oracleSourcePort: 1521
+  oracleSourceDb: xe
+  opensearchUrl: http://opensearch.opensearch:9200
+  ';
+  
+  ESCAPE_SEQUENCE=true;

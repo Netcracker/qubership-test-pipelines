@@ -1,0 +1,34 @@
+|
+  webserverSecretKey=''
+  fernetKey=''
+  ingress='
+  enabled: true
+  web:
+    hosts:
+      - web.fenrir-k8s.openshift.sdntest.qubership.org
+  ';
+  config='
+  api:
+    auth_backend: airflow.api.auth.backend.basic_auth
+  ';
+  integrationTests='
+    enabled: true
+    tags: "smokeNOTpg_connection_dag"
+  ';
+  statusProvisioner='
+    lifetimeAfterCompletion: 60
+    integrationTestsTimeout: 3000
+  ';
+  platformAirflowMonitoring=true;
+  serviceMonitor='
+    enabled: true
+  ';
+  prometheusRule='
+    enabled: true
+  ';
+  statsd='
+    enabled: true
+  ';
+  serviceMonitorStatsd='
+    enabled: true
+  ';

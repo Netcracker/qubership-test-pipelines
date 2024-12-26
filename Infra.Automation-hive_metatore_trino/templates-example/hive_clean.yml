@@ -1,0 +1,29 @@
+|
+  ESCAPE_SEQUENCE=true;
+  
+  s3='
+  endpoint: test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org
+  accessKey: Z4nz2bxWnWM36lf3K21y
+  secretKey: oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr
+  warehouseDir: s3a://hive/warehouse
+  ';
+  hive='
+  user: hive_chart2
+  password: ''
+  db: metastore_chart2
+  ';
+  postgres='
+  adminUser: postgres
+  adminPassword: ''
+  host: pg-patroni.postgres.svc
+  port: 5432
+  driver: org.postgresql.Driver
+  ';
+  resources='
+  limits:
+    cpu: 900m
+    memory: 510Mi
+  requests:
+    cpu: 400m
+    memory: 250Mi
+  ';

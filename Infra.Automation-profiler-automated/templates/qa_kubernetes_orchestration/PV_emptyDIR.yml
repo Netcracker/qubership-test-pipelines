@@ -1,0 +1,17 @@
+| 
+  
+  CASSANDRA_USERNAME=cassandra;
+  CASSANDRA_KEYSPACE=profiler;
+  CASSANDRA_PORT=9042;
+  CASSANDRA_PASSWORD='';
+  CASSANDRA_HOST=cassandra.cassandra-operations.svc;
+  CASSANDRA_DC=datacenter1;
+  INTEGRATION_TESTS=true;
+  DIAG_PV_EMPTYDIR=true;
+  INFRA_POSTGRES_ADMIN_PASSWORD='';
+  pg='
+  dbName: static1
+  ';
+  INFRA_POSTGRES_HOST=pg-patroni.postgres.svc;
+  INFRA_POSTGRES_PORT=5432;
+  INFRA_POSTGRES_ADMIN_USERNAME=postgres;

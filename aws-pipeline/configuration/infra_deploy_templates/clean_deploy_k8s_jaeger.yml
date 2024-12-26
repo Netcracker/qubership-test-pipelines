@@ -1,0 +1,73 @@
+|
+  jaeger='
+  prometheusMonitoring: true
+  prometheusMonitoringDashboard: true
+  storage:
+    type: elasticsearch
+  ';
+  cassandraSchemaJob='
+  install: false
+  ';
+  elasticsearch='
+  client:
+    username: Opensearch-admin
+    password: ''
+    scheme: https
+    url: aws
+  indexCleaner:
+    install: true
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+  lookback:
+    install: true
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+  rollover:
+    install: true
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+  ';
+  agent='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ';
+  collector='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ';
+  hotrod='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  agent:
+    host: jaeger-app-agent.jaeger.svc
+    port: 6831
+  ingress:
+    install: true
+    host: hotrod-jaeger-test.cloudplatform-eks.k8s.qubership.org
+  ';
+  query='
+  install: true
+  securityContext:
+    runAsUser: 2000
+    fsGroup: 2000
+  ingress:
+    install: true
+    host: query-jaeger-test.cloudplatform-eks.k8s.qubership.org
+  ';
+  integrationTests='
+  install: true
+  tags: smokeORha
+  statusWriting:
+    enabled: true
+  ';
+  ESCAPE_SEQUENCE=true;
+  

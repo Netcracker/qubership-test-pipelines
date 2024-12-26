@@ -1,0 +1,54 @@
+global:
+  secrets:
+    streamingPlatform:
+      username: admin
+      password: ''
+      kafkaAuthUsername: "client"
+      kafkaAuthPassword: "client"
+  tls:
+    enabled: false
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      durationDays: 365
+      clusterIssuerName: {{env_pipe_cluster_issuer_name}}
+streamingPlatform:
+  install: true
+  ingress:
+    host: streaming-platform-streaming-helm.{{env_pipe_domain_name}}
+  bootstrapServers: kafka.kafka-helm:9092
+  tls:
+    enabled: {{env_pipe_tls_enabled}}
+    caCertOnly: true
+integrationTests:
+  secrets:
+    postgres:
+      user: postgres
+      password: ''
+    mongo:
+      user: root
+      password: ''
+    oracleSource:
+      user: oracle
+      password: ''
+    elasticsearch:
+      user: admin
+      password: ''
+    opensearch:
+      user: admin
+      password: ''
+  install: true
+  tags: smoke
+  postgresHost: pg-patroni.postgres-helm
+  postgresPort: 5432
+  postgresDb: postgres
+  elasticsearchHost: null
+  elasticsearchHttpPort: 9200
+  elasticsearchTransportPort: 9300
+  mongoHost: null
+  mongoPort: 27017
+  mongoDb: public
+  oracleSourceHost: ***.***.***.***
+  oracleSourcePort: 1521
+  oracleSourceDb: xe
+  opensearchUrl: https://opensearch.opensearch-helm:9200

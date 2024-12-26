@@ -1,0 +1,39 @@
+.check_state_logs_script.variables:
+  variables:
+    STDOUT_FILE: post-check-stdout
+    GRAYLOG_HOST: ''
+    GRAYLOG_USER: admin
+    GRAYLOG_PASS: admin
+    CLOUD_HOST: ''
+    CLOUD_TOKEN: eyJhbGciOiJSUzI1NiIsImtpZCI6Ik9lZmZvVG5LUEFDdDFkdHJFUWxpSFJyWE1ud0J4UkV5S0ZGNC1Tby1yWTAifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlLXN5c3RlbSIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJzdXBlcmFkbWluLXRva2VuLWM1ZmJsIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQubmFtZSI6InN1cGVyYWRtaW4iLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC51aWQiOiJkMWU1OGYyZC03YjRiLTQ4MGMtODI3My0wNzlhMTMyOTYyY2IiLCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6a3ViZS1zeXN0ZW06c3VwZXJhZG1pbiJ9.XD5l9U-WHBeX6rE53m4V4GCCkfV0fKziitTvJBWVK_zEOI6jkmX8uArId49XnQlNLEjQsmnZMmwG2skVNtYDYTXXuxgFy6PcH3J7na_nay_CyHrabl5B-gCoj_QQAHSTHzlZZiftYJe8EWvizQrfITcSaUKyRSOHjOF-mDL3oDcIp4bBj_RuANUQ9Kr1eUijCjXFay5jNhngqMNm3yKU6TtAjljWZ1SRAxAv3XyhLvLikJj_eHZfWJ8cyPPhdzyHOaozX6fcrla1ya86FpA4Q7Bz2PsM30lkWwIlKYAPDEAdt3AgNOsUaPSA1crRUVH0gHh5kCtwqeGtJM9yMC0N8A
+    ARRAY_NS: postgres
+    ALLOWED_RESTARTS_AMOUNT: 2
+    ALLOWED_ERROR_LOGS_AMOUNT: 100
+
+.check_state_logs_script.run:
+  extends: .check_state_logs_script.variables
+  image: pipe_image_latest
+  tags:
+    - ''
+  script:
+    - |
+      for NS in $ARRAY_NS
+        do
+          python3 /scripts/external_platform_library_builtIn/postdeploy_checks.py --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${NS}"
+          source .env
+          for i in $(seq 1 $COUNT); do
+            echo "------------------------------------------------------------------------------------------------------------------------------------"
+            python3 -c "import postdeploy_checks; postdeploy_checks.print_splitted_names(\"$PC\", $i)"
+            echo -e "\e[0Ksection_start:`date +%s`:my_first_section[collapsed=true]\r\e[0KPost-check after deploy for namespace ${NS}, pod count $i"
+            python3 -c "import postdeploy_checks; postdeploy_checks.print_graylog_link(\"$GRAYLOG_HOST\", \"$GRAYLOG_USER\", \"$GRAYLOG_PASS\", \"$NS\", \"$PC\", $i, \"$CLOUD_HOST\", \"$CLOUD_TOKEN\")"
+            python3 -c "import postdeploy_checks; postdeploy_checks.show_logs_for_pod(\"$PC\", $i, \"$CLOUD_HOST\", \"$CLOUD_TOKEN\", \"$NS\")"
+            echo -e "\e[0Ksection_end:`date +%s`:my_first_section\r\e[0K"
+          done
+        done
+      python3 -c "import postdeploy_checks; postdeploy_checks.set_state(\"$CLOUD_HOST\", \"$CLOUD_TOKEN\", \"$ARRAY_NS\", $ALLOWED_RESTARTS_AMOUNT, $ALLOWED_ERROR_LOGS_AMOUNT)" | tee $STDOUT_FILE
+  allow_failure: true
+  artifacts:
+    when: always
+    paths:
+      - ./$STDOUT_FILE
+    expire_in: 1 day

@@ -1,0 +1,27 @@
+|
+  tls='
+  mode: requireTLS
+  generateCerts:
+    enabled: true
+    clusterIssuerName: dev-clusterissuer
+  ';
+  mongodb='
+  install: true
+  storage:
+    storageClasses:
+      - csi-cinder-sc-delete
+  ';
+  backup='
+  install: true
+  storage:
+    storageClasses:
+      - csi-cinder-sc-delete
+  ';
+  dbaas='
+  install: true
+  ';
+  robotTests='
+  install: true
+  tags: backupORsmokeORdbaasORdbaas backupORtls
+  ';
+  ESCAPE_SEQUENCE=true;

@@ -1,0 +1,36 @@
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+  AWS_URL_MQ: https://ifrnx5fz4cuez5zmlpaqerghem0uojua.lambda-url.us-east-1.on.aws/
+  AWS_URL_MSK: https://oaxn6fjcsjbpepr3l3eqjvfqpi0bluyh.lambda-url.us-east-1.on.aws/
+  AWS_URL_OPENSEARCH: https://kowiad4juiyuxvby73cuqr344u0woczt.lambda-url.us-east-1.on.aws/
+  AWS_URL_START_EKS: https://opmxtqkaqnbldqpssodt6ilpvm0hnmzj.lambda-url.us-east-1.on.aws/
+  AWS_URL_STOP_EKS: https://kxf5k3r7gl3r5vvzmpl6hwvb6e0asqcs.lambda-url.us-east-1.on.aws/
+  AWS_ACCESS_KEY: $AWS_ACCESS_KEY
+  AWS_SECRET_ACCESS_KEY: $AWS_SECRET_ACCESS_KEY
+  AWS_REGION: us-east-1
+  AWS_SERVICE: lambda
+# EKS Cluster Configuration
+  KUBECONFIG: ${AWS_KUBECONFIG}
+# Deployer Configuration
+#  JENKINS_URL: ''
+#  JOB_NAME: ''
+#  JENKINS_USER: ''
+#  JENKINS_TOKEN: $JENKINS_TOKEN_CLOUD
+#  CREDS_IN_DEPLOYER: ''
+#  PREFIX: CloudPlatformAWS
+# Deployer Platcert
+  JENKINS_URL: ''
+  JOB_NAME: ''
+  JENKINS_USER: ''
+  JENKINS_TOKEN: $JENKINS_TOKEN_PLATCERT01
+  CREDS_IN_DEPLOYER: ''
+  PREFIX: CloudPlatformAWS
+# CCI
+  CCI_USER: ${CCI_CLIET_ID}
+  CCI_PASSWORD: ${CCI_SECRET}
+#Scripts
+  DEPLOY_SCRIPT_APP: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  PATCH_NS: /scripts/external_platform_library_builtIn/patch_ns_restricted.py
+  CHECK_TEST_RESULT: /scripts/external_platform_library_builtIn/validate_tests_result.py
+
+  KUBECTL: /builds/qa-group/aws-pipeline/binary/kubectl

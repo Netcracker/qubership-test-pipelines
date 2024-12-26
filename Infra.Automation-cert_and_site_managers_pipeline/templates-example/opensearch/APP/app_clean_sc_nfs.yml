@@ -1,0 +1,75 @@
+|
+  opensearch='
+  securityConfig:
+    authc:
+      basic:
+        username: admin
+        password: ''
+  securityContextCustom:
+    runAsUser: 1000
+    fsGroup: 1000
+  main:
+    persistence:
+      storageClass: csi-cinder-sc-delete
+  snapshots:
+    enabled: true
+    persistentVolumeType: predefined
+    persistentVolume: pv-nfs-opensearch-backup-1
+    repositoryName: snapshots
+    volumeSize: 5Gi
+    s3:
+      enabled: false
+  client:
+    enabled: true
+    ingress:
+      enabled: true
+      hosts:
+        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.org
+  ';
+  dashboards='
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.org
+        paths:
+          - path: /
+  ';
+  dbaasAdapter='
+  enabled: true
+  dbaasAdapterAddress: http://dbaas.opensearch-cluster:8080
+  dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas:8080
+  dbaasAdapter.dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
+  opensearchRepo: snapshots
+  opensearchRepoRoot: /usr/share/opensearch/snapshots
+  opensearchPort: 9200
+  opensearchProtocol: http
+  dbaasUsername: dbaas-adapter
+  dbaasPassword: ''
+  registrationAuthUsername: cluster-dba
+  registrationAuthPassword: ''
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  curator='
+  enabled: true
+  backupSchedule: 0 * * * *
+  evictionPolicy: 0/1d,7d/delete
+  username: backup
+  password: ''
+  nodeSelector:
+    role: compute
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  integrationTests='
+  enabled: true
+  tags: smokeORbackupORdbaasORauthentication
+  ';
+  statusProvisioner='
+    lifetimeAfterCompletion: 60
+  ';
+  ESCAPE_SEQUENCE=true;
+  

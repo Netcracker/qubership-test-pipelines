@@ -1,0 +1,23 @@
+|
+  dbaas='
+  install: true
+  aggregator:
+    physicalDatabaseIdentifier: redis
+  ';
+  operator='
+  resources:
+    requests:
+      cpu: 55m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  ';
+  monitoringAgent='
+  install: true
+  metricCollector: prometheus
+  ';
+  robotTests='
+  install: true
+  ';
+  ESCAPE_SEQUENCE=true;

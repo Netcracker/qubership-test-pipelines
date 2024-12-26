@@ -1,0 +1,77 @@
+JOB_NAME: ''
+JENKINS_URL: ''
+TOKEN_NAME: CLOUD_TOKEN
+CLOUD_URL: ''
+CLOUD_NAMESPACE: vault-test
+DESCRIPTOR_URL: ''
+DESCRIPTOR_NAME: DESCRIPTOR_URL
+DEPL\_MODE\: clean
+KUBECTL_VERSION: 1.18.4
+HELM_VERSION: 3.2.1
+ADDITIONAL_OPTIONS: []
+DEPLOYMENT_PARAMETERS: |
+  operator:
+    vaultConfiguratorEnabled: true
+    watchNamespace: postgres,zookeeper-service,kafka-service
+    createClusterResources: true
+  vaultOperatorCustomParams:
+    enableMonitoring: true
+    installGrafanaDashboard: true
+  consulCustomParams:
+    consulSecure: true
+    authMethod: consul-k8s-auth-method
+    aclConfiguratorEnabled: true
+  vaultCustomParams:
+    enableDatabaseSecretEngine: true
+  server:
+    updateStrategyType: RollingUpdate
+    resources:
+      requests:
+        memory: 256Mi
+        cpu: 200m
+      limits:
+        memory: 512Mi
+        cpu: 500m
+    dev:
+      enabled: false
+    authDelegator:
+      enabled: true
+    ha:
+      enabled: true
+      replicas: 3
+      config:
+        disable_mlock: true
+        ui: true
+        storage:
+          consul:
+            address: HOST_IP:8500
+            path: qa_test_pipeline_dp_2
+            service: vault-operator-vault
+            service_tags: first_tag,second_tag,another_tag
+        listener:
+          tcp:
+            address: "[::]:8200"
+            cluster_address: "[::]:8201"
+            tls_disable: 1
+            telemetry:
+              unauthenticated_metrics_access: true
+        service_registration: null
+        plugin_directory: /vault/plugins/
+    ingress:
+      enabled: true
+      hosts:
+        - host: vault-service.apps.qa-kubernetes.openshift.sdntest.qubership.org
+          http:
+            paths:
+              - path: /
+                backend:
+                  serviceName: vault-service
+                  servicePort: 8200
+  integrationTests:
+    enabled: true
+    tags: oidcORcrudORsmokeORconfigurator
+    statusWritingEnabled: true
+    integrationTestsTimeout: 400
+  ESCAPE_SEQUENCE: true
+  
+  allowEvents: true

@@ -1,0 +1,24 @@
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+# AKS Cluster Configuration
+  KUBECONFIG: ${AZURE_KUBECONFIG}
+# Deployer Configuration
+  JENKINS_URL: ''
+  JOB_NAME: ''
+  JENKINS_USER: ''
+  JENKINS_PASS: ''
+  JENKINS_TOKEN: $JENKINS_TOKEN
+  CREDS_IN_DEPLOYER: ''
+  PREFIX: CloudPlatformAzure
+# CCI
+  CCI_USER: ${CCI_CLIET_ID}
+  CCI_PASSWORD: ${CCI_SECRET}
+# Scripts
+  DEPLOY_SCRIPT_APP: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  PATCH_NS: /scripts/external_platform_library_builtIn/patch_ns_restricted.py
+  CHECK_TEST_RESULT: /scripts/external_platform_library_builtIn/validate_tests_result.py
+  CCI_INTEGRATION_SCRIPT: /scripts/external_platform_library_builtIn/cci_integration.py
+
+  KUBECTL: /builds/qa-group/azure-pipeline/binary/kubectl
+
+  PROFILER_TEST_INGRESS: http://test-service.azureclpl.qubership.org

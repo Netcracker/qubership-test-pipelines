@@ -1,0 +1,34 @@
+jaeger:
+  prometheusMonitoring: true
+  prometheusMonitoringDashboard: true
+  storage:
+    type: cassandra
+cassandraSchemaJob:
+  install: true
+  host: cassandra.cassandra-helm.svc
+  keyspace: jaeger
+  password: ''
+  username: admin
+  datacenter: dc1
+  mode: prod
+agent:
+  install: true
+collector:
+  install: true
+hotrod:
+  install: true
+  agent:
+    host: jaeger-agent.jaeger-helm.svc
+  ingress:
+    install: true
+    host: jaeger-hotrod.{{env_pipe_domain_name}}
+query:
+  install: true
+  ingress:
+    install: true
+    host: jaeger-query.{{env_pipe_domain_name}}
+integrationTests:
+  install: true
+  tags: smoke
+  jaegerServiceName: jaeger
+  linkForGenerator: http://jaeger-collector:9411

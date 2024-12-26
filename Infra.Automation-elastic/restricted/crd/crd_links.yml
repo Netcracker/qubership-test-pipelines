@@ -1,0 +1,41 @@
+zookeeper-id: 5977
+#zookeeper-tag: "main"
+#zookeeper-old-tag: "0.3.0"
+zookeeper-crds:
+  - "zookeeper-service-operator/charts/helm/zookeeper-service/crds"
+
+kafka-id: 3057
+#kafka-tag: "main"
+#kafka-old-tag: "1.1.1"
+kafka-crds:
+  - "charts/helm/kafka-service/crds"
+
+streaming-id: 3631
+#streaming-tag: "main"
+#streaming-old-tag: "3.8.2"
+streaming-crds:
+  - "streaming-service-operator/charts/helm/streaming-service/crds"
+
+opensearch-id: 21748
+#opensearch-tag: "main"
+#opensearch-old-tag: "***.***.***.***-2"
+opensearch-crds:
+  - "opensearch-service/charts/helm/opensearch-service/crds"
+
+rabbit-id: 3376
+#rabbit-tag: "main"
+#rabbit-old-tag: "0.4.1"
+rabbit-crds:
+  - "operator/charts/helm/rabbitmq/crds"
+
+consul-id: 10335
+#consul-tag: "main"
+#consul-old-tag: "0.3.1"
+consul-crds:
+  - "charts/helm/consul-service/crds"
+
+vault-id: 30052
+#vault-tag: "main"
+#vault-old-tag: "1.9.15"
+vault-crds:
+  - "charts/helm/vault-operator/crds"

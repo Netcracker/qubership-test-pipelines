@@ -1,0 +1,49 @@
+publicCloudName: "{{env_pipe_public_cloud_name}}"
+global:
+  hweProfile: medium
+prometheus:
+  install: false
+alertManager:
+  install: true
+grafana:
+  ingress:
+    host: grafana.{{env_pipe_domain_name}}
+victoriametrics:
+  vmOperator:
+    install: true
+  vmAgent:
+    install: true
+    resources:
+      requests:
+        cpu: 150m
+        memory: 150Mi
+  vmSingle:
+    install: true
+    resources:
+      requests:
+        cpu: 150m
+        memory: 1000Mi
+    retentionPeriod: 3d
+    storage:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 7Gi
+      storageClassName: {{env_pipe_storage_class}}
+  vmAlertManager:
+    install: true
+    ingress:
+      host: vmalertmanager.{{env_pipe_domain_name}}
+  vmAlert:
+    install: true
+    ingress:
+      host: vmalert.{{env_pipe_domain_name}}
+  vmAuth:
+    install: true
+    ingress:
+      host: vmauth.{{env_pipe_domain_name}}
+      install: true
+integrationTests:
+  install: true
+

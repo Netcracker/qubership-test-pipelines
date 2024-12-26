@@ -1,0 +1,26 @@
+|
+  cassandra='
+  install: true
+  deploymentSchema:
+    dataCenters:
+      - name: dc1
+        replicas: 3
+        seeds: 1
+        storage:          
+          size: 4Gi
+          storageClasses:
+            - csi-cinder-sc-delete
+  ';
+  backupDaemon='
+    install: false
+  ';
+  dbaas='
+    install: false
+  ';
+  robotTests='
+    tags: smoke
+    install: true
+  ';
+  waitTimeout=3000;
+  
+  ESCAPE_SEQUENCE=true;

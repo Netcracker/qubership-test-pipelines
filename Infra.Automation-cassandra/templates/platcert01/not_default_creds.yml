@@ -1,0 +1,39 @@
+|
+  cassandra='
+    username: "M~!ch=EB@_DaDzm_uN"
+    password: ''
+    install: true
+    deploymentSchema:
+      dataCenters:
+        - name: dc1
+          replicas: 3
+          seeds: 1
+          storage:            
+            size: 4Gi
+            storageClasses:
+              - custom-csi-cinder-delete
+  ';
+  backupDaemon='
+    install: true
+    username: "I09^0k|9lH"
+    password: ''
+    storage:    
+      storageClasses:
+        - custom-csi-cinder-delete
+  ';
+  dbaas='
+    install: true
+    adapter:
+      username: "0c3O2|%l1R"
+      password: ''
+    aggregator:
+      username: "cluster-dba_0c3O2|%l1R"
+      password: ''
+
+  ';
+  robotTests='
+    install: true
+  ';
+  waitTimeout=3000;
+  
+  ESCAPE_SEQUENCE=true;

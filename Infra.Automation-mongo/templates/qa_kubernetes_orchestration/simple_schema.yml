@@ -1,0 +1,26 @@
+|    
+  schemaSettings='
+  schemaType: ha
+  sharded: false
+  shardCount: 1
+  ';
+  mongodb='
+  install: true
+  storage:
+    storageClasses:
+      - csi-cinder-sc-delete
+  ';
+  backup='
+  install: true
+  storage:
+    storageClasses:
+      - csi-cinder-sc-delete
+  ';
+  dbaas='
+  install: true
+  ';
+  robotTests='
+  install: true
+  ';
+  ESCAPE_SEQUENCE=true;
+  

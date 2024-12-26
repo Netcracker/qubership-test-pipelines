@@ -1,0 +1,177 @@
+JOB_NAME: ''
+JENKINS_URL: ''
+TOKEN_NAME: CLOUD_TOKEN
+CLOUD_URL: ''
+CLOUD_NAMESPACE: consul-service
+DESCRIPTOR_URL: ''
+DESCRIPTOR_NAME: DESCRIPTOR_URL
+DEPL\_MODE\: clean
+KUBECTL_VERSION: 1.18.4
+HELM_VERSION: 3.2.1
+ADDITIONAL_OPTIONS: []
+DEPLOYMENT_PARAMETERS: |
+  global:
+    enabled: true
+    enablePodSecurityPolicies: true
+    tls:
+      enabled: false
+    acls:
+      manageSystemACLs: true
+    federation:
+      enabled: false
+  server:
+    enabled: true
+    affinity: {
+      "podAntiAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": [
+          {
+            "labelSelector": {
+              "matchLabels": {
+                "app": "consul",
+                "release": "consul-service-consul-service",
+                "component": "server"
+              }
+            },
+            "topologyKey": "kubernetes.io/hostname"
+          }
+        ]
+      },
+      "nodeAffinity": {
+        "requiredDuringSchedulingIgnoredDuringExecution": {
+          "nodeSelectorTerms": [
+            {
+              "matchExpressions": [
+                {
+                  "key": "kubernetes.io/hostname",
+                  "operator": "In",
+                  "values": [
+                    "worker1",
+                    "worker2",
+                    "worker3"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "preferredDuringSchedulingIgnoredDuringExecution": [
+          {
+            "weight": 99,
+            "preference": {
+              "matchExpressions": [
+                {
+                  "key": "kubernetes.io/hostname",
+                  "operator": "In",
+                  "values": [
+                    "worker1"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "weight": 50,
+            "preference": {
+              "matchExpressions": [
+                {
+                  "key": "kubernetes.io/hostname",
+                  "operator": "In",
+                  "values": [
+                    "worker2"
+                  ]
+                }
+              ] 
+            }
+          },
+          {
+            "weight": 1,
+            "preference": {
+              "matchExpressions": [
+                {
+                  "key": "kubernetes.io/hostname",
+                  "operator": "In",
+                  "values": [
+                    "worker3"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+    replicas: 3
+    bootstrapExpect: 3
+    storage: 1Gi
+    persistentVolumes:
+      - consul-1
+      - consul-2
+      - consul-3
+    connect: true
+    updatePartition: 0
+    disruptionBudget:
+      enabled: true
+    tolerations: {}
+    resources:
+      requests:
+        memory: "120Mi"
+        cpu: "50m"
+      limits:
+        memory: "1024Mi"
+        cpu: "400m"
+  externalServers:
+    enabled: false
+  client:
+    enabled: true
+    nodeSelector: {
+      "role": "compute"
+    }
+    resources:
+      requests:
+        memory: "64Mi"
+        cpu: "25m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+  dns:
+    enabled: "-"
+  ui:
+    enabled: true
+    ingress:
+      enabled: true
+      hosts: 
+        - host: consul-consul-service.qa-kubernetes.openshift.sdntest.qubership.org
+    service:
+      enabled: true
+  connectInject:
+    enabled: false
+  meshGateway:
+    enabled: false
+  ingressGateways:
+    enabled: false
+  terminatingGateways:
+    enabled: false
+  monitoring:
+    enabled: true
+    consulExecPluginInterval: "30s"
+    consulExecPluginTimeout: "20s"
+    monitoringType: "prometheus"
+    installDashboard: true
+    consulScriptDebug: ""
+  backupDaemon:
+    enabled: true
+    storage: 1Gi
+    storageClass: csi-cinder-sc-delete
+    backupSchedule: "0 0 * * *"
+    evictionPolicy: "0/1d,7d/delete"
+  consulAclConfigurator:
+    enabled: true
+    name: consul-acl-configurator
+    reconcilePeriod: 100
+    namespaces: ""
+    serviceName: "consul-acl-configurator-reconcile"
+    consul:
+      port: 8500
+  integrationTests:
+    enabled: true
+    tags: backupORcrudORha

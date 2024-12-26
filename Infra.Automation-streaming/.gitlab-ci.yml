@@ -1,0 +1,364 @@
+#[Streaming-service] Regression sprint pipeline R2024.4 Sprint 1 (qa_kubernetes)
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+  KUBECTL: /builds/PROD.Platform.HA/Infra.Automation/binary/kubectl
+  JOB_NAME_CLEAN: ''
+  JOB_NAME_UPDATE: ''
+  CLOUD_HOST: ${QA_KUBER_HOST}
+  CLOUD_TOKEN: ${QA_KUBER_TOKEN}
+  DEPLOY_SCRIPT_APP: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  DEPLOY_SCRIPT_DP: /scripts/external_platform_library_builtIn/deploy_with_helmdeployer.py
+  UPGRADE_CRD_SCRIPT: /scripts/external_platform_library_builtIn/upgrade_crd.py
+  APPLY_RESOURCES_SCRIPT: /scripts/external_platform_library_builtIn/prepare_restricted_resources.py
+  CLEAN_NS_SCRIPT: /scripts/external_platform_library_builtIn/clean_namespace.py
+  PATCH_NS: /scripts/external_platform_library_builtIn/patch_ns_restricted.py
+  REPORT_SCRIPT: /scripts/external_platform_library_builtIn/report.py
+  ### ----------------------------------- Cloud specific configuration ----------------------------------- ###
+  ### ----------------------------------- ocp_cert_1 configuration --------------------------------------- ###
+  #  PREFIX: ocp_cert_1
+  #  JENKINS_URL: ''
+  #  JENKINS_USER: ''
+  #  JENKINS_PASS: ''
+  #  CREDS_IN_DEPLOYER: ''
+  #  RESTRICTED_USER_APP: ''
+  #  CLOUD_HOST_OVERALL: ${OCP_CERT_1_HOST}
+  #  CLOUD_TOKEN_OVERALL: ${OCP_CERT_1_TOKEN}
+  #  PROJECT: streaming-service
+  ### ----------------------------------- platcert01 configuration ----------------------------------- ###
+  # PREFIX: platcert01
+  # JENKINS_URL: ''
+  # JENKINS_USER: ''
+  # JENKINS_PASS: ''
+  # CREDS_IN_DEPLOYER: ''
+  # RESTRICTED_USER_APP: ''
+  # CLOUD_HOST_OVERALL: ${PLATCERT01_HOST}
+  # CLOUD_TOKEN_OVERALL: ${PLATCERT01_TOKEN_ADMIN}
+  # PROJECT: streaming-service
+  ### ----------------------------------- qa_kubernetes configuration ----------------------------------- ###
+  PREFIX: qa_kubernetes_orchestration
+  JENKINS_URL: ''
+  JENKINS_USER: ''
+  JENKINS_PASS: ''
+  CREDS_IN_DEPLOYER: ''
+  RESTRICTED_USER_APP: ''
+  CLOUD_HOST_OVERALL: ${QA_KUBER_HOST}
+  CLOUD_TOKEN_OVERALL: ${QA_KUBER_TOKEN}
+  PROJECT: streaming-service
+  ### ----------------------------------- Cloud specific configuration ----------------------------------- ###
+  KUBECONFIG: $QA_KUBER_KUBECONFIG
+  # KUBECONFIG: $OCP_CERT_1_KUBECONFIG
+  ### ------------------------------------------- Manifests --------------------------------------------- ### 
+  MAN_DP_OLD: ""
+  MAN_DP_NEW: ""
+  N2_RELEASE: ''
+  N1_RELEASE: ''
+  PREVIOUS_SPRINT: ''
+  LATEST_SPRINT: ''
+  # TLS KAFKA
+  KAFKA_PROJECT: kafka-service
+  KAFKA_VERSION: kafka:release-2024.3-1.8.2-delivery_kafka_3.7.0-20240910.064115-1-RELEASE
+  # Profiler integration
+  DIAGNOSTIC_AGENT_VERSION: nc-diagnostic-agent:release-1.3.0-20240820.074150-1-RELEASE
+  # Restricted user
+  DEPLOY_SCHEME: full  # basic or full
+  LATEST_SPRINT_TAG: ''
+  PREVIOUS_SPRINT_TAG: ''
+
+stages:
+  - clean_previous_sprint
+  - upgrade_from_previous_sprint_to_latest_sprint
+  - clean_latest_sprint
+  - upgrade_latest_diff_params_full_at
+  - clean_n1_release
+  - upgrade_from_n1_release_to_latest_sprint
+  - clean_n2_release
+  - upgrade_from_n2_release_to_latest_sprint
+  - clean_latest_sprint_infra_pasport
+  - clean_previous_sprint_restricted
+  - upgrade_from_previous_sprint_to_latest_sprint_restricted
+  - clean_latest_sprint_restricted
+  - clean_latest_sprint_without_components
+  - upgrade_latest_sprint_from_1_to_3_replicas
+  - clean_latest_sprint_connector_crd
+  - upgrade_latest_sprint_custom_creds
+  - clean_latest_sprint_non_tls
+  - upgrade_latest_sprint_from_non_tls_to_tls
+  - clean_latest_sprint_tls
+  - upgrade_latest_sprint_from_tls_to_non_tls
+  - clean_latest_sprint_drd_tls_secrets
+  - upgrade_latest_sprint_drd_from_tls_secrets_to_tls_certs
+  - clean_latest_sprint_profiler_jaeger_integration
+  - clean_kafka_latest_sprint_with_tls
+  - clean_latest_sprint_full_at_tls_with_tls_kafka
+  - create_report
+
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+    - chmod +x $KUBECTL
+    - echo "$KUBECONFIG" > kubeconfig.env
+    - export KUBECONFIG=/builds/PROD.Platform.HA/Infra.Automation/kubeconfig.env
+
+
+.test-case: &test-case
+  image: ${PYTHON_IMAGE}
+  extends: .check_state_logs_script.run
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: ${PROJECT}
+    ALLOWED_RESTARTS_AMOUNT: 1
+    ALLOWED_ERROR_LOGS_AMOUNT: 1000
+  tags:
+    - ''
+  allow_failure: true
+  when: on_success
+
+
+.clean_ns: &clean_ns
+  - python3 "${CLEAN_NS_SCRIPT}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --cloud-namespace="${PROJECT}" --cr-list="streamingservices"
+
+
+include:
+  - project: 'PROD.Platform.HA/Infra.Automation'
+    ref: pipe_image
+    file: 'api2.yaml'
+
+
+1-Clean [PREVIOUS_SPRINT]:
+  <<: *test-case
+  stage: clean_previous_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+
+2-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_previous_sprint_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+
+3-Clean [LATEST_SPRINT]:
+  <<: *test-case
+  stage: clean_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+
+4-Upgrade [LATEST_SPRINT] Diff Params Full-AT:
+  <<: *test-case
+  stage: upgrade_latest_diff_params_full_at
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls_updated.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: ${PROJECT}
+    ALLOWED_RESTARTS_AMOUNT: 1
+    ALLOWED_ERROR_LOGS_AMOUNT: 4000
+
+# Releases
+5-Clean [N1_RELEASE]:
+  <<: *test-case
+  stage: clean_n1_release
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N1_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+6-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_n1_release_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+7-Clean [N2_RELEASE]:
+  <<: *test-case
+  stage: clean_n2_release
+  script:
+    - python3 "${PATCH_NS}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --namespace="${PROJECT}" --label="add"
+    - python3 /scripts/external_platform_library_builtIn/remove_crd.py --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --crd-name="streamingservices.qubership.org"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_without_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${N2_RELEASE}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - python3 "${PATCH_NS}" --cloud-token="${CLOUD_TOKEN}" --cloud-host="${CLOUD_HOST}" --namespace="${PROJECT}" --label="remove"
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+8-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]:
+  <<: *test-case
+  stage: upgrade_from_n2_release_to_latest_sprint
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_without_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+# Infra Passport
+9-Clean [LATEST_SPRINT] Infra Passport:
+  <<: *test-case
+  stage: clean_latest_sprint_infra_pasport
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/infra_passport.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+# Restricted
+10-Clean [PREVIOUS_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_previous_sprint_restricted
+  script:
+    - *clean_ns
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${PREVIOUS_SPRINT_TAG}" --service="streaming"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls_restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+11-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: upgrade_from_previous_sprint_to_latest_sprint_restricted
+  script:
+    - python3 "${UPGRADE_CRD_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --crd-tag="${LATEST_SPRINT_TAG}" --service="streaming"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls_restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+12-Clean [LATEST_SPRINT] Restricted:
+  <<: *test-case
+  stage: clean_latest_sprint_restricted
+  script:
+    - *clean_ns 
+    - python3 "${APPLY_RESOURCES_SCRIPT}" --cloud-host="${CLOUD_HOST}" --cloud-token="${CLOUD_TOKEN}" --namespace="${PROJECT}" --crd-tag="${LATEST_SPRINT_TAG}" --service="streaming"
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls_restricted.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${RESTRICTED_USER_APP}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $RESTRICTED_USER_APP != "" ] }
+
+# Custom
+13-Clean [LATEST_SPRINT] W/O Components:
+  <<: *test-case
+  stage: clean_latest_sprint_without_components
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_without_components.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+14-Upgrade [LATEST_SPRINT] From 1 To 3 Replicas:
+  <<: *test-case
+  stage: upgrade_latest_sprint_from_1_to_3_replicas
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_3_replicas.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+15-Clean [LATEST_SPRINT] Connector CRD:
+  <<: *test-case
+  stage: clean_latest_sprint_connector_crd
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_connector_crd.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+16-Upgrade [LATEST_SPRINT] Custom Creds:
+  <<: *test-case
+  stage: upgrade_latest_sprint_custom_creds
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls_updated_creds.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+#Upgrade to tls 
+17-Clean [LATEST_SPRINT] non TLS:
+  <<: *test-case
+  stage: clean_latest_sprint_non_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_without_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+18-Upgrade [LATEST_SPRINT] From non-TLS To TLS:
+  <<: *test-case
+  stage: upgrade_latest_sprint_from_non_tls_to_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+#Upgrade to non-tls 
+19-Clean [LATEST_SPRINT] TLS:
+  <<: *test-case
+  stage: clean_latest_sprint_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${PREVIOUS_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+20-Upgrade [LATEST_SPRINT] From TLS To Non-TLS:
+  <<: *test-case
+  stage: upgrade_latest_sprint_from_tls_to_non_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_without_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+#Install with tls secrets
+21-Clean [LATEST_SPRINT] DRD TLS Secrets:
+  <<: *test-case
+  stage: clean_latest_sprint_drd_tls_secrets
+  script:
+    - *clean_ns 
+    - $KUBECTL create -f ./resources/streaming_tls_secret.yml -n ${PROJECT} || true
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_drd_tls_secret.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update"
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+#Upgrade with tls certs specified
+22-Upgrade [LATEST_SPRINT] DRD From TLS Secrets To TLS Cetificates:
+  <<: *test-case
+  stage: upgrade_latest_sprint_drd_from_tls_secrets_to_tls_certs
+  script:
+    - $KUBECTL delete secrets streaming-platform-drd-tls-test-secret streaming-platform-tls-test-secret -n ${PROJECT} || true
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_drd_tls_certs.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="1166a846603576efa37a4ab945f5002153" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Rolling Update" --request-type="post"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+
+# Integrations
+23-Clean [LATEST_SPRINT] Profiler Jaeger Integration:
+  <<: *test-case
+  stage: clean_latest_sprint_profiler_jaeger_integration
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_profiler_jaeger.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT} ${DIAGNOSTIC_AGENT_VERSION}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $DEPLOY_SCHEME == "full" ] }
+  when: manual
+
+# With TLS Kafka
+24-Clean Kafka [LATEST_SPRINT] With TLS:
+  <<: *test-case
+  stage: clean_kafka_latest_sprint_with_tls
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/kafka-service/${PREFIX}/kafka_base_sc_tls.yaml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${KAFKA_VERSION}" --project="${PREFIX}-${KAFKA_PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $KAFKA_VERSION != "" ] }
+  variables:
+    CLOUD_HOST: ${CLOUD_HOST_OVERALL}
+    CLOUD_TOKEN: ${CLOUD_TOKEN_OVERALL}
+    ARRAY_NS: ${KAFKA_PROJECT}
+    ALLOWED_RESTARTS_AMOUNT: 1
+    ALLOWED_ERROR_LOGS_AMOUNT: 700
+
+25-Clean [LATEST_SPRINT] Full-AT TLS With TLS Kafka:
+  <<: *test-case
+  stage: clean_latest_sprint_full_at_tls_with_tls_kafka
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates/streaming-service/${PREFIX}/streaming_clean_tls_kafka_tls.yml" --jenkins-user="${JENKINS_USER}" --jenkins-pass="${JENKINS_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${LATEST_SPRINT}" --project="${PREFIX}-${PROJECT}" --deploy-mode="Clean Deploy"
+    - !reference [.template_job_status, script]
+  only: { variables: [ $KAFKA_VERSION != "" ] }
+
+Report:
+  image: ${PYTHON_IMAGE}
+  tags:
+    - ''
+  when: manual
+  stage: create_report
+  script:
+    - python3 ${REPORT_SCRIPT} --pipeline_id="${CI_PIPELINE_ID}" --token="${GIT_TOKEN}" --webex-room-id="${WEBEX_CI_ROOM_ID}" --webex-token="${WEBEX_CI_TOKEN}" --versions="LATEST_SPRINT=${LATEST_SPRINT},PREVIOUS_SPRINT=${PREVIOUS_SPRINT},N1_RELEASE=${N1_RELEASE},N2_RELEASE=${N2_RELEASE}, LATEST_SPRINT_TAG=${LATEST_SPRINT_TAG}, PREVIOUS_SPRINT_TAG=${PREVIOUS_SPRINT_TAG}"
+  artifacts:
+    paths:
+      - "*.html"

@@ -1,0 +1,103 @@
+|
+  global='
+  name: kafka
+  externalKafka:
+    enabled: true
+    bootstrapServers: aws
+    enableSsl: true
+    saslMechanism: ""
+    username: ""
+    password: ''
+  customLabels: {}
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: ''
+      clientUsername: client
+      clientPassword: ''
+      zookeeperClientUsername: zclient
+      zookeeperClientPassword: ''
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: ''
+      s3:
+        keyId: ''
+        keySecret: ''
+  ';
+  operator='
+  replicas: 1
+  ';
+  kafka='
+  install: false
+  ';
+  monitoring='
+  install: true
+  kafkaTotalBrokerCount: 1
+  securityContext:
+    runAsUser: 1000
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+  lagExporter:
+    enabled: true
+    pollIntervalSeconds: 30
+    cluster:
+      name: kafka
+
+
+
+  ';
+  akhq='
+  install: true
+  ingress:
+    host: akhq-kafka-external.cloudplatform-eks.k8s.qubership.org
+  securityContext:
+    runAsUser: 1000
+  ';
+  backupDaemon='
+  install: true
+  s3:
+    enabled: true
+    url: https://s3.amazonaws.com
+    bucket: kafka-backup-qa
+  storage: 1Gi
+  storageClass: efs-sc-1
+  backupSchedule: "*/30 * * * *"
+  evictionPolicy: 0/1d,7d/delete
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 25m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  integrationTests='
+  install: true
+  kafkaBootstrapServers:
+  service:
+    name: kafka-integration-tests-runner
+  waitForResult: true
+  timeout: 2400
+  tags: kafka_crud
+  kafkaIsManagedByOperator: true
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 200m
+    limits:
+      memory: 256Mi
+      cpu: 400m
+  ';
+  ESCAPE_SEQUENCE=true;
+  

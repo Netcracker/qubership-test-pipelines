@@ -1,0 +1,59 @@
+|
+  global='
+  cloudIntegrationEnabled: false
+  ';
+  name=rabbitmq-service;
+  rabbitmqPrometheusMonitoring=true;
+  rabbitmq='
+  runAsUser: 5000
+  hostpath_configuration: true
+  validate_state: false
+  clean_rabbitmq_pvs: false
+  auto_reboot: true
+  ingress:
+    enabled: true
+    host: rabbitmq.platcert01.kubernetes.sdntest.qubership.org
+  custom_params:
+    rabbitmq_vm_memory_high_watermark: 90%
+    rabbitmq_default_user: admin
+    rabbitmq_default_password: ''
+  resources:
+    requests:
+      cpu: 301m
+      memory: 301Mi
+    limits:
+      cpu: 601m
+      memory: 601Mi
+    storageclass: '""'
+  storage: 750Mi
+  volumes:
+    - rmq-hp-1
+    - rmq-hp-2
+    - rmq-hp-3
+  nodes:
+    - platcert01-node-1-4
+    - platcert01-node-1-5
+    - platcert01-node-1-6
+  enabledPlugins:
+    - rabbitmq_prometheus
+  perQueueMetrics: true
+  ';
+  backupDaemon='
+  enabled: true
+  persistentVolume: rabbitmq-backup
+  storageClass: local-path
+  backupSchedule: "*/15 * * * *"
+  evictionPolicy: 1h/1d,7d/delete
+  securityContext:
+    runAsUser: 5000
+    fsGroup: 5000
+  ';
+  tests='
+  runTests: true
+  runTestsOnly: false
+  timeout: 300
+  tags: smoke
+  waitTestResultOnJob: true
+  ';
+  ESCAPE_SEQUENCE=true;
+  

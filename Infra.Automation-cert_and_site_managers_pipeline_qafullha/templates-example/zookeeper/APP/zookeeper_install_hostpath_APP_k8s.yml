@@ -1,0 +1,60 @@
+|
+  global='
+  name: zookeeper
+  secrets:
+    zooKeeper:
+      adminUsername: zadmin
+      adminPassword: ''
+      clientUsername: zclient
+      clientPassword: ''
+      additionalUsers: user:pass
+    backupDaemon:
+      username: admin
+      password: ''
+  ';
+  operator='
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  zooKeeper='
+  replicas: 3
+  storage:
+    volumes:
+      - pv-zookeeper-1
+      - pv-zookeeper-2
+      - pv-zookeeper-3
+    nodes:
+      - worker1
+      - worker2
+      - worker3
+    size: 5Gi
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  backupDaemon='
+    install: true
+    backupStorage:
+      persistentVolumeType: predefined
+      persistentVolumeName: zookeeper-backup-nfs
+      volumeSize: 1Gi
+    securityContext: 
+      runAsUser: 1000
+      fsGroup: 1000
+  ';
+  monitoring='
+  install: true
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  integrationTests='
+  install: true
+  tags: zookeeperNOTzookeeper_backup_daemon
+  timeout: 600
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  ESCAPE_SEQUENCE=true;

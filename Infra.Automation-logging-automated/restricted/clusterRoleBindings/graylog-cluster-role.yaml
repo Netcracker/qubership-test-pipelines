@@ -1,0 +1,17 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: graylog-cluster-role
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: logging-operator
+    meta.helm.sh/release-namespace: logging-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: logging-graylog-cluster-role
+subjects:
+  - kind: ServiceAccount
+    name: logging-graylog
+    namespace: logging-operator

@@ -1,0 +1,93 @@
+
+  global='
+  cloudIntegrationEnabled: false
+  ';
+  opensearch='
+  tls:
+    enabled: false
+  securityConfig:
+    authc:
+      basic:
+        username: admin
+        password: ''
+  securityContextCustom:
+    runAsUser: 1000
+    fsGroup: 1000
+  main:
+    resources:
+      requests:
+        cpu: 300m
+        memory: 2Gi
+      limits:
+        cpu: 700m
+        memory: 2Gi
+    javaOpts: -Xms1024m -Xmx1024m
+    persistence:
+      storageClass: csi-cinder-sc-delete
+  snapshots:
+    enabled: true
+    persistentVolumeType: predefined
+    persistentVolume: pv-nfs-opensearch-backup-1
+    repositoryName: snapshots
+    volumeSize: 5Gi
+    s3:
+      enabled: false
+  client:
+    enabled: true
+    ingress:
+      enabled: true
+      hosts:
+        - opensearch-cluster.apps.ocp-cert-1.openshift.sdntest.qubership.org
+  ';
+  dashboards='
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: dashboard-opensearch-service.apps.ocp-cert-1.openshift.sdntest.qubership.org
+        paths:
+          - path: /
+  ';
+  dbaasAdapter='
+  enabled: false
+  dbaasAdapterAddress: http://dbaas.opensearch-cluster:8080
+  dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas:8080
+  dbaasAdapter.dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
+  opensearchRepo: snapshots
+  opensearchRepoRoot: /usr/share/opensearch/snapshots
+  opensearchPort: 9200
+  opensearchProtocol: http
+  dbaasUsername: dbaas-adapter
+  dbaasPassword: ''
+  registrationAuthUsername: cluster-dba
+  registrationAuthPassword: ''
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  curator='
+  enabled: true
+  backupSchedule: 0 * * * *
+  evictionPolicy: 0/1d,7d/delete
+  username: backup
+  password: ''
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  monitoring='
+  enabled: true
+  includeIndices: true
+  slowQueries:
+    enabled: true
+  ';
+  integrationTests='
+  enabled: true
+  tags: smokeORbackupORdbaasORauthenticationORopensearch_images
+  ';
+  statusProvisioner='
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 2000
+  ';
+  ESCAPE_SEQUENCE=true;
+

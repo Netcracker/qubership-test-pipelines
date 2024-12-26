@@ -1,0 +1,64 @@
+|
+  name=mistral-service;
+  mistral='
+    tls:
+      enabled: false
+    liteEnabled: "True"
+  ';
+  mistralCommonParams='
+    postgres:
+      dbName: "mistral_lite_app_2"
+      host: "pg-patroni.postgres.svc"
+      port: "5432"
+    rabbit:
+      host: "rabbitmq.rabbitmq.svc"
+      port: "5672"
+      vhost: "mistral_app_lite"
+    kafkaNotifications:
+      enabled: False
+      host: "kafka.kafka-service"
+      topic: "mistral_nc4"
+      consumerGroupId: "mistral_nc4"
+      securityEnabled: true
+    auth:
+      enable: false
+    idpServer: "http://identity-management.security-services.svc.cluster.local:8080"
+    idpExternalServer: "https://identity-management-security-services.dr311qa-arbiter.openshift.sdntest.qubership.org"
+    securityProfile: "dev"
+  ';
+  mistralLite='
+    includeLocalRmq: false
+    resources:
+      requests:
+        cpu: "900m"
+        memory: "900Mi"
+      limits:
+        cpu: "1000m"
+        memory: "1000Mi"
+  ';
+  mistralMonitoring='
+    prometheusEnabled: true
+  ';
+  secrets='
+    kafkaSaslPlainUsername: "client"
+    kafkaSaslPlainPassword: "client"
+    pgAdminPassword: "''"
+    pgAdminUser: "postgres"
+    pgPassword: "mistral_test_password"
+    pgUser: "mistral_test_user"
+    rabbitAdminPassword: ''
+    rabbitAdminUser: "admin"
+    rabbitPassword: ''
+    rabbitUser: "admin"
+    idpRegistrationToken: "9XM#I0mmwX#FIZ#~Q@ox~YCQmJFYmCmGciANa7losr@6TcQ7kNzJ1datEUVR=mmU"
+  ';
+  integrationTests='
+    enabled: true
+    runTestsOnly: false
+    mistralReadyTimeout: 900
+    waitTestResultOnJob: true
+    runAsUser: 5000
+  ';
+  ESCAPE_SEQUENCE=true;
+  CUSTOM_TIMEOUT_MIN=30;
+  CLOUD_CORE_INTEGRATION_ENABLED=false;

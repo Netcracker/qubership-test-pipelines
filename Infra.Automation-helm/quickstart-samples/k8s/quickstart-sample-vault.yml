@@ -1,0 +1,38 @@
+operator:
+  vaultConfiguratorEnabled: true
+  watchNamespace: postgres,zookeeper-service,kafka-service
+  createClusterResources: true
+server:
+  authDelegator:
+    enabled: true
+  ha:
+    config:
+      disable_mlock: true
+      ui: true
+      storage:
+        consul:
+          address: consul-server.consul-helm:8500
+          path: helm_pipe
+          service: vault-helm-vault
+          service_tags: first_tag,second_tag,another_tag
+      listener:
+        tcp:
+          address: "[::]:8200"
+          cluster_address: "[::]:8201"
+          tls_disable: 1
+          telemetry:
+            unauthenticated_metrics_access: true
+      service_registration: null
+      plugin_directory: /vault/plugins/
+  ingress:
+    enabled: true
+    hosts:
+      - host: vault-test-service-helm.apps.{{env_pipe_domain_name}}
+        http:
+          paths:
+            - path: /
+              backend:
+                serviceName: vault-service
+                servicePort: 8200
+integrationTests:
+  enabled: true

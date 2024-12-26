@@ -1,0 +1,54 @@
+JOB_NAME: ''
+JENKINS_URL: ''
+TOKEN_NAME: CLOUD_TOKEN
+CLOUD_URL: ''
+CLOUD_NAMESPACE: jaeger
+DESCRIPTOR_NAME: DESCRIPTOR_URL
+DEPL\_MODE\: upgrade
+KUBECTL_VERSION: 1.18.4
+HELM_VERSION: 3.2.1
+ADDITIONAL_OPTIONS: []
+DEPLOYMENT_PARAMETERS: |
+    jaeger:
+      storage:
+        type: cassandra
+    cassandraSchemaJob:
+      install: true
+      host: cassandra-0.cassandra.cassandra-operations.svc
+      keyspace: jaeger112
+      password: ''
+      username: cassandra
+      datacenter: main
+      mode: test
+
+    agent:
+      install: true
+    collector:
+      install: true
+      resources:
+        requests:
+          cpu: 300m
+          memory: 300Mi
+        limits:
+          cpu: 300m
+          memory: 300Mi
+    hotrod:
+      install: true
+      agent:
+        host: jaeger-app-agent.jaeger.svc
+        port: 6831
+      route:
+        install: true
+        host: "hotrod-jaeger.dr311qa-arbiter.openshift.sdntest.qubership.org"
+    query:
+      install: true
+      resources:
+        requests:
+          cpu: 400m
+          memory: 400Mi
+        limits:
+          cpu: 400m
+          memory: 400Mi
+      route:
+        install: true
+        host: "jaeger.dr311qa-arbiter.openshift.sdntest.qubership.org"

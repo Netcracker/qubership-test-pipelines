@@ -1,0 +1,109 @@
+|
+  patroni='
+  install: true
+  ignoreSlots: true
+  ignoreSlotsPrefix: test_
+  replicas: 2
+  securityContext:
+    fsGroup: 26
+    runAsUser: 26
+  resources:
+    requests:
+      cpu: 120m
+      memory: 250Mi
+    limits:
+      cpu: 260m
+      memory: 501Mi
+  postgreSQLParams:
+    - "max_connections: 150"
+    - "shared_preload_libraries: pg_stat_statements, pgsentinel, pg_stat_kcache,
+      pg_wait_sampling, pg_hint_plan, decoderbufs, pg_cron"
+    - "wal_level: logical"
+  storage:
+    type: pv
+    size: 5Gi
+    storageClass: csi-cinder-sc-delete
+    nodes:
+      - worker1
+      - worker2
+  ';
+  metricCollector='
+  install: true
+  securityContext:
+    fsGroup: 26
+    runAsUser: 26
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 510Mi
+  collectionInterval: 60
+  telegrafPluginTimeout: 60
+  metricsProfile: dev
+  prometheusMonitoring: true
+  applyGrafanaDashboard: true
+  ';
+  postgresExporter='
+  install: true
+  securityContext:
+    fsGroup: 26
+    runAsUser: 26
+  ';
+  backupDaemon='
+  install: true
+  walArchiving: false
+  backupSchedule: 0/15 * * * *
+  evictionPolicy: 7h/delete
+  securityContext:
+    runAsUser: 26
+    fsGroup: 26
+  resources:
+    limits:
+      cpu: 500m
+      memory: 501Mi
+    requests:
+      cpu: 100m
+      memory: 250Mi
+  storage:
+    type: pv
+    size: 5Gi
+    storageClass: csi-cinder-sc-delete
+    nodes:
+      - worker3
+  ';
+  tracing='
+  enabled: true
+  host: jaeger-collector.jaeger:4317
+  ';
+  dbaas='
+  install: true
+  multiUsers: true
+  adapter:
+    address: https://dbaas-postgres-adapter.postgres-test:8080
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+  resources:
+    limits:
+      cpu: "1"
+      memory: 901Mi
+    requests:
+      cpu: 250m
+      memory: 900Mi
+  ';
+  tests='
+  install: true
+  runTestScenarios: full
+  ';
+  tls='
+  enabled: true
+  generateCerts:
+    enabled: true
+    clusterIssuerName: qa-issuer-self
+  ';
+  INTERNAL_TLS_ENABLED=true;
+  ESCAPE_SEQUENCE=true;
+  NC_CH_SLEEP_TIME=30;
+  NC_DBAAS_ADAPTER_WAIT_TIMEOUT=900s;
+  CUSTOM_TIMEOUT_MIN='60';

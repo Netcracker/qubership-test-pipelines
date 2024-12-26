@@ -1,0 +1,59 @@
+| 
+  jaeger='
+  storage:
+    type: cassandra
+  ';
+  cassandraSchemaJob='
+  install: true
+  host: cassandra.cassandra-operations.svc
+  port: 9042
+  keyspace: jaeger
+  password: ''
+  username: cassandra
+  datacenter: datacenter1
+  mode: test
+  ';
+  agent='
+  install: true
+  ';
+  collector='
+  install: true
+  ';
+  hotrod='
+  install: true
+  agent:
+    host: jaeger-app-agent.jaeger.svc
+    port: 6831
+    resources:
+      requests:
+        cpu: 50m
+        memory: 100Mi
+      limits:
+        cpu: 25m
+        memory: 50Mi
+  ingress:
+    install: true
+    host: hotrod.apps.ocp-cert-1.openshift.sdntest.qubership.org
+  ';
+  query='
+  install: true
+  ingress:
+    install: true
+    host: jaeger.apps.ocp-cert-1.openshift.sdntest.qubership.org
+  ';
+  ESCAPE_SEQUENCE=true;
+  proxy='
+  install: true
+  type: basic
+  basic:
+    users:
+      - YWRtaW46YWRtaW4=
+  securityContext:
+    runAsUser: 2000
+  ';
+  integrationTests='
+  install: true
+  tags: smoke
+  statusWriting:
+    enabled: true
+  ';

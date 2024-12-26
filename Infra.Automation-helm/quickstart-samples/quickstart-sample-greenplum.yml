@@ -1,0 +1,33 @@
+greenplum:
+  install: true
+  securityContext:
+    runAsUser: 100600
+    fsGroup: 100600
+  main
+    storage:
+      type: pv
+      size: 1Gi
+      storageClass: {{env_pipe_storage_class}}
+    count: 2
+  segment:
+    storage:
+      type: pv
+      size: 1Gi
+      storageClass: {{env_pipe_storage_class}}
+    count: 2
+dbaas:
+  install: true
+  aggregator:
+    registrationAddress: {{env_pipe_dbaas_aggregator_registration_address}}
+backupDaemon:
+  install: true
+  storage:
+    type: pv
+    size: 1Gi
+    storageClass: {{env_pipe_storage_class}}
+metricCollector:
+  install: true
+  metricsProfile: prod
+  prometheusMonitoring: true
+  applyGrafanaDashboard: true
+

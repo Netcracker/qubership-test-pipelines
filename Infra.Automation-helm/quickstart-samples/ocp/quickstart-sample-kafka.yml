@@ -1,0 +1,40 @@
+global:
+  secrets:
+    kafka:
+      disableSecurity: false
+      adminUsername: admin
+      adminPassword: ''
+      clientUsername: client
+      clientPassword: ''
+      zookeeperClientUsername: zclient
+      zookeeperClientPassword: ''
+    monitoring:
+      prometheusUsername: prometheus
+      prometheusPassword: ''
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+      schemaRegistryUsername: admin
+      schemaRegistryPassword: admin
+integrationTests:
+  install: true
+  timeout: 3000
+  tags: kafka
+  zookeeperOsProject: zookeeper-helm
+monitoring:
+  install: true
+kafka:
+  install: true
+  storage:
+    size: 1Gi
+    className:
+      - {{env_pipe_storage_class}}
+  zookeeperConnect: zookeeper.zookeeper-helm:2181
+  environmentVariables:
+    - CONF_KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+backupDaemon:
+  install: false
+akhq:
+  install: true
+  ingress:
+    host: akhq-kafka-helm.{{env_pipe_domain_name}}

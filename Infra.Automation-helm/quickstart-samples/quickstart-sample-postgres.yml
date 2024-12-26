@@ -1,0 +1,27 @@
+dbaas:
+  install: true
+  aggregator:
+    registrationAddress: "http://dbaas-aggregator.dbaas-core:8080"
+patroni:
+  postgreSQLParams:
+    - "max_connections: 150"
+    - "shared_preload_libraries: pg_stat_statements, pg_hint_plan, decoderbufs, pg_cron"
+    - "wal_level: logical"
+  storage:
+    type: provisioned
+    size: 1Gi
+    storageClass: {{env_pipe_storage_class}}
+  securityContext:
+    fsGroup: 26
+    runAsUser: 26
+backupDaemon:
+  storage:
+    type: provisioned
+    size: 1Gi
+    storageClass: {{env_pipe_storage_class}}
+  securityContext:
+    runAsUser: 26
+    fsGroup: 26
+metricCollector:
+  prometheusMonitoring: true
+  applyGrafanaDashboard: true

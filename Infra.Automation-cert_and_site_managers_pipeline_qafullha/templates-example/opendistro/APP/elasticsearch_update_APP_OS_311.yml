@@ -1,0 +1,76 @@
+JENKINS_URL: ''
+JOB_NAME: ''
+PROJECT: dr311qa_arbiter-elastic-opendistro
+OPENSHIFT_CREDENTIALS: default_creds
+ARTIFACT_DESCRIPTOR_VERSION: opendistro-elasticsearch-service:1.13.2-1.1_20210721-112333_charts
+# Use DESCRIPTOR_NAME to set version as script argument
+DESCRIPTOR_NAME: ARTIFACT_DESCRIPTOR_VERSION
+|
+  elasticsearch='
+    securityConfig: 
+      authc: 
+        basic: 
+          username: "admin"
+          password: ''
+        oidc:
+          openid_connect_url: "http://identity-management.security-services-0.svc.cluster.local:8080/.well-known/openid-configuration"
+          subject_key: "sub"
+          roles_key: "sub"
+    securityContextCustom:
+      runAsUser: 1000
+      runAsGroup: 1000
+    fixMount:
+      enabled: true
+      securityContext:
+        runAsUser: 0
+    main: 
+      replicas: 3
+      nodeSelector: 
+        role: "compute"
+      resources: 
+        limits: 
+          cpu: "600m"
+          memory: "1024Mi"
+        requests: 
+          cpu: "200m"
+          memory: "650Mi"
+      javaOpts: "-Xms512m -Xmx512m"
+      persistence: 
+        persistentVolumes: 
+          - "node-left-1-pv-es-opendistro-left-1"
+          - "node-left-2-pv-es-opendistro-left-2"
+          - "node-left-3-pv-es-opendistro-left-3"
+        nodes: 
+          - "dr311qa-arbiter-node-left-1"
+          - "dr311qa-arbiter-node-left-2"
+          - "dr311qa-arbiter-node-left-3"
+        size: "5Gi"
+    client: 
+      ingress: 
+        enabled: true
+        hosts: 
+          - "elasticsearch-opendistro-cluster.dr311qa-arbiter.openshift.sdntest.qubership.org"
+    snapshots: 
+      enabled: true
+      storageClass: "glusterfs-storage"
+      size: "2Gi"
+  ';
+  podScheduler='
+    securityContext: 
+      runAsUser: 1000
+    nodeSelector: 
+      role: "compute"
+  ';
+  kibana='
+    enabled: true
+    ingress: 
+      enabled: true
+      hosts: 
+        - "kibana-elasticsearch-opendistro-cluster.dr311qa-arbiter.openshift.sdntest.qubership.org"
+    nodeSelector:
+      role: "compute"
+  ';
+  integrationTests.enabled=true;
+  integrationTests.tags=smoke;
+  ESCAPE_SEQUENCE=true;
+  DISABLE_CRD=true;

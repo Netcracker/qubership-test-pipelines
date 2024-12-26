@@ -1,0 +1,62 @@
+JOB_NAME: ''
+JENKINS_URL: ''
+TOKEN_NAME: CLOUD_TOKEN
+CLOUD_URL: ''
+CLOUD_NAMESPACE: rabbitmq
+DESCRIPTOR_URL: ''
+DESCRIPTOR_NAME: DESCRIPTOR_URL
+DEPL\_MODE\: clean
+KUBECTL_VERSION: 1.18.4
+HELM_VERSION: 3.2.1
+ADDITIONAL_OPTIONS: []
+DEPLOYMENT_PARAMETERS: |
+  name: rabbitmq-service
+
+  loglevel: INFO
+  rabbitmqPrometheusMonitoring: True
+
+  operator:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 100Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi
+
+  rabbitmq:
+    clean_rabbitmq_pvs: true
+    runAsUser: 5000
+    hostpath_configuration: true
+    validate_state: true
+    clean_rabbitmq_pvs: true
+    custom_params:
+      rabbitmq_vm_memory_high_watermark: 90%
+      rabbitmq_default_user: admin
+      rabbitmq_default_password: ''
+    replicas: 2
+    resources:
+      requests:
+        cpu: 400m
+        memory: 500Mi
+      limits:
+        cpu: 400m
+        memory: 500Mi
+      storageclass: '""'
+    storage: 750Mi
+    volumes:
+      - rmq-hp-1
+      - rmq-hp-2
+    nodes:
+      - worker1
+      - worker2
+    enabledPlugins:
+      - rabbitmq_prometheus
+  tests:
+    runAsUser: 5000
+    runTests: True
+    runTestsOnly: False
+    statusWritingEnabled: true
+    timeout: 300
+    type: basic
+    waitTestResultOnJob: True

@@ -1,0 +1,177 @@
+|
+  webserverSecretKey=''
+  fernetKey=''
+  ingress='
+  enabled: true
+  web:
+    hosts:
+      - web.apps.ocp-cert-1.openshift.sdntest.qubership.org
+  ';
+  customPreinstallJob='
+  enabled: true
+  resources: {}
+  env: []
+  serviceAccount:
+    create: false
+  role:
+    create: false
+  command: null
+  args:
+    - python
+    - /bin/createdb.py
+  extraSecrets:
+    postgres-conn:
+      stringData: |
+        POSTGRES_HOST: {{ .Values.data.metadataConnection.host }}
+        POSTGRES_PORT: "{{ .Values.data.metadataConnection.port }}"
+        DB_NAME: {{ .Values.data.metadataConnection.db }}
+        DB_USER: {{ .Values.data.metadataConnection.user }}
+        POSTGRES_PASSWORD: {{ .Values.data.metadataConnection.pass }}
+        POSTGRES_ADMIN_USER: postgres
+        POSTGRES_ADMIN_PASSWORD: ''
+  extraEnvFrom: |
+    - secretRef:
+        name: 'postgres-conn'
+  ';
+  data='
+  metadataSecretName: null
+  brokerUrlSecretName: null
+  metadataConnection:
+    user: airflowdb
+    pass: ''
+    host: pg-patroni.postgres.svc
+    port: "5432"
+    db: airflowdb_gitsync10
+    sslmode: disable
+    protocol: postgresql
+  brokerUrl: redis://default:airflow@airflow.redis.svc:6379/2
+  ';
+  airflowLocalSettings={{ .Files.Get "nc_files/nc_platform_logging_config.py" }};
+  config='
+  logging:
+    nc_logging_type: stdoutfilesystem
+    remote_logging: '{{- ternary "True" "False" .Values.elasticsearch.enabled }}'
+    colored_console_log: "False"
+    task_log_reader: task
+    audit_log_level: INFO
+    logging_config_class: airflow_local_settings.NC_DEFAULT_LOGGING_CONFIG
+    task_log_prefix_template: "[DAG_ID]:'{{ \"{{ ti.dag_id }}\" }}' [TASK_ID]:'{{
+      \"{{ ti.task_id }}\" }}' [TIMESTAMP]:'{{ \"{{ ts }}\" }}' [TRY_NUMBER]:'{{
+      \"{{ ti.try_number }}\" }}'"
+  secrets:
+    backend: null
+  api:
+    auth_backend: airflow.api.auth.backend.basic_auth
+  ';
+  workers='
+  replicas: 1
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: local-path
+  ';
+  extraSecrets='
+  airflow-ssh-secret:
+    stringData: |
+      gitSshKey: '{{ .Values.sshSecret }}'
+  dbaas-connection-params-main: null
+  ldap-bind-password:
+    stringData: |
+      AUTH_LDAP_BIND_PASSWORD: ''
+  ldap-bind-user:
+    stringData: |
+      AUTH_LDAP_BIND_USER: 'cn=Manager,dc=cloud,dc=com'
+  ';
+  extraEnvFrom=- secretRef:
+      name: 'ldap-bind-password'
+  - secretRef:
+      name: 'ldap-bind-user';
+  webserver='
+  defaultUser:
+    enabled: false
+  webserverConfig: |
+    import os
+    from airflow import configuration as conf
+    from flask_appbuilder.security.manager import AUTH_LDAP
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    SQLALCHEMY_DATABASE_URI = conf.get('core', 'SQL_ALCHEMY_CONN')
+    CSRF_ENABLED = True
+    AUTH_TYPE = 2
+    AUTH_LDAP_SERVER = 'ldap://openldap.qubership.org:21389'
+    AUTH_LDAP_SEARCH = 'ou=manoqa,dc=cloud,dc=com'
+    AUTH_LDAP_BIND_USER = os.getenv('AUTH_LDAP_BIND_USER')
+    AUTH_LDAP_BIND_PASSWORD = os.getenv('AUTH_LDAP_BIND_PASSWORD')
+    AUTH_LDAP_UID_FIELD = 'cn'
+    AUTH_LDAP_GROUP_FIELD = "memberOf"
+    AUTH_USER_REGISTRATION = True
+    AUTH_ROLES_SYNC_AT_LOGIN = True
+    AUTH_ROLES_MAPPING = {
+    "":
+    ["Admin"],
+    "":
+    ["Viewer"]
+    }
+    # LDAPS
+    AUTH_LDAP_USE_TLS = False
+  ';
+  platformAirflowMonitoring=true;
+  serviceMonitor='
+  enabled: true
+  selector:
+    app.kubernetes.io/component: monitoring
+  path: /admin/metrics
+  interval: 30s
+  ';
+  prometheusRule='
+  enabled: true
+  kubeAlerts: true
+  additionalLabels:
+    app.kubernetes.io/component: monitoring
+  groups: []
+  ';
+  ESCAPE_SEQUENCE=true;
+  enableBuiltInSecretEnvVars='
+  AIRFLOW__CORE__FERNET_KEY: true
+  AIRFLOW__CORE__SQL_ALCHEMY_CONN: true
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: true
+  AIRFLOW_CONN_AIRFLOW_DB: true
+  AIRFLOW__WEBSERVER__SECRET_KEY: true
+  AIRFLOW__CELERY__CELERY_RESULT_BACKEND: true
+  AIRFLOW__CELERY__RESULT_BACKEND: true
+  AIRFLOW__CELERY__BROKER_URL: true
+  AIRFLOW__ELASTICSEARCH__HOST: true
+  AIRFLOW__ELASTICSEARCH__ELASTICSEARCH_HOST: true
+  ';
+  integrationTests='
+    enabled: true
+    tags: smokeORairflow_images
+    secret:
+      airflow:
+        user: ""
+        password: ''
+  ';
+  statusProvisioner='
+    lifetimeAfterCompletion: 60
+    integrationTestsTimeout: 3000
+  ';
+  dags='
+  gitSync:
+    wait: 5
+    subPath: tests_dags_image/dags
+    repo: git@git.qubership.org:Services/airflow
+    branch: main
+    sshKeySecret: ''
+    uid: null
+    enabled: true
+    maxFailures: 10
+    securityContexts:
+      container:
+        capabilities:
+          drop:
+            - ALL
+        allowPrivilegeEscalation: false
+  ';
+  sshSecret=-----BEGIN RSA PRIVATE KEY-----
+
+
+  -----END RSA PRIVATE KEY-----;

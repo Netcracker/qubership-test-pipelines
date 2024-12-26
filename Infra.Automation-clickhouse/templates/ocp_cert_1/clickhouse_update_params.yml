@@ -1,0 +1,50 @@
+|
+  clickhouseCluster='
+  replicasCount: 3
+  pvSize: 5Gi
+  localStorage: no
+  zookeeperHost: zookeeper.zookeeper-service.svc
+  storageClassName: csi-cinder-sc-delete
+  serviceMonitor: enable
+  ingressHttp:
+    host: clickhouse-cluster.apps.ocp-cert-1.openshift.sdntest.qubership.org
+  ';
+  backupDaemon='
+  install: yes
+  storage:
+    remote: none
+  orchestrator:
+    resources:
+      limits:
+        cpu: 515m
+        memory: 556Mi
+      requests:
+        cpu: 255m
+        memory: 278Mi
+    pvSize: 2Gi
+    storageClassName: csi-cinder-sc-delete
+    accessModes:
+      - ReadWriteOnce
+  ';
+  dbaas='
+  install: true
+  multiUsers: true
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    registrationUsername: cluster-dba
+    registrationAuthPassword: ''
+  labels:
+    clusterName: clickhouse
+  clickhouse:
+    username: nc_dbaas_user
+    password: ''
+  adapter:
+    username: dbaas-aggregator
+    password: ''
+  ';
+  integrationTests='
+  install: true
+  tags: smoke
+  ';
+  ESCAPE_SEQUENCE=true;
+  

@@ -1,0 +1,124 @@
+|
+  zooKeeper='
+  disruptionBudget:
+    enabled: false
+  replicas: 3
+  storage:
+    size: 1Gi
+    className:
+      - efs-sc-1
+  snapshotStorage:
+    volumeSize: 1Gi
+  heapSize: 256
+  jolokiaPort: 9087
+  resources:
+    requests:
+      cpu: 60m
+      memory: 512Mi
+    limits:
+      cpu: 300m
+      memory: 512Mi
+  quorumAuthEnabled: true
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  environmentVariables:
+    - CONF_ZOOKEEPER_propertyName=propertyValue
+    - KEY=VALUE
+  ssl:
+    enabled: false
+    secretName: zookeeper-tls-secret
+    cipherSuites: []
+    enableTwoWaySsl: false
+    allowNonencryptedAccess: false
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      duration: 1
+      clusterIssuerName: dev-issuer-self
+  ';
+  global='
+  name: zookeeper
+  enablePersistentVolumeCreation: true
+  waitForPodsReady: true
+  podReadinessTimeout: 300
+  secrets:
+    zooKeeper:
+      adminUsername: zadmin
+      adminPassword: ''
+      clientUsername: zclient
+      clientPassword: ''
+      additionalUsers: user:pass
+    monitoring:
+      smDbUsername: admin
+      smDbPassword: admin
+    backupDaemon:
+      username: admin
+      password: ''
+  ';
+  vaultSecretManagement='
+  enabled: false
+  ';
+  integrationTests='
+  install: true
+  service:
+    name: zookeeper-integration-tests-runner
+  tags: zookeeper_crudNOTtransactional_backup
+  zookeeperIsManagedByOperator: true
+  zookeeperHost: zookeeper
+  zookeeperPort: 2181
+  pvType: storageclass
+  zookeeperEnableSsl: false
+  zookeeperSslSecretName: zookeeper-tls-secret
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 200m
+    limits:
+      memory: 256Mi
+      cpu: 400m
+  ';
+  backupDaemon='
+  install: true
+  backupStorage:
+    persistentVolumeType: standalone
+    storageClass: efs-sc-1
+    volumeSize: 1Gi
+  s3:
+    enabled: false
+    url: https://s3.amazonaws.com
+    bucket: zookeeper-backup-qa
+    keyId: ''
+    keySecret: ''
+  backupSchedule: 0 * * * *
+  evictionPolicy: 0/1d,7d/delete
+  ipv6: false
+  zooKeeperHost: zookeeper
+  zooKeeperPort: 2181
+  zooKeeperAdminUsername: zadmin
+  zooKeeperAdminPassword: zadmin
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  monitoring='
+  install: true
+  resources:
+    requests:
+      cpu: 25m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  monitoringType: prometheus
+  installGrafanaDashboard: true
+  zooKeeperVolumes: pv-zk-zookeeper-service-zookeeper-1,pv-zk-zookeeper-service-zookeeper-2,pv-zk-zookeeper-service-zookeeper-3
+  needToCleanInfluxDb: false
+  zooKeeperBackupDaemonHost: zookeeper-backup-daemon
+  zooKeeperJolokiaPort: 9087
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  ';
+  ESCAPE_SEQUENCE=true;
+  

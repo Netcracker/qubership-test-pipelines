@@ -1,0 +1,23 @@
+|
+  mongodb='
+  install: true
+  storage:
+    storageClasses:
+      - csi-cinder-sc-delete
+  ';
+  backup='
+  install: true
+  storage:
+    storageClasses:
+      - csi-cinder-sc-delete
+  ';
+  dbaas='
+  install: true
+  multiUsers: true
+  ';
+  robotTests='
+  install: true
+  tags: dbaas_multi_users
+  ';
+  ESCAPE_SEQUENCE=true;
+  

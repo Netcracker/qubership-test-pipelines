@@ -1,0 +1,17 @@
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: logging-service-operator
+  labels:
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+    meta.helm.sh/release-name: logging-operator
+    meta.helm.sh/release-namespace: logging-operator
+subjects:
+  - kind: ServiceAccount
+    name: logging-service-operator
+    namespace: logging-operator
+roleRef:
+  kind: ClusterRole
+  name: logging-service-operator
+  apiGroup: rbac.authorization.k8s.io

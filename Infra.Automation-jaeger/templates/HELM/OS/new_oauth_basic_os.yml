@@ -1,0 +1,57 @@
+JOB_NAME: ''
+JENKINS_URL: ''
+TOKEN_NAME: CLOUD_TOKEN
+CLOUD_URL: ''
+CLOUD_NAMESPACE: jaeger
+DESCRIPTOR_NAME: DESCRIPTOR_URL
+DEPL\_MODE\: clean
+KUBECTL_VERSION: 1.18.4
+HELM_VERSION: 3.2.1
+ADDITIONAL_OPTIONS: []
+DEPLOYMENT_PARAMETERS: |
+  jaeger:
+    storage:
+      type: elasticsearch
+  elasticsearch:
+    client:
+      username: admin
+      password: ''
+      url: elasticsearch.elasticsearch-cluster.svc:9200
+    indexCleaner:
+      install: true
+    lookback:
+      install: true
+    rollover:
+      install: true
+  agent:
+    install: true
+  collector:
+    install: true
+  hotrod:
+    install: true
+    agent:
+      host: jaeger-app-agent.jaeger.svc
+      port: 6831
+      resources:
+        requests:
+          cpu: 50m
+          memory: 100Mi
+        limits:
+          cpu: 25m
+          memory: 50Mi
+    route:
+      install: true
+      host: hotrod.dr311qa-arbiter.openshift.sdntest.qubership.org
+  query:
+    install: true   
+    route:
+      install: true
+      host: jaeger.dr311qa-arbiter.openshift.sdntest.qubership.org
+  ESCAPE_SEQUENCE: "true"
+  proxy:
+    install: true
+    type: basic
+    basic:
+      users:
+        - YWRtaW46YWRtaW4=
+    

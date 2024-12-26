@@ -1,0 +1,13 @@
+
+  STORAGE_RWO_CLASS=csi-cinder-sc-delete;
+  INFRA_OPENSEARCH_REPLICAS=3;
+  DBAAS_ENABLED=true;
+  API_DBAAS_ADDRESS=http://dbaas-aggregator.dbaas:8080;
+  DBAAS_CLUSTER_DBA_CREDENTIALS_USERNAME=cluster-dba;
+  DBAAS_CLUSTER_DBA_CREDENTIALS_PASSWORD='';
+  INFRA_OPENSEARCH_USERNAME=admin;
+  INFRA_OPENSEARCH_PASSWORD=admin;
+  MONITORING_ENABLED=true;
+  SERVER_HOSTNAME=opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.org;
+  INFRA_OPENSEARCH_FS_GROUP=1000;
+

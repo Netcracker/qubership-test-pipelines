@@ -1,0 +1,375 @@
+|
+  global='
+  hweProfile: small
+  ';
+  grafana='
+  ingress:
+    host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
+  route:
+    host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
+  resources:
+    requests:
+      cpu: 301m
+      memory: 401Mi
+    limits:
+      cpu: 500m
+      memory: 800Mi
+  imageRenderer:
+    install: true
+    resources:
+      requests:
+        cpu: 150m
+        memory: 251Mi
+      limits:
+        cpu: 301m
+        memory: 501Mi
+  securityContext:
+    fsGroup: 2002
+    runAsUser: 2002
+  operator:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 50Mi
+      limits:
+        cpu: 100m
+        memory: 100Mi
+    securityContext:
+      fsGroup: 2002
+      runAsUser: 2002
+  ';
+  prometheusRules='
+  install: true
+  ';
+  monitoringOperator='
+  install: true
+  securityContext:
+    fsGroup: 2002
+    runAsUser: 2002
+  resources:
+    requests:
+      cpu: 51m
+      memory: 51Mi
+    limits:
+      cpu: 101m
+      memory: 101Mi
+  ';
+  kubeStateMetrics='
+  install: true
+  resources:
+    requests:
+      cpu: 51m
+      memory: 51Mi
+    limits:
+      cpu: 151m
+      memory: 256Mi
+  securityContext:
+    fsGroup: 2002
+    runAsUser: 2002
+  ';
+  nodeExporter='
+  resources:
+    requests:
+      cpu: 51m
+      memory: 51Mi
+    limits:
+      cpu: 201m
+      memory: 201Mi
+  securityContext:
+    fsGroup: 2002
+    runAsUser: 2002
+  install: true
+  ';
+  victoriametrics='
+  vmOperator:
+    install: true
+    resources:
+      requests:
+        cpu: 201m
+        memory: 101Mi
+      limits:
+        cpu: 400m
+        memory: 201Mi
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+  vmAgent:
+    install: true
+    ingress:
+      host: vmagent.qa-kubernetes.openshift.sdntest.qubership.org
+      install: true
+    remoteWrite:
+      - url: http://graphite-remote-adapter:9201/write
+        remoteTimeout: 45s
+        inlineUrlRelabelConfig:
+          - action: keep
+            sourceLabels:
+              - job
+            regex: (node-exporter|kubelet|kube-state-metrics)
+      - url: https://***.***.***.***:8429/api/v1/write
+        basicAuth:
+          createSecret:
+            username: prometheus
+            password: ''
+            secretName: vmagent-basicauth
+        tlsConfig:
+          insecureSkipVerify: true
+    remoteWriteSettings:
+      label:
+        project: development
+        environment: qa-kubernetes
+        cluster: qa-kubernetes
+        team: test_team
+    securityContext:
+      runAsUser: 2001
+      fsGroup: 2001
+    resources:
+      requests:
+        cpu: 201m
+        memory: 101Mi
+      limits:
+        cpu: 700m
+        memory: 1001Mi
+  vmSingle:
+    install: true
+    ingress:
+      install: true
+      host: vmsingle.qa-kubernetes.openshift.sdntest.qubership.org
+    paused: false
+    retentionPeriod: 14d
+    securityContext:
+      runAsUser: 2000
+      fsGroup: 2000
+    resources:
+      requests:
+        cpu: 501m
+        memory: 1001Mi
+      limits:
+        cpu: 1001m
+        memory: 2001Mi
+    storage:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: csi-cinder-sc-delete
+  vmAlertManager:
+    install: true
+    ingress:
+      host: vmalertmanager.qa-kubernetes.openshift.sdntest.qubership.org
+      install: true
+    selectAllByDefault: true
+    securityContext:
+      runAsUser: 2001
+      fsGroup: 2001
+    resources:
+      requests:
+        cpu: 31m
+        memory: 56Mi
+      limits:
+        cpu: 101m
+        memory: 256Mi
+  vmAlert:
+    install: true
+    ingress:
+      host: vmalert.qa-kubernetes.openshift.sdntest.qubership.org
+      install: true
+    securityContext:
+      runAsUser: 2001
+      fsGroup: 2001
+    resources:
+      requests:
+        cpu: 51m
+        memory: 201Mi
+      limits:
+        cpu: 201m
+        memory: 501Mi
+  vmAuth:
+    install: true
+    resources:
+      requests:
+        cpu: 51m
+        memory: 201Mi
+      limits:
+        cpu: 201m
+        memory: 501Mi
+    secretName: vmauth-secret
+    extraVarsSecret:
+      pass: ''
+    securityContext:
+      runAsUser: 2001
+      fsGroup: 2001
+  vmUser:
+    install: true
+    username: admin
+    passwordRef:
+      key: ''
+      name: vmauth-secret
+  ';
+  graphite_remote_adapter='
+  install: true
+  resources:
+    requests:
+      cpu: 201m
+      memory: 301Mi
+    limits:
+      cpu: 1501m
+      memory: 1501Mi
+  securityContext:
+    fsGroup: 2002
+    runAsUser: 2002
+  additionalGraphiteConfig:
+    read:
+      timeout: 5m
+      delay: 10m
+      ignore_error: true
+    graphite:
+      read:
+        max_point_delta: 5m
+      write:
+        carbon_transport: tcp
+        carbon_reconnect_interval: 5m
+        enable_paths_cache: true
+        paths_cache_ttl: 15m
+        paths_cache_purge_interval: 15m
+  enableTags: true
+  writeCarbonAddress: gmon-infra04cn.qubership.org:2003
+  ';
+  prometheusAdapter='
+  install: true
+  prometheusUrl: http://vmsingle-k8s.prometheus-operator.svc:8429
+  resources:
+    requests:
+      cpu: 101m
+      memory: 256Mi
+    limits:
+      cpu: 201m
+      memory: 401Mi
+  securityContext:
+    fsGroup: 2002
+    runAsUser: 2002
+  operator:
+    resources:
+      requests:
+        cpu: 21m
+        memory: 20Mi
+      limits:
+        cpu: 50m
+        memory: 101Mi
+    securityContext:
+      fsGroup: 2002
+      runAsUser: 2002
+  ';
+  promxy='
+  install: true
+  config:
+    serverGroups:
+      - address: vmsingle-k8s.prometheus-operator.svc:8429
+        label: qa-kubernetes
+      - address: vmsingle-prometheus-operator.support-left-kubernetes.openshift.sdntest.qubership.org
+        label: support-left
+        scheme: https
+  configmapReload:
+    resources:
+      requests:
+        cpu: 5m
+        memory: 3Mi
+      limits:
+        cpu: 11m
+        memory: 20Mi
+    securityContext:
+      fsGroup: 2002
+      runAsUser: 2002
+  securityContext:
+    fsGroup: 2002
+    runAsUser: 2002
+  resources:
+    requests:
+      cpu: 51m
+      memory: 128Mi
+    limits:
+      cpu: 151m
+      memory: 256Mi
+  ';
+  jsonExporter='
+  install: true
+  config: >
+    modules:
+      tsdbstatus:
+        metrics:
+          - name: "tsdb_series_count_by_metric"
+            type: object
+            help: "General vmsingle tsdb status of the series count by metric name"
+            path: '{.data.seriesCountByMetricName[*]}'
+            labels:
+              name: '{.name}'
+            values:
+              value: '{.value}'
+          - name: "tsdb_series_count_by_label"
+            type: object
+            help: "General vmsingle tsdb status of the series count by label name"
+            path: '{.data.seriesCountByLabelName[*]}'
+            labels:
+              name: '{.name}'
+            values:
+              value: '{.value}'
+          - name: "tsdb_series_count_by_label_value_pair"
+            type: object
+            help: "General vmsingle tsdb status of the series count by label value pair"
+            path: '{.data.seriesCountByLabelValuePair[*]}'
+            labels:
+              name: '{.name}'
+            values:
+              value: '{.value}'
+          - name: "tsdb_label_value_count_by_label_name"
+            type: object
+            help: "General vmsingle tsdb status of the label value count by label name"
+            path: '{.data.labelValueCountByLabelName[*]}'
+            labels:
+              name: '{.name}'
+            values:
+              value: '{.value}'
+  serviceMonitor:
+    targets:
+      - name: vmsingle-tsdb-status
+        url: http://vmsingle-k8s.prometheus-operator.svc:8429/api/v1/status/tsdb
+        labels: {}
+        interval: 60s
+        scrapeTimeout: 60s
+        additionalMetricsRelabels: {}
+        module: tsdbstatus
+  resources:
+    requests:
+      cpu: 51m
+      memory: 128Mi
+    limits:
+      cpu: 101m
+      memory: 128Mi
+  securityContext:
+    fsGroup: 2000
+    runAsUser: 2000
+  ';
+  cloudEventsExporter='
+  install: true
+  port: 9999
+  metricsPath: /metrics
+  resources:
+    limits:
+      cpu: 101m
+      memory: 101Mi
+    requests:
+      cpu: 51m
+      memory: 51Mi
+  ';
+  integrationTests='
+  install: true
+  tags: grafanaORsmoke
+  timeoutBeforeStart: 200
+  resources:
+    requests:
+      cpu: 41m
+      memory: 99Mi
+  ';
+  ESCAPE_SEQUENCE=true;
+  

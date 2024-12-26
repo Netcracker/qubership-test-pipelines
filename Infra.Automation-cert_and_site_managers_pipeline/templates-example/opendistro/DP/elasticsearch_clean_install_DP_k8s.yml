@@ -1,0 +1,95 @@
+JOB_NAME: ''
+JENKINS_URL: ''
+TOKEN_NAME: CLOUD_TOKEN
+CLOUD_URL: ''
+CLOUD_NAMESPACE: elastic-opendistro
+DESCRIPTOR_URL: ''
+DESCRIPTOR_NAME: DESCRIPTOR_URL
+DEPL\_MODE\: clean
+KUBECTL_VERSION: 1.18.4
+HELM_VERSION: 3.2.1
+ADDITIONAL_OPTIONS: []
+DEPLOYMENT_PARAMETERS: |
+  kibana:
+    enabled: true
+    ingress: 
+      enabled: true
+      hosts: 
+        - "kibana-elastic-opendistro.qa-kubernetes.openshift.sdntest.qubership.org"
+  operator:
+    replicas: 1
+  elasticsearch:
+    securityConfig:
+      authc:
+        basic:
+          username: "admin"
+          password: ''
+    securityContextCustom:
+      fsGroup: 1000
+    main:
+      replicas: 3
+      nodeSelector:
+        role: compute
+      javaOpts: "-Xms512m -Xmx512m"
+      resources:
+        limits:
+          cpu: 600m
+          memory: 1024Mi
+        requests:
+          cpu: 200m
+          memory: 511Mi
+      persistence:
+        persistentVolumes:
+          - pv-opendistro-1
+          - pv-opendistro-2
+          - pv-opendistro-3
+        nodes:
+          - worker1
+          - worker2
+          - worker3
+        size: 2Gi
+    snapshots:
+      enabled: true
+      size: 2Gi 
+      s3:
+        enabled: true
+        pathStyleAccess: true
+        url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org/
+        bucket: elasticsearch-opendistro-qa
+        keyId: ''
+        keySecret: ''
+        basePath: elasticsearch-opendistro-qa
+        region: ""
+    client:
+      ingress:
+        enabled: true
+        hosts:
+          - elasticsearch-elastic-opendistro.qa-kubernetes.openshift.sdntest.qubership.org
+  monitoring:
+    enabled: "true"
+    monitoringType: prometheus
+    nodeSelector:
+      role: compute
+  dbaasAdapter:
+    enabled: "true"
+    dbaasUsername: user
+    dbaasPassword: ''
+    nodeSelector:
+      role: compute
+    securityContext:
+      runAsUser: 1000
+  curator:
+    enabled: "true"
+    backupSchedule: 0 * * * *
+    evictionPolicy: 0/1d,7d/delete
+    username: backup
+    password: ''
+    nodeSelector:
+      role: compute
+    securityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+  integrationTests:
+    enabled: true
+    tags: smoke
+  ESCAPE_SEQUENCE: true

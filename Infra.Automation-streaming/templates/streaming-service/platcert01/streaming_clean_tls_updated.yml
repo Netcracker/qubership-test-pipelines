@@ -1,0 +1,79 @@
+|
+  global='
+  name: streaming
+  podReadinessTimeout: 900
+  secrets:
+    streamingPlatform:
+      username: admin
+      password: ''
+      kafkaAuthUsername: client
+      kafkaAuthPassword: client
+    monitoring:
+      prometheusUsername: admin
+      prometheusPassword: admin
+  tls:
+    enabled: true
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      durationDays: 365
+      clusterIssuerName: qa-clusterissuer
+  ';
+  streamingPlatform='
+  install: true
+  replicas: 3
+  ingress:
+    host: streaming-platform-streaming-service.platcert01.kubernetes.sdntest.qubership.org
+  bootstrapServers: kafka.kafka-service:9092
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 45%
+  tls:
+    enabled: true
+    caCertOnly: true
+  ';
+  monitoring='
+  install: true
+  securityContext:
+    runAsUser: 1000
+  ';
+  integrationTests='
+  secrets:
+    postgres:
+      user: postgres
+      password: ''
+    mongo:
+      user: root
+      password: ''
+    oracleSource:
+      user: oracle
+      password: ''
+    elasticsearch:
+      user: admin
+      password: ''
+    opensearch:
+      user: admin
+      password: ''
+    prometheus:
+      user: admin
+      password: ''
+  install: true
+  timeout: 3000
+  tags: streaming_platform
+  postgresHost: pg-patroni.postgres
+  postgresPort: 5432
+  postgresDb: postgres
+  elasticsearchHost: null
+  elasticsearchHttpPort: 9200
+  elasticsearchTransportPort: 9300
+  mongoHost: null
+  mongoPort: 27017
+  mongoDb: public
+  oracleSourceHost: ***.***.***.***
+  oracleSourcePort: 1521
+  oracleSourceDb: xe
+  opensearchUrl: http://opensearch.opensearch-cloud:9200
+  prometheusUrl: http://vmauth-prometheus-operator.qa-kubernetes.openshift.sdntest.qubership.org
+  ';
+  ESCAPE_SEQUENCE=true;

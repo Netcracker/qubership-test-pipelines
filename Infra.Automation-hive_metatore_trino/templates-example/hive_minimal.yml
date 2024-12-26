@@ -1,0 +1,9 @@
+|
+  ESCAPE_SEQUENCE=true;
+  
+  s3='
+  endpoint: test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org
+  accessKey: Z4nz2bxWnWM36lf3K21y
+  secretKey: oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr
+  warehouseDir: s3a://hive/warehouse
+  ';

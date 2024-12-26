@@ -1,0 +1,198 @@
+variables:
+  PYTHON_IMAGE: pipe_image_latest
+  JENKINS_URL: ''
+  JOB_NAME_CLEAN: ''
+  JOB_NAME_UPDATE: ''
+  CREDS_IN_DEPLOYER: ''
+  PREFIX: qa_fullha_kubernetes
+  CLOUD_HOST: https://qa-fullha-kubernetes.openshift.sdntest.qubership.org:6443
+  CERT_PROJECT: cert-manager
+  SITE_PROJECT: site-manager
+  DEPLOY_SCRIPT_APP: /scripts/external_platform_library_builtIn/deploy\_with\_deployer.py
+  DEPLOY_SCRIPT_DP: /scripts/external_platform_library_builtIn/deploy_with_helmdeployer.py
+  UPGRADE_CRD_SCRIPT: /scripts/external_platform_library_builtIn/upgrade_crd.py
+  APPLY_RESOURCES_SCRIPT: /scripts/external_platform_library_builtIn/prepare_restricted_resources.py
+  CLEAN_NS_SCRIPT: /scripts/external_platform_library_builtIn/clean_namespace.py
+  MANIFEST_CERT_MANAGER_OLD: cert-manager:release-2024.3-1.15.3-1-20241115.033931-1-RELEASE
+  MANIFEST_CERT_MANAGER_NEW: cert-manager:release-2024.4-1.15.4-1-20241218.040725-1-RELEASE
+  MANIFEST_SITE_MANAGER_OLD: site-manager:release-2024.4-0.24.1-20241115.055950-1-RELEASE
+  MANIFEST_SITE_MANAGER_NEW: site-manager:release-2024.4-0.24.2-20241205.043307-1-RELEASE  
+  RESTRICTED_USER_APP: ''
+  DEPLOY_SCHEME: full  # basic or full
+  SSH_USER: ubuntu
+  SSH_HOST: ***.***.***.***
+  ### stages
+  get_kubeconfig: 'true'
+  kubernetes_get_superadmin_token: 'true'
+  prepare_crd_for_cert_manager: 'false' # no longer needed as installCRDs=true is used by default
+  cert_app_clean_previous_sprint: 'true'
+  site_app_clean_previous_sprint: 'true'
+  cert_app_upgrade_to_new_version: 'true'
+  site_app_upgrade_to_new_version: 'true'
+  install_sm_: 'true'
+  get_token: 'true'
+  check_sm_: 'true'
+
+stages:
+  - get_kubeconfig
+  - kubernetes_get_superadmin_token
+  - prepare_crd_for_cert_manager
+  - cert_app_clean_previous_sprint
+  - site_app_clean_previous_sprint
+  - cert_app_upgrade_to_new_version
+  - site_app_upgrade_to_new_version
+  - install_sm_
+  - get_token
+  - check_sm_
+
+default:
+  before_script:
+    - pip config set global.index-url qubership.org/api/pypi/pypi_python_org.pypi.proxy/simple
+    - pip config set global.trusted-host dockerhub.qubership.org
+    - python3 -m pip install --upgrade pip
+    - pip install --no-cache-dir -r requirements.txt
+    - apk add openssh-client --update-cache --repository ${REPOSITORY_URL} --allow-untrusted
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+
+.test-case: &test-case
+  image: ${PYTHON_IMAGE}
+  tags:
+    - ''
+  allow_failure: true
+  when: on_success
+
+include:
+  - project: 'PROD.Platform.HA/Infra.Automation'
+    ref: pipe_image
+    file: 'api2.yaml'
+
+Get kubeconfig from control-plane node:
+  <<: *test-case
+  stage: get_kubeconfig
+  script:
+    - >
+      ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << EOF
+        sudo cat /root/.kube/config > kubeconfig
+      EOF
+    - KUBECONFIG=$(ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "sudo cat kubeconfig")
+    - echo "$KUBECONFIG"
+    - echo "$KUBECONFIG" > kubeconfig.env
+  when: always    
+  rules:
+    - if: $get_kubeconfig == "true"
+  artifacts:
+    paths:
+      - kubeconfig.env
+  allow_failure: false
+
+Log in control-plane node and get superadmin token:
+  <<: *test-case
+  stage: kubernetes_get_superadmin_token
+  script:
+    - >
+      ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << EOF
+        sudo kubectl -n kube-system describe secret $(sudo kubectl -n kube-system get secret | (grep superadmin || echo "$_") | awk '{print $1}') | grep token: | awk '{print $2}' > token
+      EOF
+    - SUPERADMIN_TOKEN=$(ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "cat token")
+    - echo $SUPERADMIN_TOKEN | awk '{print $2}'
+    - echo $SUPERADMIN_TOKEN | awk '{print $2}' > superadmin_token.env
+  when: always
+  rules:
+    - if: $kubernetes_get_superadmin_token == "true"    
+  artifacts:
+    paths:
+      - superadmin_token.env
+  allow_failure: false
+
+Create CRD for cert-manager:
+  <<: *test-case
+  stage: prepare_crd_for_cert_manager
+  allow_failure: false
+  rules:
+    - if: $prepare_crd_for_cert_manager == "true"    
+  script:
+  - chmod +x binary/kubectl
+  - export KUBECONFIG=kubeconfig.env
+  - binary/kubectl delete mutatingwebhookconfiguration cert-manager-webhook || [ $? -eq 1 ]
+  - binary/kubectl delete validatingwebhookconfiguration cert-manager-webhook || [ $? -eq 1 ]
+  - SUPERADMIN_TOKEN=$(cat superadmin_token.env)
+  - python3 scripts/create_crd_from_file.py --cloud-token="${SUPERADMIN_TOKEN}" --cloud-host="${CLOUD_HOST}" --file="./templates-example/cert-manager/crds/cert-manager-crds.yaml"
+
+Cert-Manager Clean Prev APP:
+  <<: *test-case
+  stage: cert_app_clean_previous_sprint
+  allow_failure: false
+  rules:
+    - if: $cert_app_clean_previous_sprint == "true"    
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/cert-manager/AAP/cert_manager.yaml" --jenkins-user="${DEPLOYER_USER}" --jenkins-pass="${DEPLOYER_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${MANIFEST_CERT_MANAGER_OLD}" --project="${PREFIX}-${CERT_PROJECT}" --deploy-mode="Clean Deploy"
+
+Site-Manager Clean Prev APP:
+  <<: *test-case
+  stage: site_app_clean_previous_sprint
+  allow_failure: false
+  rules:
+    - if: $site_app_clean_previous_sprint == "true"    
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/site-manager/AAP/site_manager.yaml" --jenkins-user="${DEPLOYER_USER}" --jenkins-pass="${DEPLOYER_PASS}" --job-name="${JOB_NAME_CLEAN}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${MANIFEST_SITE_MANAGER_OLD}" --project="${PREFIX}-${SITE_PROJECT}" --deploy-mode="Clean Deploy"
+
+Cert-Manager Upgrade To Current Version APP:
+  <<: *test-case
+  stage: cert_app_upgrade_to_new_version
+  rules:
+    - if: $cert_app_upgrade_to_new_version == "true"   
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/cert-manager/AAP/cert_manager.yaml" --jenkins-user="${DEPLOYER_USER}" --jenkins-pass="${DEPLOYER_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${MANIFEST_CERT_MANAGER_NEW}" --project="${PREFIX}-${CERT_PROJECT}" --deploy-mode="Rolling Update"
+
+Site-Manager Upgrade To Current Version APP:
+  <<: *test-case
+  stage: site_app_upgrade_to_new_version
+  rules:
+    - if: $site_app_upgrade_to_new_version == "true"   
+  script:
+    - python3 "${DEPLOY_SCRIPT_APP}" -f "./templates-example/site-manager/AAP/site_manager.yaml" --jenkins-user="${DEPLOYER_USER}" --jenkins-pass="${DEPLOYER_PASS}" --job-name="${JOB_NAME_UPDATE}" --jenkins-url="${JENKINS_URL}" --os-creds="${CREDS_IN_DEPLOYER}" --artifact="${MANIFEST_SITE_MANAGER_NEW}" --project="${PREFIX}-${SITE_PROJECT}" --deploy-mode="Rolling Update"
+
+Install SM :
+  <<: *test-case
+  stage: install_sm_
+  rules:
+    - if: $install_sm_ == "true"   
+  script:
+    - chmod +x binary/helm
+    - chmod +x binary/kubectl
+    - export KUBECONFIG=kubeconfig.env
+    - binary/helm install sm- templates-example/sm- -n site-manager
+  allow_failure: false
+
+Log in control-plane node and get k8s token:
+  <<: *test-case
+  stage: get_token
+  rules:
+    - if: $get_token == "true" 
+  script:
+    - >
+      ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << EOF
+        sudo kubectl -n site-manager get secret -o=jsonpath='{.items[?(@.metadata.annotations.kubernetes\.io/service-account\.name=="sm-auth-sa")].data.token}' | base64 -d > token
+      EOF
+    - SM_TOKEN=$(ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST "cat token")
+    - echo $SM_TOKEN
+    - echo $SM_TOKEN > token.env
+  when: always    
+  artifacts:
+    paths:
+      - token.env
+  allow_failure: false
+
+Check sm- ingress:
+  <<: *test-case
+  stage: check_sm_
+  allow_failure: true
+  script:
+  - SM_TOKEN=$(cat token.env)
+  - echo $SM_TOKEN
+  - python3 scripts/site_manager_services_test.py -u http://site-manager.qa-fullha-kubernetes.openshift.sdntest.qubership.org/sitemanager -s sm- -n site-manager -t $SM_TOKEN
+  rules:
+    - if: $check_sm_ == "true"

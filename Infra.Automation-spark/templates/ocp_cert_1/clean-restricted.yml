@@ -1,0 +1,63 @@
+|
+  rbac='
+    createClusterRole: false
+  ;
+  spark='
+    sparkJobNamespace=spark-apps;
+    ingressUrlFormat={{\$appName}}-ui-svc.fenrir-k8s.openshift.sdntest.qubership.org/;
+    replicaCount=2;
+    securityContext='
+    runAsUser: 185
+    ';
+    serviceAccounts='
+    sparkoperator:
+      name: sparkoperator-spark-spark-operator
+    ';
+    resources='
+    limits:
+      cpu: 100m
+      memory: 300Mi
+    requests:
+      cpu: 100m
+      memory: 300Mi
+    ';
+    webhook='
+    enable: true
+    ';
+    podMonitor='
+    enable: true
+    labels:
+      app.kubernetes.io/component: monitoring
+      app.kubernetes.io/name: spark-operator-gcp-podmonitor
+      app.kubernetes.io/part-of: platform-monitoring
+      k8s-app: spark-operator-gcp-podmonitor
+    ';
+    grafanaApplicationDashboard='
+    enable: true
+    ';
+    grafanadashboard='
+    enable: true
+    ';
+    prometheusRules='
+    alert:
+      enable: true
+    ';
+    appServiceMonitor='
+    enable: true
+    ';
+    spark-history-server='
+    replicaCount: "2"
+    enabled: true
+    ingress:
+      enabled: true
+      host: spark-history-server.fenrir-k8s.openshift.sdntest.qubership.org
+      path: /
+    logDirectory: s3a://spark/logs/
+    s3:
+      enabled: true
+      endpoint: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org
+      accesskey: WjRuejJieFduV00zNmxmM0syMXk=
+      secretkey: b3F0QWR5d2FCN2M3T0pXSFE5ckxWdUpjS2pwVVI4aVNKZlhNUENMcg==
+    ';
+    ESCAPE_SEQUENCE=true;
+    DISABLE_CRD=true;

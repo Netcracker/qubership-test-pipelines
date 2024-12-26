@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: sparkoperator-spark-operator
+  labels:
+    app.kubernetes.io/instance: sparkoperator-spark
+    app.kubernetes.io/name: spark-operator
+subjects:
+  - kind: ServiceAccount
+    name: sparkoperator-spark-spark-operator
+    namespace: spark
+roleRef:
+  kind: ClusterRole
+  name: sparkoperator-spark-operator
+  apiGroup: rbac.authorization.k8s.io

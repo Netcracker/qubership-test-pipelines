@@ -1,0 +1,15 @@
+|
+  dbaas='
+    install: true
+    adapter:
+      username: 0c3O2|%l1R
+      password: ''
+    aggregator:
+      physicalDatabaseIdentifier: redis
+  ';
+  monitoringAgent='
+    install: true
+  ';
+  robotTests='
+    install: true
+  ';

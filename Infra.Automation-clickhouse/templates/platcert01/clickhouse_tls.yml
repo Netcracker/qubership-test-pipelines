@@ -1,0 +1,105 @@
+|
+  clickhouseOperator='
+  resources:
+    limits:
+      cpu: 201m
+      memory: 201Mi
+    requests:
+      cpu: 101m
+      memory: 101Mi
+  metricsExporterResources:
+    limits:
+      cpu: 201m
+      memory: 201Mi
+    requests:
+      cpu: 101m
+      memory: 101Mi
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+      runAsUser: 101
+      runAsGroup: 101
+  ';
+  backupDaemon='
+  install: yes
+  storage:
+    remote: none
+  orchestrator:
+    resources:
+      limits:
+        cpu: 501m
+        memory: 513Mi
+      requests:
+        cpu: 251m
+        memory: 257Mi
+    pvSize: 2Gi
+    securityContext:
+      runAsUser: 101
+      runAsGroup: 101
+    storageClass: custom-csi-cinder-delete
+    accessModes:
+      - ReadWriteOnce
+    envs:
+      BACKUP_SCHEDULE: 0 * * * *
+      EVICTION_POLICY: 7d/7d,1y/delete
+  resources:
+    limits:
+      cpu: 101m
+      memory: 257Mi
+    requests:
+      cpu: 51m
+      memory: 257Mi
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+  ';
+  clickhouseCluster='
+  strictHealthCheck: false
+  replicasCount: 3
+  pvSize: 5Gi
+  storageClass: custom-csi-cinder-delete
+  zookeeperHost: zookeeper.zookeeper-service.svc
+  serviceMonitor: enable
+  ingressHttp:
+    host: clickhouse-cluster.platcert01.openshift.sdntest.qubership.org
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+  ';
+  dbaas='
+  install: true
+  multiUsers: true
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    registrationUsername: cluster-dba
+    registrationAuthPassword: ''
+  labels:
+    clusterName: clickhouse
+  clickhouse:
+    username: nc_dbaas_user
+    password: ''
+  adapter:
+    username: dbaas-aggregator
+    password: ''
+  ';
+  tls='
+  enabled: true
+  certificateSecretName: ch-cert
+  generateCerts:
+    enabled: true
+  ';
+  integrationTests='
+  install: true
+  tags: smoke
+  ';
+  ESCAPE_SEQUENCE=true;
+  

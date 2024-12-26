@@ -1,0 +1,73 @@
+|
+  global='
+  name: zookeeper
+  secrets:
+    zooKeeper:
+      adminUsername: zadmin
+      adminPassword: ''
+      clientUsername: zclient
+      clientPassword: ''
+      additionalUsers: user:pass
+    backupDaemon:
+      username: admin
+      password: ''
+    integrationTests:
+      prometheus:
+        user: admin
+        password: ''
+  tls:
+    enabled: true
+    cipherSuites: []
+    allowNonencryptedAccess: false
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      durationDays: 365
+      clusterIssuerName: qa-issuer-self
+  ';
+  operator='
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  zooKeeper='
+  replicas: 3
+  storage:
+    className:
+      - csi-cinder-sc-delete
+    size: 1Gi
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  tls:
+    enabled: true
+  ';
+  backupDaemon='
+    install: true
+    backupStorage:
+      persistentVolumeType: "standalone"
+      storageClass: csi-cinder-sc-delete
+      volumeSize: 1Gi
+    securityContext: 
+      runAsUser: 1000
+      fsGroup: 1000
+    tls:
+      enabled: true
+  ';
+  monitoring='
+  install: true
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  integrationTests='
+  install: true
+  tags: zookeeperORzookeeper_images
+  timeout: 1500
+  prometheusUrl: http://vmauth-prometheus-operator.qa-kubernetes.openshift.sdntest.qubership.org
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  ESCAPE_SEQUENCE=true;
+  

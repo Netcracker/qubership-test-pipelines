@@ -1,0 +1,31 @@
+|
+  global='
+  cloudIntegrationEnabled: false
+  ';
+  name=rabbitmq-service;
+  rabbitmq='
+  fsGroup: 5000
+  runAsUser: 5000
+  hostpath_configuration: false
+  validate_state: false
+  clean_rabbitmq_pvs: false
+  auto_reboot: true
+  ingress:
+    enabled: true
+    host: rabbitmq.qa-kubernetes.openshift.sdntest.qubership.org
+  custom_params:
+    rabbitmq_vm_memory_high_watermark: 90%
+    rabbitmq_default_user: admin
+    rabbitmq_default_password: ''
+  resources:
+    requests:
+      cpu: 300m
+      memory: 300Mi
+    limits:
+      cpu: 600m
+      memory: 600Mi
+    storageclass: csi-cinder-sc-delete
+  storage: 750Mi
+  ';
+  ESCAPE_SEQUENCE=true;
+  

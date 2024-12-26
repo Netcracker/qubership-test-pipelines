@@ -1,0 +1,59 @@
+|
+  
+  ENABLE_PRIVILEGED_PSS=true;
+  global='
+  enabled: true
+  openshift:
+    enabled: true
+  ';
+  server='
+  replicas: 3
+  bootstrapExpect: 3
+  storage: 1Gi
+  storageClass: csi-cinder-sc-delete
+  ';
+  consulAclConfigurator='
+  enabled: true
+  ';
+  dns='
+  enabled: false
+  ';
+  monitoring='
+  enabled: true
+  ';
+  ui='
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: consul-consul-service.apps.ocp-cert-1.openshift.sdntest.qubership.org
+  service:
+    enabled: true
+  ';
+  statusProvisioner='
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 600
+  podReadinessTimeout: 900
+  ;
+  client='
+  enabled: true
+  resources:
+    requests:
+      memory: 61Mi
+      cpu: 21m
+    limits:
+      memory: 251Mi
+      cpu: 51m
+  ';
+  backupDaemon='
+  enabled: true
+  storage: 1Gi
+  storageClass: csi-cinder-sc-delete
+  backupSchedule: "*/15 * * * *"
+  evictionPolicy: 1h/1d,7d/delete
+  ';
+  integrationTests='
+  enabled: true
+  tags: backupORcrudORconsul_images
+  ';
+  ESCAPE_SEQUENCE=true;

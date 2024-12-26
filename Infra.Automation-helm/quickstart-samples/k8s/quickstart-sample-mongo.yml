@@ -1,0 +1,12 @@
+mongodb:
+  install: true
+  storage:
+    storageClasses:
+      - {{env_pipe_storage_class}}
+backup:
+  install: true
+  storage:
+    storageClasses:
+      - {{env_pipe_storage_class}}
+robotTests:
+  install: true

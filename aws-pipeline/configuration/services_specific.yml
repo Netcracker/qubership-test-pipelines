@@ -1,0 +1,55 @@
+variables:
+  Postgres_version: ""
+  Postgres_ns: postgres
+  Postgres_install: "true"
+  Postgres_app_name: postgres_services
+
+  Opensearch_version: ""
+  Opensearch_ns: opensearch
+  Opensearch_install: "true"
+  Opensearch_app_name: opensearch_service
+
+  Rabbit_version: ""
+  Rabbit_ns: rabbitmq
+  Rabbit_install: "true"
+  Rabbit_app_name: rabbitmq
+
+  Streaming_version: ""
+  Streaming_ns: streaming-service
+  Streaming_install: "true"
+  Streaming_app_name: streaming_service
+
+  Zookeeper_version: ""
+  Zookeeper_ns: zookeeper-service
+  Zookeeper_install: "true"
+  Zookeeper_app_name: zookeeper_service
+
+  Kafka_version: kafka-services:main-.gl-ci_build_kafka-services-20240827.133749-99
+  Kafka_ns: kafka-service
+  Kafka_install: "true"
+  Kafka_app_name: kafka_services
+
+  Consul_version: ""
+  Consul_ns: consul-service
+  Consul_install: "true"
+  Consul_app_name: consul_service
+
+  Monitoring_version: ""
+  Monitoring_ns: prometheus-operator
+  Monitoring_install: "true"
+  Monitoring_app_name: MONITORING
+
+  Jaeger_version: ""
+  Jaeger_ns: jaeger
+  Jaeger_install: "true"
+  Jaeger_app_name: jaeger
+
+  Logging_version: ""
+  Logging_ns: logging-service
+  Logging_install: "true"
+  Logging_app_name: logging_service
+
+  Redis_version: ""
+  Redis_ns: redis
+  Redis_install: "true"
+  Redis_app_name: dbaas_redis

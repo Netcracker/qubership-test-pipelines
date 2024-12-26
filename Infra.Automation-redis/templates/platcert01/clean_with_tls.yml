@@ -1,0 +1,20 @@
+|
+  dbaas='
+    install: true
+    aggregator:
+      physicalDatabaseIdentifier: redis
+  ';
+  redis='
+    tls:
+      enabled: true
+      generateCerts:
+        enabled: true
+        clusterIssuerName: qa-clusterissuer
+  ';
+  monitoringAgent='
+    install: true
+    metricCollector: prometheus
+  ';
+  robotTests='
+    install: true
+  ';

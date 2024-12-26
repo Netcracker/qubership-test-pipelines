@@ -1,0 +1,86 @@
+|
+  arangoDb='
+  install: true
+  mode: HA
+  agency:
+    count: 3
+    resources:
+      requests:
+        cpu: 160m
+        memory: 266Mi
+      limits:
+        cpu: 360m
+        memory: 520Mi
+    storage:
+      type: provisioned
+      size: 1Gi
+      storageClass: csi-cinder-sc-delete
+      nodes:
+        - ocp-cert-1-5xfgn-worker-0-9tkql
+        - ocp-cert-1-5xfgn-worker-0-wzjn2
+        - ocp-cert-1-5xfgn-worker-0-tk9r4  
+  dbServers:
+    count: 2
+    args:
+      - --rocksdb.block-cache-size 6442450944
+      - --cache.size 6442450944
+    resources:
+      requests:
+        cpu: 176m
+        memory: 276Mi
+      limits:
+        cpu: 280m
+        memory: 530Mi
+    storage:
+      type: provisioned
+      appSize: 1Gi
+      dataSize: 10Gi
+      storageClass: csi-cinder-sc-delete
+      nodes:
+        - ocp-cert-1-5xfgn-worker-0-9tkql
+        - ocp-cert-1-5xfgn-worker-0-9tkql
+        - ocp-cert-1-5xfgn-worker-0-wzjn2
+        - ocp-cert-1-5xfgn-worker-0-tk9r4
+  ';
+  backupDaemon='
+  install: false
+  ';
+  metricCollector='
+  install: true
+  resources:
+    requests:
+      cpu: 220m
+      memory: 148Mi
+    limits:
+      cpu: 620m
+      memory: 1044Mi
+  prometheusMonitoring: true
+  applyGrafanaDashboard: true
+  ';
+  dbaas='
+  install: true
+  multiUsers: true
+  apiVersion: v2
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    physicalDatabaseIdentifier: arangodb_arangodb
+  resources:
+    requests:
+      cpu: 222m
+      memory: 61Mi
+    limits:
+      cpu: 235m
+      memory: 69Mi
+  ';
+  tests='
+  install: true
+  runTestScenarios: basic
+  ';
+  tls='
+  enabled: false
+  generateCerts:
+    enabled: false
+  ';
+  
+  ESCAPE_SEQUENCE=true;
+  INTERNAL_TLS_ENABLED=false;

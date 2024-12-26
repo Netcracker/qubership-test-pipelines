@@ -1,0 +1,86 @@
+|
+  
+  ENABLE_PRIVILEGED_PSS=true;
+  global='
+  extraLabels:
+    CUSTOM_labels: GLOBAL_check
+  enabled: true
+  ';
+  server='
+  extraLabels:
+    CUSTOM_label: SERVER_check
+  nodes:
+    - worker1
+    - worker2
+    - worker3
+  replicas: 3
+  bootstrapExpect: 3
+  storage: 1Gi
+  persistentVolumes:
+    - consul-1
+    - consul-2
+    - consul-3
+  resources:
+    limits:
+      memory: 300Mi
+      cpu: 100m
+  ';
+  consulAclConfigurator='
+  enabled: true
+  extraLabels:
+    CUSTOM_label: CONFIGURATOR_check
+  ';
+  dns='
+  enabled: false
+  ';
+  monitoring='
+  enabled: true
+  ';
+  ui='
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: consul-consul-service.qa-kubernetes.openshift.sdntest.qubership.org
+  service:
+    enabled: true
+  ';
+  client='
+  enabled: true
+  extraLabels:
+    CUSTOM_label: CLIENT_check
+  nodeSelector:
+    role: compute
+  resources:
+    requests:
+      memory: 64Mi
+      cpu: 25m
+    limits:
+      memory: 256Mi
+      cpu: 25m
+  ';
+  backupDaemon='
+  enabled: true
+  extraLabels:
+    CUSTOM_label: BACKUP_check
+  backupSchedule: "*/15 * * * *"
+  evictionPolicy: 1h/1d,7d/delete
+  s3:
+    enabled: true
+    url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org/
+    bucket: consul-qa
+    keyId: ''
+    keySecret: ''
+  ';
+  integrationTests='
+  enabled: true
+  extraLabels:
+    CUSTOM_label: TESTS_check
+  tags: backupORcrudORconsul_images
+  ';
+  statusProvisioner='
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 600
+  podReadinessTimeout: 900
+  ;
+  ESCAPE_SEQUENCE=true;

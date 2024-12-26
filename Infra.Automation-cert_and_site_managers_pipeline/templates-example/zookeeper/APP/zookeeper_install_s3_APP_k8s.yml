@@ -1,0 +1,56 @@
+|
+  global='
+  name: zookeeper
+  secrets:
+    zooKeeper:
+      adminUsername: zadmin
+      adminPassword: ''
+      clientUsername: zclient
+      clientPassword: ''
+      additionalUsers: user:pass
+    backupDaemon:
+      username: admin
+      password: ''
+  ';
+  operator='
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  zooKeeper='
+  replicas: 3
+  storage:
+    className:
+      - csi-cinder-sc-delete
+    size: 1Gi
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  backupDaemon='
+  install: true
+  s3:
+    enabled: true
+    url: http://minio.qa-kubernetes.openshift.sdntest.qubership.org
+    bucket: zookeeper-qa
+    keyId: ''
+    keySecret: ''
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  monitoring='
+  install: true
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  integrationTests='
+  install: true
+  tags: zookeeperNOTzookeeper_backup_daemon
+  timeout: 600
+  securityContext: 
+    fsGroup: 1000
+    runAsUser: 1000
+  ';
+  ESCAPE_SEQUENCE=true;

@@ -1,0 +1,51 @@
+JOB_NAME: ''
+JENKINS_URL: ''
+TOKEN_NAME: CLOUD_TOKEN
+CLOUD_URL: ''
+CLOUD_NAMESPACE: jaeger
+DESCRIPTOR_NAME: DESCRIPTOR_URL
+DEPL\_MODE\: clean
+KUBECTL_VERSION: 1.18.4
+HELM_VERSION: 3.2.1
+ADDITIONAL_OPTIONS: []
+DEPLOYMENT_PARAMETERS: |
+  jaeger:
+    cassandraServers: cassandra.cassandra-operations.svc
+    cassandraKeyspace: jaegerkey1
+    cassandraPassword: cassandra
+    cassandraUsername: cassandra
+    cassandraDatacenter: main
+    cassandraMode: test
+    cassandraSchemaJob:
+      install: true
+
+    securityContext:
+      runAsUser: 5000
+
+    query:
+      resources:
+        requests:
+          cpu: 150m
+          memory: 150Mi
+        limits:
+          cpu: 150m
+          memory: 150Mi
+
+    collector:
+      replicas: 2
+      resources:
+        requests:
+          cpu: 120m
+          memory: 120Mi
+        limits:
+          cpu: 120m
+          memory: 120Mi
+
+    agent:
+      resources:
+        requests:
+          cpu: 70m
+          memory: 70Mi
+        limits:
+          cpu: 70m
+          memory: 70Mi

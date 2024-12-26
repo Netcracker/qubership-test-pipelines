@@ -1,0 +1,27 @@
+|
+  dbaas='
+    install: true
+    aggregator:
+      physicalDatabaseIdentifier: redis    
+  ';
+  redis='
+    tls:
+      enabled: true
+      generateCerts:
+        enabled: true
+        clusterIssuerName: qa-clusterissuer
+  ';
+  vaultRegistration='
+    enabled: true
+    url: 
+    token:
+  ';
+  vaultDBEngine='
+    enabled: true
+  ';
+  monitoringAgent='
+    install: true
+  ';
+  robotTests='
+    install: true
+  ';

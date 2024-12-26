@@ -1,0 +1,13 @@
+|
+#  tls='
+#  generateCerts:
+#    enabled: true
+#    clusterIssuerName: dev-clusterissuer
+#    duration: 365
+#    subjectAlternativeName:
+#      additionalDnsNames: []
+#      additionalIpAddresses: []
+#  ';
+#  crd='
+#  install: true
+#  ';

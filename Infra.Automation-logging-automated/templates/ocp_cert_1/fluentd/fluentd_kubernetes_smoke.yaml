@@ -1,0 +1,43 @@
+|
+  containerRuntimeType=cri-o;
+  openshiftDeploy=true;
+  createClusterAdminEntities=true;
+  cloudEventsReader='
+  install: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+  ';
+  fluentd='
+  install: true
+  graylogHost: <graylog_host>
+  graylogPort: 12201
+  securityResources:
+    install: true
+  systemLogging: true
+  systemLogType: systemd
+  securityContextPrivileged: true
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      cpu: 2
+      memory: 1Gi
+  ';
+  integrationTests='
+  install: true
+  service:
+    name: logging-integration-tests-runner
+  tags: smoke
+  externalGraylogServer: "true"
+  graylogHost: <graylog_host>
+  graylogProtocol: https
+  graylogPort: "443"
+  ';
+  ESCAPE_SEQUENCE=true;
+  

@@ -1,0 +1,18 @@
+|
+  webserverSecretKey=''
+  fernetKey=''
+  ingress='
+  enabled: true
+  web:
+    hosts:
+      - web.fenrir-k8s.openshift.sdntest.qubership.org
+  ';
+  airflow-integration-tests='
+    enabled: false
+  ';
+  statusProvisioner='
+    enabled: true
+    lifetimeAfterCompletion: 60
+  ';
+  ESCAPE_SEQUENCE=true;
+

@@ -1,0 +1,49 @@
+---
+name: sm-
+PAAS_PLATFORM: KUBERNETES
+
+smSecureAuth: false
+
+env:
+  SMA_TIMEOUT: 15
+  SMA_INIT_MODE: active
+  SMA_DEBUG: True
+  SMA_HEALTHZ: "up"
+  SMA_SEND_MESSAGE: True
+  SMA_HTTP_AUTH: True
+  SMA_SM_NAMESPACE: site-manager
+  SMA_SM_SA: ~
+  SMA_CUSTOM_AUDIENCE: sm-services
+
+# Pod Security Context
+# ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+securityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+# Container Security Context to be set on the controller component container
+# ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+
+serviceAccount:
+  create: true
+  name: sm--sa
+
+siteManager:
+  installCR: true
+  module: "stateful"
+  before: []
+  after: []
+  sequence: ["standby", "active"]
+  allowedStandbyStateList: ["up"]
+  timeout: 180
+  useDefaultParams: true
+  additionalParams:
+
+image: "dockerhub.qubership.org:17152/cloud/sm-:main"
+ingressName: "sm--test.qa-fullha-kubernetes.openshift.sdntest.qubership.org"
