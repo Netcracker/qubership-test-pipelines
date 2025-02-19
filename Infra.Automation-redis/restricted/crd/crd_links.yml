@@ -1,5 +1,0 @@
-id: 11248
-# tag: "main"
-# old-tag: "2.9.3"
-crds:
-  - "charts/helm/redis-operator/crds"

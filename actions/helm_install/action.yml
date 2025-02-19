@@ -1,0 +1,43 @@
+name: 'Custom GitHub Action'
+description: 'A GitHub Action that installs services to kubernetes'
+inputs:
+  path_to_template:
+    description: 'Path to template'
+    required: true
+  branch:
+    description: 'branch with release'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout pipeline
+      uses: actions/checkout@v4
+      with:
+        ref: 'main'
+        repository: 'Netcracker/qubership-test-pipelines'
+        path: 'qubership-test-pipelines'
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        ref: '${{inputs.branch}}'
+        repository: 'Netcracker/${{env.repository_name}}'
+        path: '${{env.repository_name}}'
+
+    - name: Create namespaces
+      run: kubectl create namespace ${{env.namespace}}
+      shell: bash
+
+    - name: Copy template
+      run: |
+        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{env.repository_name}}/${{env.path_to_chart}}
+      shell: bash
+
+    - name: Install service with helm
+      run: |
+        IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
+        template_name=${path[-1]}
+        echo $template_name
+        cd ${{env.repository_name}}/${{env.path_to_chart}}
+        helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} --timeout 10m
+      shell: bash

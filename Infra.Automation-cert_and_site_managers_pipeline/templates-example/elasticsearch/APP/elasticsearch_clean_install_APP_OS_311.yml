@@ -1,6 +1,0 @@
-JENKINS_URL: ''
-JOB_NAME: ''
-OPENSHIFT_CREDENTIALS: default_creds
-ARTIFACT_DESCRIPTOR_VERSION: elasticsearch-service:v.6.5.0-5.9_20200929-055834_elasticsearch-service-operator_charts
-# Use DESCRIPTOR_NAME to set version as script argument
-DESCRIPTOR_NAME: ARTIFACT_DESCRIPTOR_VERSION
