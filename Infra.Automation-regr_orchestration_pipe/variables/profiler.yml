@@ -1,6 +1,0 @@
-N2_RELEASE: ''
-N1_RELEASE: ''
-PREVIOUS_SPRINT: ''
-LATEST_SPRINT: ''
-# Tests URL
-PROFILER_TEST_INGRESS: https://esc-test-service-profiler.qa-kubernetes.openshift.sdntest.qubership.org

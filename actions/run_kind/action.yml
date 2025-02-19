@@ -1,0 +1,35 @@
+name: 'Custom GitHub Action'
+description: 'A GitHub Action that runs kind'
+#inputs:
+#  cluster_config:
+#    description: 'Path to yaml with cluster config'
+#    required: true
+runs:
+  using: 'composite'
+  steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Get info
+        run: |
+          cat /proc/meminfo
+          cat /proc/cpuinfo
+        shell: bash
+      - name: Install kind
+        run: |
+          echo Download kind
+          [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
+          chmod +x ./kind
+          # sudo mv ./kind /usr/local/bin/kind
+        shell: bash
+      - name: Run kind
+        run: >-
+          ./kind create cluster
+          --image kindest/node:v1.32.2 
+          --config qubership-test-pipelines/kind-multi-node.yaml 
+          --wait 5m
+        shell: bash
+        #! check kubernetes version is actual

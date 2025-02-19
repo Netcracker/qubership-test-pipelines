@@ -1,0 +1,40 @@
+name: 'Custom GitHub Action'
+description: 'A GitHub Action that installs services to kubernetes'
+inputs:
+  path_to_template:
+    description: 'Path to template'
+    required: true
+  branch:
+    description: 'branch with release'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout pipeline
+      uses: actions/checkout@v4
+      with:
+        ref: 'main'
+        repository: 'Netcracker/qubership-test-pipelines'
+        path: 'qubership-test-pipelines'
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        ref: '${{inputs.branch}}'
+        repository: 'Netcracker/${{env.repository_name}}'
+        path: '${{env.repository_name}}'
+
+    - name: Create namespaces
+      run: kubectl create namespace ${{env.namespace}}
+      shell: bash
+
+# Create Restriced Role and RB
+
+    - name: Create service account
+      run: kubectl create serviceaccount restricted-sa -n kube-system
+      shell: bash
+
+    - name: Get service account
+      run: |
+        kubectl get serviceaccount
+      shell: bash

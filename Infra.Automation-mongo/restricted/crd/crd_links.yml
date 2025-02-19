@@ -1,5 +1,0 @@
-id: 11246
-# tag: "main"
-# old-tag: "1.20.1"
-crds:
-  - "charts/helm/mongodb-operator/crds"

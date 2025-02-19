@@ -1,0 +1,63 @@
+name: Install Consul
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: false
+        type: string
+
+env:
+  max_attempts: 40
+  timeout: '10s'
+  repository_name: 'qubership-consul'
+  path_to_chart: 'charts/helm/consul-service'
+  namespace: 'consul'
+  service_name: 'consul'
+  components: 'integrationTests'
+
+jobs:
+  Test-job:
+    runs-on: ubuntu-latest
+    name: Test job
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+#      - name: Install consul
+#        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+#        with:
+#          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+#          branch: 'improvement/run_tests'
+#      - name: Check status provisioner
+#        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+#      - name: Get nodes
+#        run: kubectl get nodes
+#      - name: Get pods
+#        run: kubectl get pods -A
+#      - name: Get storageclass
+#        run: kubectl get storageclass
+#      - name: Get ingress
+#        run: kubectl get ingress -A
+#      - name: Describe nodes
+#        run: kubectl describe nodes
+#      - name: Get config
+#        run: kubectl config view --raw
+#      - name: Get nodes owide
+#        run: kubectl get nodes -owide
+#      - name: Get nodes oyaml
+#        run: kubectl get nodes -oyaml
+      - name: Get ClusterRoles
+        run: |
+          kubectl get clusterroles
+      - name: Get serviceAccount
+        run: |
+          kubectl get serviceaccount
+      - name: Get namespaces
+        run: |
+          kubectl get namespaces
+      - name: Create restricted resources
+        uses: Netcracker/qubership-test-pipelines/actions/create_restricted_resources@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          branch: 'improvement/run_tests'
+

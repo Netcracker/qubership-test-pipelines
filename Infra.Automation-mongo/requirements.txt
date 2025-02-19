@@ -1,8 +1,0 @@
-urllib3==1.25.9
-requests==2.24.0
-PyYAML==5.3.1
-python-jenkins==1.0.1
-jenkinsapi==0.3.11
-
-tabulate
-beautifulsoup4

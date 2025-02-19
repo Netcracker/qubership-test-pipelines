@@ -1,7 +1,0 @@
-|
-#  devClusterIssuer='
-#  enabled: true
-#  clusterissuerName: dev-clusterissuer
-#  ';
-#  installCRDs=true;
-#  
