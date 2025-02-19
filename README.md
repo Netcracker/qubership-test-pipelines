@@ -1,1 +1,0 @@
-# qubership-test-pipelines

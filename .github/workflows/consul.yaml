@@ -1,0 +1,139 @@
+name: Install Consul
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: false
+        type: string
+
+env:
+  max_attempts: 40
+  timeout: '10s'
+  repository_name: 'qubership-consul'
+  path_to_chart: 'charts/helm/consul-service'
+  namespace: 'consul'
+  service_name: 'consul'
+
+jobs:
+  Consul-Clean-Infra-Passport:
+    runs-on: ubuntu-latest
+    name: 1-Clean [LATEST_SPRINT] Infra Passport
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+      - name: Install consul
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_infra_passport.yml'
+          branch: '${{inputs.branch}}'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+
+  Consul-Clean-Previous-Sprint:
+    runs-on: ubuntu-latest
+    name: 2-Clean [PREVIOUS_SPRINT], 3-Update to [LATEST_SPRINT]
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+      - name: Install consul
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          branch: 'release-candidate-2025.1-0.11.0'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+      - name: Check tests
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+      - name: Update to latest
+        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          branch: '${{inputs.branch}}'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+      - name: Check tests
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+
+  Consul-Clean-Latest-Sprint:
+    runs-on: ubuntu-latest
+    name: 4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+      - name: Install consul
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          branch: '${{inputs.branch}}'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+      - name: Check tests
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+      - name: Update to diff params
+        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_updated.yml'
+          branch: '${{inputs.branch}}'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+      - name: Check tests
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+
+  Consul-Clean-WO-Components:
+    runs-on: ubuntu-latest
+    name: 13-Clean [LATEST_SPRINT] W/O Components, 14-Upgrade [LATEST_SPRINT] All Components S3
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+      - name: Install consul
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_on_sc_without_components.yml'
+          branch: 'main'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+#      - name: Update to all components
+#        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
+#        with:
+#          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
+#          branch: '${{inputs.branch}}'
+#      - name: Get pods
+#        run: kubectl get pods -n ${{env.namespace}}
+#      - name: Check status provisioner
+#        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+#      - name: Check tests
+#        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+
+  Consul-Clean_Latest_Sprint_Without_Clients:
+    runs-on: ubuntu-latest
+    name: 15-Clean [LATEST_SPRINT] Without Clients
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+      - name: Install consul
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_without_clients.yml'
+          branch: 'main'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+      - name: Check tests
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+
+  Consul-Clean_Latest_Sprint_Full_At_ports_Specifying_Custom_Labels:
+    runs-on: ubuntu-latest
+    name: 22-Clean [LATEST_SPRINT] Full-AT Ports-specifying Custom-labels
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+      - name: Install consul
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_full_at.yml'
+          branch: 'main'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+      - name: Check tests
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+

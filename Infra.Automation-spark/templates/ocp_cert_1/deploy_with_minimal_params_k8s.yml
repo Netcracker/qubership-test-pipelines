@@ -1,9 +1,0 @@
-|
-  spark='
-    sparkJobNamespace=spark-apps;
-    securityContext='
-    runAsUser: 185
-    ';
-    webhook='
-    enable: true
-    ';

@@ -1,0 +1,35 @@
+global:
+  enabled: true
+  imagePullSecrets:
+    - name: github-registry
+server:
+  enabled: true
+  replicas: 3
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 1024Mi
+      cpu: 400m
+  storage: 1Gi
+  storageClass: standard
+client:
+  enabled: false
+ui:
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: consul-consul-opensource.cloud.com
+monitoring:
+  # Enable Consul to send telemetry data
+  enabled: false
+  installDashboard: false
+backupDaemon:
+  enabled: true
+  storage: 1Gi
+  storageClass: standard
+integrationTests:
+  enabled: true
+  tags: smoke
