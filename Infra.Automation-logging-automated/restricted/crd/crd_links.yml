@@ -1,5 +1,0 @@
-id: 10140
-tag: "main"
-old-tag: "13.19.0"
-crds:
-  - "charts/logging-operator/crds"
