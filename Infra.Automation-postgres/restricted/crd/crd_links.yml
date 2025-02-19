@@ -1,4 +1,0 @@
-id: 10864
-crds:
-  - "charts/patroni-services/crds"
-  - "charts/patroni-core/crds"

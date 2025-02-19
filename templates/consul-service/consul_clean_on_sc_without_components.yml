@@ -1,0 +1,22 @@
+global:
+  acls:
+    manageSystemACLs: false
+server:
+  replicas: 3
+  bootstrapExpect: 3
+  storage: 1Gi
+  storageClass: standard
+  resources:
+    limits:
+      memory: 300Mi
+      cpu: 100m
+consulAclConfigurator:
+  enabled: false
+statusProvisioner:
+  lifetimeAfterCompletion: 60
+dns:
+  enabled: false
+monitoring:
+  enabled: false
+client:
+  enabled: false

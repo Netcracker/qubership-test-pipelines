@@ -1,0 +1,48 @@
+ENABLE_PRIVILEGED_PSS: true
+global:
+  enabled: true
+server:
+  replicas: 3
+  bootstrapExpect: 3
+  storage: 1Gi
+  storageClass: standard
+  resources:
+    limits:
+      memory: 301Mi
+      cpu: 101m
+consulAclConfigurator:
+  enabled: true
+dns:
+  enabled: false
+monitoring:
+  enabled: false
+ui:
+  enabled: true
+  ingress:
+    enabled: true
+    hosts:
+      - host: consul-service.qa-kubernetes.openshift.sdntest.qubership.org
+service:
+  enabled: true
+client:
+  enabled: true
+  resources:
+    requests:
+      memory: 61Mi
+      cpu: 21m
+    limits:
+      memory: 251Mi
+      cpu: 51m
+backupDaemon:
+  enabled: true
+  storage: 1Gi
+  storageClass: standard
+  backupSchedule: "*/15 * * * *"
+  evictionPolicy: 1h/1d,7d/delete
+integrationTests:
+  enabled: true
+  tags: backupORcrudORconsul_images
+statusProvisioner:
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 600
+  podReadinessTimeout: 900
