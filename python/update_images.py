@@ -8,7 +8,7 @@ path_to_values = f'{os.environ["repository_name"]}/{os.environ["path_to_chart"]}
 components = os.environ["components"]
 
 def main(args_):
-    branch = args_.branch
+    branch = args_.service_branch
     with open(path_to_values) as file:
         try:
             values = yaml.safe_load(file)
@@ -26,7 +26,7 @@ def main(args_):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Script to prepare namespaces in cloud')
-    parser.add_argument('--branch', type=str, default='main',
-                        help='branch name in repo with service')
+    parser.add_argument('--service_branch', type=str, default='main',
+                        help='branch name in repository with service')
     args = parser.parse_args()
     main(args)
