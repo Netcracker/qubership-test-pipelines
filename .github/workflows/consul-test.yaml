@@ -1,0 +1,36 @@
+name: Install Consul
+
+on:
+  workflow_call:
+    inputs:
+      service_branch:
+        required: false
+        type: string
+
+env:
+  max_attempts: 40
+  timeout: '10s'
+  repository_name: 'qubership-consul'
+  path_to_chart: 'charts/helm/consul-service'
+  namespace: 'consul'
+  service_name: 'consul'
+  components: 'integrationTests'
+
+jobs:
+  Test-job:
+    runs-on: ubuntu-latest
+    name: Test job
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+      - name: Create restricted resources
+        uses: Netcracker/qubership-test-pipelines/actions/create_restricted_resources@restricted_install
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          service_branch: 'improvement/run_tests'
+#      - name: Install consul
+#        uses: Netcracker/qubership-test-pipelines/actions/helm_install@restricted_install
+#        with:
+#          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+#          service_branch: '$improvement/run_tests'
+

@@ -24,9 +24,9 @@ runs:
         repository: 'Netcracker/${{env.repository_name}}'
         path: '${{env.repository_name}}'
 
-    - name: Create namespaces
-      run: kubectl create namespace ${{env.namespace}}
-      shell: bash
+#    - name: Create namespaces
+#      run: kubectl create namespace ${{env.namespace}}
+#      shell: bash
 
     - name: Copy template
       run: |
