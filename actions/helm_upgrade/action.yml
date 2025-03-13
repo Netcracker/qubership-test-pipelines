@@ -4,7 +4,7 @@ inputs:
   path_to_template:
     description: 'Path to template'
     required: true
-  branch:
+  service_branch:
     description: 'branch with release'
     required: true
 runs:
@@ -20,7 +20,7 @@ runs:
 #    - name: Checkout repo
 #      uses: actions/checkout@v4
 #      with:
-#        ref: '${{inputs.branch}}'
+#        ref: '${{inputs.service_branch}}'
 #        repository: 'Netcracker/${{env.repository_name}}'
 #        path: '${{env.repository_name}}'
 

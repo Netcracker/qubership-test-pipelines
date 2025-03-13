@@ -3,7 +3,7 @@ name: Install Consul
 on:
   workflow_call:
     inputs:
-      branch:
+      service_branch:
         required: false
         type: string
 
@@ -20,6 +20,10 @@ env:
   namespace: 'consul'
   #name with which service will be installed by helm
   service_name: 'consul'
+  #list of components in which images should be replaced with images from the current branch
+  components: 'integrationTests'
+  #branch with your pipeline in qubership-test-pipelines. Default: main
+  pipeline_branch: main
 
 jobs:
   #1-Clean [LATEST_SPRINT] Infra Passport
@@ -33,7 +37,7 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_infra_passport.yml'
-          branch: '${{inputs.branch}}'
+          service_branch: '${{inputs.service_branch}}'
       - name: Check status provisioner
         uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
 
@@ -48,7 +52,7 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
-          branch: 'release-2025.1-0.11.0'
+          service_branch: 'release-2025.1-0.11.0'
       - name: Check status provisioner
         uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
       - name: Check tests
@@ -57,7 +61,7 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
-          branch: '${{inputs.branch}}'
+          service_branch: '${{inputs.service_branch}}'
       - name: Check status provisioner
         uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
       - name: Check tests
@@ -74,7 +78,7 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
-          branch: '${{inputs.branch}}'
+          service_branch: '${{inputs.service_branch}}'
       - name: Check status provisioner
         uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
       - name: Check tests
@@ -83,7 +87,7 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_updated.yml'
-          branch: '${{inputs.branch}}'
+          service_branch: '${{inputs.service_branch}}'
       - name: Check status provisioner
         uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
         continue-on-error: true
@@ -109,7 +113,7 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_on_sc_without_components.yml'
-          branch: 'main'
+          service_branch: '${{inputs.service_branch}}'
       - name: Check status provisioner
         uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
         #we don't have s3 and drd
@@ -117,7 +121,7 @@ jobs:
 #        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
 #        with:
 #          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
-#          branch: '${{inputs.branch}}'
+#          service_branch: '${{inputs.service_branch}}'
 #      - name: Get pods
 #        run: kubectl get pods -n ${{env.namespace}}
 #      - name: Check status provisioner
@@ -137,7 +141,7 @@ jobs:
 #        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
 #        with:
 #          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_without_clients.yml'
-#          branch: 'main'
+#          service_branch: 'main'
 #      - name: Check status provisioner
 #        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
 #      - name: Check tests
@@ -146,7 +150,7 @@ jobs:
 #        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
 #        with:
 #          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml'
-#          branch: '${{inputs.branch}}'
+#          service_branch: '${{inputs.service_branch}}'
 #      - name: Get pods
 #        run: kubectl get pods -n ${{env.namespace}}
 #      - name: Check status provisioner
@@ -173,7 +177,7 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_full_at.yml'
-          branch: 'main'
+          service_branch: '${{inputs.service_branch}}'
       - name: Check status provisioner
         uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
       - name: Check tests
