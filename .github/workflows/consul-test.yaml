@@ -26,7 +26,7 @@ jobs:
       - name: Create restricted resources
         uses: Netcracker/qubership-test-pipelines/actions/create_restricted_resources@restricted_install
         with:
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
           service_branch: 'improvement/run_tests'
 #      - name: Install consul
 #        uses: Netcracker/qubership-test-pipelines/actions/helm_install@restricted_install

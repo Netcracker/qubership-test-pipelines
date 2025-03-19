@@ -28,70 +28,68 @@ runs:
       run: kubectl create namespace ${{env.namespace}}
       shell: bash
 
-# Create Restriced Role and RB
-
-    - name: Create service account
-      run: kubectl create -f qubership-test-pipelines/restricted/restricted-sa.yml
+    - name: Create ClusterRoles
+      run: |
+        kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoles
       shell: bash
 
-#    - name: Create secret
-#      run: |
-#        sleep 5s
-#        kubectl create -f qubership-test-pipelines/restricted/secret.yml
-#      shell: bash
-#
-#    - name: Get token
-#      run: |
-#        kubectl describe secret
-#        kubectl get secret restricted-token -ojsonpath='{.data.token}'
+    - name: Create ClusterRoleBindings
+      run: |
+        kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoleBindings
+      shell: bash
+
+    - name: Create CRD
+      run: |
+        kubectl create -f ${{env.repository_name}}/${{env.path_to_chart}}/crds
+        kubectl get CustomResourceDefinition consulacls.qubership.org -n consul -oyaml
+      shell: bash
+
+    - name: Get CRD
+      run: kubectl get crd -n consul
+      shell: bash
+
+# Create Restriced Role and RB
+
+#    - name: Create service account
+#      run: kubectl create -f qubership-test-pipelines/restricted/restricted-sa.yml
 #      shell: bash
 
-#    - name: Get service account
-#      run: |
-#        kubectl get serviceaccount restricted-sa -oyaml
-#      shell: bash
-
-#    - name: Get secret
-#      run: |
-#        kubectl get secret -n default
-#      shell: bash
-
-    - name: install openssl
+    - name: Install Openssl
       run: |
         sudo apt install openssl
       shell: bash
 
-    - name: Generate the Private Key
+    - name: Generate Private Key
       run: |
-        openssl genrsa -out user1.key 2048
+        openssl genrsa -out restricted.key 2048
       shell: bash
 
-    - name: Generate the CSR
+    - name: Generate CSR
       run: |
-        openssl req -new -key user1.key -out user1.csr -subj "/CN=user1/O=dev-team"
+        openssl req -new -key restricted.key -out restricted.csr -subj "/CN=restricted/O=dev-team"
       shell: bash
 
-    - name: Create a CSR Object in Kubernetes
+    - name: Create CSR Object in Kubernetes
       run: |
         cat <<EOF | kubectl apply -f -
         apiVersion: certificates.k8s.io/v1
         kind: CertificateSigningRequest
         metadata:
-          name: user1-csr
+          name: restricted-csr
         spec:
-          request: $(cat user1.csr | base64 | tr -d '\n')
+          request: $(cat restricted.csr | base64 | tr -d '\n')
           signerName: kubernetes.io/kube-apiserver-client
           usages:
           - client auth
         EOF
       shell: bash
 
-    - name: Approve the CSR
-      run: kubectl certificate approve user1-csr
+    - name: Approve CSR
+      run: kubectl certificate approve restricted-csr
       shell: bash
 
-    - name: Retrieve the Certificate
-      run: kubectl get csr user1-csr -o jsonpath='{.status.certificate}' | base64 --decode > user1.crt
+    - name: Retrieve Certificate
+      run: kubectl get csr restricted-csr -o jsonpath='{.status.certificate}' | base64 --decode > restricted.crt
       shell: bash
 
     - name: Create role
@@ -101,7 +99,7 @@ runs:
         kind: Role
         metadata:
           namespace: consul
-          name: dev-role
+          name: restricted-role
         rules:
         - apiGroups: [""]
           resources: ["pods"]
@@ -115,74 +113,33 @@ runs:
         apiVersion: rbac.authorization.k8s.io/v1
         kind: RoleBinding
         metadata:
-          name: dev-role-binding
+          name: restricted-role-binding
           namespace: consul
         subjects:
         - kind: User
-          name: user1
+          name: restricted
           apiGroup: rbac.authorization.k8s.io
         roleRef:
           kind: Role
-          name: dev-role
+          name: restricted-role
           apiGroup: rbac.authorization.k8s.io
         EOF
       shell: bash
-
-
-#    - name: Update yaml with Role
-#      run: >-
-#        python qubership-test-pipelines/python/replace_nc_in_template.py
-#        --path_to_file='qubership-test-pipelines/restricted/full-access-role.yml'
-#        --nc='${{env.namespace}}'
-#      shell: bash
-#
-#    - name: Create Role
-#      run: |
-#        kubectl create -f qubership-test-pipelines/restricted/full-access-role.yml
-#      shell: bash
-#
-#    - name: Update yaml with RoleBinding
-#      run: >-
-#        python qubership-test-pipelines/python/replace_nc_in_template.py
-#        --path_to_file='qubership-test-pipelines/restricted/full-access-rb.yml'
-#        --nc='${{env.namespace}}'
-#      shell: bash
-#
-#    - name: Create Create RoleBindings
-#      run: |
-#        kubectl create -f qubership-test-pipelines/restricted/full-access-rb.yml
-#      shell: bash
-
-#    - name: Create ClusterRoles
-#      run: |
-#        kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoles
-#      shell: bash
-#
-#    - name: Create ClusterRoleBindings
-#      run: |
-#        kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoleBindings
-#      shell: bash
-#
-#    - name: Create CRD
-#      run: |
-#        kubectl create -f ${{env.repository_name}}/${{env.path_to_chart}}/crds
-#        kubectl get CustomResourceDefinition consulacls.qubership.org -n consul -oyaml
-#      shell: bash
 
     - name: get config
       run: kubectl config view
       shell: bash
 
-    - name: Add the User Configuration
-      run: kubectl config set-credentials user1 --client-certificate=user1.crt --client-key=user1.key
+    - name: Add User Configuration
+      run: kubectl config set-credentials restricted --client-certificate=restricted.crt --client-key=restricted.key
       shell: bash
 
-    - name: Create a Context for the User
-      run: kubectl config set-context user1-context --cluster=kind-kind --namespace=consul --user=user1
+    - name: Create Context for User
+      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=consul --user=restricted
       shell: bash
 
-    - name: Use the Context
-      run: kubectl config use-context user1-context
+    - name: Use Context
+      run: kubectl config use-context restricted-context
       shell: bash
 
 #    - name: Update config
@@ -202,6 +159,7 @@ runs:
 #        #kubectl config set-context --user=restricted-sa --current
 #      shell: bash
 
+
     - name: get config
       run: kubectl config view --raw
       shell: bash
@@ -210,25 +168,25 @@ runs:
       run: kubectl get pods
       shell: bash
 
-    - name: get pods
-      run: kubectl get pods -n default
-      shell: bash
+#    - name: get pods
+#      run: kubectl get pods -n default
+#      shell: bash
 
       #-----------------------------------------------------
-#    - name: Copy template
-#      run: |
-#        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{env.repository_name}}/${{env.path_to_chart}}
-#      shell: bash
-#
-#    - name: Update images
-#      run: python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}'
-#      shell: bash
-#
-#    - name: Install service with helm
-#      run: |
-#        IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
-#        template_name=${path[-1]}
-#        echo $template_name
-#        cd ${{env.repository_name}}/${{env.path_to_chart}}
-#        helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} $SET_NEW_IMAGES --timeout 10m
-#      shell: bash
+    - name: Copy template
+      run: |
+        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{env.repository_name}}/${{env.path_to_chart}}
+      shell: bash
+
+    - name: Update images
+      run: python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}'
+      shell: bash
+
+    - name: Install service with helm
+      run: |
+        IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
+        template_name=${path[-1]}
+        echo $template_name
+        cd ${{env.repository_name}}/${{env.path_to_chart}}
+        helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} $SET_NEW_IMAGES --timeout 10m
+      shell: bash
