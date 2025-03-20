@@ -47,5 +47,3 @@ statusProvisioner:
   lifetimeAfterCompletion: 60
   integrationTestsTimeout: 600
   podReadinessTimeout: 900
-ESCAPE_SEQUENCE: true
-DISABLE_CRD: "true"

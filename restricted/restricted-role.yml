@@ -2,7 +2,7 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   namespace: <namespace>
-  name: full-access
+  name: restricted-role
 rules:
 - apiGroups: ["*"]
   resources: ["*"]
