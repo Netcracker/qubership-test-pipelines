@@ -28,6 +28,7 @@ runs:
       run: kubectl create namespace ${{env.namespace}}
       shell: bash
 
+#Create CRD
     - name: Create ClusterRoles
       run: |
         kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoles
@@ -41,25 +42,19 @@ runs:
     - name: Create CRD
       run: |
         kubectl create -f ${{env.repository_name}}/${{env.path_to_chart}}/crds
-        kubectl get CustomResourceDefinition consulacls.qubership.org -n consul -oyaml
       shell: bash
 
     - name: Get CRD
-      run: kubectl get crd -n consul
+      run: kubectl get crd -n ${{env.namespace}} -oyaml
       shell: bash
 
-# Create Restriced Role and RB
-
-#    - name: Create service account
-#      run: kubectl create -f qubership-test-pipelines/restricted/restricted-sa.yml
-#      shell: bash
-
-    - name: Install Openssl
+#Create Certificate
+    - name: Install openssl
       run: |
         sudo apt install openssl
       shell: bash
 
-    - name: Generate Private Key
+    - name: Generate private key
       run: |
         openssl genrsa -out restricted.key 2048
       shell: bash
@@ -69,7 +64,7 @@ runs:
         openssl req -new -key restricted.key -out restricted.csr -subj "/CN=restricted/O=dev-team"
       shell: bash
 
-    - name: Create CSR Object in Kubernetes
+    - name: Create CSR object
       run: |
         cat <<EOF | kubectl apply -f -
         apiVersion: certificates.k8s.io/v1
@@ -88,91 +83,51 @@ runs:
       run: kubectl certificate approve restricted-csr
       shell: bash
 
-    - name: Retrieve Certificate
+    - name: Retrieve certificate
       run: kubectl get csr restricted-csr -o jsonpath='{.status.certificate}' | base64 --decode > restricted.crt
       shell: bash
 
-    - name: Create role
-      run: |
-        cat <<EOF | kubectl apply -f -
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: Role
-        metadata:
-          namespace: consul
-          name: restricted-role
-        rules:
-        - apiGroups: [""]
-          resources: ["pods"]
-          verbs: ["get", "list", "watch"]
-        EOF
+#Create Role and RB
+    - name: Update yaml with Role
+      run: >-
+        python qubership-test-pipelines/python/replace_nc_in_template.py 
+        --path_to_file='qubership-test-pipelines/restricted/restricted-role.yml'
+        --nc='${{env.namespace}}'
+      shell: bash
+
+    - name: Update yaml with RoleBinding
+      run: >-
+        python qubership-test-pipelines/python/replace_nc_in_template.py 
+        --path_to_file='qubership-test-pipelines/restricted/restricted-rb.yml'
+        --nc='${{env.namespace}}'
+      shell: bash
+
+    - name: Create Role
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-role.yml
       shell: bash
 
     - name: Create RoleBindings
-      run: |
-        cat <<EOF | kubectl apply -f -
-        apiVersion: rbac.authorization.k8s.io/v1
-        kind: RoleBinding
-        metadata:
-          name: restricted-role-binding
-          namespace: consul
-        subjects:
-        - kind: User
-          name: restricted
-          apiGroup: rbac.authorization.k8s.io
-        roleRef:
-          kind: Role
-          name: restricted-role
-          apiGroup: rbac.authorization.k8s.io
-        EOF
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml
       shell: bash
 
-    - name: get config
-      run: kubectl config view
-      shell: bash
-
-    - name: Add User Configuration
+#Add user to kubeconfig
+    - name: Add user configuration
       run: kubectl config set-credentials restricted --client-certificate=restricted.crt --client-key=restricted.key
       shell: bash
 
-    - name: Create Context for User
-      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=consul --user=restricted
+    - name: Create context for user
+      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=${{env.namespace}} --user=restricted
       shell: bash
 
-    - name: Use Context
+    - name: Use context
       run: kubectl config use-context restricted-context
       shell: bash
 
-#    - name: Update config
-#      run: |
-#        restricted_token=$(kubectl get secret restricted-token -ojsonpath='{.data.token}')
-#        echo $restricted_token
-#        kubectl config set-credentials restricted-sa --token=$restricted_token
-#        kubectl config set-context restricted --cluster=kind-kind --user=restricted-sa
-#        kubectl config use-context restricted
-#      shell: bash
-
-#    - name: Update config
-#      run: |
-#        restricted_token=$(kubectl get secret restricted-token -ojsonpath='{.data.token}')
-#        echo $restricted_token
-#        #kubectl config set-credentials restricted-sa --token=$restricted_token
-#        #kubectl config set-context --user=restricted-sa --current
-#      shell: bash
-
-
-    - name: get config
+    - name: Get config
       run: kubectl config view --raw
       shell: bash
 
-    - name: get pods
-      run: kubectl get pods
-      shell: bash
-
-#    - name: get pods
-#      run: kubectl get pods -n default
-#      shell: bash
-
-      #-----------------------------------------------------
+#Helm install
     - name: Copy template
       run: |
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{env.repository_name}}/${{env.path_to_chart}}
@@ -182,11 +137,11 @@ runs:
       run: python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}'
       shell: bash
 
-    - name: Install service with helm
+    - name: Install service with helm skip-crds
       run: |
         IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
         template_name=${path[-1]}
         echo $template_name
         cd ${{env.repository_name}}/${{env.path_to_chart}}
-        helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} $SET_NEW_IMAGES --timeout 10m
+        helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
       shell: bash

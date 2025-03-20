@@ -13,20 +13,20 @@ runs:
     - name: Checkout pipeline
       uses: actions/checkout@v4
       with:
-        ref: '${{env.pipeline_branch}}'
+        ref: 'restricted_install'
         repository: 'Netcracker/qubership-test-pipelines'
         path: 'qubership-test-pipelines'
 
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
-        ref: '${{inputs.service_branch}}'
+        ref: '${{inputs.service.branch}}'
         repository: 'Netcracker/${{env.repository_name}}'
         path: '${{env.repository_name}}'
 
-#    - name: Create namespaces
-#      run: kubectl create namespace ${{env.namespace}}
-#      shell: bash
+    - name: Create namespaces
+      run: kubectl create namespace ${{env.namespace}}
+      shell: bash
 
     - name: Copy template
       run: |
