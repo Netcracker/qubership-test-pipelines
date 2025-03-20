@@ -1,0 +1,111 @@
+name: Install Monitoring
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        required: false
+        type: string
+
+env:
+  #maximum number of attempts to verify that pod status is successful
+  max_attempts: 40
+  #timeout between attempts
+  timeout: '10s'
+  #name of repository with service
+  repository_name: 'qubership-monitoring-operator'
+  #path to helm chart in repository
+  path_to_chart: 'charts/qubership-monitoring-operator'
+  #namespase to install service
+  namespace: 'monitoring'
+  #name with which service will be installed by helm
+  service_name: 'monitoring'
+
+jobs:
+  Get-Cluster-Info:
+    runs-on: ubuntu-latest
+    name: Get Cluster Info
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+      - name: Get nodes
+        run: kubectl get nodes
+      - name: Get pods
+        run: kubectl get pods -A
+      - name: Get storageclass
+        run: kubectl get storageclass
+      - name: Get ingress
+        run: kubectl get ingress -A
+      - name: Describe nodes
+        run: kubectl describe nodes
+      - name: Get config
+        run: kubectl config view --raw
+      - name: Get nodes owide
+        run: kubectl get nodes -owide
+      - name:  Get nodes oyaml
+        run: kubectl get nodes -oyaml
+#      - name: Sleep
+#        run: sleep 20m
+
+
+  Monitoring-Clean:
+    runs-on: ubuntu-latest
+    name: Monitoring
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+#      - name: Install monitoring
+#        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+#        with:
+#          path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
+#          branch: '${{inputs.branch}}'
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: 'restricted_install'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+          repository: 'Netcracker/qubership-monitoring-operator'
+          path: 'qubership-monitoring-operator'
+      - name: Create namespaces
+        run: kubectl create namespace monitoring
+      - name: Copy template
+        run: |
+          cp qubership-test-pipelines/templates/monitoring/vm_with_smoke_at.yml ${{env.repository_name}}/${{env.path_to_chart}}
+        shell: bash
+#      - name: Install service with helm
+#        run: helm install monitoring qubership-monitoring-operator/charts/qubership-monitoring-operator  -n monitoring --timeout 10m
+      - name: Install service with helm
+        run: |
+          IFS=$'/' read -a path <<< "qubership-test-pipelines/templates/monitoring/vm_with_smoke_at.yml"
+          template_name=${path[-1]}
+          echo $template_name
+          cd ${{env.repository_name}}/${{env.path_to_chart}}
+          helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} --timeout 10m
+        shell: bash
+      - name: Get pods
+        run: 'kubectl get pods -n ${{env.namespace}}'
+      - name: Sleep
+        run: sleep 3m
+      - name: Get pods
+        run: 'kubectl get pods -n ${{env.namespace}}'
+      - name: Get events
+        run: 'kubectl events -n ${{env.namespace}}'
+#      - name: Get logs
+#        run: |
+#          pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}}  | tr -s '\r\n' ' ')
+#          IFS=$' ' read -a pods_list <<< "$pods"
+#          echo "$pods"
+#          for pod in "${pods_list[@]}"; do
+#          if [[ $pod == *"monitoring"* ]]; then
+#          monitoring=$pod
+#          fi
+#          kubectl logs $monitoring -n ${{env.namespace}}
+#      - name: Check status provisioner
+#        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+#      - name: Check tests
+#        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
