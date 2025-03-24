@@ -1,19 +1,27 @@
 name: 'Custom GitHub Action'
 description: 'A GitHub Action that takes an input and returns the square of the number'
-#inputs:
-#  namespace:
-#    description: 'namespace where service is installed'
-#    required: true
+inputs:
+  namespace:
+    description: 'namespace where service is installed'
+    required: true
+  max_attempts:
+    description: 'maximum number of attempts to verify that pod status is successful'
+    required: true
+    default: 40
+  timeout:
+    description: 'timeout between attempts'
+    required: true
+    default: '10s'
 
 runs:
   using: 'composite'
   steps:
     - name: Get pods
-      run: 'kubectl get pods -n ${{env.namespace}}'
+      run: kubectl get pods -n ${{inputs.namespace}}
       shell: bash
     - name: Get logs
       run: |
-        pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}}  | tr -s '\r\n' ' ')
+        pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}}  | tr -s '\r\n' ' ')
         IFS=$' ' read -a pods_list <<< "$pods"
         echo "$pods"
         for pod in "${pods_list[@]}"; do
@@ -22,26 +30,26 @@ runs:
           fi
         done
         echo "provisioner_pod=$provisioner_pod"
-        for i in {1..${{env.max_attempts}}}; do
-          status=$(kubectl get pod $provisioner_pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
+        for i in {1..${{inputs.max_attempts}}}; do
+          status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
           echo "status=$status"
           if [[ "$status" == 'Succeeded' ]]; then
             break
           fi
-          sleep ${{env.timeout}}
+          sleep ${{inputs.timeout}}
         done
         if [[ "$status" != 'Succeeded' ]]; then
           echo $provisioner_pod pod has not Succeeded status 
         fi
         echo PROVISIONER LOGS:
-        kubectl logs $provisioner_pod -n ${{env.namespace}}
-        logs=$(kubectl logs $provisioner_pod -n ${{env.namespace}})
+        kubectl logs $provisioner_pod -n ${{inputs.namespace}}
+        logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
         if [[ $logs != *"Failed components statuses are []"* ]]; then
-          echo Not all components are in succeed status after ${{env.max_attempts}} attempts
+          echo Not all components are in succeed status after ${{inputs.max_attempts}} attempts
           echo PODS:
-          kubectl get pods -n ${{env.namespace}}
+          kubectl get pods -n ${{inputs.namespace}}
           echo EVENTS:
-          kubectl events -n ${{env.namespace}}
+          kubectl events -n ${{inputs.namespace}}
           exit 1
         fi
       shell: bash

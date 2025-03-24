@@ -1,6 +1,10 @@
 name: 'Custom GitHub Action'
 description: 'A GitHub Action that runs kind'
-#inputs:
+inputs:
+  pipeline_branch:
+    description: 'name of branch with your pipeline in qubership-test-pipelines'
+    required: true
+    default: 'main'
 #  cluster_config:
 #    description: 'Path to yaml with cluster config'
 #    required: true
@@ -10,7 +14,7 @@ runs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: '${{env.pipeline_branch}}'
+          ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Get info

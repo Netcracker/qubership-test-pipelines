@@ -2,13 +2,15 @@ import os
 import yaml
 import argparse
 
-#path to values.yaml. Repository name and path to chart we are getting from evn variables
-path_to_values = f'{os.environ["repository_name"]}/{os.environ["path_to_chart"]}/values.yaml'
+#path to values.yaml. Repository name and path to chart we are getting from env variables
+#path_to_values = f'{os.environ["repository_name"]}/{os.environ["path_to_chart"]}/values.yaml'
 #list of components for which we need to replace images
-components = os.environ["components"]
+#components = os.environ["components"]
 
 def main(args_):
     branch = args_.service_branch
+    path_to_values = args_.path_to_values
+    components = args_.components
     with open(path_to_values) as file:
         try:
             values = yaml.safe_load(file)
@@ -28,5 +30,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Script to prepare namespaces in cloud')
     parser.add_argument('--service_branch', type=str, default='main',
                         help='branch name in repository with service')
+    parser.add_argument('--path_to_values', type=str,
+                        help='path to values.yaml')
+    parser.add_argument('--components', type=str,
+                        help='list of components in which images should be replaced with images from the current branch')
     args = parser.parse_args()
     main(args)
