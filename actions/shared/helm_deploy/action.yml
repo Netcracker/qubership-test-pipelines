@@ -46,10 +46,6 @@ runs:
         repository: 'Netcracker/${{inputs.repository_name}}'
         path: '${{inputs.repository_name}}'
 
-#    - name: Create namespaces
-#      run: kubectl create namespace ${{inputs.namespace} --dry-run=client -o yaml | kubectl apply -f -
-#      shell: bash
-
     - name: Copy template
       run: |
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}

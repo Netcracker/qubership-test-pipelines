@@ -31,10 +31,8 @@ jobs:
     runs-on: ubuntu-latest
     name: 1-Clean [LATEST_SPRINT] Infra Passport
     steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@update_actions
-      - name: Create namespaces
-        run: kubectl create namespace consul
+      - name: Prerequirements
+        uses: Netcracker/qubership-test-pipelines/actions/consul/prerequirements_consul@update_actions
       - name: Install consul
         uses: Netcracker/qubership-test-pipelines/actions/consul/helm_install_consul@update_actions
         with:
@@ -42,7 +40,7 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
           pipeline_branch: 'update_actions'
       - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@update_actions
+        uses: Netcracker/qubership-test-pipelines/actions/shared/check_status_provisioner@update_actions
         with:
           namespace: consul
 
@@ -51,10 +49,8 @@ jobs:
     runs-on: ubuntu-latest
     name: 2-Clean [PREVIOUS_SPRINT], 3-Update to [LATEST_SPRINT]
     steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@update_actions
-      - name: Create namespaces
-        run: kubectl create namespace consul
+      - name: Prerequirements
+        uses: Netcracker/qubership-test-pipelines/actions/consul/prerequirements_consul@update_actions
       - name: Install consul
         uses: Netcracker/qubership-test-pipelines/actions/consul/helm_install_consul@update_actions
         with:
@@ -62,27 +58,26 @@ jobs:
           service_branch: 'release-2025.1-0.11.0'
           pipeline_branch: 'update_actions'
       - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@update_actions
+        uses: Netcracker/qubership-test-pipelines/actions/shared/check_status_provisioner@update_actions
         with:
           namespace: consul
       - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@update_actions
+        uses: Netcracker/qubership-test-pipelines/actions/shared/validate_tests_result@update_actions
         with:
           namespace: consul
       - name: Update to latest
-        uses: Netcracker/qubership-test-pipelines/actions/consul/helm_install_consul@update_actions
+        uses: Netcracker/qubership-test-pipelines/actions/consul/helm_upgrade_consul@update_actions
         with:
-          deploy_mode: upgrade
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
           service_branch: '${{inputs.service_branch}}'
           pipeline_branch: 'update_actions'
       - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@update_actions
+        uses: Netcracker/qubership-test-pipelines/actions/shared/check_status_provisioner@update_actions
         with:
           namespace: consul
         continue-on-error: true
       - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@update_actions
+        uses: Netcracker/qubership-test-pipelines/actions/shared/validate_tests_result@update_actions
         with:
           namespace: consul
 
