@@ -39,16 +39,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-#    - name: Get values
-#      run: |
-#        echo ${{inputs.path_to_template}} ${{inputs.service_branch}} ${{env.pipeline_branch}} ${{env.service_name}} ${{env.repository_name}} ${{env.path_to_chart}} ${{env.components}} ${{env.namespace}}
-#      shell: bash
-#    - name: Checkout pipeline
-#      uses: actions/checkout@v4
-#      with:
-#        ref: '${{env.pipeline_branch}}'
-#        repository: 'Netcracker/qubership-test-pipelines'
-#        path: 'qubership-test-pipelines'
     - name: Run helm_install action
       uses: Netcracker/qubership-test-pipelines/actions/shared/helm_deploy@update_actions
       with:
