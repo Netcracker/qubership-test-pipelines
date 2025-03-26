@@ -11,12 +11,12 @@ inputs:
 runs:
   using: 'composite'
   steps:
-#      - name: Checkout
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
       - name: Get info
         run: |
           cat /proc/meminfo
