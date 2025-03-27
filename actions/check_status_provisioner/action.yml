@@ -50,6 +50,7 @@ runs:
         pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
         IFS=$'\n' read -ra elements <<< "$pods"
         echo "pods: $pods"
+        echo "${elements[@]}"
         for element in "${elements[@]}"; do
             echo "$element"
             echo "LOGS:"
