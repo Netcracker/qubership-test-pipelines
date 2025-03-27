@@ -50,6 +50,6 @@ runs:
         pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
         for i in "${pods[@]}"; do
         echo "$i logs:"
-        kubectl logs $i
+        kubectl logs "$i" -n ${{env.namespace}}
         done
       shell: bash
