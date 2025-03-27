@@ -1,0 +1,208 @@
+#global:
+#  hweProfile: small
+#grafana:
+#  ingress:
+#    host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
+#  route:
+#    host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
+#  resources:
+#    requests:
+#      cpu: 300m
+#      memory: 400Mi
+#    limits:
+#      cpu: 500m
+#      memory: 800Mi
+#  imageRenderer:
+#    install: true
+#    resources:
+#      requests:
+#        cpu: 150m
+#        memory: 250Mi
+#      limits:
+#        cpu: 300m
+#        memory: 500Mi
+#  securityContext:
+#    fsGroup: 2002
+#    runAsUser: 2002
+#  operator:
+#    resources:
+#      requests:
+#        cpu: 50m
+#        memory: 50Mi
+#      limits:
+#        cpu: 100m
+#        memory: 100Mi
+#    securityContext:
+#      fsGroup: 2002
+#      runAsUser: 2002
+#prometheusRules:
+#  install: true
+#monitoringOperator:
+#  install: true
+#  securityContext:
+#    fsGroup: 2002
+#    runAsUser: 2002
+#  resources:
+#    requests:
+#      cpu: 50m
+#      memory: 50Mi
+#    limits:
+#      cpu: 100m
+#      memory: 100Mi
+#victoriametrics:
+#  vmOperator:
+#    install: true
+#    resources:
+#      requests:
+#        cpu: 200m
+#        memory: 100Mi
+#      limits:
+#        cpu: 400m
+#        memory: 200Mi
+#    securityContext:
+#      runAsUser: 2000
+#      fsGroup: 2000
+#  vmAgent:
+#    install: true
+#    ingress:
+#      host: vmagent.qa-kubernetes.openshift.sdntest.qubership.org
+#      install: true
+#    remoteWrite:
+#      - url: http://graphite-remote-adapter:9201/write
+#        remoteTimeout: 45s
+#        inlineUrlRelabelConfig:
+#          - action: keep
+#            sourceLabels:
+#              - job
+#            regex: (node-exporter|kubelet|kube-state-metrics)
+#      - url: https://***.***.***.***:8429/api/v1/write
+#        basicAuth:
+#          createSecret:
+#            username: prometheus
+#            password: ''
+#            secretName: vmagent-basicauth
+#        tlsConfig:
+#          insecureSkipVerify: true
+#    remoteWriteSettings:
+#      label:
+#        project: development
+#        environment: qa-kubernetes
+#        cluster: qa-kubernetes
+#        team: test_team
+#    securityContext:
+#      runAsUser: 2001
+#      fsGroup: 2001
+#    resources:
+#      requests:
+#        cpu: 200m
+#        memory: 100Mi
+#      limits:
+#        cpu: 700m
+#        memory: 1000Mi
+#  vmSingle:
+#    install: true
+#    ingress:
+#      install: true
+#      host: vmsingle.qa-kubernetes.openshift.sdntest.qubership.org
+#    paused: false
+#    retentionPeriod: 14d
+#    securityContext:
+#      runAsUser: 2000
+#      fsGroup: 2000
+#    resources:
+#      requests:
+#        cpu: 500m
+#        memory: 1000Mi
+#      limits:
+#        cpu: 1000m
+#        memory: 2000Mi
+#    storage:
+#      accessModes:
+#        - ReadWriteOnce
+#      resources:
+#        requests:
+#          storage: 10Gi
+#      storageClassName: csi-cinder-sc-delete
+#  vmAlertManager:
+#    install: true
+#    ingress:
+#      host: vmalertmanager.qa-kubernetes.openshift.sdntest.qubership.org
+#      install: true
+#    selectAllByDefault: true
+#    securityContext:
+#      runAsUser: 2001
+#      fsGroup: 2001
+#    resources:
+#      requests:
+#        cpu: 30m
+#        memory: 56Mi
+#      limits:
+#        cpu: 100m
+#        memory: 256Mi
+#  vmAlert:
+#    install: true
+#    ingress:
+#      host: vmalert.qa-kubernetes.openshift.sdntest.qubership.org
+#      install: true
+#    securityContext:
+#      runAsUser: 2001
+#      fsGroup: 2001
+#    resources:
+#      requests:
+#        cpu: 50m
+#        memory: 200Mi
+#      limits:
+#        cpu: 200m
+#        memory: 500Mi
+#  vmAuth:
+#    install: true
+#    resources:
+#      requests:
+#        cpu: 50m
+#        memory: 200Mi
+#      limits:
+#        cpu: 200m
+#        memory: 500Mi
+#    secretName: vmauth-secret
+#    extraVarsSecret:
+#      pass: ''
+#    securityContext:
+#      runAsUser: 2001
+#      fsGroup: 2001
+#  vmUser:
+#    install: true
+#    username: admin
+#    passwordRef:
+#      key: ''
+#      name: vmauth-secret
+#graphite_remote_adapter:
+#  install: true
+#  resources:
+#    requests:
+#      cpu: 200m
+#      memory: 300Mi
+#    limits:
+#      cpu: 1500m
+#      memory: 1500Mi
+#  securityContext:
+#    fsGroup: 2002
+#    runAsUser: 2002
+#  additionalGraphiteConfig:
+#    read:
+#      timeout: 5m
+#      delay: 10m
+#      ignore_error: true
+#    graphite:
+#      read:
+#        max_point_delta: 5m
+#      write:
+#        carbon_transport: tcp
+#        carbon_reconnect_interval: 5m
+#        enable_paths_cache: true
+#        paths_cache_ttl: 15m
+#        paths_cache_purge_interval: 15m
+#  enableTags: true
+#  writeCarbonAddress: gmon-infra04cn.qubership.org:2003
+#
+global:
+  profile: "small"

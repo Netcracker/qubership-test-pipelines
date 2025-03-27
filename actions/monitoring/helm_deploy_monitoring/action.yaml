@@ -1,0 +1,54 @@
+name: 'Custom GitHub Action'
+description: 'A GitHub Action that installs services to kubernetes'
+inputs:
+  deploy_mode:
+    description: 'Install or update'
+    required: true
+    default: 'install'
+  path_to_template:
+    description: 'Path to template'
+    required: false
+  service_branch:
+    description: 'branch name in repository with service'
+    required: true
+    default: 'main'
+  pipeline_branch:
+    description: 'name of branch with your pipeline in qubership-test-pipelines'
+    required: true
+    default: 'main'
+  service_name:
+    description: 'name with which service will be installed by helm'
+    required: true
+    default: 'monitoring'
+  repository_name:
+    description: 'name of repository with service'
+    required: true
+    default: 'qubership-monitoring-operator'
+  path_to_chart:
+    description: 'path to helm chart in repository'
+    required: true
+    default: 'charts/qubership-monitoring-operator'
+  components:
+    description: 'list of components in which images should be replaced with images from the current branch'
+    required: true
+    default: ''
+  namespace:
+    description: 'namespase to install service'
+    required: true
+    default: 'monitoring'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run helm_install action
+      uses: Netcracker/qubership-test-pipelines/actions/shared/helm_deploy@update_actions
+      with:
+        deploy_mode: ${{inputs.deploy_mode}}
+        path_to_template: ${{inputs.path_to_template}}
+        service_branch: ${{inputs.service_branch}}
+        pipeline_branch: ${{inputs.pipeline_branch}}
+        service_name: ${{inputs.service_name}}
+        repository_name: ${{inputs.repository_name}}
+        path_to_chart: ${{inputs.path_to_chart}}
+        components: ${{inputs.components}}
+        namespace: ${{inputs.namespace}}

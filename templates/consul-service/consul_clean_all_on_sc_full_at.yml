@@ -28,7 +28,7 @@ consulAclConfigurator:
 dns:
   enabled: false
 monitoring:
-  enabled: false
+  enabled: true
 ui:
   enabled: true
   ingress:
@@ -65,6 +65,7 @@ integrationTests:
   extraLabels:
     CUSTOM_label: TESTS_check
   tags: backupORcrudORhaORalertsORbackupORconsul_images
+  #prometheusUrl: vmsingle.qa-kubernetes.openshift.sdntest.qubership.org
   prometheusUrl: http://vmsingle-k8s.prometheus-operator:8429
   secret:
     prometheus:
