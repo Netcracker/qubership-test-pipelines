@@ -43,22 +43,22 @@ jobs:
 #      shell: bash
 #      - name: Install service with helm
 #        run: helm install monitoring qubership-monitoring-operator/charts/qubership-monitoring-operator  -n monitoring --timeout 10m
-    - name: Install monitoring with helm
-      run: |
-        IFS=$'/' read -a path <<< "qubership-test-pipelines/templates/monitoring/vm_with_smoke_at.yml"
-        template_name=${path[-1]}
-        echo $template_name
-        cd qubership-test-pipelines/templates/monitoring
-        helm install monitoring . -f $template_name -n monitoring --timeout 10m
-      shell: bash
-    - name: Get pods
-      run: 'kubectl get pods -n ${{env.namespace}}'
-    - name: Sleep
-      run: sleep 3m
-    - name: Get pods
-      run: 'kubectl get pods -n ${{env.namespace}}'
-    - name: Get events
-      run: 'kubectl events -n ${{env.namespace}}'
+#    - name: Install monitoring with helm
+#      run: |
+#        IFS=$'/' read -a path <<< "qubership-test-pipelines/templates/monitoring/vm_with_smoke_at.yml"
+#        template_name=${path[-1]}
+#        echo $template_name
+#        cd qubership-test-pipelines/templates/monitoring
+#        helm install monitoring . -f $template_name -n monitoring --timeout 10m
+#      shell: bash
+#    - name: Get pods
+#      run: 'kubectl get pods -n ${{env.namespace}}'
+#    - name: Sleep
+#      run: sleep 3m
+#    - name: Get pods
+#      run: 'kubectl get pods -n ${{env.namespace}}'
+#    - name: Get events
+#      run: 'kubectl events -n ${{env.namespace}}'
     - name: Install consul
       uses: Netcracker/qubership-test-pipelines/actions/helm_install@restricted_install
       with:
