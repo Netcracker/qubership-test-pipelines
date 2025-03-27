@@ -70,13 +70,10 @@ runs:
         for element in "${elements[@]}"; do
             status=$(kubectl get pod $element -o jsonpath="{.status.phase}")
             echo $status
-            if [[ $element == *"consul"* ]]; then
+            regex='^consul-[a-z0-9]{5}$'
+            if [[ $element =~ $regex ]]; then
               echo "$element"
-              if [[ $element != *"consul-acl"* ]]; then
-                #kubectl get pod "$element" -n ${{env.namespace}} -oyaml
-                #echo "$element LOGS:"
-                kubectl logs "$element" -n ${{env.namespace}} -c client-acl-init
-              fi
+              kubectl logs "$element" -n ${{env.namespace}} -c client-acl-init
             fi
         done
       shell: bash
