@@ -49,8 +49,10 @@ runs:
       run: |
         pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
         IFS=' ' read -ra elements <<< "$pods"
+        echo "pods: $pods"
         for element in "${elements[@]}"; do
             echo "$element"
+            echo "LOGS:"
             kubectl logs "$element" -n ${{env.namespace}}
         done
       shell: bash
