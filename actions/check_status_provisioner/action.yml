@@ -48,7 +48,7 @@ runs:
     - name: Get logs from pods
       run: |
         pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
-        pods_str=$(echo "$pods" | tr '\n' ' ')
+        pods_str=$(echo "$pods" | tr $'\n' ' ')
         echo "pods: $pods_str"
         IFS=' ' read -ra elements <<< "$$pods_str"
         echo "${elements[@]}"
