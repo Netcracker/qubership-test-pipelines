@@ -54,9 +54,9 @@ runs:
         for element in "${elements[@]}"; do
             status=$(kubectl get pod $element -o jsonpath="{.status.phase}")
             echo $status
-            if [[ "$status" != 'Running' ]]; then
+            if [[ $element == *"consul"* ]]; then
               echo "$element LOGS:"
-              kubectl logs "$element" -n ${{env.namespace}}
+              kubectl logs "$element" -n ${{env.namespace}} -c consul-acl-init
             fi
         done
       shell: bash
