@@ -45,20 +45,21 @@ runs:
 #          exit 1
 #        fi
 #      shell: bash
-    - name: Get yaml from pods
-      run: |
-        pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
-        pods_str=$(echo "$pods" | tr $'\n' ' ')
-        echo "pods: $pods_str"
-        IFS=' ' read -ra elements <<< "$pods_str"
-        for element in "${elements[@]}"; do
-            status=$(kubectl get pod $element -o jsonpath="{.status.phase}")
-            echo $status
-            if [[ $element == *"consul"* ]]; then
-              kubectl get pod "$element" -n ${{env.namespace}} -oyaml
-            fi
-        done
-      shell: bash
+
+#    - name: Get yaml from pods
+#      run: |
+#        pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
+#        pods_str=$(echo "$pods" | tr $'\n' ' ')
+#        echo "pods: $pods_str"
+#        IFS=' ' read -ra elements <<< "$pods_str"
+#        for element in "${elements[@]}"; do
+#            status=$(kubectl get pod $element -o jsonpath="{.status.phase}")
+#            echo $status
+#            if [[ $element == *"consul"* ]]; then
+#              kubectl get pod "$element" -n ${{env.namespace}} -oyaml
+#            fi
+#        done
+#      shell: bash
 
     - name: Get logs from pods
       run: |
@@ -72,7 +73,7 @@ runs:
             if [[ $element == *"consul"* ]]; then
               kubectl get pod "$element" -n ${{env.namespace}} -oyaml
               echo "$element LOGS:"
-              kubectl logs "$element" -n ${{env.namespace}} -c consul-acl-init
+              kubectl logs "$element" -n ${{env.namespace}} -c client-acl-init
             fi
         done
       shell: bash
