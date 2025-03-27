@@ -51,10 +51,12 @@ runs:
         pods_str=$(echo "$pods" | tr $'\n' ' ')
         echo "pods: $pods_str"
         IFS=' ' read -ra elements <<< "$pods_str"
-        echo "${elements[@]}"
         for element in "${elements[@]}"; do
-            echo "$element"
-            echo "LOGS:"
-            kubectl logs "$element" -n ${{env.namespace}}
+            status=$(kubectl get pod $element -o jsonpath="{.status.phase}")
+            echo $status
+            if [[ "$status" != 'Running' ]]; then
+              echo "$element LOGS:"
+              kubectl logs "$element" -n ${{env.namespace}}
+            fi
         done
       shell: bash
