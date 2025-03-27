@@ -48,8 +48,11 @@ runs:
     - name: Get logs from pods
       run: |
         pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
+        echo $pods
+        set -- $pods
+        echo $pods
         for i in "${pods[@]}"; do
         echo "$i logs:"
-        kubectl logs $i
+        kubectl logs "$i" -n ${{env.namespace}}
         done
       shell: bash
