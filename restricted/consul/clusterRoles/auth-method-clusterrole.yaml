@@ -2,13 +2,9 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: consul-auth-method-consul-service
-#rules:
-#  - apiGroups: [""]
-#    resources:
-#      - serviceaccounts
-#    verbs:
-#      - get
 rules:
-- apiGroups: ["*"]
-  resources: ["*"]
-  verbs: ["*"]
+  - apiGroups: [""]
+    resources:
+      - serviceaccounts
+    verbs:
+      - get

@@ -5,7 +5,7 @@ metadata:
 subjects:
   - kind: ServiceAccount
     name: consul-acl-configurator-operator
-    namespace: consul-service
+    namespace: consul
 roleRef:
   kind: ClusterRole
   name: consul-acl-configurator-operator-consul-service
