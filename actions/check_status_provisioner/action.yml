@@ -53,7 +53,7 @@ runs:
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         for pod in "${pods[@]}"; do
           for i in {1..${{env.max_attempts}}}; do
-            status=$(kubectl get pod $test_pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
+            status=$(kubectl get pod $pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
             echo "status=$status"
             if [[ "$status" == 'Running' ]]; then
               break
