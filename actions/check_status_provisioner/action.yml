@@ -20,8 +20,8 @@ runs:
       shell: bash
     - name: Get provisioner logs
       run: |
-        echo "${{env.pods}}"
-        for pod in "${env.pods[@]}"; do
+        pods_list=${{env.pods}}
+        for pod in "${pods_list[@]}"; do
           if [[ $pod == *"provisioner"* ]]; then
             provisioner_pod=$pod
           fi
