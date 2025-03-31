@@ -9,12 +9,16 @@ runs:
   using: 'composite'
   steps:
     - name: Get pods
-      run: 'kubectl get pods -n ${{env.namespace}}'
+      run: kubectl get pods -n ${{env.namespace}}
+      shell: bash
+    - name: Get pod names
+      run: |
+        pods_str=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
+        echo "pods: $pods_str"
+        IFS=' ' read -ra pods_list <<< "$pods_str"
       shell: bash
     - name: Get provisioner logs
       run: |
-        pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}}  | tr -s '\r\n' ' ')
-        IFS=$' ' read -a pods_list <<< "$pods"
         echo "$pods"
         for pod in "${pods_list[@]}"; do
           if [[ $pod == *"provisioner"* ]]; then
@@ -48,6 +52,18 @@ runs:
         else
           echo provisioner pod is not found
         fi
+      shell: bash
+
+    - name: Check pods status
+      run: |
+        for i in {1..${{env.max_attempts}}}; do
+          status=$(kubectl get pod $test_pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
+          echo "status=$status"
+          if [[ "$status" == 'Running' ]]; then
+            break
+          fi
+          sleep ${{env.timeout}}
+        done
       shell: bash
 
     - name: Get yaml from pods
