@@ -73,7 +73,7 @@ runs:
             IFS=' ' read -ra containers_list <<< "$containers_str"
             for container in "${containers_list[@]}"; do
               kubectl logs "$pod" -n ${{env.namespace}} -c "$container"
-            fi
+            done
         done
       shell: bash
 
