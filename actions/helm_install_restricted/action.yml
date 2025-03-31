@@ -147,5 +147,5 @@ runs:
       shell: bash
 
     - name: Use default context
-      run: kubectl config use-context default
+      run: kubectl config use-context kind-kind
       shell: bash
