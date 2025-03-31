@@ -23,7 +23,6 @@ runs:
           echo "provisioner_pod=$provisioner_pod"
           for i in {1..${{env.max_attempts}}}; do
             status=$(kubectl get pod $provisioner_pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
-            echo "status=$status"
             if [[ "$status" == 'Succeeded' ]]; then
               break
             fi
@@ -52,15 +51,17 @@ runs:
       run: |
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         for pod in "${pods[@]}"; do
-          for i in {1..${{env.max_attempts}}}; do
-            status=$(kubectl get pod $pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
-            echo "status=$status"
-            if [[ "$status" == 'Running' ]]; then
-              break
-            fi
-            sleep ${{env.timeout}}
-          done
-          echo $pod is not in Running status
+          if [[ $pod != *"provisioner"* ]]; then
+            for i in {1..${{env.max_attempts}}}; do
+              status=$(kubectl get pod $pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
+              echo "status=$status"
+              if [[ "$status" == 'Running' ]]; then
+                break
+              fi
+              sleep ${{env.timeout}}
+            done
+            echo $pod is not in Running status
+          fi
         done
       shell: bash
 
