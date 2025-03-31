@@ -65,15 +65,15 @@ jobs:
         path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted1.yml'
         service_branch: '${{inputs.service_branch}}'
     - name: Check status provisioner
-      uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+      uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@restricted_install
     - name: Check tests
-      uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+      uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@restricted_install
   Test-job:
     runs-on: ubuntu-latest
     name: Test job
     steps:
       - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@restricted_install
       - name: Install consul in restricted mode
         uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@restricted_install
         with:
