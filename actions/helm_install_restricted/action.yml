@@ -145,3 +145,7 @@ runs:
         cd ${{env.repository_name}}/${{env.path_to_chart}}
         helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
       shell: bash
+
+    - name: Use default context
+      run: kubectl config use-context default
+      shell: bash
