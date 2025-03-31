@@ -80,6 +80,6 @@ runs:
 
     - name: Get pods
       run: |
-        sleep 2m
+        sleep 20s
         kubectl get pods -n ${{env.namespace}}
       shell: bash
