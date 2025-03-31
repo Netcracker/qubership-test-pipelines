@@ -16,7 +16,7 @@ runs:
         pods_str=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         echo "pods: $pods_str"
         IFS=' ' read -ra pods_list <<< "$pods_str"
-        echo "pods=$pods_list" >> $GITHUB_ENV
+        echo "pods=$pods_list[@]" >> $GITHUB_ENV
       shell: bash
     - name: Get provisioner logs
       run: |
