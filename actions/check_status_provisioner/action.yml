@@ -21,28 +21,32 @@ runs:
             provisioner_pod=$pod
           fi
         done
-        echo "provisioner_pod=$provisioner_pod"
-        for i in {1..${{env.max_attempts}}}; do
-          status=$(kubectl get pod $provisioner_pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
-          echo "status=$status"
-          if [[ "$status" == 'Succeeded' ]]; then
-            break
+        if [[ $provisioner_pod ]]; then
+          echo "provisioner_pod=$provisioner_pod"
+          for i in {1..${{env.max_attempts}}}; do
+            status=$(kubectl get pod $provisioner_pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
+            echo "status=$status"
+            if [[ "$status" == 'Succeeded' ]]; then
+              break
+            fi
+            sleep ${{env.timeout}}
+          done
+          if [[ "$status" != 'Succeeded' ]]; then
+            echo $provisioner_pod pod has not Succeeded status
           fi
-          sleep ${{env.timeout}}
-        done
-        if [[ "$status" != 'Succeeded' ]]; then
-          echo $provisioner_pod pod has not Succeeded status
-        fi
-        echo PROVISIONER LOGS:
-        kubectl logs $provisioner_pod -n ${{env.namespace}}
-        logs=$(kubectl logs $provisioner_pod -n ${{env.namespace}})
-        if [[ $logs != *"Failed components statuses are []"* ]]; then
-          echo Not all components are in succeed status after ${{env.max_attempts}} attempts
-          echo PODS:
-          kubectl get pods -n ${{env.namespace}}
-          echo EVENTS:
-          kubectl events -n ${{env.namespace}}
-          exit 1
+          echo PROVISIONER LOGS:
+          kubectl logs $provisioner_pod -n ${{env.namespace}}
+          logs=$(kubectl logs $provisioner_pod -n ${{env.namespace}})
+          if [[ $logs != *"Failed components statuses are []"* ]]; then
+            echo Not all components are in succeed status after ${{env.max_attempts}} attempts
+            echo PODS:
+            kubectl get pods -n ${{env.namespace}}
+            echo EVENTS:
+            kubectl events -n ${{env.namespace}}
+            exit 1
+          fi
+        else
+          echo provisioner pod is not found
         fi
       shell: bash
 
@@ -50,30 +54,25 @@ runs:
       run: |
         pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
         pods_str=$(echo "$pods" | tr $'\n' ' ')
-        echo "pods: $pods_str"
         IFS=' ' read -ra elements <<< "$pods_str"
         for element in "${elements[@]}"; do
             status=$(kubectl get pod $element -o jsonpath="{.status.phase}")
-            echo $status
-            if [[ $element == *"consul"* ]]; then
-              kubectl get pod "$element" -n ${{env.namespace}} -oyaml
-            fi
+            echo "$element" status is "$status"
+            kubectl get pod "$element" -n ${{env.namespace}} -oyaml
         done
       shell: bash
 
-    - name: Get logs from pods
+    - name: Get logs from all containers in pods
       run: |
         pods=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}})
         pods_str=$(echo "$pods" | tr $'\n' ' ')
         echo "pods: $pods_str"
-        IFS=' ' read -ra elements <<< "$pods_str"
-        for element in "${elements[@]}"; do
-            status=$(kubectl get pod $element -o jsonpath="{.status.phase}")
-            echo $status
-            regex='^consul-[a-z0-9]{5}$'
-            if [[ $element =~ $regex ]]; then
-              echo "$element"
-              kubectl logs "$element" -n ${{env.namespace}} -c client-acl-init
+        IFS=' ' read -ra pods_list <<< "$pods_str"
+        for pod in "${pods_list[@]}"; do
+            containers=$(kubectl get pods --namespace kube-system -o jsonpath="{.items[*].spec.containers[*].name}")
+            IFS=' ' read -ra containers_list <<< "$containers_str"
+            for container in "${containers_list[@]}"; do
+              kubectl logs "$pod" -n ${{env.namespace}} -c "$container"
             fi
         done
       shell: bash
