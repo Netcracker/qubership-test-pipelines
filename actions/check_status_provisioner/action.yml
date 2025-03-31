@@ -13,10 +13,10 @@ runs:
       shell: bash
     - name: Get pod names
       run: |
-        pods_str=$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
-        echo "pods: $pods_str"
-        IFS=' ' read -ra pods_list <<< "$pods_str"
-        echo "pods=$pods_list[@]" >> $GITHUB_ENV
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
+        for pod in "${pods[@]}"; do
+          echo $pod
+        done
       shell: bash
     - name: Get provisioner logs
       run: |
