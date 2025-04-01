@@ -69,6 +69,10 @@ runs:
         echo All pods are in Running status
       shell: bash
 
+    - name: Create Folder
+      run: mkdir -p artifacts
+      shell: bash
+
     - name: Get yaml from pods
       run: |
         file_name=artifacts/${{env.namespace}}_pod_yamls.txt
