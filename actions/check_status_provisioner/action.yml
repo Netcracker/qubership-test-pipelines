@@ -65,15 +65,14 @@ runs:
             done
           fi
         done
+        echo All pods are in Running status
       shell: bash
 
     - name: Get yaml from pods
       run: |
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         for pod in "${pods[@]}"; do
-            status=$(kubectl get pod $pod -o jsonpath="{.status.phase}")
-            echo "$pod" status is "$status"
-            kubectl get pod "$element" -n ${{env.namespace}} -oyaml
+            kubectl get pod "$pod" -n ${{env.namespace}} -oyaml
         done
       shell: bash
 
