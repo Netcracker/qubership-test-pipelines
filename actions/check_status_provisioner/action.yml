@@ -57,7 +57,6 @@ runs:
           if [[ $pod != *"provisioner"* ]]; then
             for i in {1..${{env.max_attempts}}}; do
               status=$(kubectl get pod $pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
-              echo status $status
               if [[ "$status" == 'Running' ]]; then
                 echo status is Running
                 break
@@ -73,10 +72,17 @@ runs:
     - name: Get yaml from pods
       run: |
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
+        echo "Yaml files from pods: " > pod_yamls.txt
         for pod in "${pods[@]}"; do
-            kubectl get pod "$pod" -n ${{env.namespace}} -oyaml
+            kubectl get pod "$pod" -n ${{env.namespace}} -oyaml >> pod_yamls.txt
         done
       shell: bash
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: downloadable-files
+        path: pod_yamls.txt
 
     - name: Get logs from all containers in pods
       run: |
