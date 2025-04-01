@@ -78,6 +78,7 @@ runs:
             echo $pod >> $file_name
             kubectl get pod "$pod" -n ${{env.namespace}} -oyaml >> $file_name
         done
+        cat $file_name
       shell: bash
 
 
