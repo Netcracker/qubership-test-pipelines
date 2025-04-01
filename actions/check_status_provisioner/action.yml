@@ -57,7 +57,9 @@ runs:
           if [[ $pod != *"provisioner"* ]]; then
             for i in {1..${{env.max_attempts}}}; do
               status=$(kubectl get pod $pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
+              echo status $status
               if [[ "$status" == 'Running' ]]; then
+                echo status is Running
                 break
               fi
               echo $pod is not in Running status
