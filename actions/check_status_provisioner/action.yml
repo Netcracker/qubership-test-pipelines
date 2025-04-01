@@ -1,9 +1,5 @@
 name: 'Custom GitHub Action'
 description: 'A GitHub Action that takes an input and returns the square of the number'
-#inputs:
-#  namespace:
-#    description: 'namespace where service is installed'
-#    required: true
 
 runs:
   using: 'composite'
@@ -14,8 +10,12 @@ runs:
     - name: Get pods
       run: kubectl get pods -n ${{env.namespace}}
       shell: bash
-    - name: Get provisioner logs
+    - name: Create folder for artifacts
+      run: mkdir -p artifacts
+      shell: bash
+    - name: Get status provisioner logs
       run: |
+        echo Get status provisioner logs
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         for pod in "${pods[@]}"; do
           if [[ $pod == *"provisioner"* ]]; then
@@ -41,8 +41,6 @@ runs:
             echo Not all components are in succeed status after ${{env.max_attempts}} attempts
             echo PODS:
             kubectl get pods -n ${{env.namespace}}
-            echo EVENTS:
-            kubectl events -n ${{env.namespace}}
             exit 1
           fi
         else
@@ -52,6 +50,7 @@ runs:
 
     - name: Check pods status
       run: |
+        echo Check pods status
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         for pod in "${pods[@]}"; do
           if [[ $pod != *"provisioner"* ]]; then
@@ -69,12 +68,16 @@ runs:
         echo All pods are in Running status
       shell: bash
 
-    - name: Create Folder
-      run: mkdir -p artifacts
+    - name: Get events from namespace
+      run: | 
+        file_name=artifacts/${{env.namespace}}_events.txt
+        echo Get events from namespace
+        kubectl events -n ${{env.namespace}} > file_name
       shell: bash
 
     - name: Get yaml from pods
       run: |
+        echo Get yaml from pods
         file_name=artifacts/${{env.namespace}}_pod_yamls.txt
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         echo "Yaml files from pods: " > $file_name
@@ -88,6 +91,7 @@ runs:
 
     - name: Get logs from all containers in pods
       run: |
+        echo Get logs from all containers in pods
         file_name=artifacts/${{env.namespace}}_log_from_containers.txt
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         echo "Logs from all containers in pods: " > $file_name
@@ -104,7 +108,7 @@ runs:
     - name: Upload artifact
       uses: actions/upload-artifact@v4
       with:
-        name: ${{github.job}}_artifacts
+        name: ${{github.job}}_${{env.namespace}}_artifacts
         path: artifacts/
 
     - name: Get pods
