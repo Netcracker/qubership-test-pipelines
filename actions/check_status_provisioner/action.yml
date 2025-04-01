@@ -79,7 +79,7 @@ runs:
       shell: bash
 
     - name: Upload artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: downloadable-files
         path: pod_yamls.txt
