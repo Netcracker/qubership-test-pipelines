@@ -4,15 +4,18 @@ description: 'A GitHub Action that takes an input and returns the square of the 
 runs:
   using: 'composite'
   steps:
-    - name: Sleep
-      run: sleep 30s
-      shell: bash
-    - name: Get pods
-      run: kubectl get pods -n ${{env.namespace}}
-      shell: bash
     - name: Create folder for artifacts
       run: mkdir -p artifacts
       shell: bash
+
+#    - name: Sleep
+#      run: sleep 30s
+#      shell: bash
+
+    - name: Get pods
+      run: kubectl get pods -n ${{env.namespace}}
+      shell: bash
+
     - name: Get status provisioner logs
       run: |
         echo Get status provisioner logs
@@ -57,7 +60,6 @@ runs:
             for i in {1..${{env.max_attempts}}}; do
               status=$(kubectl get pod $pod -n ${{env.namespace}} -o jsonpath="{.status.phase}")
               if [[ "$status" == 'Running' ]]; then
-                echo status is Running
                 break
               fi
               echo $pod is not in Running status
@@ -70,8 +72,8 @@ runs:
 
     - name: Get events from namespace
       run: | 
-        file_name=artifacts/${{env.namespace}}_events.txt
         echo Get events from namespace
+        file_name=artifacts/${{env.namespace}}_events.txt
         kubectl events -n ${{env.namespace}} > file_name
       shell: bash
 
@@ -87,7 +89,6 @@ runs:
         done
         cat $file_name
       shell: bash
-
 
     - name: Get logs from all containers in pods
       run: |
@@ -113,6 +114,5 @@ runs:
 
     - name: Get pods
       run: |
-        sleep 20s
         kubectl get pods -n ${{env.namespace}}
       shell: bash
