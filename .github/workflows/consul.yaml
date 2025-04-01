@@ -97,11 +97,39 @@ jobs:
 #  #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
 #  #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
 #  #we don't have old releases yet
-#
-#  #10-Clean [PREVIOUS_SPRINT] Restricted, 11-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted
-#  #12-Clean [LATEST_SPRINT] Restricted
-#  #adapt APPLY_RESOURCES_SCRIPT
-#
+
+  #10-Clean [PREVIOUS_SPRINT] Restricted, 11-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted
+  Consul-Previous-Sprint-Restricted:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@restricted_install
+      - name: Install consul in restricted mode
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@restricted_install
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
+          service_branch: 'improvement/run_tests'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@restricted_install
+      - name: Check tests
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@restricted_install
+
+  #12-Clean [LATEST_SPRINT] Restricted
+  Consul-Latest-Sprint-Restricted:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run kind
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@restricted_install
+      - name: Install consul in restricted mode
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@restricted_install
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
+          service_branch: 'improvement/run_tests'
+      - name: Check status provisioner
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@restricted_install
+      - name: Check tests
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@restricted_install
+
   #13-Clean [LATEST_SPRINT] W/O Components, 14-Upgrade [LATEST_SPRINT] All Components S3
   Consul-Clean-WO-Components:
     runs-on: ubuntu-latest
