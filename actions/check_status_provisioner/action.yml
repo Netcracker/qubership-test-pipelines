@@ -75,7 +75,7 @@ runs:
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
         echo "Yaml files from pods: " > $file_name
         for pod in "${pods[@]}"; do
-            pod >> $file_name
+            $pod >> $file_name
             kubectl get pod "$pod" -n ${{env.namespace}} -oyaml >> $file_name
         done
       shell: bash
@@ -95,7 +95,7 @@ runs:
             containers=$(kubectl get pods --namespace kube-system -o jsonpath="{.items[*].spec.containers[*].name}")
             IFS=' ' read -ra containers_list <<< "$containers_str"
             for container in "${containers_list[@]}"; do
-              container >> $file_name
+              $container >> $file_name
               kubectl logs "$pod" -n ${{env.namespace}} -c "$container" >> $file_name
             done
         done
