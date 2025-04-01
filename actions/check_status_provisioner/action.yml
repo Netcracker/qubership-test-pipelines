@@ -71,11 +71,12 @@ runs:
 
     - name: Get yaml from pods
       run: |
-        echo ${{github.job}}
+        file_name=${{github.job}}_pod_yamls.txt
+        echo $file_name
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{env.namespace}} | tr $'\n' ' ')
-        echo "Yaml files from pods: " > pod_yamls_${{github.job}}.txt
+        echo "Yaml files from pods: " > $file_name
         for pod in "${pods[@]}"; do
-            kubectl get pod "$pod" -n ${{env.namespace}} -oyaml >> pod_yamls_${{github.job}}.txt
+            kubectl get pod "$pod" -n ${{env.namespace}} -oyaml >> $file_name
         done
       shell: bash
 
