@@ -1,0 +1,34 @@
+name: Сonsul tests
+
+on:
+  workflow_call:
+    inputs:
+      service_branch:
+        required: false
+        type: string
+
+env:
+  consul_namespace: 'consul'
+
+jobs:
+  #1-Clean [LATEST_SPRINT] Infra Passport
+  Consul-Clean-Infra-Passport:
+    runs-on: ubuntu-latest
+    name: 1-Clean [LATEST_SPRINT] Infra Passport
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: update_actions
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Ls
+        run: ls -l
+      - name: Run kind
+        #uses: Netcracker/qubership-test-pipelines/actions/shared/run_kind@update_actions
+        #uses: ./.github/actions/shared/run_kind
+        uses: ./.github/actions/shared/run_kind
+      - name: Create namespace
+        run: kubectl create namespace 'monitoring'
+
+
