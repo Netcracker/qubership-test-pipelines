@@ -1,4 +1,4 @@
-name: 'Custom GitHub Action'
+name: 'Helm Install Action'
 description: 'A GitHub Action that installs services to kubernetes'
 inputs:
   path_to_template:
@@ -20,7 +20,7 @@ runs:
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
-        ref: '${{inputs.service_branch}}'
+        ref: '${{inputs.service.branch}}'
         repository: 'Netcracker/${{env.repository_name}}'
         path: '${{env.repository_name}}'
 
