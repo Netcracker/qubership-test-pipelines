@@ -122,7 +122,7 @@
 #      resources:
 #        requests:
 #          storage: 10Gi
-#      storageClassName: csi-cinder-sc-delete
+#      storageClassName: standard
 #  vmAlertManager:
 #    install: true
 #    ingress:
@@ -204,5 +204,9 @@
 #  enableTags: true
 #  writeCarbonAddress: gmon-infra04cn.qubership.org:2003
 #
+#integrationTests:
+#  name: monitoring-tests
+#  install: true
+#  tags: smoke
 global:
   profile: "small"

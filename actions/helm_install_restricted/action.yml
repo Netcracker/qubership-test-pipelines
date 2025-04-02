@@ -1,0 +1,151 @@
+name: 'Helm Restricted Install Action'
+description: 'A GitHub Action that installs services to kubernetes with restricted user'
+inputs:
+  path_to_template:
+    description: 'Path to template'
+    required: true
+  service_branch:
+    description: 'branch with release'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout pipeline
+      uses: actions/checkout@v4
+      with:
+        ref: '${{env.pipeline_branch}}'
+        repository: 'Netcracker/qubership-test-pipelines'
+        path: 'qubership-test-pipelines'
+
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        ref: '${{inputs.service.branch}}'
+        repository: 'Netcracker/${{env.repository_name}}'
+        path: '${{env.repository_name}}'
+
+    - name: Create namespaces
+      run: kubectl create namespace ${{env.namespace}}
+      shell: bash
+
+#Create CRD
+    - name: Create ClusterRoles
+      run: |
+        kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoles
+      shell: bash
+
+    - name: Create ClusterRoleBindings
+      run: |
+        kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoleBindings
+      shell: bash
+
+    - name: Create CRD
+      run: |
+        kubectl create -f ${{env.repository_name}}/${{env.path_to_chart}}/crds
+      shell: bash
+
+    - name: Get CRD
+      run: kubectl get crd -n ${{env.namespace}} -oyaml
+      shell: bash
+
+#Create Certificate
+    - name: Install openssl
+      run: |
+        sudo apt install openssl
+      shell: bash
+
+    - name: Generate private key
+      run: |
+        openssl genrsa -out restricted.key 2048
+      shell: bash
+
+    - name: Generate CSR
+      run: |
+        openssl req -new -key restricted.key -out restricted.csr -subj "/CN=restricted/O=dev-team"
+      shell: bash
+
+    - name: Create CSR object
+      run: |
+        cat <<EOF | kubectl apply -f -
+        apiVersion: certificates.k8s.io/v1
+        kind: CertificateSigningRequest
+        metadata:
+          name: restricted-csr
+        spec:
+          request: $(cat restricted.csr | base64 | tr -d '\n')
+          signerName: kubernetes.io/kube-apiserver-client
+          usages:
+          - client auth
+        EOF
+      shell: bash
+
+    - name: Approve CSR
+      run: kubectl certificate approve restricted-csr
+      shell: bash
+
+    - name: Retrieve certificate
+      run: kubectl get csr restricted-csr -o jsonpath='{.status.certificate}' | base64 --decode > restricted.crt
+      shell: bash
+
+#Create Role and RB
+    - name: Update yaml with Role
+      run: >-
+        python qubership-test-pipelines/python/replace_nc_in_template.py 
+        --path_to_file='qubership-test-pipelines/restricted/restricted-role.yml'
+        --nc='${{env.namespace}}'
+      shell: bash
+
+    - name: Update yaml with RoleBinding
+      run: >-
+        python qubership-test-pipelines/python/replace_nc_in_template.py 
+        --path_to_file='qubership-test-pipelines/restricted/restricted-rb.yml'
+        --nc='${{env.namespace}}'
+      shell: bash
+
+    - name: Create Role
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-role.yml
+      shell: bash
+
+    - name: Create RoleBindings
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml
+      shell: bash
+
+#Add user to kubeconfig
+    - name: Add user configuration
+      run: kubectl config set-credentials restricted --client-certificate=restricted.crt --client-key=restricted.key
+      shell: bash
+
+    - name: Create context for user
+      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=${{env.namespace}} --user=restricted
+      shell: bash
+
+    - name: Use context
+      run: kubectl config use-context restricted-context
+      shell: bash
+
+    - name: Get config
+      run: kubectl config view --raw
+      shell: bash
+
+#Helm install
+    - name: Copy template
+      run: |
+        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{env.repository_name}}/${{env.path_to_chart}}
+      shell: bash
+
+    - name: Update images
+      run: python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}'
+      shell: bash
+
+    - name: Install service with helm skip-crds
+      run: |
+        IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
+        template_name=${path[-1]}
+        echo $template_name
+        cd ${{env.repository_name}}/${{env.path_to_chart}}
+        helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
+      shell: bash
+
+    - name: Use default context
+      run: kubectl config use-context kind-kind
+      shell: bash
