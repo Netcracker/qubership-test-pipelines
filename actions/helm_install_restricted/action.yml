@@ -13,7 +13,7 @@ runs:
     - name: Checkout pipeline
       uses: actions/checkout@v4
       with:
-        ref: 'restricted_install'
+        ref: '${{env.pipeline_branch}}'
         repository: 'Netcracker/qubership-test-pipelines'
         path: 'qubership-test-pipelines'
 
