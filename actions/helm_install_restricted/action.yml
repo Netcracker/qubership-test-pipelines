@@ -1,5 +1,5 @@
-name: 'Custom GitHub Action'
-description: 'A GitHub Action that installs services to kubernetes'
+name: 'Helm Restricted Install Action'
+description: 'A GitHub Action that installs services to kubernetes with restricted user'
 inputs:
   path_to_template:
     description: 'Path to template'

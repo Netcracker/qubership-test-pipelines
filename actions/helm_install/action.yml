@@ -1,4 +1,4 @@
-name: 'Custom GitHub Action'
+name: 'Helm Install Action'
 description: 'A GitHub Action that installs services to kubernetes'
 inputs:
   path_to_template:

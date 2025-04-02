@@ -104,16 +104,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@restricted_install
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
       - name: Install consul in restricted mode
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@restricted_install
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
           service_branch: 'improvement/run_tests'
       - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@restricted_install
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
       - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@restricted_install
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
 
   #12-Clean [LATEST_SPRINT] Restricted
   Consul-Latest-Sprint-Restricted:
@@ -121,16 +121,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@restricted_install
+        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
       - name: Install consul in restricted mode
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@restricted_install
+        uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@main
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
           service_branch: 'improvement/run_tests'
       - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@restricted_install
+        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
       - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@restricted_install
+        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
 
   #13-Clean [LATEST_SPRINT] W/O Components, 14-Upgrade [LATEST_SPRINT] All Components S3
   Consul-Clean-WO-Components:
