@@ -7,45 +7,42 @@ inputs:
   service_branch:
     description: 'branch with release'
     required: true
+  service_name:
+    description: 'name with which service will be installed by helm'
+    required: true
+  repository_name:
+    description: 'name of repository with service'
+    required: true
+  path_to_chart:
+    description: 'path to helm chart in repository'
+    required: true
+  namespace:
+    description: 'namespace to install service'
+    required: true
 runs:
   using: 'composite'
   steps:
-    - name: Checkout pipeline
-      uses: actions/checkout@v4
-      with:
-        ref: '${{env.pipeline_branch}}'
-        repository: 'Netcracker/qubership-test-pipelines'
-        path: 'qubership-test-pipelines'
-
-    - name: Checkout repo
-      uses: actions/checkout@v4
-      with:
-        ref: '${{inputs.service.branch}}'
-        repository: 'Netcracker/${{env.repository_name}}'
-        path: '${{env.repository_name}}'
-
-    - name: Create namespaces
-      run: kubectl create namespace ${{env.namespace}}
+    - name: Echo
+      run: echo creating resources
       shell: bash
-
 #Create CRD
     - name: Create ClusterRoles
       run: |
-        kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoles
+        kubectl create -f qubership-test-pipelines/restricted/${{inputs.service_name}}/clusterRoles
       shell: bash
 
     - name: Create ClusterRoleBindings
       run: |
-        kubectl create -f qubership-test-pipelines/restricted/${{env.service_name}}/clusterRoleBindings
+        kubectl create -f qubership-test-pipelines/restricted/${{inputs.service_name}}/clusterRoleBindings
       shell: bash
 
     - name: Create CRD
       run: |
-        kubectl create -f ${{env.repository_name}}/${{env.path_to_chart}}/crds
+        kubectl create -f ${{inputs.repository_name}}/${{inputs.path_to_chart}}/crds
       shell: bash
 
     - name: Get CRD
-      run: kubectl get crd -n ${{env.namespace}} -oyaml
+      run: kubectl get crd -n ${{inputs.namespace}} -oyaml
       shell: bash
 
 #Create Certificate
@@ -92,14 +89,14 @@ runs:
       run: >-
         python qubership-test-pipelines/python/replace_nc_in_template.py 
         --path_to_file='qubership-test-pipelines/restricted/restricted-role.yml'
-        --nc='${{env.namespace}}'
+        --nc='${{inputs.namespace}}'
       shell: bash
 
     - name: Update yaml with RoleBinding
       run: >-
         python qubership-test-pipelines/python/replace_nc_in_template.py 
         --path_to_file='qubership-test-pipelines/restricted/restricted-rb.yml'
-        --nc='${{env.namespace}}'
+        --nc='${{inputs.namespace}}'
       shell: bash
 
     - name: Create Role
@@ -116,7 +113,7 @@ runs:
       shell: bash
 
     - name: Create context for user
-      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=${{env.namespace}} --user=restricted
+      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=${{inputs.namespace}} --user=restricted
       shell: bash
 
     - name: Use context
@@ -128,24 +125,24 @@ runs:
       shell: bash
 
 #Helm install
-    - name: Copy template
-      run: |
-        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{env.repository_name}}/${{env.path_to_chart}}
-      shell: bash
+#    - name: Copy template
+#      run: |
+#        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
+#      shell: bash
+#
+#    - name: Update images
+#      run: python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}'
+#      shell: bash
 
-    - name: Update images
-      run: python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}'
-      shell: bash
-
-    - name: Install service with helm skip-crds
-      run: |
-        IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
-        template_name=${path[-1]}
-        echo $template_name
-        cd ${{env.repository_name}}/${{env.path_to_chart}}
-        helm install ${{env.service_name}} . -f $template_name -n ${{env.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
-      shell: bash
-
-    - name: Use default context
-      run: kubectl config use-context kind-kind
-      shell: bash
+#    - name: Install service with helm skip-crds
+#      run: |
+#        IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
+#        template_name=${path[-1]}
+#        echo $template_name
+#        cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
+#        helm install ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
+#      shell: bash
+#
+#    - name: Use default context
+#      run: kubectl config use-context kind-kind
+#      shell: bash

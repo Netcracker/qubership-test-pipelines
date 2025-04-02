@@ -5,9 +5,14 @@ inputs:
     description: 'Install or update'
     required: true
     default: 'install'
+  restricted:
+    description: 'true or false'
+    required: true
+    default: 'false'
   path_to_template:
     description: 'Path to template'
     required: false
+    default: 'templates/monitoring/vm_with_smoke_at.yml'
   service_branch:
     description: 'branch name in repository with service'
     required: true
@@ -15,7 +20,7 @@ inputs:
   pipeline_branch:
     description: 'name of branch with your pipeline in qubership-test-pipelines'
     required: true
-    default: 'main'
+    default: 'update_actions'
   service_name:
     description: 'name with which service will be installed by helm'
     required: true
@@ -33,7 +38,7 @@ inputs:
     required: true
     default: ''
   namespace:
-    description: 'namespase to install service'
+    description: 'namespace to install service'
     required: true
     default: 'monitoring'
 
@@ -44,6 +49,7 @@ runs:
       uses: Netcracker/qubership-test-pipelines/actions/shared/helm_deploy@update_actions
       with:
         deploy_mode: ${{inputs.deploy_mode}}
+        restricted: ${{inputs.restricted}}
         path_to_template: ${{inputs.path_to_template}}
         service_branch: ${{inputs.service_branch}}
         pipeline_branch: ${{inputs.pipeline_branch}}
@@ -52,3 +58,9 @@ runs:
         path_to_chart: ${{inputs.path_to_chart}}
         components: ${{inputs.components}}
         namespace: ${{inputs.namespace}}
+
+    - name: get pods
+      run: |
+        sleep 30s
+        kubectl get pods -n monitoring
+      shell: bash

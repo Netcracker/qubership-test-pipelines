@@ -5,6 +5,10 @@ inputs:
     description: 'Install or update'
     required: true
     default: 'install'
+  restricted:
+    description: 'true or false'
+    required: true
+    default: 'false'
   path_to_template:
     description: 'Path to template'
     required: true
@@ -43,6 +47,7 @@ runs:
       uses: Netcracker/qubership-test-pipelines/actions/shared/helm_deploy@update_actions
       with:
         deploy_mode: ${{inputs.deploy_mode}}
+        restricted: ${{inputs.restricted}}
         path_to_template: ${{inputs.path_to_template}}
         service_branch: ${{inputs.service_branch}}
         pipeline_branch: ${{inputs.pipeline_branch}}
