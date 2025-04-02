@@ -1,0 +1,162 @@
+name: 'Custom GitHub Action'
+description: 'A GitHub Action that takes an input and returns the square of the number'
+inputs:
+  namespace:
+    description: 'namespace where service is installed'
+    required: true
+  max_attempts:
+    description: 'maximum number of attempts to verify that pod status is successful'
+    required: true
+    default: 40
+  timeout:
+    description: 'timeout between attempts'
+    required: true
+    default: '10s'
+  check_tests:
+    description: 'tests are installed or not (true/false)'
+    required: true
+    default: 'false'
+
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Create folder for artifacts
+      run: mkdir -p artifacts
+      shell: bash
+
+    - name: Wait pod status is ready
+      run: |
+        #WAIT POD STATUS IS READY
+        kubectl wait pod --all --for=condition=Ready -n=${{inputs.namespace}} --timeout 100s
+      shell: bash
+      continue-on-error: true
+
+    - name: Get pods
+      run: |
+        #GET PODS
+        kubectl get pods -n ${{inputs.namespace}}
+        file_name=artifacts/${{inputs.namespace}}_get_pods.txt
+        kubectl get pods -n ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get events from namespace
+      run: |
+        #GET EVENTS FROM NAMESPACE
+        file_name=artifacts/${{inputs.namespace}}_events.txt
+        kubectl events -n ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get yaml from pods
+      run: |
+        #GET YAML FROM PODS
+        file_name=artifacts/${{inputs.namespace}}_pod_yamls.txt
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        echo "Yaml files from pods: " > $file_name
+        for pod in "${pods[@]}"; do
+            echo $pod >> $file_name
+            kubectl get pod "$pod" -n ${{inputs.namespace}} -oyaml >> $file_name
+        done
+      shell: bash
+
+    - name: Get status provisioner logs
+      run: |
+        #GET STATUS PROVISIONER LOGS
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        for pod in "${pods[@]}"; do
+          if [[ $pod == *"provisioner"* ]]; then
+            provisioner_pod=$pod
+          fi
+        done
+        if [[ $provisioner_pod ]]; then
+          echo "provisioner_pod=$provisioner_pod"
+          for i in {1..${{inputs.max_attempts}}}; do
+            status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+            if [[ "$status" == 'Succeeded' ]]; then
+              break
+            fi
+            sleep ${{inputs.timeout}}
+          done
+          if [[ "$status" != 'Succeeded' ]]; then
+            echo $provisioner_pod pod has not Succeeded status
+          fi
+          echo PROVISIONER LOGS:
+          kubectl logs $provisioner_pod -n ${{inputs.namespace}}
+          logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
+          if [[ $logs != *"Failed components statuses are []"* ]]; then
+            echo Not all components are in succeed status after ${{inputs.max_attempts}} attempts
+            echo PODS:
+            kubectl get pods -n ${{inputs.namespace}}
+            exit 1
+          fi
+        else
+          echo provisioner pod is not found
+        fi
+      shell: bash
+
+    - name: Get logs from all containers in pods
+      run: |
+        #GET LOGS FROM ALL CONTAINERS IN PODS
+        file_name=artifacts/${{inputs.namespace}}_log_from_containers.txt
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        echo "Logs from all containers in pods: " > $file_name
+        for pod in "${pods[@]}"; do
+            IFS=' ' read -ra containers <<< $(kubectl get pod "$pod" -n ${{inputs.namespace}} -o jsonpath="{.spec.containers[*].name}")
+            for container in "${containers[@]}"; do
+              echo $pod $container >> $file_name
+              kubectl logs "$pod" -n ${{inputs.namespace}} -c "$container" >> $file_name
+            done
+        done
+      shell: bash
+
+    - name: Get logs from test pod
+      run: |
+        #GET LOGS FROM TEST POD
+        file_name=artifacts/${{inputs.namespace}}_tests.txt
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        for pod in "${pods[@]}"; do
+          if [[ $pod == *"tests"* ]]; then
+            test_pod=$pod
+          fi
+        done
+        if [[ $test_pod ]]; then
+          echo "test_pod=$test_pod"
+          for i in {1..${{inputs.max_attempts}}}; do
+            status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+            if [[ "$status" == 'Running' ]]; then
+              break
+            fi
+            sleep ${{inputs.timeout}}
+          done
+          for i in {1..${{inputs.max_attempts}}}; do
+            logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
+            if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
+              kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
+              break
+            fi
+            sleep ${{inputs.timeout}}
+          done
+          echo 'TEST LOGS: '
+          kubectl logs $test_pod -n ${{inputs.namespace}}
+          if [[ $logs == *"| FAIL |"* ]]; then
+            exit 1
+          fi
+        else
+          echo There is no test pod
+        fi
+      shell: bash
+
+    - name: Get current time
+      if: always()
+      run: |
+        #GET CURRENT TIME
+        CURRENT_TIME=$(date -u +'%Y%m%d%H%M%S')
+        echo "CURRENT_TIME=$CURRENT_TIME" >> $GITHUB_ENV
+      shell: bash
+
+    - name: Upload artifact
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{github.job}}_${{inputs.namespace}}_artifacts_${{env.CURRENT_TIME}}
+        path: artifacts/

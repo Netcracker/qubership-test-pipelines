@@ -5,6 +5,10 @@ inputs:
     description: 'Install or update'
     required: true
     default: 'install'
+  restricted:
+    description: 'true or false'
+    required: true
+    default: 'false'
   path_to_template:
     description: 'Path to template'
     required: true
@@ -27,7 +31,7 @@ inputs:
     description: 'list of components in which images should be replaced with images from the current branch'
     required: true
   namespace:
-    description: 'namespase to install service'
+    description: 'namespace to install service'
     required: true
 runs:
   using: 'composite'
@@ -46,6 +50,22 @@ runs:
         repository: 'Netcracker/${{inputs.repository_name}}'
         path: '${{inputs.repository_name}}'
 
+    - name: Create namespace
+      if: inputs.deploy_mode == 'install'
+      run: kubectl create namespace '${{inputs.namespace}}'
+      shell: bash
+
+    - name: Create restricted resources
+      if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
+      uses: Netcracker/qubership-test-pipelines/actions/shared/create_restricted_resources@update_actions
+      with:
+        path_to_template: ${{inputs.path_to_template}}
+        service_branch: ${{inputs.service_branch}}
+        service_name: ${{inputs.service_name}}
+        repository_name: ${{inputs.repository_name}}
+        path_to_chart: ${{inputs.path_to_chart}}
+        namespace: ${{inputs.namespace}}
+
     - name: Copy template
       run: |
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
@@ -53,25 +73,35 @@ runs:
 
     - name: Update images
       run: >- 
-        python qubership-test-pipelines/python/update_images.py 
+        #UPDATE IMAGES
+        SET_NEW_IMAGES=$(python qubership-test-pipelines/python/update_images.py 
         --service_branch='${{inputs.service_branch}}' 
         --path_to_values='${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml'
-        --components='${{inputs.components}}'
+        --components='${{inputs.components}}') >> $GITHUB_ENV
       shell: bash
 
     - name: Install service with helm
       run: |
-        IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
-        template_name=${path[-1]}
+        #INSTALL SERVICE WITH HELM
+        SET_NEW_IMAGES=$(python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}' --path_to_values='${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml' --components='${{inputs.components}}')
+        template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
+        echo SET_NEW_IMAGES: $SET_NEW_IMAGES
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-        echo ${{inputs.deploy_mode}}
-        helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m
+        if [[ ${{inputs.restricted}} == 'false' ]]; then
+          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m
+        else
+          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
+        fi
       shell: bash
 
     - name: Get docker images
       run: |
+        #GET DOCKER IMAGES
         kubectl get pods -n ${{inputs.namespace}} -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
       shell: bash
 
-
+    - name: Use default context
+      if: inputs.restricted == 'true'
+      run: kubectl config use-context kind-kind
+      shell: bash

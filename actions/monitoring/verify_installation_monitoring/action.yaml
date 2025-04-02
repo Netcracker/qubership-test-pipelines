@@ -1,0 +1,26 @@
+name: 'Custom GitHub Action'
+description: 'A GitHub Action that installs services to kubernetes'
+inputs:
+  namespace:
+    description: 'namespace where service is installed'
+    required: true
+    default: monitoring
+  max_attempts:
+    description: 'maximum number of attempts to verify that pod status is successful'
+    required: true
+    default: 40
+  timeout:
+    description: 'timeout between attempts'
+    required: true
+    default: '10s'
+
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run helm_install action
+      uses: Netcracker/qubership-test-pipelines/actions/shared/verify_installation@update_actions
+      with:
+        namespace: ${{inputs.namespace}}
+        max_attempts: ${{inputs.max_attempts}}
+        timeout: ${{inputs.timeout}}

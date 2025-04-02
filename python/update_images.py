@@ -1,4 +1,3 @@
-import os
 import yaml
 import argparse
 
@@ -11,6 +10,7 @@ def main(args_):
     branch = args_.service_branch
     path_to_values = args_.path_to_values
     components = args_.components
+    new_images = ""
     if components:
         with open(path_to_values) as file:
             try:
@@ -19,15 +19,11 @@ def main(args_):
                 print(exc)
 
         branch_tag = branch.replace("/", "_")
-        new_images = ""
         for component in components.split(','):
             image = values[component]["image"].split(":")[0]
             new_images += f'--set {component}.image={image}:{branch_tag} '
-        env_file = os.getenv('GITHUB_ENV')
-        with open(env_file, "a") as myfile:
-            myfile.write(f'SET_NEW_IMAGES={new_images}')
-    else:
-        print("There are no components to replace")
+    return new_images
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Script to prepare namespaces in cloud')
@@ -38,4 +34,4 @@ if __name__ == '__main__':
     parser.add_argument('--components', type=str,
                         help='list of components in which images should be replaced with images from the current branch')
     args = parser.parse_args()
-    main(args)
+    print(main(args))
