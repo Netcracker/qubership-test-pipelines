@@ -6,8 +6,32 @@ on:
       service_branch:
         required: false
         type: string
+      versions_file:
+        description: 'Path to versions list file'
+        type: string
+        required: true
 
 jobs:
+  prepare-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{steps.process-versions.outputs.versions}}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.service_branch}}'
+          repository: 'Netcracker/qubership-consul'
+          path: 'qubership-consul'
+      - name: Process versions file
+        id: process-versions
+        run: |
+          versions_str=$(cat qubership-consul/${{inputs.versions_file}})
+          IFS=',' read -ra versions_list <<< "$versions_str"
+          echo "$versions_str"
+          versions_json=$(echo -n "${versions_list[@]}" | jq -R -s -c 'split(" ")')
+          echo "versions=$versions_json" >> $GITHUB_OUTPUT
+
   #1-Clean [LATEST_SPRINT] Infra Passport
   Consul-Clean-Infra-Passport:
     runs-on: ubuntu-latest
@@ -15,10 +39,10 @@ jobs:
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
-      - name: Install Monitoring
-        uses: Netcracker/qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring@update_actions
-      - name: Verify Monitoring installation
-        uses: Netcracker/qubership-test-pipelines/actions/monitoring/verify_installation_monitoring@update_actions
+      #- name: Install Monitoring
+        #uses: Netcracker/qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring@update_actions
+      #- name: Verify Monitoring installation
+        #uses: Netcracker/qubership-test-pipelines/actions/monitoring/verify_installation_monitoring@update_actions
       - name: Install Consul
         uses: Netcracker/qubership-test-pipelines/actions/consul/helm_deploy_consul@update_actions
         with:
@@ -29,9 +53,13 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/consul/verify_installation_consul@update_actions
 
   #2-Clean [PREVIOUS_SPRINT], 3-Update to [LATEST_SPRINT]
-  Consul-Clean-Previous-Sprint:
+  Consul-Clean-Previous-Versions-Update-To-Latest:
+    needs: prepare-versions
     runs-on: ubuntu-latest
     name: 2-Clean [PREVIOUS_SPRINT], 3-Update to [LATEST_SPRINT]
+    strategy:
+      matrix:
+        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
@@ -41,7 +69,7 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/consul/helm_deploy_consul@update_actions
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
-          service_branch: 'release-2025.1-0.11.0'
+          service_branch: '${{matrix.release}}'
           pipeline_branch: 'update_actions'
       - name: Verify Consul installation
         uses: Netcracker/qubership-test-pipelines/actions/consul/verify_installation_consul@update_actions
