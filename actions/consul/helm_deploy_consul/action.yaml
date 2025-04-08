@@ -9,6 +9,7 @@ inputs:
     description: 'true or false'
     required: true
     default: 'false'
+    type: boolean
   path_to_template:
     description: 'Path to template'
     required: true

@@ -1,38 +1,68 @@
-name: 'Custom GitHub Action'
-description: 'A GitHub Action that installs services to kubernetes'
+name: "Custom GitHub Action: Helm-based Kubernetes Deployment"
+description: "GitHub Action for deploying and updating Kubernetes services using Helm"
 inputs:
   deploy_mode:
-    description: 'Install or update'
+    description: |
+      Deployment mode: 
+      - 'install' for clean installation
+      - 'update' to upgrade an existing release
     required: true
     default: 'install'
+
   restricted:
-    description: 'true or false'
+    description: |
+      - 'true': helm installation by user with restricted rights
+      - 'false': helm installation by cluster admin user
     required: true
     default: 'false'
+    type: boolean
+
   path_to_template:
-    description: 'Path to template'
+    description: |
+      Path to template file in qubership-test-pipelines repository
+      Example: 'templates/consul-service/consul_clean_infra_passport.yml'
     required: true
+
   service_branch:
-    description: 'branch name in repository with service'
+    description: |
+      Branch in the service repository
     required: true
+
   pipeline_branch:
-    description: 'name of branch with your pipeline in qubership-test-pipelines'
+    description: |
+      Branch in the qubership-test-pipelines repository
     required: true
+    default: 'main'
+
   service_name:
-    description: 'name with which service will be installed by helm'
+    description: |
+      Name that Helm will use to install the service
     required: true
+
   repository_name:
-    description: 'name of repository with service'
+    description: |
+      Service repository name (without organization prefix)
+      Example: 'qubership-consul' for https://github.com/Netcracker/qubership-consul
     required: true
+
   path_to_chart:
-    description: 'path to helm chart in repository'
+    description: |
+      Path to helm chart within service repository
+      Example: 'charts/helm/consul-service'
     required: true
+
   components:
-    description: 'list of components in which images should be replaced with images from the current branch'
+    description: |
+      List of components where Docker images should be replaced 
+      with versions from the current branch
+      Example: 'statusProvisioner,integrationTests'
     required: true
+
   namespace:
-    description: 'namespace to install service'
+    description: |
+      Kubernetes namespace for service installation
     required: true
+
 runs:
   using: 'composite'
   steps:

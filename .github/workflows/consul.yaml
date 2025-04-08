@@ -111,7 +111,7 @@ jobs:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
           pipeline_branch: 'update_actions'
           service_branch: 'main'
-      - name: Verify installation
+      - name: Verify Consul upgrade
         uses: Netcracker/qubership-test-pipelines/actions/consul/verify_installation_consul@update_actions
 
   #12-Clean [LATEST_SPRINT] Restricted
@@ -179,7 +179,7 @@ jobs:
 #          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_updated.yml'
 #          service_branch: '${{inputs.service_branch}}'
 #          pipeline_branch: 'update_actions'
-#      - name: Verify installation
+#      - name: Verify Consul installation
 #        uses: Netcracker/qubership-test-pipelines/actions/consul/verify_installation_consul@update_actions
 
 #  #18-Clean [LATEST_SPRINT] DRD S3 TLS
@@ -203,5 +203,5 @@ jobs:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_full_at.yml'
           service_branch: '${{inputs.service_branch}}'
           pipeline_branch: 'update_actions'
-      - name: Verify installation
+      - name: Verify Consul installation
         uses: Netcracker/qubership-test-pipelines/actions/consul/verify_installation_consul@update_actions
