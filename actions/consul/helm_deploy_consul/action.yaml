@@ -1,5 +1,5 @@
-name: 'Custom GitHub Action'
-description: 'A GitHub Action that installs services to kubernetes'
+name: "Helm deploy Action for Consul"
+description: "GitHub Action for install/upgrade Consul using Helm"
 inputs:
   deploy_mode:
     description: 'Install or update'

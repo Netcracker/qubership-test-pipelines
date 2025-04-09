@@ -123,26 +123,3 @@ runs:
     - name: Get config
       run: kubectl config view --raw
       shell: bash
-
-#Helm install
-#    - name: Copy template
-#      run: |
-#        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-#      shell: bash
-#
-#    - name: Update images
-#      run: python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}'
-#      shell: bash
-
-#    - name: Install service with helm skip-crds
-#      run: |
-#        IFS=$'/' read -a path <<< "$${{inputs.path_to_template}}"
-#        template_name=${path[-1]}
-#        echo $template_name
-#        cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-#        helm install ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
-#      shell: bash
-#
-#    - name: Use default context
-#      run: kubectl config use-context kind-kind
-#      shell: bash

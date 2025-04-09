@@ -1,5 +1,5 @@
-name: 'Custom GitHub Action'
-description: 'A GitHub Action that takes an input and returns the square of the number'
+name: 'Verify Installation Action'
+description: 'A GitHub Action to verify tests, get logs from pods'
 inputs:
   namespace:
     description: 'namespace where service is installed'

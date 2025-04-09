@@ -1,5 +1,5 @@
-name: "Custom GitHub Action: Helm-based Kubernetes Deployment"
-description: "GitHub Action for deploying and updating Kubernetes services using Helm"
+name: "Helm deploy Action"
+description: "GitHub Action to install/upgrade services using Helm"
 inputs:
   deploy_mode:
     description: |

@@ -1,5 +1,5 @@
-name: 'Custom GitHub Action'
-description: 'A GitHub Action that installs services to kubernetes'
+name: 'Verify Monitoring Installation Action'
+description: 'A GitHub Action to verify tests, get logs from pods'
 inputs:
   namespace:
     description: 'namespace where service is installed'

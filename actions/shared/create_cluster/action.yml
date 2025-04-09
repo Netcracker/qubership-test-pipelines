@@ -1,5 +1,5 @@
-name: 'Custom GitHub Action'
-description: 'A GitHub Action that runs kind'
+name: 'Create Kubernetes cluster Action'
+description: 'A GitHub Action that creates Kubernetes cluster using Kind'
 inputs:
   pipeline_branch:
     description: 'name of branch with your pipeline in qubership-test-pipelines'
