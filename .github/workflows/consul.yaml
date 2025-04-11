@@ -27,7 +27,8 @@ jobs:
         id: process-versions
         run: |
           versions_str=$(cat qubership-consul/${{inputs.versions_file}})
-          IFS=',' read -ra versions_list <<< "$versions_str"
+          #IFS=',' read -ra versions_list <<< "$versions_str"
+          IFS=$'\n' read -ra versions_list <<< "$versions_str"
           echo "$versions_str"
           versions_json=$(echo -n "${versions_list[@]}" | jq -R -s -c 'split(" ")')
           echo "versions=$versions_json" >> $GITHUB_OUTPUT
