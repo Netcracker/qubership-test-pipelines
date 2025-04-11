@@ -1,24 +1,28 @@
-name: 'Helm Restricted Install Action'
-description: 'A GitHub Action that installs services to kubernetes with restricted user'
+name: 'Create Restricted Resources Action'
+description: 'A GitHub Action to create resources before restricted installation'
 inputs:
-  path_to_template:
-    description: 'Path to template'
-    required: true
-  service_branch:
-    description: 'branch with release'
-    required: true
   service_name:
-    description: 'name with which service will be installed by helm'
+    description: |
+      Helm release name
     required: true
+
   repository_name:
-    description: 'name of repository with service'
+    description: |
+      Service repository name (without organization prefix)
+      Example: 'qubership-consul' for https://github.com/Netcracker/qubership-consul
     required: true
+
   path_to_chart:
-    description: 'path to helm chart in repository'
+    description: |
+      Path to helm chart within service repository
+      Example: 'charts/helm/consul-service'
     required: true
+
   namespace:
-    description: 'namespace to install service'
+    description: |
+      Kubernetes namespace for service installation
     required: true
+
 runs:
   using: 'composite'
   steps:

@@ -39,6 +39,8 @@ jobs:
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
+        with:
+          pipeline_branch: 'update_actions'
       #- name: Install Monitoring
         #uses: Netcracker/qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring@update_actions
       #- name: Verify Monitoring installation
@@ -63,6 +65,8 @@ jobs:
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
+        with:
+          pipeline_branch: 'update_actions'
       - name: Install monitoring
         uses: Netcracker/qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring@update_actions
       - name: Install Consul
@@ -90,6 +94,8 @@ jobs:
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
+        with:
+          pipeline_branch: 'update_actions'
       - name: Install Monitoring
         uses: Netcracker/qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring@update_actions
       - name: Install Consul
@@ -122,6 +128,8 @@ jobs:
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
+        with:
+          pipeline_branch: 'update_actions'
       - name: Install Consul in restricted mode
         uses: Netcracker/qubership-test-pipelines/actions/consul/helm_deploy_consul@update_actions
         with:
@@ -149,6 +157,8 @@ jobs:
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
+        with:
+          pipeline_branch: 'update_actions'
       - name: Install Consul in restricted mode
         uses: Netcracker/qubership-test-pipelines/actions/consul/helm_deploy_consul@update_actions
         with:
@@ -166,6 +176,8 @@ jobs:
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
+        with:
+          pipeline_branch: 'update_actions'
       - name: Install Consul
         uses: Netcracker/qubership-test-pipelines/actions/consul/helm_deploy_consul@update_actions
         with:
@@ -225,6 +237,8 @@ jobs:
     steps:
       - name: Create cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@update_actions
+        with:
+          pipeline_branch: 'update_actions'
       - name: Install Consul
         uses: Netcracker/qubership-test-pipelines/actions/consul/helm_deploy_consul@update_actions
         with:

@@ -1,5 +1,5 @@
 name: 'Verify Installation Action'
-description: 'A GitHub Action to verify tests, get logs from pods'
+description: 'A GitHub Action to verify Kubernetes deployments including status checks, log collection, and test validation.'
 inputs:
   namespace:
     description: 'namespace where service is installed'
