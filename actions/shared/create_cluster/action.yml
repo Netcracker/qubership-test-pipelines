@@ -11,12 +11,15 @@ inputs:
 runs:
   using: 'composite'
   steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+#      - name: Checkout
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+      - name: Debug directory structure
+        run: ls -R qubership-test-pipelines
+        shell: bash
       - name: Get info
         run: |
           cat /proc/meminfo
@@ -33,7 +36,7 @@ runs:
         run: >-
           ./kind create cluster
           --image kindest/node:v1.32.2 
-          --config qubership-test-pipelines/kind-multi-node.yaml 
+          --config qubership-test-pipelines/kind-configs/kind-multi-node.yaml 
           --wait 5m
         shell: bash
         #! check kubernetes version is actual
