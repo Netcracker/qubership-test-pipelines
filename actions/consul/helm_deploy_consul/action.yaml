@@ -1,0 +1,59 @@
+name: "Helm deploy Action for Consul"
+description: "GitHub Action for install/upgrade Consul using Helm"
+inputs:
+  deploy_mode:
+    description: 'Install or update'
+    required: true
+    default: 'install'
+  restricted:
+    description: 'true or false'
+    required: true
+    default: 'false'
+    type: boolean
+  path_to_template:
+    description: 'Path to template'
+    required: true
+  service_branch:
+    description: 'branch name in repository with service'
+    required: true
+  pipeline_branch:
+    description: 'name of branch with your pipeline in qubership-test-pipelines'
+    required: true
+    default: 'main'
+  service_name:
+    description: 'name with which service will be installed by helm'
+    required: true
+    default: 'consul'
+  repository_name:
+    description: 'name of repository with service'
+    required: true
+    default: 'qubership-consul'
+  path_to_chart:
+    description: 'path to helm chart in repository'
+    required: true
+    default: 'charts/helm/consul-service'
+  components:
+    description: 'list of components in which images should be replaced with images from the current branch'
+    required: true
+    default: 'integrationTests'
+  namespace:
+    description: 'namespase to install service'
+    required: true
+    default: 'consul'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run helm_install action
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        deploy_mode: ${{inputs.deploy_mode}}
+        restricted: ${{inputs.restricted}}
+        path_to_template: ${{inputs.path_to_template}}
+        service_branch: ${{inputs.service_branch}}
+        pipeline_branch: ${{inputs.pipeline_branch}}
+        service_name: ${{inputs.service_name}}
+        repository_name: ${{inputs.repository_name}}
+        path_to_chart: ${{inputs.path_to_chart}}
+        components: ${{inputs.components}}
+        namespace: ${{inputs.namespace}}
