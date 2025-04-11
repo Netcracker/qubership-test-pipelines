@@ -66,12 +66,12 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Checkout pipeline
-      uses: actions/checkout@v4
-      with:
-        ref: '${{inputs.pipeline_branch}}'
-        repository: 'Netcracker/qubership-test-pipelines'
-        path: 'qubership-test-pipelines'
+#    - name: Checkout pipeline
+#      uses: actions/checkout@v4
+#      with:
+#        ref: '${{inputs.pipeline_branch}}'
+#        repository: 'Netcracker/qubership-test-pipelines'
+#        path: 'qubership-test-pipelines'
 
     - name: Checkout repo
       uses: actions/checkout@v4
@@ -87,7 +87,7 @@ runs:
 
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
-      uses: Netcracker/qubership-test-pipelines/actions/shared/create_restricted_resources@update_actions
+      uses: ./qubership-test-pipelines/actions/shared/create_restricted_resources
       with:
         path_to_template: ${{inputs.path_to_template}}
         service_branch: ${{inputs.service_branch}}

@@ -46,7 +46,7 @@ runs:
   using: 'composite'
   steps:
     - name: Run helm_install action
-      uses: Netcracker/qubership-test-pipelines/actions/shared/helm_deploy@update_actions
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
       with:
         deploy_mode: ${{inputs.deploy_mode}}
         restricted: ${{inputs.restricted}}

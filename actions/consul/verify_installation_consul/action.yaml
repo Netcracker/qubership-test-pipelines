@@ -19,7 +19,7 @@ runs:
   using: 'composite'
   steps:
     - name: Run helm_install action
-      uses: Netcracker/qubership-test-pipelines/actions/shared/verify_installation@update_actions
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
       with:
         namespace: ${{inputs.namespace}}
         max_attempts: ${{inputs.max_attempts}}
