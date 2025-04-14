@@ -2,57 +2,52 @@ name: "Helm deploy Action for Monitoring"
 description: "GitHub Action for install/upgrade Consul using Helm"
 inputs:
   deploy_mode:
-    description: 'Install or update'
+    description: 'See helm_deploy.deploy_mode'
     required: true
     default: 'install'
   restricted:
-    description: 'true or false'
+    description: 'See helm_deploy.restricted'
     required: true
     default: 'false'
   path_to_template:
-    description: 'Path to template'
+    description: 'See helm_deploy.path_to_template'
     required: false
     default: 'templates/monitoring/vm_with_smoke_at.yml'
   service_branch:
-    description: 'branch name in repository with service'
+    description: 'See helm_deploy.service_branch'
     required: true
     default: 'main'
-  pipeline_branch:
-    description: 'name of branch with your pipeline in qubership-test-pipelines'
-    required: true
-    default: 'update_actions'
   service_name:
-    description: 'name with which service will be installed by helm'
+    description: 'See helm_deploy.service_name'
     required: true
     default: 'monitoring'
   repository_name:
-    description: 'name of repository with service'
+    description: 'See helm_deploy.repository_name'
     required: true
     default: 'qubership-monitoring-operator'
   path_to_chart:
-    description: 'path to helm chart in repository'
+    description: 'See helm_deploy.path_to_chart'
     required: true
     default: 'charts/qubership-monitoring-operator'
   components:
-    description: 'list of components in which images should be replaced with images from the current branch'
+    description: 'See helm_deploy.components'
     required: true
     default: ''
   namespace:
-    description: 'namespace to install service'
+    description: 'See helm_deploy.namespace'
     required: true
     default: 'monitoring'
 
 runs:
   using: 'composite'
   steps:
-    - name: Run helm_install action
+    - name: Run helm_install action for Monitoring
       uses: ./qubership-test-pipelines/actions/shared/helm_deploy
       with:
         deploy_mode: ${{inputs.deploy_mode}}
         restricted: ${{inputs.restricted}}
         path_to_template: ${{inputs.path_to_template}}
         service_branch: ${{inputs.service_branch}}
-        pipeline_branch: ${{inputs.pipeline_branch}}
         service_name: ${{inputs.service_name}}
         repository_name: ${{inputs.repository_name}}
         path_to_chart: ${{inputs.path_to_chart}}

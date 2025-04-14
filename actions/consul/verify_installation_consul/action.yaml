@@ -2,25 +2,29 @@ name: 'Verify Consul Installation Action'
 description: 'A GitHub Action to verify tests, get logs from pods'
 inputs:
   namespace:
-    description: 'namespace where service is installed'
+    description: 'See verify_installation.namespace'
     required: true
     default: consul
   max_attempts:
-    description: 'maximum number of attempts to verify that pod status is successful'
+    description: 'See verify_installation.max_attempts'
     required: true
     default: 40
   timeout:
-    description: 'timeout between attempts'
+    description: 'See verify_installation.timeout'
     required: true
     default: '10s'
-
+  service_branch:
+    description: 'See verify_installation.service_branch'
+    required: true
+    default: ''
 
 runs:
   using: 'composite'
   steps:
-    - name: Run helm_install action
+    - name: Run verify_installation action for Consul
       uses: ./qubership-test-pipelines/actions/shared/verify_installation
       with:
         namespace: ${{inputs.namespace}}
         max_attempts: ${{inputs.max_attempts}}
         timeout: ${{inputs.timeout}}
+        service_branch: ${{inputs.service_branch}}

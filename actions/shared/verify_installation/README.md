@@ -15,7 +15,6 @@ This Action verifies Kubernetes deployments including status checks, log collect
 | `namespace`    | Target Kubernetes namespace  | Yes      | -       |
 | `max_attempts` | Maximum verification retries | Yes      | 40      |
 | `timeout`      | Delay between attempts       | Yes      | 10s     |
-| `check_tests`  | Enable test pod validation   | Yes      | false   |
 
 ## Usage Example
 
@@ -35,4 +34,4 @@ jobs:
           namespace: 'consul'
           max_attempts: 30
           timeout: '15s'
-          check_tests: 'true'
+```

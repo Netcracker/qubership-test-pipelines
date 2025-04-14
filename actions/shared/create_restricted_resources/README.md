@@ -9,12 +9,12 @@ This Action creates resources before restricted installation
 
 ## 📌 Inputs
 
-| Name              | Description                                           | Required | 
-|-------------------|-------------------------------------------------------|----------|
-| `service_name`    | Helm release name                                     | Yes      |
-| `repository_name` | Service repository name (without organization prefix) | Yes      |
-| `path_to_chart`   | Path to Helm chart in service repository              | Yes      |
-| `namespace`       | Target Kubernetes namespace                           | Yes      |
+| Name              | Required | Description                                           |
+|-------------------|----------|-------------------------------------------------------|
+| `service_name`    | Yes      | Helm release name                                     |
+| `repository_name` | Yes      | Service repository name (without organization prefix) |
+| `path_to_chart`   | Yes      | Path to Helm chart in service repository              |
+| `namespace`       | Yes      | Target Kubernetes namespace                           |
 
 ## Usage Example
 
@@ -31,9 +31,8 @@ jobs:
       - name: Create restricted resources
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_restricted_resources@main
         with:
-          path_to_template: 'templates/consul-service/consul_clean_infra_passport.yml'
-          service_branch: 'main'
           service_name: 'consul'
           repository_name: 'qubership-consul'
           path_to_chart: 'charts/helm/consul-service'
           namespace: 'consul'
+```

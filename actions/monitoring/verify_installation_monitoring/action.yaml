@@ -2,23 +2,22 @@ name: 'Verify Monitoring Installation Action'
 description: 'A GitHub Action to verify tests, get logs from pods'
 inputs:
   namespace:
-    description: 'namespace where service is installed'
+    description: 'See verify_installation.namespace'
     required: true
     default: monitoring
   max_attempts:
-    description: 'maximum number of attempts to verify that pod status is successful'
+    description: 'See verify_installation.max_attempts'
     required: true
     default: 40
   timeout:
-    description: 'timeout between attempts'
+    description: 'See verify_installation.timeout'
     required: true
     default: '10s'
-
 
 runs:
   using: 'composite'
   steps:
-    - name: Run helm_install action
+    - name: Run verify_installation action for Monitoring
       uses: ./qubership-test-pipelines/actions/shared/verify_installation
       with:
         namespace: ${{inputs.namespace}}

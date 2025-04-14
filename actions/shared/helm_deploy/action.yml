@@ -3,7 +3,7 @@ description: "GitHub Action to install/upgrade services using Helm"
 inputs:
   deploy_mode:
     description: |
-      Deployment mode: 
+      Deployment mode:
       - 'install' for clean installation
       - 'update' to upgrade an existing release
     required: true
@@ -28,12 +28,6 @@ inputs:
       Branch in service repository
     required: true
 
-  pipeline_branch:
-    description: |
-      Branch in qubership-test-pipelines repository
-    required: true
-    default: 'main'
-
   service_name:
     description: |
       Helm release name
@@ -53,7 +47,7 @@ inputs:
 
   components:
     description: |
-      List of components where Docker images should be replaced 
+      List of components where Docker images should be replaced
       with versions from current branch
       Example: 'statusProvisioner,integrationTests'
     required: true
@@ -66,13 +60,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-#    - name: Checkout pipeline
-#      uses: actions/checkout@v4
-#      with:
-#        ref: '${{inputs.pipeline_branch}}'
-#        repository: 'Netcracker/qubership-test-pipelines'
-#        path: 'qubership-test-pipelines'
-
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
@@ -89,8 +76,6 @@ runs:
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
       uses: ./qubership-test-pipelines/actions/shared/create_restricted_resources
       with:
-        path_to_template: ${{inputs.path_to_template}}
-        service_branch: ${{inputs.service_branch}}
         service_name: ${{inputs.service_name}}
         repository_name: ${{inputs.repository_name}}
         path_to_chart: ${{inputs.path_to_chart}}
@@ -101,18 +86,9 @@ runs:
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
       shell: bash
 
-    - name: Update images
-      run: >- 
-        #UPDATE IMAGES
-        SET_NEW_IMAGES=$(python qubership-test-pipelines/python/update_images.py 
-        --service_branch='${{inputs.service_branch}}' 
-        --path_to_values='${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml'
-        --components='${{inputs.components}}') >> $GITHUB_ENV
-      shell: bash
-
-    - name: Install service with helm
+    - name: Install/update service with helm
       run: |
-        #INSTALL SERVICE WITH HELM
+        # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         SET_NEW_IMAGES=$(python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}' --path_to_values='${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml' --components='${{inputs.components}}')
         template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
@@ -127,7 +103,7 @@ runs:
 
     - name: Get docker images
       run: |
-        #GET DOCKER IMAGES
+        # ▶️ Get docker images
         kubectl get pods -n ${{inputs.namespace}} -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
       shell: bash
 
