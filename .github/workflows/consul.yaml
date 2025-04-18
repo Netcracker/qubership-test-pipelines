@@ -1,4 +1,4 @@
-name: Install Consul
+name: Consul Tests
 
 on:
   workflow_call:
@@ -6,210 +6,206 @@ on:
       service_branch:
         required: false
         type: string
-
+      versions_file:
+        description: 'Path to versions list file'
+        type: string
+        required: true
 env:
-  #maximum number of attempts to verify that pod status is successful
-  max_attempts: 40
-  #timeout between attempts
-  timeout: '10s'
-  #name of repository with service
-  repository_name: 'qubership-consul'
-  #path to helm chart in repository
-  path_to_chart: 'charts/helm/consul-service'
-  #namespase to install service
-  namespace: 'consul'
-  #name with which service will be installed by helm
-  service_name: 'consul'
-  #list of components in which images should be replaced with images from the current branch
-  components: 'integrationTests'
-  #branch with your pipeline in qubership-test-pipelines. Default: main
-  pipeline_branch: main
+  pipeline_branch: 'main'
 
 jobs:
-  #1-Clean [LATEST_SPRINT] Infra Passport
-  Consul-Clean-Infra-Passport:
+  prepare-versions:
     runs-on: ubuntu-latest
-    name: 1-Clean [LATEST_SPRINT] Infra Passport
+    outputs:
+      versions: ${{steps.process-versions.outputs.versions}}
+      previous_version: ${{steps.process-versions.outputs.previous_version}}
     steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
-      - name: Install consul
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
-          path_to_template: 'templates/consul-service/consul_clean_infra_passport.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
+          ref: '${{inputs.service_branch}}'
+          repository: 'Netcracker/qubership-consul'
+          path: 'qubership-consul'
+      - name: Process versions file
+        id: process-versions
+        run: |
+          versions_str=$(cat qubership-consul/${{inputs.versions_file}})
+          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
+          echo "versions=$versions_json" >> $GITHUB_OUTPUT
+          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
+          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
-  #2-Clean [PREVIOUS_SPRINT], 3-Update to [LATEST_SPRINT]
-  Consul-Clean-Previous-Sprint:
-    runs-on: ubuntu-latest
-    name: 2-Clean [PREVIOUS_SPRINT], 3-Update to [LATEST_SPRINT]
-    steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
-      - name: Install consul
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
-        with:
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
-          service_branch: 'release-2025.1-0.11.0'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-      - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
-      - name: Update to latest
-        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
-        with:
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-      - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
-
+  # ---------- Current service branch ----------
   #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
-  Consul-Clean-Latest-Sprint:
+  Clean-Latest-Upgrade-Diff-Params:
     runs-on: ubuntu-latest
-    name: 4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
+    name: Clean [LATEST], Upgrade [LATEST] Diff Params
     steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
-      - name: Install consul
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{env.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install Monitoring
+        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      - name: Install Consul
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-      - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
-      - name: Update to diff params
-        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Update to latest version with diff params
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_updated.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-        continue-on-error: true
-      - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
-#
-#  #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
-#  #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
-#  #we don't have old releases yet
-
-  #10-Clean [PREVIOUS_SPRINT] Restricted, 11-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted
-  Consul-Previous-Sprint-Restricted:
-    name: 10-Clean [PREVIOUS_SPRINT] Restricted, 11-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted
-    runs-on: ubuntu-latest
-    steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
-      - name: Install consul in restricted mode
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@main
-        with:
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
-          service_branch: 'improvement/run_tests'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-      - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+          deploy_mode: upgrade
+      - name: Verify Consul upgrade
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
   #12-Clean [LATEST_SPRINT] Restricted
-  Consul-Latest-Sprint-Restricted:
-    name: 12-Clean [LATEST_SPRINT] Restricted
+  Clean-Latest-Restricted:
+    name: Clean [LATEST] Restricted
     runs-on: ubuntu-latest
     steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
-      - name: Install consul in restricted mode
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install_restricted@main
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
         with:
+          ref: '${{env.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install Consul in restricted mode
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          restricted: true
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
-          service_branch: 'improvement/run_tests'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-      - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
-
-  #13-Clean [LATEST_SPRINT] W/O Components, 14-Upgrade [LATEST_SPRINT] All Components S3
-  Consul-Clean-WO-Components:
-    runs-on: ubuntu-latest
-    name: 13-Clean [LATEST_SPRINT] W/O Components, 14-Upgrade [LATEST_SPRINT] All Components S3
-    steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
-      - name: Install consul
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
-        with:
-          path_to_template: 'templates/consul-service/consul_clean_on_sc_without_components.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-        #we don't have s3 and drd
-#      - name: Update to all components
-#        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
-#        with:
-#          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Get pods
-#        run: kubectl get pods -n ${{env.namespace}}
-#      - name: Check status provisioner
-#        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-#      - name: Check tests
-#        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
-#
-#
-  #15-Clean [LATEST_SPRINT] Without Clients, 17-Upgrade [LATEST_SPRINT] DRD S3 TLS
-#  Consul-Clean_Latest_Sprint_Without_Clients:
-#    runs-on: ubuntu-latest
-#    name: 15-Clean [LATEST_SPRINT] Without Clients
-#    steps:
-#      - name: Run kind
-#        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
-#      - name: Install consul
-#        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
-#        with:
-#          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_without_clients.yml'
-#          service_branch: 'main'
-#      - name: Check status provisioner
-#        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-#      - name: Check tests
-#        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
-#      - name: Update to all components
-#        uses: Netcracker/qubership-test-pipelines/actions/helm_upgrade@main
-#        with:
-#          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Get pods
-#        run: kubectl get pods -n ${{env.namespace}}
-#      - name: Check status provisioner
-#        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-#      - name: Check tests
-#        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
-#  #18-Clean [LATEST_SPRINT] DRD S3 TLS
-#  #don't have tls
-#
-#  #19-Clean [LATEST_SPRINT] DRD S3 TLS-certs
-#
-#  #20-Clean [PREVIOUS_3PARTY], 21-Migration From [PREVIOUS_3PARTY] To [LATEST_SPRINT]
-#  #don't have other consul version
-#
   #22-Clean [LATEST_SPRINT] Full-AT Ports-specifying Custom-labels
-  Consul-Clean_Latest_Sprint_Full_At_ports_Specifying_Custom_Labels:
+  Clean-Latest-Full-At-ports-Specifying-Custom-Labels:
     runs-on: ubuntu-latest
-    name: 22-Clean [LATEST_SPRINT] Full-AT Ports-specifying Custom-labels
+    name: Clean [LATEST] Full-AT Ports-specifying Custom-labels
     steps:
-      - name: Run kind
-        uses: Netcracker/qubership-test-pipelines/actions/run_kind@main
-      - name: Install consul
-        uses: Netcracker/qubership-test-pipelines/actions/helm_install@main
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{env.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install Consul
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_full_at.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Check status provisioner
-        uses: Netcracker/qubership-test-pipelines/actions/check_status_provisioner@main
-      - name: Check tests
-        uses: Netcracker/qubership-test-pipelines/actions/validate_tests_result@main
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
+  #13-Clean [LATEST_SPRINT] W/O Components
+  Clean-WO-Components:
+    runs-on: ubuntu-latest
+    name: Clean [LATEST] W/O Components
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{env.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install Consul
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_on_sc_without_components.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+
+  #---------- Update from old releases ----------
+  #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
+  #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
+  Clean-Previous-Update-To-Latest:
+    name: Clean [PREVIOUS], Update to [LATEST]
+    needs: prepare-versions
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{env.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install monitoring
+        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      - name: Install Consul
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          service_branch: '${{matrix.release}}'
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+        with:
+          service_branch: '${{matrix.release}}'
+      - name: Update Consul to latest version
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+        with:
+          service_branch: ${{inputs.service_branch}}
+
+  #10-Clean [PREVIOUS_SPRINT] Restricted, 11-Upgrade From [PREVIOUS_SPRINT] To [LATEST_SPRINT] Restricted
+  Clean-Previous-Upgrade-To-Latest-Restricted:
+    name: Clean [PREVIOUS] Restricted, Upgrade To [LATEST] Restricted
+    needs: prepare-versions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{env.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: get version
+        run: echo ${{needs.prepare-versions.outputs.previous_version}}
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install Consul in restricted mode
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          restricted: true
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
+          service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+        with:
+          service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
+      - name: Update Consul in restricted mode
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          restricted: true
+          deploy_mode: upgrade
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Consul upgrade
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+        with:
+          service_branch: ${{inputs.service_branch}}

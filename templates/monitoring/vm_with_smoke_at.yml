@@ -208,3 +208,5 @@
 #  name: monitoring-tests
 #  install: true
 #  tags: smoke
+global:
+  profile: "small"

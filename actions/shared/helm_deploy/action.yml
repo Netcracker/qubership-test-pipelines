@@ -1,0 +1,113 @@
+name: "Helm deploy Action"
+description: "GitHub Action to install/upgrade services using Helm"
+inputs:
+  deploy_mode:
+    description: |
+      Deployment mode:
+      - 'install' for clean installation
+      - 'update' to upgrade an existing release
+    required: true
+    default: 'install'
+
+  restricted:
+    description: |
+      - 'true': helm installation by user with restricted rights
+      - 'false': helm installation by cluster admin user
+    required: true
+    default: 'false'
+    type: boolean
+
+  path_to_template:
+    description: |
+      Path to template file in qubership-test-pipelines repository
+      Example: 'templates/consul-service/consul_clean_infra_passport.yml'
+    required: true
+
+  service_branch:
+    description: |
+      Branch in service repository
+    required: true
+
+  service_name:
+    description: |
+      Helm release name
+    required: true
+
+  repository_name:
+    description: |
+      Service repository name (without organization prefix)
+      Example: 'qubership-consul' for https://github.com/Netcracker/qubership-consul
+    required: true
+
+  path_to_chart:
+    description: |
+      Path to helm chart within service repository
+      Example: 'charts/helm/consul-service'
+    required: true
+
+  components:
+    description: |
+      List of components where Docker images should be replaced
+      with versions from current branch
+      Example: 'statusProvisioner,integrationTests'
+    required: true
+
+  namespace:
+    description: |
+      Kubernetes namespace for service installation
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        ref: '${{inputs.service_branch}}'
+        repository: 'Netcracker/${{inputs.repository_name}}'
+        path: '${{inputs.repository_name}}'
+
+    - name: Create namespace
+      if: inputs.deploy_mode == 'install'
+      run: kubectl create namespace '${{inputs.namespace}}'
+      shell: bash
+
+    - name: Create restricted resources
+      if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
+      uses: ./qubership-test-pipelines/actions/shared/create_restricted_resources
+      with:
+        service_name: ${{inputs.service_name}}
+        repository_name: ${{inputs.repository_name}}
+        path_to_chart: ${{inputs.path_to_chart}}
+        namespace: ${{inputs.namespace}}
+
+    - name: Copy template
+      run: |
+        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
+      shell: bash
+
+    - name: Install/update service with helm
+      run: |
+        # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
+        SET_NEW_IMAGES=$(python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}' --path_to_values='${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml' --components='${{inputs.components}}')
+        template_name=$(basename "${{inputs.path_to_template}}")
+        echo $template_name
+        echo SET_NEW_IMAGES: $SET_NEW_IMAGES
+        cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
+        if [[ ${{inputs.restricted}} == 'false' ]]; then
+          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m
+        else
+          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
+        fi
+      shell: bash
+
+    - name: Get docker images
+      run: |
+        # ▶️ Get docker images
+        kubectl get pods -n ${{inputs.namespace}} -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
+      shell: bash
+
+    - name: Use default context
+      if: inputs.restricted == 'true'
+      run: kubectl config use-context kind-kind
+      shell: bash
