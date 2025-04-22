@@ -1,0 +1,18 @@
+---
+
+# Charts release configuration file example
+# This file is used to update the version of the helm charts and images in the values.yaml file
+# It is used in the helm-charts-release action
+# ${release} is replaced with the release version provided in the workflow
+
+charts:
+  - name: qubership-consul
+    chart_file: charts/helm/consul-service/Chart.yaml
+    values_file: charts/helm/consul-service/values.yaml
+    image:
+      - ghcr.io/netcracker/qubership-consul-disaster-recovery:${release}
+      #- ghcr.io/netcracker/qubership-consul-backup-daemon:${release}
+      #- ghcr.io/netcracker/qubership-consul-acl-configurator:${release}
+      #- ghcr.io/netcracker/qubership-consul-rest-acl-configurator:${release}
+      #- ghcr.io/netcracker/qubership-deployment-status-provisioner:${release}
+      - ghcr.io/netcracker/qubership-consul-integration-tests:${release}

@@ -57,6 +57,11 @@ inputs:
       Kubernetes namespace for service installation
     required: true
 
+  helm_charts_release_config:
+    description: |
+      Path to helm-charts-release-config.yaml in pipeline repository
+    required: true
+
 runs:
   using: 'composite'
   steps:
@@ -86,13 +91,51 @@ runs:
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
       shell: bash
 
+    - name: Check helm_charts_release_config file
+      run: |
+        file_path=$(echo ${{inputs.repository_name}}/.github/helm-charts-release-config.yaml)
+        config_source=$(echo ${{inputs.helm_charts_release_config}})
+        if [ -f "$file_path" ]; then
+            echo "$file_path" exists in service repository
+        else
+            if cp "qubership-test-pipelines/$config_source" "$file_path"; then
+                echo "Config file is missing in ${{inputs.service_name}} repository. Using config file from pipeline repository"
+            else
+                echo "File $config_source is not found in pipeline repository" >&2
+                exit 1
+            fi
+        fi
+      shell: bash
+
+    - name: Replace slash in service branch
+      id: replace_slash
+      run: |
+        service_branch="${{inputs.service_branch}}"
+        if [[ "${service_branch}" == *"/"* ]]; then
+          service_branch_updated=$(echo "${service_branch}" | tr '/' '_')
+        else
+          service_branch_updated=${service_branch}
+        fi
+        echo ${service_branch_updated}
+        echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
+      shell: bash
+
+    - name: Update versions in values
+      id: update-versions
+      uses: netcracker/qubership-workflow-hub/actions/helm-charts-release@main
+      with:
+        release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
+        config-file: .github/helm-charts-release-config.yaml
+        create-release-branch: "false"
+        version-replace-method: 'replace'
+        working-directory: ${{inputs.repository_name}}
+        chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
+
     - name: Install/update service with helm
       run: |
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
-        SET_NEW_IMAGES=$(python qubership-test-pipelines/python/update_images.py --service_branch='${{inputs.service_branch}}' --path_to_values='${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml' --components='${{inputs.components}}')
         template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
-        echo SET_NEW_IMAGES: $SET_NEW_IMAGES
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ ${{inputs.restricted}} == 'false' ]]; then
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m

@@ -10,8 +10,10 @@ on:
         description: 'Path to versions list file'
         type: string
         required: true
-env:
-  pipeline_branch: 'main'
+      pipeline_branch:
+        description: 'Test pipeline branch name'
+        type: string
+        required: true
 
 jobs:
   prepare-versions:
@@ -41,16 +43,19 @@ jobs:
     runs-on: ubuntu-latest
     name: Clean [LATEST], Upgrade [LATEST] Diff Params
     steps:
+      - name: Get current workflow branch
+        id: get_branch
+        run: |
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{env.pipeline_branch}}'
+          ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install Monitoring
-        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      #- name: Install Monitoring
+        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
       - name: Install Consul
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
@@ -75,7 +80,7 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{env.pipeline_branch}}'
+          ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
@@ -97,7 +102,7 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{env.pipeline_branch}}'
+          ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
@@ -118,7 +123,7 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{env.pipeline_branch}}'
+          ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
@@ -145,13 +150,13 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{env.pipeline_branch}}'
+          ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install monitoring
-        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      #- name: Install monitoring
+        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
       - name: Install Consul
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
@@ -181,7 +186,7 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{env.pipeline_branch}}'
+          ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: get version
