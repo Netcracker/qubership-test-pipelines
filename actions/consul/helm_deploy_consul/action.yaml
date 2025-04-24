@@ -36,7 +36,10 @@ inputs:
     description: 'See helm_deploy.namespace'
     required: true
     default: 'consul'
-
+  helm_charts_release_config:
+    description: 'See helm_deploy.helm_charts_release_config'
+    required: true
+    default: 'release_configs/consul/helm-charts-release-config.yaml'
 runs:
   using: 'composite'
   steps:
@@ -52,3 +55,4 @@ runs:
         path_to_chart: ${{inputs.path_to_chart}}
         components: ${{inputs.components}}
         namespace: ${{inputs.namespace}}
+        helm_charts_release_config: ${{inputs.helm_charts_release_config}}
