@@ -45,13 +45,6 @@ inputs:
       Example: 'charts/helm/consul-service'
     required: true
 
-  components:
-    description: |
-      List of components where Docker images should be replaced
-      with versions from current branch
-      Example: 'statusProvisioner,integrationTests'
-    required: true
-
   namespace:
     description: |
       Kubernetes namespace for service installation

@@ -56,14 +56,14 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       #- name: Install Monitoring
         #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Install Consul
+      - name: Clean Install Consul [LATEST]
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
-      - name: Update to latest version with diff params
+      - name: Update to [LATEST] Version With Diff Params
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_updated.yml'
@@ -85,7 +85,7 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install Consul in restricted mode
+      - name: Clean Install Consul [LATEST] in Restricted mode
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           restricted: true
@@ -107,7 +107,7 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install Consul
+      - name: Clean Install Consul [LATEST] Full-At
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_full_at.yml'
@@ -128,7 +128,7 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install Consul
+      - name: Clean Install Consul [LATEST] W/O Components
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_on_sc_without_components.yml'
@@ -157,7 +157,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       #- name: Install monitoring
         #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Install Consul
+      - name: Clean Install Consul [PREVIOUS]
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
@@ -166,7 +166,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
         with:
           service_branch: '${{matrix.release}}'
-      - name: Update Consul to latest version
+      - name: Update Consul to [LATEST]
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           deploy_mode: upgrade
@@ -189,11 +189,11 @@ jobs:
           ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
-      - name: get version
+      - name: Get version
         run: echo ${{needs.prepare-versions.outputs.previous_version}}
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install Consul in restricted mode
+      - name: Clean Install Consul [PREVIOUS] in Restricted mode
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           restricted: true
@@ -203,7 +203,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
         with:
           service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
-      - name: Update Consul in restricted mode
+      - name: Update Consul to [LATEST] in Restricted mode
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           restricted: true
