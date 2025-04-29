@@ -1,0 +1,83 @@
+global:
+  cloudIntegrationEnabled: false
+  tls:
+    enabled: false
+    generateCerts:
+      certProvider: cert-manager
+      clusterIssuerName: dev-clusterissuer
+opensearch:
+  securityConfig:
+    authc:
+      basic:
+        username: admin
+        password: Root1234#
+  securityContextCustom:
+    runAsUser: 1000
+    fsGroup: 1000
+  master:
+    persistence:
+      storageClass: standard
+      size: 2Gi
+    resources:
+      requests:
+        cpu: 300m
+        memory: 2Gi
+      limits:
+        cpu: 900m
+        memory: 2Gi
+  snapshots:
+    enabled: true
+    size: 2Gi
+    s3:
+      enabled: false
+      pathStyleAccess: true
+      url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.netcracker.com
+      bucket: opensearch-qa-k8s
+      keyId: Z4nz2bxWnWM36lf3K21y
+      keySecret: oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr
+  client:
+    ingress:
+      enabled: true
+      hosts:
+        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+dashboards:
+  enabled: true
+  ingress:
+    enabled: false
+    hosts:
+      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+        paths:
+          - path: /
+dbaasAdapter:
+  enabled: false
+  dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
+  opensearchRepo: snapshots
+  opensearchRepoRoot: /usr/share/opensearch/
+  dbaasUsername: dbaas-adapter
+  dbaasPassword: dbaas-adapter
+  registrationAuthUsername: cluster-dba
+  registrationAuthPassword: Bnmq5567_PO
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+monitoring:
+  enabled: false
+  includeIndices: true
+  slowQueries:
+    enabled: true
+curator:
+  enabled: false
+  backupSchedule: 0 * * * *
+  evictionPolicy: 0/1d,7d/delete
+  username: backup
+  password: backup
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+integrationTests:
+  enabled: false
+  tags: smokeORopensearch_images
+statusProvisioner:
+  lifetimeAfterCompletion: 60
+  integrationTestsTimeout: 900
+  podReadinessTimeout: 900
