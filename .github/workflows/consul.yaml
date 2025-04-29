@@ -14,6 +14,11 @@ on:
         description: 'Test pipeline branch name'
         type: string
         required: true
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
 
 jobs:
   prepare-versions:
@@ -115,10 +120,10 @@ jobs:
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
-  #13-Clean [LATEST_SPRINT] W/O Components
-  Clean-WO-Components:
+  #13-Clean [LATEST_SPRINT] W/O Components, 14-Upgrade [LATEST_SPRINT] All Components S3
+  Clean-WO-Components-Upgrade-All-Components-S3:
     runs-on: ubuntu-latest
-    name: Clean [LATEST] W/O Components
+    name: Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -132,6 +137,21 @@ jobs:
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
           path_to_template: 'templates/consul-service/consul_clean_on_sc_without_components.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Add secrets to template
+        run: >-
+          python qubership-test-pipelines/python/add_secrets_for_s3.py
+          --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
+          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+        shell: bash
+      - name: Update Consul [LATEST] All Components S3
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul

@@ -47,9 +47,9 @@ backupDaemon:
   backupSchedule: "*/15 * * * *"
   evictionPolicy: 1h/1d,7d/delete
   s3:
-    enabled: false #!
-    url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org/
-    bucket: consul-qa
+    enabled: true
+    url: https://s3.amazonaws.com/
+    bucket: test-pipelines-storage
     keyId: ''
     keySecret: ''
 integrationTests:
