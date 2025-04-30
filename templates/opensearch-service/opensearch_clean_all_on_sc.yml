@@ -75,7 +75,7 @@ curator:
     runAsUser: 1000
     fsGroup: 1000
 integrationTests:
-  enabled: false
+  enabled: true
   tags: smokeORopensearch_images
 statusProvisioner:
   lifetimeAfterCompletion: 30
