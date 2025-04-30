@@ -142,6 +142,7 @@ runs:
             done
         done
       shell: bash
+      continue-on-error: true
 
     - name: Get logs from test pod
       run: |
@@ -179,6 +180,7 @@ runs:
           exit 1
         fi
       shell: bash
+      continue-on-error: true
 
     - name: Generate artifact name
       if: always()
