@@ -10,7 +10,7 @@ inputs:
     description: |
       Maximum verification retries
     required: true
-    default: 50
+    default: '50'
 
   timeout:
     description: |
@@ -22,7 +22,7 @@ inputs:
     description: |
       Maximum retries for provisioner pod to be completed
     required: true
-    default: 100
+    default: '100'
 
   timeout_for_provisioner:
     description: |
@@ -128,6 +128,7 @@ runs:
       shell: bash
 
     - name: Get logs from all containers in pods
+      if: always()
       run: |
         # ▶️ Get logs from all containers in pods
         file_name=artifacts/${{inputs.namespace}}_log_from_containers.txt
@@ -145,6 +146,7 @@ runs:
       continue-on-error: true
 
     - name: Get logs from test pod
+      if: always()
       run: |
         # ▶️ Get logs from test pod
         file_name=artifacts/${{inputs.namespace}}_tests.txt
