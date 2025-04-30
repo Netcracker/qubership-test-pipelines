@@ -5,10 +5,10 @@ runs:
   steps:
       - name: Get info
         run: |
-          cat /proc/meminfo
-          cat /proc/cpuinfo
-          free --giga
+          free -h
+          echo '================================================================================'
           lscpu
+          echo '================================================================================'
           lsblk
         shell: bash
       - name: Install kind
