@@ -17,17 +17,17 @@ opensearch:
   master:
     persistence:
       storageClass: standard
-      size: 2Gi
+      size: 1Gi
     resources:
       requests:
         cpu: 300m
-        memory: 2Gi
+        memory: 1Gi
       limits:
         cpu: 900m
         memory: 2Gi
   snapshots:
-    enabled: true
-    size: 2Gi
+    enabled: false
+    size: 1Gi
     s3:
       enabled: false
       pathStyleAccess: true

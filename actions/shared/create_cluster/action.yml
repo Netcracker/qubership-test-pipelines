@@ -7,6 +7,9 @@ runs:
         run: |
           cat /proc/meminfo
           cat /proc/cpuinfo
+          free --giga
+          lscpu
+          lsblk
         shell: bash
       - name: Install kind
         run: |
