@@ -78,6 +78,6 @@ integrationTests:
   enabled: true
   tags: smokeORopensearch_images
 statusProvisioner:
-  lifetimeAfterCompletion: 60
+  lifetimeAfterCompletion: 30
   integrationTestsTimeout: 900
   podReadinessTimeout: 900

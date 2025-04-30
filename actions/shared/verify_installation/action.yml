@@ -18,6 +18,18 @@ inputs:
     required: true
     default: '10s'
 
+  max_attempts_for_provisioner:
+    description: |
+      Maximum retries for provisioner pod to be completed
+    required: true
+    default: 40
+
+  timeout_for_provisioner:
+    description: |
+      Delay between attempts
+    required: true
+    default: '20s'
+
   service_branch:
     description: |
       Branch in service repository
@@ -94,12 +106,12 @@ runs:
           exit 0
         fi
         echo "provisioner_pod=$provisioner_pod"
-        for i in {1..${{inputs.max_attempts}}}; do
+        for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
           status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
           if [[ "$status" == 'Succeeded' ]]; then
             break
           fi
-          sleep ${{inputs.timeout}}
+          sleep ${{inputs.timeout_for_provisioner}}
         done
         if [[ "$status" != 'Succeeded' ]]; then
           echo $provisioner_pod pod has not Succeeded status
@@ -108,7 +120,7 @@ runs:
         kubectl logs $provisioner_pod -n ${{inputs.namespace}}
         logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
         if [[ $logs != *"Failed components statuses are []"* ]]; then
-          echo Not all components are in succeed status after ${{inputs.max_attempts}} attempts
+          echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
           echo PODS:
           kubectl get pods -n ${{inputs.namespace}}
           exit 1
