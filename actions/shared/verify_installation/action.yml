@@ -22,7 +22,7 @@ inputs:
     description: |
       Maximum retries for provisioner pod to be completed
     required: true
-    default: '50'
+    default: '10'
 
   timeout_for_provisioner:
     description: |
