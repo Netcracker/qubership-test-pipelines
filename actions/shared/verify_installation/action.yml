@@ -126,9 +126,9 @@ runs:
           exit 1
         fi
       shell: bash
+      continue-on-error: true
 
     - name: Get logs from all containers in pods
-      if: always()
       run: |
         # ▶️ Get logs from all containers in pods
         file_name=artifacts/${{inputs.namespace}}_log_from_containers.txt
@@ -143,10 +143,8 @@ runs:
             done
         done
       shell: bash
-      continue-on-error: true
 
     - name: Get logs from test pod
-      if: always()
       run: |
         # ▶️ Get logs from test pod
         file_name=artifacts/${{inputs.namespace}}_tests.txt
@@ -182,7 +180,6 @@ runs:
           exit 1
         fi
       shell: bash
-      continue-on-error: true
 
     - name: Generate artifact name
       if: always()
