@@ -22,7 +22,7 @@ inputs:
     description: |
       Maximum retries for provisioner pod to be completed
     required: true
-    default: '100'
+    default: '50'
 
   timeout_for_provisioner:
     description: |
@@ -161,6 +161,10 @@ runs:
         echo "test_pod=$test_pod"
         for i in {1..${{inputs.max_attempts}}}; do
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+          echo '>>>'
+          echo $status
+          kubectl logs $test_pod -n ${{inputs.namespace}}
+          echo '<<<'
           if [[ "$status" == 'Running' ]]; then
             break
           fi
