@@ -108,7 +108,6 @@ runs:
         echo "provisioner_pod=$provisioner_pod"
         for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
           status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-#---------
           IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
           for pod in "${pods[@]}"; do
             if [[ $pod == *"tests"* ]]; then
@@ -126,9 +125,6 @@ runs:
             kubectl get pod $test_pod -n ${{inputs.namespace}}
             kubectl logs $test_pod -n ${{inputs.namespace}}
             echo '<<<'
-#            if [[ "$status" == 'Running' ]]; then
-#              break
-#            fi
             sleep ${{inputs.timeout}}
           done
           for i in {1..${{inputs.max_attempts}}}; do
@@ -144,7 +140,6 @@ runs:
           if [[ $logs == *"| FAIL |"* ]]; then
             exit 1
           fi
-#---------
           if [[ "$status" == 'Succeeded' ]]; then
             break
           fi
