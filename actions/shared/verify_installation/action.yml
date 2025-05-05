@@ -92,6 +92,47 @@ runs:
         kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
       shell: bash
 
+    - name: Get logs from test pod
+      run: |
+        # ▶️ Get logs from test pod
+        file_name=artifacts/${{inputs.namespace}}_tests.txt
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        for pod in "${pods[@]}"; do
+          if [[ $pod == *"tests"* ]]; then
+            test_pod=$pod
+          fi
+        done
+        if ! [[ $test_pod ]]; then
+          echo There is no test pod
+          exit 0
+        fi
+        echo "test_pod=$test_pod"
+        for i in {1..${{inputs.max_attempts}}}; do
+          status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+          echo '>>>'
+          echo $status
+          kubectl logs $test_pod -n ${{inputs.namespace}}
+          echo '<<<'
+          if [[ "$status" == 'Running' ]]; then
+            break
+          fi
+          sleep ${{inputs.timeout}}
+        done
+        for i in {1..${{inputs.max_attempts}}}; do
+          logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
+          if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
+            kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
+            break
+          fi
+          sleep ${{inputs.timeout}}
+        done
+        echo 'TEST LOGS: '
+        kubectl logs $test_pod -n ${{inputs.namespace}}
+        if [[ $logs == *"| FAIL |"* ]]; then
+          exit 1
+        fi
+      shell: bash
+
     - name: Get status provisioner logs
       run: |
         # ▶️ Get status provisioner logs
@@ -142,47 +183,6 @@ runs:
               echo '================================================================================' >> $file_name
             done
         done
-      shell: bash
-
-    - name: Get logs from test pod
-      run: |
-        # ▶️ Get logs from test pod
-        file_name=artifacts/${{inputs.namespace}}_tests.txt
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
-        for pod in "${pods[@]}"; do
-          if [[ $pod == *"tests"* ]]; then
-            test_pod=$pod
-          fi
-        done
-        if ! [[ $test_pod ]]; then
-          echo There is no test pod
-          exit 0
-        fi
-        echo "test_pod=$test_pod"
-        for i in {1..${{inputs.max_attempts}}}; do
-          status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-          echo '>>>'
-          echo $status
-          kubectl logs $test_pod -n ${{inputs.namespace}}
-          echo '<<<'
-          if [[ "$status" == 'Running' ]]; then
-            break
-          fi
-          sleep ${{inputs.timeout}}
-        done
-        for i in {1..${{inputs.max_attempts}}}; do
-          logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
-          if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
-            kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
-            break
-          fi
-          sleep ${{inputs.timeout}}
-        done
-        echo 'TEST LOGS: '
-        kubectl logs $test_pod -n ${{inputs.namespace}}
-        if [[ $logs == *"| FAIL |"* ]]; then
-          exit 1
-        fi
       shell: bash
 
     - name: Generate artifact name
