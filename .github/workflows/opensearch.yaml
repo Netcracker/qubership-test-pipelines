@@ -59,7 +59,7 @@ jobs:   #run in parallel
       - name: Install Opensearch
         uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
         with:
-          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc.yml'
+          path_to_template: 'templates/opensearch-service/example.yaml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Opensearch installation
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch

@@ -88,6 +88,7 @@ runs:
 
     - name: Copy template
       run: |
+        cat qubership-test-pipelines/${{inputs.path_to_template}}
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
       shell: bash
 

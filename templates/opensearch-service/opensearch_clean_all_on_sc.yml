@@ -33,15 +33,15 @@ opensearch:
       pathStyleAccess: true
       url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.netcracker.com
       bucket: opensearch-qa-k8s
-      keyId: Z4nz2bxWnWM36lf3K21y
-      keySecret: oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr
+      keyId: ''
+      keySecret: ''
   client:
     ingress:
-      enabled: true
+      enabled: false
       hosts:
         - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
 dashboards:
-  enabled: true
+  enabled: false
   ingress:
     enabled: false
     hosts:
@@ -76,7 +76,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORopensearch_images
+  tags: smoke
 statusProvisioner:
   lifetimeAfterCompletion: 30
   integrationTestsTimeout: 900
