@@ -37,11 +37,11 @@ opensearch:
       keySecret: oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr
   client:
     ingress:
-      enabled: true
+      enabled: false
       hosts:
         - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
 dashboards:
-  enabled: true
+  enabled: false
   ingress:
     enabled: false
     hosts:
@@ -76,7 +76,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORopensearch_images
+  tags: smoke
 statusProvisioner:
   lifetimeAfterCompletion: 30
   integrationTestsTimeout: 900

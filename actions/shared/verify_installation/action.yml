@@ -123,6 +123,7 @@ runs:
             status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
             echo '>>>'
             kubectl get pod $test_pod -n ${{inputs.namespace}}
+            kubectl get pods -n ${{inputs.namespace}}
             kubectl logs $test_pod -n ${{inputs.namespace}}
             echo '<<<'
             sleep ${{inputs.timeout}}
