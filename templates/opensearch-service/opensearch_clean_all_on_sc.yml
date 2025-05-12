@@ -31,10 +31,6 @@ opensearch:
     s3:
       enabled: false
       pathStyleAccess: true
-      url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.netcracker.com
-      bucket: opensearch-qa-k8s
-      keyId: Z4nz2bxWnWM36lf3K21y
-      keySecret: oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr
   client:
     ingress:
       enabled: true
