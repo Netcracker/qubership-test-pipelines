@@ -20,10 +20,10 @@ opensearch:
       size: 2Gi
     resources:
       requests:
-        cpu: 600m
+        cpu: 700m
         memory: 2Gi
       limits:
-        cpu: 900m
+        cpu: 1000m
         memory: 2Gi
   snapshots:
     enabled: false
