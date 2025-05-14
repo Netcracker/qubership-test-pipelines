@@ -10,7 +10,7 @@ inputs:
     description: |
       Maximum verification retries
     required: true
-    default: '50'
+    default: '20'
 
   timeout:
     description: |
@@ -90,6 +90,21 @@ runs:
         # ▶️ Get yaml from PVC
         file_name=artifacts/${{inputs.namespace}}_get_pvc_yaml.txt
         kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
+      shell: bash
+
+    - name: Get PV from namespace
+      run: |
+        # ▶️ Get PV from namespace
+        kubectl get pv | grep ${{inputs.namespace}}
+        file_name=artifacts/${{inputs.namespace}}_get_pv.txt
+        kubectl get pv | grep ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get yaml from PV
+      run: |
+        # ▶️ Get yaml from PV
+        file_name=artifacts/${{inputs.namespace}}_get_pv_yaml.txt
+        kubectl get pv -o yaml > $file_name
       shell: bash
 
     - name: Get status provisioner logs
