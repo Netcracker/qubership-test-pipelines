@@ -46,6 +46,5 @@ jobs:
           service_name: 'consul'
           repository_name: 'qubership-consul'
           path_to_chart: 'charts/helm/consul-service'
-          components: 'statusProvisioner,integrationTests'
           namespace: 'consul'
 ```

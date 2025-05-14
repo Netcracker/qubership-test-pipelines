@@ -28,10 +28,6 @@ inputs:
     description: 'See helm_deploy.path_to_chart'
     required: true
     default: 'charts/helm/consul-service'
-  components:
-    description: 'See helm_deploy.components'
-    required: true
-    default: 'integrationTests'
   namespace:
     description: 'See helm_deploy.namespace'
     required: true
@@ -53,6 +49,5 @@ runs:
         service_name: ${{inputs.service_name}}
         repository_name: ${{inputs.repository_name}}
         path_to_chart: ${{inputs.path_to_chart}}
-        components: ${{inputs.components}}
         namespace: ${{inputs.namespace}}
         helm_charts_release_config: ${{inputs.helm_charts_release_config}}
