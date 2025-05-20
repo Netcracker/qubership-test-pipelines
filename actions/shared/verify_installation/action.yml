@@ -10,25 +10,25 @@ inputs:
     description: |
       Maximum verification retries
     required: true
-    default: '20'
+    default: '100'
 
   timeout:
     description: |
       Delay between attempts
     required: true
-    default: '10s'
+    default: '20s'
 
   max_attempts_for_provisioner:
     description: |
       Maximum retries for provisioner pod to be completed
     required: true
-    default: '20'
+    default: '100'
 
   timeout_for_provisioner:
     description: |
       Delay between attempts for provisioner pod
     required: true
-    default: '10s'
+    default: '20s'
 
   service_branch:
     description: |
