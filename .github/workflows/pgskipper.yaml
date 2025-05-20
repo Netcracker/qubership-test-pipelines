@@ -1,0 +1,55 @@
+name: Pgskipper Tests
+
+on:
+  workflow_call:
+    inputs:
+      service_branch:
+        required: false
+        type: string
+      versions_file:
+        description: 'Path to versions list file'
+        type: string
+        required: true
+      pipeline_branch:
+        description: 'Test pipeline branch name'
+        type: string
+        required: true
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
+
+jobs:
+  Clean-Latest:
+    runs-on: ubuntu-latest
+    name: Clean [LATEST]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install Pgskipper patroni-core
+        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_patroni-core
+        with:
+          path_to_template: 'templates/pgskipper/clean.yml'
+          #service_branch: '${{inputs.service_branch}}'
+          service_branch: 'main'
+        continue-on-error: true
+      - name: Verify Pgskipper installation
+        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper
+        continue-on-error: true
+      - name: Install Pgskipper patroni-services
+        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_patroni-services
+        with:
+          path_to_template: 'templates/pgskipper/clean.yml'
+          #service_branch: '${{inputs.service_branch}}'
+          service_branch: 'main'
+        continue-on-error: true
+      - name: Verify Pgskipper installation
+        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper
+        continue-on-error: true

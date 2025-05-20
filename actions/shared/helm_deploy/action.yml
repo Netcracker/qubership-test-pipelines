@@ -86,6 +86,24 @@ runs:
         path_to_chart: ${{inputs.path_to_chart}}
         namespace: ${{inputs.namespace}}
 
+    - name: List directory contents
+      run: |
+        cd pgskipper-operator/charts
+        echo "Current directory:"
+        pwd
+        echo "Files:"
+        ls -la
+      shell: bash
+
+    - name: List pipeline directory contents
+      run: |
+        cd qubership-test-pipelines
+        echo "Current directory:"
+        pwd
+        echo "Files:"
+        ls -la
+      shell: bash
+
     - name: Copy template
       run: |
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
