@@ -1,0 +1,53 @@
+name: "Helm deploy Action for Zookeeper"
+description: "GitHub Action for install/upgrade Zookeeper using Helm"
+inputs:
+  deploy_mode:
+    description: 'See helm_deploy.deploy_mode'
+    required: true
+    default: 'install'
+  restricted:
+    description: 'See helm_deploy.restricted'
+    required: true
+    default: 'false'
+    type: boolean
+  path_to_template:
+    description: 'See helm_deploy.path_to_template'
+    required: true
+  service_branch:
+    description: 'branch name in repository with service'
+    required: true
+  service_name:
+    description: 'See helm_deploy.service_name'
+    required: true
+    default: 'zookeeper'
+  repository_name:
+    description: 'See helm_deploy.repository_name'
+    required: true
+    default: 'qubership-zookeeper'
+  path_to_chart:
+    description: 'See helm_deploy.path_to_chart'
+    required: true
+    default: 'charts/helm/zookeeper-service'
+  namespace:
+    description: 'See helm_deploy.namespace'
+    required: true
+    default: 'zookeeper'
+  helm_charts_release_config:
+    description: 'See helm_deploy.helm_charts_release_config'
+    required: true
+    default: 'release_configs/zookeeper/helm-charts-release-config.yaml'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run helm_install action for Zookeeper
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        deploy_mode: ${{inputs.deploy_mode}}
+        restricted: ${{inputs.restricted}}
+        path_to_template: ${{inputs.path_to_template}}
+        service_branch: ${{inputs.service_branch}}
+        service_name: ${{inputs.service_name}}
+        repository_name: ${{inputs.repository_name}}
+        path_to_chart: ${{inputs.path_to_chart}}
+        namespace: ${{inputs.namespace}}
+        helm_charts_release_config: ${{inputs.helm_charts_release_config}}

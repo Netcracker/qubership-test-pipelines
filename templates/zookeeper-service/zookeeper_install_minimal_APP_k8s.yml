@@ -1,0 +1,33 @@
+global:
+  name: "zookeeper"
+  secrets:
+    zooKeeper:
+      adminUsername: "zadmin"
+      adminPassword: "zadmin"
+      clientUsername: "zclient"
+      clientPassword: "zclient"
+operator:
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+zooKeeper:
+  replicas: 3
+  storage:
+    className:
+      - standard
+    size: 1Gi
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+monitoring:
+  install: false
+backupDaemon:
+  install: false
+integrationTests:
+  install: true
+  tags: "zookeeper_crud"
+  timeout: 600
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+
