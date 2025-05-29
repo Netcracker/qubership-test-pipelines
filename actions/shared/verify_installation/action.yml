@@ -8,33 +8,28 @@ inputs:
 
   max_attempts:
     description: |
-      Maximum verification retries
+      Maximum verification retries for test pod to be completed
     required: true
-    default: '200'
 
   timeout:
     description: |
-      Delay between attempts
+      Delay between test pod check attempts
     required: true
-    default: '30s'
 
   max_attempts_for_provisioner:
     description: |
       Maximum retries for provisioner pod to be completed
     required: true
-    default: '200'
 
   timeout_for_provisioner:
     description: |
-      Delay between attempts for provisioner pod
+      Delay between provisioner pod check attempts
     required: true
-    default: '30s'
 
   service_branch:
     description: |
       Branch in service repository
     required: false
-    default: ''
 
 runs:
   using: 'composite'
@@ -123,38 +118,6 @@ runs:
         echo "provisioner_pod=$provisioner_pod"
         for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
           status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-          IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
-          for pod in "${pods[@]}"; do
-            if [[ $pod == *"tests"* ]]; then
-              test_pod=$pod
-            fi
-          done
-          if ! [[ $test_pod ]]; then
-            echo There is no test pod
-            exit 0
-          fi
-          echo "test_pod=$test_pod"
-          for i in {1..${{inputs.max_attempts}}}; do
-            status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-            echo '>>>'
-            kubectl get pod $test_pod -n ${{inputs.namespace}}
-            kubectl logs $test_pod -n ${{inputs.namespace}}
-            echo '<<<'
-            sleep ${{inputs.timeout}}
-          done
-          for i in {1..${{inputs.max_attempts}}}; do
-            logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
-            if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
-              kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
-              break
-            fi
-            sleep ${{inputs.timeout}}
-          done
-          echo 'TEST LOGS:'
-          kubectl logs $test_pod -n ${{inputs.namespace}}
-          if [[ $logs == *"| FAIL |"* ]]; then
-            exit 1
-          fi
           if [[ "$status" == 'Succeeded' ]]; then
             break
           fi
