@@ -7,9 +7,9 @@ tls:
   certManager:
     enabled: true
     durationDays: 730
-    clusterIssuerName: qa-issuer-self
+    clusterIssuerName: test-clusterissuer
 disasterRecovery:
-  enabled: true
+  enabled: false
   mode: active
   region: one
   httpAuth:
@@ -20,7 +20,7 @@ server:
   replicas: 3
   bootstrapExpect: 3
   storage: 1Gi
-  storageClass: csi-cinder-sc-delete
+  storageClass: standard
   resources:
     limits:
       memory: 300Mi
@@ -30,7 +30,7 @@ consulAclConfigurator:
 dns:
   enabled: false
 monitoring:
-  enabled: true
+  enabled: false
 ui:
   enabled: true
   ingress:
@@ -56,10 +56,10 @@ backupDaemon:
   evictionPolicy: 1h/1d,7d/delete
   s3:
     enabled: true
-    url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.qubership.org/
-    bucket: consul-qa
+    url: https://s3.amazonaws.com/
+    bucket: test-pipelines-storage
     keyId: ''
-  keySecret: ''
+    keySecret: ''
 integrationTests:
   enabled: true
   secret:
