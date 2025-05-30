@@ -14,10 +14,15 @@ on:
         description: 'Test pipeline branch name'
         type: string
         required: true
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
 
 jobs:
   prepare-versions:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     outputs:
       versions: ${{steps.process-versions.outputs.versions}}
       previous_version: ${{steps.process-versions.outputs.previous_version}}
@@ -40,7 +45,7 @@ jobs:
   # ---------- Current service branch ----------
   #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
   Clean-Latest-Upgrade-Diff-Params:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST], Upgrade [LATEST] Diff Params
     steps:
       - name: Get current workflow branch
@@ -75,7 +80,7 @@ jobs:
   #12-Clean [LATEST_SPRINT] Restricted
   Clean-Latest-Restricted:
     name: Clean [LATEST] Restricted
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -96,7 +101,7 @@ jobs:
 
   #22-Clean [LATEST_SPRINT] Full-AT Ports-specifying Custom-labels
   Clean-Latest-Full-At-ports-Specifying-Custom-Labels:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] Full-AT Ports-specifying Custom-labels
     steps:
       - name: Checkout pipeline
@@ -117,7 +122,7 @@ jobs:
 
   #13-Clean [LATEST_SPRINT] W/O Components
   Clean-WO-Components:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] W/O Components
     steps:
       - name: Checkout pipeline
@@ -142,7 +147,7 @@ jobs:
   Clean-Previous-Update-To-Latest:
     name: Clean [PREVIOUS], Update to [LATEST]
     needs: prepare-versions
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     strategy:
       matrix:
         release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
@@ -181,7 +186,7 @@ jobs:
   Clean-Previous-Upgrade-To-Latest-Restricted:
     name: Clean [PREVIOUS] Restricted, Upgrade To [LATEST] Restricted
     needs: prepare-versions
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
