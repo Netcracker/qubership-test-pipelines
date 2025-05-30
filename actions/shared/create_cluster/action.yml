@@ -5,8 +5,13 @@ runs:
   steps:
       - name: Get info
         run: |
-          cat /proc/meminfo
-          cat /proc/cpuinfo
+          free -h
+          echo '================================================================================'
+          lscpu
+          echo '================================================================================'
+          lsblk
+          echo '================================================================================'
+          sysctl -a | grep max_map_count
         shell: bash
       - name: Install kind
         run: |

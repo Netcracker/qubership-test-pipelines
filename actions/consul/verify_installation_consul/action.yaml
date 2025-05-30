@@ -13,6 +13,14 @@ inputs:
     description: 'See verify_installation.timeout'
     required: true
     default: '10s'
+  max_attempts_for_provisioner:
+    description: 'See verify_installation.max_attempts'
+    required: true
+    default: 40
+  timeout_for_provisioner:
+    description: 'See verify_installation.timeout'
+    required: true
+    default: '10s'
   service_branch:
     description: 'See verify_installation.service_branch'
     required: true

@@ -26,7 +26,7 @@ on:
 
 jobs:
   restricted-install:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Create restricted resources
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_restricted_resources@main
