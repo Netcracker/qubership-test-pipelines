@@ -15,7 +15,7 @@ on:
 
 jobs:
   create-cluster:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Create Kubernetes Cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@main
