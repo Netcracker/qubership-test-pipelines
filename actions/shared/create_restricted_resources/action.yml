@@ -32,12 +32,24 @@ runs:
 #Create CRD
     - name: Create ClusterRoles
       run: |
-        kubectl create -f qubership-test-pipelines/restricted/${{inputs.service_name}}/clusterRoles
+        restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
+        if [ ! -d "restricted_folder" ]; then
+          echo "::warning::Files with restricted resources not found. Resources not created."
+        else
+          echo "Applying ClusterRoles..."
+          kubectl create -f $restricted_folder/clusterRoles
+        fi
       shell: bash
 
     - name: Create ClusterRoleBindings
       run: |
-        kubectl create -f qubership-test-pipelines/restricted/${{inputs.service_name}}/clusterRoleBindings
+        restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
+        if [ ! -d "restricted_folder" ]; then
+          echo "::warning::Files with restricted resources not found. Resources not created."
+        else
+          echo "Applying clusterRoleBindings..."
+          kubectl create -f $restricted_folder/clusterRoleBindings
+        fi
       shell: bash
 
     - name: Create CRD
@@ -91,14 +103,14 @@ runs:
 #Create Role and RB
     - name: Update yaml with Role
       run: >-
-        python qubership-test-pipelines/python/replace_nc_in_template.py 
+        python qubership-test-pipelines/python/replace_nc_in_template.py
         --path_to_file='qubership-test-pipelines/restricted/restricted-role.yml'
         --nc='${{inputs.namespace}}'
       shell: bash
 
     - name: Update yaml with RoleBinding
       run: >-
-        python qubership-test-pipelines/python/replace_nc_in_template.py 
+        python qubership-test-pipelines/python/replace_nc_in_template.py
         --path_to_file='qubership-test-pipelines/restricted/restricted-rb.yml'
         --nc='${{inputs.namespace}}'
       shell: bash
