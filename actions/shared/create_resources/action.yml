@@ -1,0 +1,62 @@
+name: "Kubectl Create Resources Action"
+description: "GitHub Action to create resources using Kubectl"
+inputs:
+
+  repository_name:
+    description: |
+      Service repository name (without organization prefix)
+      Example: 'qubership-zookeeper' for https://github.com/Netcracker/qubership-zookeeper
+    required: true
+
+#  path_to_file:
+#    description: |
+#      Path to yaml file with resource in pipeline repository
+#      Example: '/resources/zookeeper/zookeeper_tls_secret.yml'
+#    required: true
+
+  service_name:
+    description: |
+      Helm release name
+    required: true
+
+  service_branch:
+    description: |
+      Branch in service repository
+    required: true
+
+  namespace:
+    description: |
+      Kubernetes namespace for service installation
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repo
+      uses: actions/checkout@v4
+      with:
+        ref: '${{inputs.service_branch}}'
+        repository: 'Netcracker/${{inputs.repository_name}}'
+        path: '${{inputs.repository_name}}'
+
+    - name: Create namespace
+      run: kubectl create namespace '${{inputs.namespace}}'
+      shell: bash
+
+#    - name: Create Resources
+#      run: |
+#        #resources_folder="qubership-test-pipelines/resources/${{inputs.service_name}}"
+#        resources_folder="qubership-test-pipelines/resources/zookeeper/zookeeper_tls_secret.yml"
+#        if [ ! -d "resources_folder" ]; then
+#          echo "::warning::Files with resources not found. Resources not created."
+#        else
+#          echo "Applying resources..."
+#          kubectl create -f $resources_folder
+#        fi
+#      shell: bash
+
+    - name: Create Resources
+      run: |
+        resources_folder="qubership-test-pipelines/resources/zookeeper/zookeeper_tls_secret.yml"
+        kubectl create -f $resources_folder
+      shell: bash
