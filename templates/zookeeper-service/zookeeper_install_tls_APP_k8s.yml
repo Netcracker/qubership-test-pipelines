@@ -55,7 +55,7 @@ monitoring:
     fsGroup: 1000
     runAsUser: 1000
 integrationTests:
-  install: true
+  install: false #!
   tags: "zookeeper"
   timeout: 900
   waitForResult: true

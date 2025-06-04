@@ -1,0 +1,29 @@
+name: "Kubectl Create Resources Action"
+description: "GitHub Action to create resources using Kubectl"
+inputs:
+  repository_name:
+    description: 'See helm_deploy.repository_name'
+    required: true
+    default: 'qubership-zookeeper'
+  service_name:
+    description: 'See helm_deploy.service_name'
+    required: true
+    default: 'zookeeper'
+  service_branch:
+    description: 'branch name in repository with service'
+    required: true
+  namespace:
+    description: 'See helm_deploy.namespace'
+    required: true
+    default: 'zookeeper'
+runs:
+  using: 'composite'
+  steps:
+    - name: Run create_resources action for Zookeeper
+      uses: ./qubership-test-pipelines/actions/shared/create_resources
+      with:
+        repository_name: ${{inputs.repository_name}}
+        #path_to_file: ${{inputs.path_to_file}}
+        service_branch: ${{inputs.service_branch}}
+        service_name: ${{inputs.service_name}}
+        namespace: ${{inputs.namespace}}

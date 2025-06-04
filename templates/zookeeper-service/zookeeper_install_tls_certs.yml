@@ -40,7 +40,7 @@ zooKeeper:
     certificates:
       crt: ''
       key: ''
-      crt: ''
+      ca: ''
 backupDaemon:
   install: true
   backupStorage:
@@ -55,9 +55,9 @@ backupDaemon:
     certificates:
       crt: ''
       key: ''
-      crt: ''
+      ca: ''
 monitoring:
-  install: true
+  install: false
   securityContext:
     fsGroup: 1000
     runAsUser: 1000

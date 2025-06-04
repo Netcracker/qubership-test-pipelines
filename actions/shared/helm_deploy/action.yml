@@ -65,10 +65,29 @@ runs:
         repository: 'Netcracker/${{inputs.repository_name}}'
         path: '${{inputs.repository_name}}'
 
+#    - name: Create namespace
+#      if: inputs.deploy_mode == 'install'
+#      run: kubectl create namespace '${{inputs.namespace}}'
+#      shell: bash
+
     - name: Create namespace
       if: inputs.deploy_mode == 'install'
-      run: kubectl create namespace '${{inputs.namespace}}'
+      run: |
+        if ! kubectl get namespace ${{inputs.namespace}} >/dev/null 2>&1; then
+        kubectl create namespace ${{inputs.namespace}}
+        else
+        echo "Namespace '${{inputs.namespace}}' already exists"
+        fi
       shell: bash
+
+#    - name: Create resources
+#      if: inputs.deploy_mode == 'install'
+#      uses: ./qubership-test-pipelines/actions/shared/create_resources
+#      with:
+#        repository_name: ${{inputs.repository_name}}
+#        #path_to_file: ${{inputs.path_to_file}}
+#        service_branch: ${{inputs.service_branch}}
+#        namespace: ${{inputs.namespace}}
 
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
