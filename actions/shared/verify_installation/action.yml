@@ -8,21 +8,28 @@ inputs:
 
   max_attempts:
     description: |
-      Maximum verification retries
+      Maximum verification retries for test pod to be completed
     required: true
-    default: 40
 
   timeout:
     description: |
-      Delay between attempts
+      Delay between test pod check attempts
     required: true
-    default: '10s'
+
+  max_attempts_for_provisioner:
+    description: |
+      Maximum retries for provisioner pod to be completed
+    required: true
+
+  timeout_for_provisioner:
+    description: |
+      Delay between provisioner pod check attempts
+    required: true
 
   service_branch:
     description: |
       Branch in service repository
     required: false
-    default: ''
 
 runs:
   using: 'composite'
@@ -34,7 +41,7 @@ runs:
     - name: Wait pods is ready
       run: |
         # ▶️ Wait pods is ready
-        kubectl wait pod --all --for=condition=Ready -n=${{inputs.namespace}} --timeout 300s
+        kubectl wait pod --all --for=condition=Ready -n=${{inputs.namespace}} --timeout 200s
       shell: bash
       continue-on-error: true
 
@@ -46,23 +53,53 @@ runs:
         kubectl get pods -n ${{inputs.namespace}} > $file_name
       shell: bash
 
-    - name: Get events from namespace
-      run: |
-        # ▶️ Get events from namespace
-        file_name=artifacts/${{inputs.namespace}}_events.txt
-        kubectl events -n ${{inputs.namespace}} > $file_name
-      shell: bash
-
     - name: Get yaml from pods
       run: |
         # ▶️ Get yaml from pods
-        file_name=artifacts/${{inputs.namespace}}_pod_yamls.txt
+        file_name=artifacts/${{inputs.namespace}}_get_pods_yaml.txt
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
         echo "Yaml files from pods: " > $file_name
         for pod in "${pods[@]}"; do
             echo $pod >> $file_name
-            kubectl get pod "$pod" -n ${{inputs.namespace}} -oyaml >> $file_name
+            kubectl get pod "$pod" -n ${{inputs.namespace}} -o yaml >> $file_name
         done
+      shell: bash
+
+    - name: Get events from namespace
+      run: |
+        # ▶️ Get events from namespace
+        file_name=artifacts/${{inputs.namespace}}_get_events.txt
+        kubectl events -n ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get PVC from namespace
+      run: |
+        # ▶️ Get PVC from namespace
+        kubectl get pvc -n ${{inputs.namespace}}
+        file_name=artifacts/${{inputs.namespace}}_get_pvc.txt
+        kubectl get pvc -n ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get yaml from PVC
+      run: |
+        # ▶️ Get yaml from PVC
+        file_name=artifacts/${{inputs.namespace}}_get_pvc_yaml.txt
+        kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
+      shell: bash
+
+    - name: Get PV from namespace
+      run: |
+        # ▶️ Get PV from namespace
+        kubectl get pv | grep ${{inputs.namespace}}
+        file_name=artifacts/${{inputs.namespace}}_get_pv.txt
+        kubectl get pv | grep ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get yaml from PV
+      run: |
+        # ▶️ Get yaml from PV
+        file_name=artifacts/${{inputs.namespace}}_get_pv_yaml.txt
+        kubectl get pv -o yaml > $file_name
       shell: bash
 
     - name: Get status provisioner logs
@@ -79,12 +116,12 @@ runs:
           exit 0
         fi
         echo "provisioner_pod=$provisioner_pod"
-        for i in {1..${{inputs.max_attempts}}}; do
+        for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
           status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
           if [[ "$status" == 'Succeeded' ]]; then
             break
           fi
-          sleep ${{inputs.timeout}}
+          sleep ${{inputs.timeout_for_provisioner}}
         done
         if [[ "$status" != 'Succeeded' ]]; then
           echo $provisioner_pod pod has not Succeeded status
@@ -93,7 +130,7 @@ runs:
         kubectl logs $provisioner_pod -n ${{inputs.namespace}}
         logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
         if [[ $logs != *"Failed components statuses are []"* ]]; then
-          echo Not all components are in succeed status after ${{inputs.max_attempts}} attempts
+          echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
           echo PODS:
           kubectl get pods -n ${{inputs.namespace}}
           exit 1
@@ -134,6 +171,10 @@ runs:
         echo "test_pod=$test_pod"
         for i in {1..${{inputs.max_attempts}}}; do
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+          echo '>>>'
+          kubectl get pod $test_pod -n ${{inputs.namespace}}
+          kubectl logs $test_pod -n ${{inputs.namespace}}
+          echo '<<<'
           if [[ "$status" == 'Running' ]]; then
             break
           fi
@@ -147,7 +188,7 @@ runs:
           fi
           sleep ${{inputs.timeout}}
         done
-        echo 'TEST LOGS: '
+        echo 'TEST LOGS:'
         kubectl logs $test_pod -n ${{inputs.namespace}}
         if [[ $logs == *"| FAIL |"* ]]; then
           exit 1

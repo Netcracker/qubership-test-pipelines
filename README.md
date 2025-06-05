@@ -126,7 +126,7 @@ If you want to check upgrade of some service, you need to add steps with clean d
 ```yaml
 jobs:
   Clean-Latest-Upgrade-Diff-Params:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST], Upgrade [LATEST] Diff Params  
     steps:
       - name: Checkout pipeline

@@ -33,7 +33,7 @@ on:
 
 jobs:
   helm-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Run helm_deploy action
     steps:
       - name: Run helm_deploy action
