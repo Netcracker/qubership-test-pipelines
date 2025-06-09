@@ -10,10 +10,10 @@ on:
         description: 'Path to versions list file'
         type: string
         required: true
-      pipeline_branch:
-        description: 'Test pipeline branch name'
-        type: string
-        required: true
+#      pipeline_branch:
+#        description: 'Test pipeline branch name'
+#        type: string
+#        required: true
       runner_type:
         description: 'Runner type (self-hosted or ubuntu-latest)'
         type: string
@@ -56,10 +56,13 @@ jobs:
       - name: Get current workflow branch
         id: get_branch
         run: |
+          #echo ${{ github.action_ref }}
+          COMMIT=$(echo "${{ github.event.workflow_call.uses }}" | awk -F '@' '{print $NF}')
+          echo "Extracted commit: $COMMIT"
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.pipeline_branch}}'
+          ref: ${{ github.action_ref }}
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
@@ -87,12 +90,12 @@ jobs:
     name: Clean [LATEST] Restricted
     runs-on: ${{inputs.runner_type}}
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Clean Install Consul [LATEST] in Restricted mode
@@ -109,12 +112,12 @@ jobs:
     runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] Full-AT Ports-specifying Custom-labels
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Clean Install Consul [LATEST] Full-At
@@ -130,12 +133,12 @@ jobs:
     runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Clean Install Consul [LATEST] W/O Components
@@ -172,12 +175,12 @@ jobs:
       matrix:
         release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       #- name: Install monitoring
@@ -208,12 +211,12 @@ jobs:
     needs: prepare-versions
     runs-on: ${{inputs.runner_type}}
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
       - name: Get version
         run: echo ${{needs.prepare-versions.outputs.previous_version}}
       - name: Create cluster
@@ -245,12 +248,12 @@ jobs:
     name: Clean [LATEST] S3 TLS
     runs-on: ${{inputs.runner_type}}
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Install cert-manager
