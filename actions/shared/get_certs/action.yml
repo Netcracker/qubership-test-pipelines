@@ -21,7 +21,7 @@ runs:
       shell: bash
       run: |
         sudo snap install yq
-        secret=$(kubectl get secret ${{ inputs.secret_name }} -oyaml -n ${{ inputs.namespace }})
+        secret=$(kubectl get secret ${{inputs.secret_name}} -oyaml -n ${{inputs.namespace}})
         ca_crt=$(echo "$secret" | yq eval '.data["ca.crt"]' -)
         tls_crt=$(echo "$secret" | yq eval '.data["tls.crt"]' -)
         tls_key=$(echo "$secret" | yq eval '.data["tls.key"]' -)
@@ -35,9 +35,9 @@ runs:
         echo "tls_crt=$tls_crt"
         echo "tls_key=$tls_key"
 
-        echo "$ca_crt" > ${{runner.temp}}/ca_crt.txt
-        echo "$tls_crt" > ${{runner.temp}}/tls_crt.txt
-        echo "$tls_key" > ${{runner.temp}}/tls_key.txt
+        echo "$ca_crt" > ${{runner.temp}}/${{inputs.secret_name}}_ca_crt.txt
+        echo "$tls_crt" > ${{runner.temp}}/${{inputs.secret_name}}_tls_crt.txt
+        echo "$tls_key" > ${{runner.temp}}/${{inputs.secret_name}}_tls_key.txt
 
 #    - name: Create Resources
 #      run: |
