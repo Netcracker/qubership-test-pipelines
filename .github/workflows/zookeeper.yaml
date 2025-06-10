@@ -33,14 +33,14 @@ jobs:
           ref: '${{inputs.service_branch}}'
           repository: 'Netcracker/qubership-zookeeper'
           path: 'qubership-zookeeper'
-#      - name: Process versions file
-#        id: process-versions
-#        run: |
-#          versions_str=$(cat qubership-zookeeper/${{inputs.versions_file}})
-#          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
-#          echo "versions=$versions_json" >> $GITHUB_OUTPUT
-#          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
-#          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
+      - name: Process versions file
+        id: process-versions
+        run: |
+          versions_str=$(cat qubership-zookeeper/${{inputs.versions_file}})
+          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
+          echo "versions=$versions_json" >> $GITHUB_OUTPUT
+          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
+          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
   # ---------- Current service branch ----------
   #3-Clean [LATEST], 4-Upgrade [LATEST] Diff Params
@@ -167,24 +167,69 @@ jobs:
 #        run: |
 #          kubectl get secret zookeeper-backup-daemon-tls-secret -oyaml -n zookeeper
 #          kubectl get secret zookeeper-tls-secret -oyaml -n zookeeper
-      - name: Get certs
-        id: get-certs
+      - name: Get Zookeeper Certs
+        uses: ./qubership-test-pipelines/actions/shared/get_certs
+        with:
+          service_name: zookeeper
+          secret_name: zookeeper-tls-secret
+          namespace: zookeeper
+
+      - name: Get Backup-Daemon Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
         with:
           service_name: zookeeper
           secret_name: zookeeper-backup-daemon-tls-secret
           namespace: zookeeper
+      - name: Prepare artifacts directory
+        run: mkdir -p certs_artifacts
 
-      - name: Print certs
+      - name: Copy certs to artifacts
         run: |
-          echo "CA Certificate: $(cat ${{runner.temp}}/ca_crt.txt)"
-          echo "TLS Certificate: $(cat ${{runner.temp}}/tls_crt.txt)"
-          echo "TLS Key: $(cat ${{runner.temp}}/tls_key.txt)"
+          cp ${{runner.temp}}/zookeeper-tls-secret_*.txt certs_artifacts/
+          cp ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_*.txt certs_artifacts/
 
-  #16-Clean [LATEST] TLS Secrets, 17-Upgrade [LATEST] TLS Certificates
-  Clean-Latest-TLS-Secrets-Upgrade-Latest-TLS-Certificates:
+      - name: Upload certs artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zookeeper-certs
+          path: certs_artifacts
+          retention-days: 1
+
+#      - name: Add certs to output variables
+#        id: certs_output
+#        run: |
+#          echo "zookeeper_ca_crt=$(cat ${{runner.temp}}/zookeeper-tls-secret_ca_crt.txt)" >> $GITHUB_OUTPUT
+#          echo "zookeeper_tls_crt=$(cat ${{runner.temp}}/zookeeper-tls-secret_tls_crt.txt)" >> $GITHUB_OUTPUT
+#          echo "zookeeper_tls_key=$(cat ${{runner.temp}}/zookeeper-tls-secret_tls_key.txt)" >> $GITHUB_OUTPUT
+#          echo "backuper_ca_crt=$(cat ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_ca_crt.txt)" >> $GITHUB_OUTPUT
+#          echo "backuper_tls_crt=$(cat ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_tls_crt.txt)" >> $GITHUB_OUTPUT
+#          echo "backuper_tls_key=$(cat ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_tls_key.txt)" >> $GITHUB_OUTPUT
+#        run: |
+#          zk_ca="$(cat ${{ runner.temp }}/zookeeper-tls-secret_ca_crt.txt)"
+#          zk_crt="$(cat ${{ runner.temp }}/zookeeper-tls-secret_tls_crt.txt)"
+#          zk_key="$(cat ${{ runner.temp }}/zookeeper-tls-secret_tls_key.txt)"
+#          bu_ca="$(cat ${{ runner.temp }}/zookeeper-backup-daemon-tls-secret_ca_crt.txt)"
+#          bu_crt="$(cat ${{ runner.temp }}/zookeeper-backup-daemon-tls-secret_tls_crt.txt)"
+#          bu_key="$(cat ${{ runner.temp }}/zookeeper-backup-daemon-tls-secret_tls_key.txt)"
+#
+#          cat <<EOF >> $GITHUB_OUTPUT
+#          zookeeper_ca_crt=$zk_ca
+#          zookeeper_tls_crt=$zk_crt
+#          zookeeper_tls_key=$zk_key
+#          backuper_ca_crt=$bu_ca
+#          backuper_tls_crt=$bu_crt
+#          backuper_tls_key=$bu_key
+#          EOF
+#
+#      - name: Debug outputs
+#        run: |
+#          echo "backuper_tls_crt: ${{ steps.certs_output.outputs.backuper_tls_crt }}"
+
+  #16-Clean [LATEST] TLS Secrets
+  Clean-Latest-TLS-Secrets:
     runs-on: ubuntu-latest
-    name: Clean Zookeeper [LATEST] TLS Secrets, Upgrade [LATEST] TLS Certificates
+    needs: Clean-Latest-TLS
+    name: Clean Zookeeper [LATEST] TLS Secrets
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -194,6 +239,13 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Download zookeeper certs artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zookeeper-certs
+          path: certs_artifacts
+      - name: Update secrets
+        uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_secrets
       - name: Create TLS secret
         uses: ./qubership-test-pipelines/actions/zookeeper/create_resources_zookeeper
       - name: Clean Install Zookeeper [LATEST] TLS Secrets
@@ -203,10 +255,33 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-      - name: Update Zookeeper to [LATEST] TLS Certificates
+
+  #17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
+  Clean-Latest-TLS-Certificates:
+    runs-on: ubuntu-latest
+    needs: Clean-Latest-TLS
+    name: Clean [LATEST] TLS Certificates
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Download certs artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: zookeeper-certs
+          path: certs_artifacts
+      - name: Update template
+        uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_template
+      - name: Print template
+        run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml
+      - name: Clean Zookeeper to [LATEST] TLS Certificates
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
-          deploy_mode: upgrade
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_certs.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify installation

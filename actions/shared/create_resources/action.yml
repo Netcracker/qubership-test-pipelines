@@ -57,6 +57,11 @@ runs:
 
     - name: Create Resources
       run: |
-        resources_folder="qubership-test-pipelines/resources/zookeeper/zookeeper_tls_secret.yml"
-        kubectl create -f $resources_folder
+        resources_folder="qubership-test-pipelines/resources/zookeeper"
+        for file in "$resources_folder"/*; do
+          if [ -f "$file" ]; then
+            echo "Applying $file"
+            kubectl create -f "$file"
+          fi
+        done
       shell: bash
