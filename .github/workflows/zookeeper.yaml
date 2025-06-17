@@ -332,23 +332,23 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       #- name: Install monitoring
         #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Clean Install Consul [PREVIOUS]
-        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+      - name: Clean Install Zookeeper [PREVIOUS]
+        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{matrix.release}}'
-      - name: Verify Consul installation
-        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Verify Zookeeper installation
+        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: '${{matrix.release}}'
-      - name: Update Consul to [LATEST]
-        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+      - name: Update Zookeeper to [LATEST]
+        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
           deploy_mode: upgrade
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify installation
-        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: ${{inputs.service_branch}}
 
@@ -369,24 +369,24 @@ jobs:
         run: echo ${{needs.prepare-versions.outputs.previous_version}}
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Clean Install Consul [PREVIOUS] in Restricted mode
-        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+      - name: Clean Install Zookeeper [PREVIOUS] in Restricted mode
+        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
           restricted: true
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
+          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
-      - name: Verify Consul installation
-        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Verify Zookeeper installation
+        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
-      - name: Update Consul to [LATEST] in Restricted mode
-        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+      - name: Update Zookeeper to [LATEST] in Restricted mode
+        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
           restricted: true
           deploy_mode: upgrade
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
+          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Verify Consul upgrade
-        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Verify Zookeeper upgrade
+        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: ${{inputs.service_branch}}
