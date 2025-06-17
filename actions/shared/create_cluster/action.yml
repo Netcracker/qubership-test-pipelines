@@ -21,7 +21,7 @@ runs:
           # sudo mv ./kind /usr/local/bin/kind
         shell: bash
       - name: Delete kind
-        run: >-
+        run: |
           ./kind get clusters
           ./kind delete cluster --name kind || true
         shell: bash
