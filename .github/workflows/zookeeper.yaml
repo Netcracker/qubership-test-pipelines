@@ -246,13 +246,12 @@ jobs:
           path: certs_artifacts
       - name: Update secrets
         uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_secrets
-      - name: Create TLS secret
-        uses: ./qubership-test-pipelines/actions/zookeeper/create_resources_zookeeper
       - name: Clean Install Zookeeper [LATEST] TLS Secrets
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_secrets.yml'
           service_branch: '${{inputs.service_branch}}'
+          resource_folder: 'resources/zookeeper'
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
 
