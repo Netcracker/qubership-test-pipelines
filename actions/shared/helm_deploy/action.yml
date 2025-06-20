@@ -59,7 +59,6 @@ inputs:
     description: |
       Folder with resources for creating before installation
     required: true
-    default: ''
 
 runs:
   using: 'composite'
@@ -84,14 +83,14 @@ runs:
     - name: Create resources
       if: inputs.resource_folder != ''
       run: |
-        for file in "${inputs.resources_folder}"/*; do
-          if [ -f "$file" ]; then
-            echo "Applying $file"
-            kubectl create -f "$file"
-          fi
+        folder="qubership-test-pipelines/${{inputs.resource_folder}}"
+        files=($(find "$folder" -type f))
+        echo $files
+        for file in "${files[@]}"; do
+          echo "Applying $file"
+          kubectl create -f "$file"
         done
       shell: bash
-
 
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'

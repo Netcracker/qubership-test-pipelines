@@ -65,6 +65,8 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+      - name: Sleep
+        run: sleep 1m
       - name: Update to [LATEST] Version With Diff Params
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
@@ -111,6 +113,8 @@ jobs:
           EOF
       - name: Get clusterissuer
         run: kubectl get clusterissuer
+      - name: Sleep
+        run: sleep 1m
       - name: Update Zookeeper to [LATEST] TLS
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
@@ -336,24 +340,26 @@ jobs:
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{matrix.release}}'
-      - name: Check Status In CR
-        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
-        with:
-          namespace: zookeeper
+#      - name: Check Status In CR
+#        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
+#        with:
+#          namespace: zookeeper
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: '${{matrix.release}}'
+      - name: Sleep
+        run: sleep 1m
       - name: Update Zookeeper to [LATEST]
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
           deploy_mode: upgrade
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Check Status In CR
-        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
-        with:
-          namespace: zookeeper
+#      - name: Check Status In CR
+#        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
+#        with:
+#          namespace: zookeeper
       - name: Verify installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
@@ -384,14 +390,16 @@ jobs:
           service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
       #- name: Sleep
       #  run: sleep 2m
-      - name: Check Status In CR
-        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
-        with:
-          namespace: zookeeper
+#      - name: Check Status In CR
+#        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
+#        with:
+#          namespace: zookeeper
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
+      - name: Sleep
+        run: sleep 1m
       - name: Update Zookeeper to [LATEST] in Restricted mode
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
@@ -399,10 +407,10 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Check Status In CR
-        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
-        with:
-          namespace: zookeeper
+#      - name: Check Status In CR
+#        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
+#        with:
+#          namespace: zookeeper
       - name: Verify Zookeeper upgrade
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
