@@ -84,7 +84,8 @@ runs:
     - name: Create resources
       if: inputs.resource_folder != ''
       run: |
-        for file in "${inputs.resources_folder}"/*; do
+        folder=${{inputs.resources_folder}}
+        for file in $folder/*; do
           if [ -f "$file" ]; then
             echo "Applying $file"
             kubectl create -f "$file"

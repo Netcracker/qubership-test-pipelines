@@ -36,6 +36,10 @@ inputs:
     description: 'See helm_deploy.helm_charts_release_config'
     required: true
     default: 'release_configs/zookeeper/helm-charts-release-config.yaml'
+  resource_folder:
+    description: 'See helm_deploy.resource_folder'
+    required: true
+    default: ''
 runs:
   using: 'composite'
   steps:
@@ -51,3 +55,4 @@ runs:
         path_to_chart: ${{inputs.path_to_chart}}
         namespace: ${{inputs.namespace}}
         helm_charts_release_config: ${{inputs.helm_charts_release_config}}
+        resource_folder: ${{inputs.resource_folder}}

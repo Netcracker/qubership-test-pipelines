@@ -89,68 +89,53 @@ runs:
         kubectl get pv | grep ${{inputs.namespace}} > $file_name
       shell: bash
 
-#    - name: Get status provisioner pod
-#      id: get-provisioner-pod
-#      run: |
-#        provisioner_pod=""
-#        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
-#        for pod in "${pods[@]}"; do
-#          if [[ $pod == *"provisioner"* ]]; then
-#            provisioner_pod=$pod
-#          fi
-#        done
-##        echo $provisioner_pod
-##        $provisioner_pod="123"
-##        echo "PROVISIONER_POD=$provisioner_pod" >> $GITHUB_ENV
-#        PROVISIONER_POD="123" >> $GITHUB_ENV
-#        if [ -z "$provisioner_pod" ]; then
-#          echo "::warning::Provisioner pod not found"
-#          echo "PROVISIONER_POD=NOT_FOUND" >> $GITHUB_ENV
-#        else
-#          echo "Found pod: $provisioner_pod"
-#          echo "PROVISIONER_POD=$provisioner_pod" >> $GITHUB_ENV
-#        fi
-#      shell: bash
-
     - name: Check service is ready
       run: |
         # ▶️ Get status provisioner logs
-        provisioner_pod=""
+        provisioner_pod="NOT_FOUND"
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
         for pod in "${pods[@]}"; do
           if [[ $pod == *"provisioner"* ]]; then
             provisioner_pod=$pod
           fi
         done
-        if [[ provisioner_pod != "" ]]
-          echo $provisioner_pod
+        if [[ $provisioner_pod != "NOT_FOUND" ]]; then
+          echo "provisioner_pod=$provisioner_pod"
+          for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
+            status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+            if [[ "$status" == 'Succeeded' ]]; then
+              break
+            fi
+            sleep ${{inputs.timeout_for_provisioner}}
+          done
+          if [[ "$status" != 'Succeeded' ]]; then
+            echo $provisioner_pod pod has not Succeeded status
+          fi
+          echo PROVISIONER LOGS:
+          kubectl logs $provisioner_pod -n ${{inputs.namespace}}
+          logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
+          if [[ $logs != *"Failed components statuses are []"* ]]; then
+            echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
+            echo PODS:
+            kubectl get pods -n ${{inputs.namespace}}
+            exit 1
+          fi
+        else
+          for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
+          cr_yaml=$(kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml)
+          condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
+            if ! [[ -z "$condition" ]]; then
+              echo $condition
+              status=$(echo "$condition" | yq eval '.status' -)
+              echo $status
+              if [[ "$status" == 'True' ]]; then
+                break
+              fi
+            fi
+          sleep ${{inputs.timeout_for_provisioner}}
+        done
         fi
-#        if [[ -z "$POD" || "$POD" == "null" ]]; then
-#          echo "provisioner pod is not found"
-#          exit 0
-#        fi
-#        else
-#          echo "provisioner_pod=$provisioner_pod"
-#          for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-#            status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-#            if [[ "$status" == 'Succeeded' ]]; then
-#              break
-#            fi
-#            sleep ${{inputs.timeout_for_provisioner}}
-#          done
-#          if [[ "$status" != 'Succeeded' ]]; then
-#            echo $provisioner_pod pod has not Succeeded status
-#          fi
-#          echo PROVISIONER LOGS:
-#          kubectl logs $provisioner_pod -n ${{inputs.namespace}}
-#          logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
-#          if [[ $logs != *"Failed components statuses are []"* ]]; then
-#            echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
-#            echo PODS:
-#            kubectl get pods -n ${{inputs.namespace}}
-#            exit 1
-#          fi
-#        fi
+
       shell: bash
       continue-on-error: true
 
@@ -219,7 +204,7 @@ runs:
         if [[ $release_name ]]; then
           release_name=$(echo "_$release_name" | tr '/' '_')
         fi
-        ARTIFACT_NAME=${{github.job}}_${{inputs.namespace}}${release_name}_artifacts_$(date -u +'%Y%m%d%H%M%S')
+        ARTIFACT_NAME=${{github.job}}_${{inputs.namespace}}${release_name}_artifacts_$(date -u +'%Y%m%d%H%M%S.%f')
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
       shell: bash
 
