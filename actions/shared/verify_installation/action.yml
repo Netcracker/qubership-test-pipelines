@@ -38,56 +38,12 @@ runs:
       run: mkdir -p artifacts
       shell: bash
 
-    - name: Wait pods is ready
-      run: |
-        # ▶️ Wait pods is ready
-        kubectl wait pod --all --for=condition=Ready -n=${{inputs.namespace}} --timeout 200s
-      shell: bash
-      continue-on-error: true
-
-    - name: Get pods
-      run: |
-        # ▶️ Get pods
-        kubectl get pods -n ${{inputs.namespace}}
-        file_name=artifacts/${{inputs.namespace}}_get_pods.txt
-        kubectl get pods -n ${{inputs.namespace}} > $file_name
-      shell: bash
-
-    - name: Get yaml from pods
-      run: |
-        # ▶️ Get yaml from pods
-        file_name=artifacts/${{inputs.namespace}}_get_pods_yaml.txt
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
-        echo "Yaml files from pods: " > $file_name
-        for pod in "${pods[@]}"; do
-            echo $pod >> $file_name
-            kubectl get pod "$pod" -n ${{inputs.namespace}} -o yaml >> $file_name
-        done
-      shell: bash
-
-    - name: Get events from namespace
-      run: |
-        # ▶️ Get events from namespace
-        file_name=artifacts/${{inputs.namespace}}_get_events.txt
-        kubectl events -n ${{inputs.namespace}} > $file_name
-      shell: bash
-
-    - name: Get yaml from PVC
-      run: |
-        # ▶️ Get yaml from PVC
-        file_name=artifacts/${{inputs.namespace}}_get_pvc_yaml.txt
-        kubectl get pvc -n ${{inputs.namespace}}
-        kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
-      shell: bash
-
-    - name: Get PV from namespace
-      run: |
-        # ▶️ Get PV from namespace
-        file_name=artifacts/${{inputs.namespace}}_get_pv.txt
-        kubectl get pv
-        kubectl get pv | grep ${{inputs.namespace}}
-        kubectl get pv | grep ${{inputs.namespace}} > $file_name
-      shell: bash
+#    - name: Wait pods is ready
+#      run: |
+#        # ▶️ Wait pods is ready
+#        kubectl wait pod --all --for=condition=Ready -n=${{inputs.namespace}} --timeout 200s
+#      shell: bash
+#      continue-on-error: true
 
     - name: Check service is ready
       run: |
@@ -141,6 +97,50 @@ runs:
         fi
       shell: bash
       continue-on-error: true
+
+    - name: Get pods
+      run: |
+        # ▶️ Get pods
+        kubectl get pods -n ${{inputs.namespace}}
+        file_name=artifacts/${{inputs.namespace}}_get_pods.txt
+        kubectl get pods -n ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get yaml from pods
+      run: |
+        # ▶️ Get yaml from pods
+        file_name=artifacts/${{inputs.namespace}}_get_pods_yaml.txt
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        echo "Yaml files from pods: " > $file_name
+        for pod in "${pods[@]}"; do
+            echo $pod >> $file_name
+            kubectl get pod "$pod" -n ${{inputs.namespace}} -o yaml >> $file_name
+        done
+      shell: bash
+
+    - name: Get events from namespace
+      run: |
+        # ▶️ Get events from namespace
+        file_name=artifacts/${{inputs.namespace}}_get_events.txt
+        kubectl events -n ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get yaml from PVC
+      run: |
+        # ▶️ Get yaml from PVC
+        file_name=artifacts/${{inputs.namespace}}_get_pvc_yaml.txt
+        kubectl get pvc -n ${{inputs.namespace}}
+        kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
+      shell: bash
+
+    - name: Get PV from namespace
+      run: |
+        # ▶️ Get PV from namespace
+        file_name=artifacts/${{inputs.namespace}}_get_pv.txt
+        kubectl get pv
+        kubectl get pv | grep ${{inputs.namespace}}
+        kubectl get pv | grep ${{inputs.namespace}} > $file_name
+      shell: bash
 
     - name: Get logs from all containers in pods
       run: |
