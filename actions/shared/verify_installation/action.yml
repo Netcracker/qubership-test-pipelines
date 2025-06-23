@@ -91,7 +91,7 @@ runs:
 
     - name: Check service is ready
       run: |
-        # ▶️ Get status provisioner logs
+        # ▶️ Check service is ready
         provisioner_pod="NOT_FOUND"
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
         for pod in "${pods[@]}"; do
@@ -122,20 +122,23 @@ runs:
           fi
         else
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-          cr_yaml=$(kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml)
-          condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
-            if ! [[ -z "$condition" ]]; then
-              echo $condition
-              status=$(echo "$condition" | yq eval '.status' -)
-              echo $status
-              if [[ "$status" == 'True' ]]; then
-                break
+            cr_yaml=$(kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml)
+            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
+              if ! [[ -z "$condition" ]]; then
+                echo $condition
+                status=$(echo "$condition" | yq eval '.status' -)
+                echo $status
+                if [[ "$status" == 'True' ]]; then
+                  break
+                fi
               fi
-            fi
-          sleep ${{inputs.timeout_for_provisioner}}
-        done
+            sleep ${{inputs.timeout_for_provisioner}}
+          done
+          if [[ "$status" != 'True' ]]; then
+             echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
+             exit 1
+          fi
         fi
-
       shell: bash
       continue-on-error: true
 

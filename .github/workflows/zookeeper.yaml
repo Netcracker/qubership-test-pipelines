@@ -76,6 +76,42 @@ jobs:
       - name: Verify Zookeeper upgrade
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
 
+  #11-Clean [LATEST] W/O Components -> 12-Upgrade [LATEST] All Components S3
+  Clean-WO-Components-Upgrade-All-Components-S3:
+    runs-on: ubuntu-latest
+    name: Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Clean Install Zookeeper [LATEST] W/O Components
+        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
+        with:
+          path_to_template: 'templates/zookeeper-service/zookeeper_install_minimal_APP_k8s.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Zookeeper installation
+        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+      - name: Add secrets to template
+        run: >-
+          python qubership-test-pipelines/python/add_secrets_for_s3.py
+          --path_to_file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml'
+          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+        shell: bash
+      - name: Update Zookeeper [LATEST] All Components S3
+        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Zookeeper installation
+        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+
   #13-Clean [LATEST] non-TLS, 14-Upgrade [LATEST] TLS
   Clean-Latest-non-TLS-Upgrade-Latest-TLS:
     runs-on: ubuntu-latest
@@ -165,19 +201,12 @@ jobs:
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: ${{inputs.service_branch}}
-      - name: Get secrets
-        run: kubectl get secrets -n zookeeper
-#      - name: Get secrets
-#        run: |
-#          kubectl get secret zookeeper-backup-daemon-tls-secret -oyaml -n zookeeper
-#          kubectl get secret zookeeper-tls-secret -oyaml -n zookeeper
       - name: Get Zookeeper Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
         with:
           service_name: zookeeper
           secret_name: zookeeper-tls-secret
           namespace: zookeeper
-
       - name: Get Backup-Daemon Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
         with:
@@ -186,48 +215,16 @@ jobs:
           namespace: zookeeper
       - name: Prepare artifacts directory
         run: mkdir -p certs_artifacts
-
       - name: Copy certs to artifacts
         run: |
           cp ${{runner.temp}}/zookeeper-tls-secret_*.txt certs_artifacts/
           cp ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_*.txt certs_artifacts/
-
       - name: Upload certs artifacts
         uses: actions/upload-artifact@v4
         with:
           name: zookeeper-certs
           path: certs_artifacts
           retention-days: 1
-
-#      - name: Add certs to output variables
-#        id: certs_output
-#        run: |
-#          echo "zookeeper_ca_crt=$(cat ${{runner.temp}}/zookeeper-tls-secret_ca_crt.txt)" >> $GITHUB_OUTPUT
-#          echo "zookeeper_tls_crt=$(cat ${{runner.temp}}/zookeeper-tls-secret_tls_crt.txt)" >> $GITHUB_OUTPUT
-#          echo "zookeeper_tls_key=$(cat ${{runner.temp}}/zookeeper-tls-secret_tls_key.txt)" >> $GITHUB_OUTPUT
-#          echo "backuper_ca_crt=$(cat ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_ca_crt.txt)" >> $GITHUB_OUTPUT
-#          echo "backuper_tls_crt=$(cat ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_tls_crt.txt)" >> $GITHUB_OUTPUT
-#          echo "backuper_tls_key=$(cat ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_tls_key.txt)" >> $GITHUB_OUTPUT
-#        run: |
-#          zk_ca="$(cat ${{ runner.temp }}/zookeeper-tls-secret_ca_crt.txt)"
-#          zk_crt="$(cat ${{ runner.temp }}/zookeeper-tls-secret_tls_crt.txt)"
-#          zk_key="$(cat ${{ runner.temp }}/zookeeper-tls-secret_tls_key.txt)"
-#          bu_ca="$(cat ${{ runner.temp }}/zookeeper-backup-daemon-tls-secret_ca_crt.txt)"
-#          bu_crt="$(cat ${{ runner.temp }}/zookeeper-backup-daemon-tls-secret_tls_crt.txt)"
-#          bu_key="$(cat ${{ runner.temp }}/zookeeper-backup-daemon-tls-secret_tls_key.txt)"
-#
-#          cat <<EOF >> $GITHUB_OUTPUT
-#          zookeeper_ca_crt=$zk_ca
-#          zookeeper_tls_crt=$zk_crt
-#          zookeeper_tls_key=$zk_key
-#          backuper_ca_crt=$bu_ca
-#          backuper_tls_crt=$bu_crt
-#          backuper_tls_key=$bu_key
-#          EOF
-#
-#      - name: Debug outputs
-#        run: |
-#          echo "backuper_tls_crt: ${{ steps.certs_output.outputs.backuper_tls_crt }}"
 
   #16-Clean [LATEST] TLS Secrets
   Clean-Latest-TLS-Secrets:
@@ -340,10 +337,6 @@ jobs:
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{matrix.release}}'
-#      - name: Check Status In CR
-#        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
-#        with:
-#          namespace: zookeeper
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
@@ -356,10 +349,6 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{inputs.service_branch}}'
-#      - name: Check Status In CR
-#        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
-#        with:
-#          namespace: zookeeper
       - name: Verify installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
@@ -388,12 +377,6 @@ jobs:
           restricted: true
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
-      #- name: Sleep
-      #  run: sleep 2m
-#      - name: Check Status In CR
-#        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
-#        with:
-#          namespace: zookeeper
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
@@ -407,10 +390,6 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
           service_branch: '${{inputs.service_branch}}'
-#      - name: Check Status In CR
-#        uses: ./qubership-test-pipelines/actions/shared/check_status_in_cr
-#        with:
-#          namespace: zookeeper
       - name: Verify Zookeeper upgrade
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
