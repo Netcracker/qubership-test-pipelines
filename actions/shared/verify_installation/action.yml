@@ -138,6 +138,15 @@ runs:
           echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
           echo PODS:
           kubectl get pods -n ${{inputs.namespace}}
+          IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+          for pod in "${pods[@]}"; do
+            if [[ $pod == *"tests"* ]]; then
+              test_pod=$pod
+            fi
+          done
+          echo TESTS POD LOGS:
+          kubectl get pod $test_pod -n ${{inputs.namespace}}
+          kubectl logs $test_pod -n ${{inputs.namespace}}
           exit 1
         fi
       shell: bash
