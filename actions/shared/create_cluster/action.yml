@@ -11,7 +11,7 @@ runs:
           echo '================================================================================'
           lsblk
           echo '================================================================================'
-          sysctl -a | grep max_map_count 2>/dev/null
+          sysctl vm.max_map_count
         shell: bash
       - name: Download kind
         run: |
