@@ -38,6 +38,9 @@ runs:
       run: mkdir -p artifacts
       shell: bash
 
+    - name: Initialize error flag
+      run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
+      shell: bash
 #    - name: Wait pods is ready
 #      run: |
 #        # ▶️ Wait pods is ready
@@ -74,7 +77,7 @@ runs:
             echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
             echo PODS:
             kubectl get pods -n ${{inputs.namespace}}
-            exit 1
+            echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         else
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
@@ -92,21 +95,22 @@ runs:
           done
           if [[ "$status" != 'True' ]]; then
              echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
-             exit 1
+             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         fi
       shell: bash
-      continue-on-error: true
 
     - name: Get pods
+      #if: always()
       run: |
         # ▶️ Get pods
-        kubectl get pods -n ${{inputs.namespace}}
         file_name=artifacts/${{inputs.namespace}}_get_pods.txt
+        kubectl get pods -n ${{inputs.namespace}}
         kubectl get pods -n ${{inputs.namespace}} > $file_name
       shell: bash
 
     - name: Get yaml from pods
+      if: always()
       run: |
         # ▶️ Get yaml from pods
         file_name=artifacts/${{inputs.namespace}}_get_pods_yaml.txt
@@ -119,6 +123,7 @@ runs:
       shell: bash
 
     - name: Get events from namespace
+      #if: always()
       run: |
         # ▶️ Get events from namespace
         file_name=artifacts/${{inputs.namespace}}_get_events.txt
@@ -126,19 +131,21 @@ runs:
       shell: bash
 
     - name: Get yaml from PVC
+      #if: always()
       run: |
         # ▶️ Get yaml from PVC
         file_name=artifacts/${{inputs.namespace}}_get_pvc_yaml.txt
-        kubectl get pvc -n ${{inputs.namespace}}
+        #kubectl get pvc -n ${{inputs.namespace}}
         kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
       shell: bash
 
     - name: Get PV from namespace
+      #if: always()
       run: |
         # ▶️ Get PV from namespace
         file_name=artifacts/${{inputs.namespace}}_get_pv.txt
-        kubectl get pv
-        kubectl get pv | grep ${{inputs.namespace}}
+        #kubectl get pv
+        #kubectl get pv | grep ${{inputs.namespace}}
         kubectl get pv | grep ${{inputs.namespace}} > $file_name
       shell: bash
 
@@ -195,9 +202,12 @@ runs:
         echo 'TEST LOGS:'
         kubectl logs $test_pod -n ${{inputs.namespace}}
         if [[ $logs == *"| FAIL |"* ]]; then
-          exit 1
+          echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
+        kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
+        ls -la artifacts/robot-results
       shell: bash
+
 
     - name: Generate artifact name
       if: always()
@@ -217,3 +227,19 @@ runs:
       with:
         name: ${{env.ARTIFACT_NAME}}
         path: artifacts/
+
+    - name: Check job status
+      run: |
+        echo "${{ env.ERROR_FLAG }}"
+        if [ "${{ env.ERROR_FLAG }}" == 'true' ]; then
+          echo "Service was installed with errors!"
+          exit 1
+        fi
+      shell: bash
+
+#    - name: Fail job if error flag is true
+#      if: env.ERROR_FLAG == 'true'
+#      run: |
+#        echo Service was installed with errors!
+#        exit 1
+#      shell: bash

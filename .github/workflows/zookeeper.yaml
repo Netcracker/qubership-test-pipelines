@@ -14,6 +14,11 @@ on:
         description: 'Test pipeline branch name'
         type: string
         required: true
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -22,7 +27,7 @@ on:
 
 jobs:
   prepare-versions:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     outputs:
       versions: ${{steps.process-versions.outputs.versions}}
       previous_version: ${{steps.process-versions.outputs.previous_version}}
@@ -45,7 +50,7 @@ jobs:
   # ---------- Current service branch ----------
   #3-Clean [LATEST], 4-Upgrade [LATEST] Diff Params
   Clean-Latest:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST], Upgrade [LATEST] Diff Params
     steps:
       - name: Checkout pipeline
@@ -78,7 +83,7 @@ jobs:
 
   #11-Clean [LATEST] W/O Components -> 12-Upgrade [LATEST] All Components S3
   Clean-WO-Components-Upgrade-All-Components-S3:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3
     steps:
       - name: Checkout pipeline
@@ -128,7 +133,7 @@ jobs:
 
   #13-Clean [LATEST] non-TLS, 14-Upgrade [LATEST] TLS
   Clean-Latest-non-TLS-Upgrade-Latest-TLS:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST], Upgrade [LATEST] TLS
     steps:
       - name: Checkout pipeline
@@ -178,7 +183,7 @@ jobs:
 
   #15-Clean [LATEST] TLS
   Clean-Latest-TLS:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] TLS
     steps:
       - name: Checkout pipeline
@@ -195,6 +200,7 @@ jobs:
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
       - name: Crate ClusterIssuer
+        # language=bash
         run: |
           kubectl apply -f - <<EOF
           apiVersion: cert-manager.io/v1
@@ -215,6 +221,11 @@ jobs:
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: ${{inputs.service_branch}}
+      - name: Upload Robot Framework artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-results
+          path: /opt/robot/output/
       - name: Get Zookeeper Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
         with:
@@ -242,7 +253,7 @@ jobs:
 
   #16-Clean [LATEST] TLS Secrets
   Clean-Latest-TLS-Secrets:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     needs: Clean-Latest-TLS
     name: Clean Zookeeper [LATEST] TLS Secrets
     steps:
@@ -272,7 +283,7 @@ jobs:
 
   #17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
   Clean-Latest-TLS-Certificates:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     needs: Clean-Latest-TLS
     name: Clean [LATEST] TLS Certificates
     steps:
@@ -306,7 +317,7 @@ jobs:
   #21-Clean [LATEST] Restricted
   Clean-Latest-Restricted:
     name: Clean [LATEST] Restricted
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -331,7 +342,7 @@ jobs:
   Clean-Previous-Update-To-Latest:
     name: Clean [PREVIOUS], Update to [LATEST]
     needs: prepare-versions
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     strategy:
       matrix:
         release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
@@ -373,7 +384,7 @@ jobs:
   Clean-Previous-Upgrade-To-Latest-Restricted:
     name: Clean [PREVIOUS] Restricted, Upgrade To [LATEST] Restricted
     needs: prepare-versions
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
