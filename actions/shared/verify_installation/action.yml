@@ -22,13 +22,13 @@ inputs:
     description: |
       Maximum retries for provisioner pod to be completed
     required: true
-    default: '50'
+    default: '30'
 
   timeout_for_provisioner:
     description: |
       Delay between attempts for provisioner pod
     required: true
-    default: '10s'
+    default: '20s'
 
   service_branch:
     description: |
@@ -133,8 +133,8 @@ runs:
             echo There is no test pod
             exit 0
           fi
-          echo "test_pod=$test_pod"
           echo 'INITIAL TESTS POD LOGS:'
+          kubectl get pod $test_pod -n ${{inputs.namespace}}
           kubectl logs $test_pod -n ${{inputs.namespace}}
           if [[ "$status" == 'Succeeded' ]]; then
             break
