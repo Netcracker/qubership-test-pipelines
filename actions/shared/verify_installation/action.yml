@@ -31,24 +31,31 @@ inputs:
       Branch in service repository
     required: false
 
+  cr_kind:
+    description: |
+      Kind of custom resource for checking deploy status.
+      CR is used to check the status if status provisioner is missing
+    required: false
+
+  cr_name:
+    description: |
+      Name of custom resource for checking deploy status.
+      CR is used to check the status if status provisioner is missing
+    required: false
+
 runs:
   using: 'composite'
   steps:
     - name: Create folder for artifacts
-      run: mkdir -p artifacts
       shell: bash
+      run: mkdir -p artifacts
 
     - name: Initialize error flag
-      run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
       shell: bash
-#    - name: Wait pods is ready
-#      run: |
-#        # ▶️ Wait pods is ready
-#        kubectl wait pod --all --for=condition=Ready -n=${{inputs.namespace}} --timeout 200s
-#      shell: bash
-#      continue-on-error: true
+      run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
 
     - name: Check service is ready
+      shell: bash
       run: |
         # ▶️ Check service is ready
         provisioner_pod="NOT_FOUND"
@@ -74,14 +81,15 @@ runs:
           kubectl logs $provisioner_pod -n ${{inputs.namespace}}
           logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
           if [[ $logs != *"Failed components statuses are []"* ]]; then
-            echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
+            echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
             echo PODS:
             kubectl get pods -n ${{inputs.namespace}}
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         else
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-            cr_yaml=$(kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml)
+            #cr_yaml=$(kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml)
+            cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
               if ! [[ -z "$condition" ]]; then
                 echo $condition
@@ -91,26 +99,26 @@ runs:
                   break
                 fi
               fi
+            kubectl get pods -n ${{inputs.namespace}}
             sleep ${{inputs.timeout_for_provisioner}}
           done
           if [[ "$status" != 'True' ]]; then
-             echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
+             echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
              echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
+          echo $cr_yaml
         fi
-      shell: bash
 
     - name: Get pods
-      #if: always()
+      shell: bash
       run: |
         # ▶️ Get pods
         file_name=artifacts/${{inputs.namespace}}_get_pods.txt
         kubectl get pods -n ${{inputs.namespace}}
         kubectl get pods -n ${{inputs.namespace}} > $file_name
-      shell: bash
 
     - name: Get yaml from pods
-      if: always()
+      shell: bash
       run: |
         # ▶️ Get yaml from pods
         file_name=artifacts/${{inputs.namespace}}_get_pods_yaml.txt
@@ -120,36 +128,33 @@ runs:
             echo $pod >> $file_name
             kubectl get pod "$pod" -n ${{inputs.namespace}} -o yaml >> $file_name
         done
-      shell: bash
 
     - name: Get events from namespace
-      #if: always()
+      shell: bash
       run: |
         # ▶️ Get events from namespace
         file_name=artifacts/${{inputs.namespace}}_get_events.txt
         kubectl events -n ${{inputs.namespace}} > $file_name
-      shell: bash
 
     - name: Get yaml from PVC
-      #if: always()
+      shell: bash
       run: |
         # ▶️ Get yaml from PVC
         file_name=artifacts/${{inputs.namespace}}_get_pvc_yaml.txt
         #kubectl get pvc -n ${{inputs.namespace}}
         kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
-      shell: bash
 
     - name: Get PV from namespace
-      #if: always()
+      shell: bash
       run: |
         # ▶️ Get PV from namespace
         file_name=artifacts/${{inputs.namespace}}_get_pv.txt
         #kubectl get pv
         #kubectl get pv | grep ${{inputs.namespace}}
         kubectl get pv | grep ${{inputs.namespace}} > $file_name
-      shell: bash
 
     - name: Get logs from all containers in pods
+      shell: bash
       run: |
         # ▶️ Get logs from all containers in pods
         file_name=artifacts/${{inputs.namespace}}_log_from_containers.txt
@@ -163,9 +168,9 @@ runs:
               echo '================================================================================' >> $file_name
             done
         done
-      shell: bash
 
     - name: Get logs from test pod
+      shell: bash
       run: |
         # ▶️ Get logs from test pod
         file_name=artifacts/${{inputs.namespace}}_tests.txt
@@ -182,10 +187,7 @@ runs:
         echo "test_pod=$test_pod"
         for i in {1..${{inputs.max_attempts}}}; do
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-          echo '>>>'
-          kubectl get pod $test_pod -n ${{inputs.namespace}}
-          kubectl logs $test_pod -n ${{inputs.namespace}}
-          echo '<<<'
+          echo "$status"
           if [[ "$status" == 'Running' ]]; then
             break
           fi
@@ -206,20 +208,18 @@ runs:
         fi
         kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
         ls -la artifacts/robot-results
-      shell: bash
-
 
     - name: Generate artifact name
       if: always()
+      shell: bash
       run: |
         # ▶️ Generate artifact name
         release_name=$(echo ${{inputs.service_branch}})
         if [[ $release_name ]]; then
           release_name=$(echo "_$release_name" | tr '/' '_')
         fi
-        ARTIFACT_NAME=${{github.job}}_${{inputs.namespace}}${release_name}_artifacts_$(date -u +'%Y%m%d%H%M%S.%f')
+        ARTIFACT_NAME=${{github.job}}_${{inputs.namespace}}${release_name}_artifacts_$(date -u +'%Y%m%d%H%M%S')
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
-      shell: bash
 
     - name: Upload artifact
       if: always()
@@ -229,17 +229,10 @@ runs:
         path: artifacts/
 
     - name: Check job status
+      shell: bash
       run: |
         echo "${{ env.ERROR_FLAG }}"
         if [ "${{ env.ERROR_FLAG }}" == 'true' ]; then
           echo "Service was installed with errors!"
           exit 1
         fi
-      shell: bash
-
-#    - name: Fail job if error flag is true
-#      if: env.ERROR_FLAG == 'true'
-#      run: |
-#        echo Service was installed with errors!
-#        exit 1
-#      shell: bash
