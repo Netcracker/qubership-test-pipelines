@@ -24,6 +24,7 @@ runs:
   using: 'composite'
   steps:
     - name: Create namespace
+      # language=bash
       run: |
         for i in {1..${{inputs.max_attempts}}}; do
           cr_yaml=$(kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml)
