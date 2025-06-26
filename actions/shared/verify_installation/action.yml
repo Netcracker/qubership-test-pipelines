@@ -186,6 +186,7 @@ runs:
         fi
         echo "test_pod=$test_pod"
         for i in {1..${{inputs.max_attempts}}}; do
+          echo attempt $i
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
           echo "$status"
           if [[ "$status" == 'Running' ]]; then

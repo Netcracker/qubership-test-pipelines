@@ -4,6 +4,7 @@ runs:
   using: 'composite'
   steps:
       - name: Get info
+        # language=bash
         run: |
           free -h
           echo '================================================================================'
@@ -12,6 +13,7 @@ runs:
           lsblk
         shell: bash
       - name: Install kind
+        # language=bash
         run: |
           echo Download kind
           [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
@@ -19,6 +21,7 @@ runs:
           # sudo mv ./kind /usr/local/bin/kind
         shell: bash
       - name: Run kind
+        # language=bash
         run: >-
           ./kind create cluster
           --image kindest/node:v1.32.2

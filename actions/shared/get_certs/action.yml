@@ -19,6 +19,7 @@ runs:
   steps:
     - name: Get secrets
       shell: bash
+      # language=bash
       run: |
         sudo snap install yq
         secret=$(kubectl get secret ${{inputs.secret_name}} -oyaml -n ${{inputs.namespace}})

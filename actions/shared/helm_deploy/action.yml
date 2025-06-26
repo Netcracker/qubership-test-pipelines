@@ -72,16 +72,17 @@ runs:
 
     - name: Create namespace
       if: inputs.deploy_mode == 'install'
+      shell: bash
       run: |
         if ! kubectl get namespace ${{inputs.namespace}} >/dev/null 2>&1; then
         kubectl create namespace ${{inputs.namespace}}
         else
         echo "Namespace '${{inputs.namespace}}' already exists"
         fi
-      shell: bash
 
     - name: Create resources
       if: inputs.resource_folder != ''
+      shell: bash
       run: |
         folder="qubership-test-pipelines/${{inputs.resource_folder}}"
         files=($(find "$folder" -type f))
@@ -90,7 +91,6 @@ runs:
           echo "Applying $file"
           kubectl create -f "$file"
         done
-      shell: bash
 
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
@@ -102,11 +102,12 @@ runs:
         namespace: ${{inputs.namespace}}
 
     - name: Copy template
+      shell: bash
       run: |
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-      shell: bash
 
     - name: Check helm_charts_release_config file
+      shell: bash
       run: |
         file_path=$(echo ${{inputs.repository_name}}/.github/helm-charts-release-config.yaml)
         config_source=$(echo ${{inputs.helm_charts_release_config}})
@@ -120,10 +121,10 @@ runs:
                 exit 1
             fi
         fi
-      shell: bash
 
     - name: Replace slash in service branch
       id: replace_slash
+      shell: bash
       run: |
         service_branch="${{inputs.service_branch}}"
         if [[ "${service_branch}" == *"/"* ]]; then
@@ -133,7 +134,6 @@ runs:
         fi
         echo ${service_branch_updated}
         echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
-      shell: bash
 
     - name: Update versions in values
       id: update-versions
@@ -147,6 +147,7 @@ runs:
         chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
 
     - name: Install/update service with helm
+      shell: bash
       run: |
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
@@ -157,15 +158,14 @@ runs:
         else
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
         fi
-      shell: bash
 
     - name: Get docker images
+      shell: bash
       run: |
         # ▶️ Get docker images
         kubectl get pods -n ${{inputs.namespace}} -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
-      shell: bash
 
     - name: Use default context
       if: inputs.restricted == 'true'
-      run: kubectl config use-context kind-kind
       shell: bash
+      run: kubectl config use-context kind-kind

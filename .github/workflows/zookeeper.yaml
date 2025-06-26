@@ -141,13 +141,13 @@ jobs:
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
       - name: Install cert-manager
-        #language=bash
+        # language=bash
         run: |
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
       - name: Crate ClusterIssuer
-        #language=bash
+        # language=bash
         run: |
           kubectl apply -f - <<EOF
           apiVersion: cert-manager.io/v1
@@ -186,7 +186,7 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Install cert-manager
-        #language=bash
+        # language=bash
         run: |
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
@@ -224,7 +224,7 @@ jobs:
           secret_name: zookeeper-backup-daemon-tls-secret
           namespace: zookeeper
       - name: Copy certs to artifacts
-        #language=bash
+        # language=bash
         run: |
           mkdir -p certs_artifacts
           cp ${{runner.temp}}/zookeeper-tls-secret_*.txt certs_artifacts/
