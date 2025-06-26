@@ -101,17 +101,6 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-#      - name: Add secrets to template
-#        run: >-
-#          python qubership-test-pipelines/python/update_yaml.py
-#          --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml'
-#          --path='backupDaemon/s3/keyId'
-#          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
-#          python qubership-test-pipelines/python/update_yaml.py
-#          --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml'
-#          --path='backupDaemon/s3/keySecret'
-#          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-#        shell: bash
       - name: Update YAML secrets
         run: |
           python qubership-test-pipelines/python/update_yaml.py \
@@ -152,11 +141,13 @@ jobs:
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
       - name: Install cert-manager
+        #language=bash
         run: |
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
       - name: Crate ClusterIssuer
+        #language=bash
         run: |
           kubectl apply -f - <<EOF
           apiVersion: cert-manager.io/v1
@@ -195,6 +186,7 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Install cert-manager
+        #language=bash
         run: |
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
@@ -210,8 +202,6 @@ jobs:
           spec:
             selfSigned: {}
           EOF
-      - name: Get clusterissuer
-        run: kubectl get clusterissuer
       - name: Install Zookeeper [LATEST] TLS
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
@@ -221,11 +211,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
         with:
           service_branch: ${{inputs.service_branch}}
-      - name: Upload Robot Framework artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: robot-results
-          path: /opt/robot/output/
       - name: Get Zookeeper Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
         with:
@@ -238,10 +223,10 @@ jobs:
           service_name: zookeeper
           secret_name: zookeeper-backup-daemon-tls-secret
           namespace: zookeeper
-      - name: Prepare artifacts directory
-        run: mkdir -p certs_artifacts
       - name: Copy certs to artifacts
+        #language=bash
         run: |
+          mkdir -p certs_artifacts
           cp ${{runner.temp}}/zookeeper-tls-secret_*.txt certs_artifacts/
           cp ${{runner.temp}}/zookeeper-backup-daemon-tls-secret_*.txt certs_artifacts/
       - name: Upload certs artifacts
