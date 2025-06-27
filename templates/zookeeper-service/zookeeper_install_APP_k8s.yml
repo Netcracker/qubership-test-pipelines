@@ -30,7 +30,7 @@ monitoring:
 backupDaemon:
   install: true
   backupStorage:
-    #persistentVolumeType: "standalone"
+    persistentVolumeType: "standalone"
     storageClass: standard
     volumeSize: 1Gi
   securityContext:

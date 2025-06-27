@@ -258,7 +258,7 @@ jobs:
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-      - name: Crate ClusterIssuer
+      - name: Create ClusterIssuer
         run: |
           kubectl apply -f - <<EOF
           apiVersion: cert-manager.io/v1
