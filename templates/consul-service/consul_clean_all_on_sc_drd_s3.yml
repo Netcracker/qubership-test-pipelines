@@ -54,7 +54,7 @@ backupDaemon:
     keySecret: ''
 integrationTests:
   enabled: true
-  tags: backupORcrudORconsul_images
+  tags: backupORcrud
 statusProvisioner:
   lifetimeAfterCompletion: 60
   integrationTestsTimeout: 600
