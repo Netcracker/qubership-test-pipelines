@@ -352,7 +352,7 @@ jobs:
         with:
           service_branch: '${{matrix.release}}'
       - name: Sleep
-        run: sleep 1m
+        run: sleep 2m
       - name: Update Zookeeper to [LATEST]
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:

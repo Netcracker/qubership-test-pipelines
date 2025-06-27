@@ -16,7 +16,7 @@ inputs:
   max_attempts_for_provisioner:
     description: 'See verify_installation.max_attempts'
     required: true
-    default: 200
+    default: 150
   timeout_for_provisioner:
     description: 'See verify_installation.timeout'
     required: true
