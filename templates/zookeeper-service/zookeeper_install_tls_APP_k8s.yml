@@ -56,7 +56,9 @@ monitoring:
     runAsUser: 1000
 integrationTests:
   install: true
-  tags: "zookeeperNOTtransactional_backup" #!
+  #tags: "zookeeperNOTtransactional_backup" #!
+  tags: "zookeeper"
+  pvType: "standalone"
   timeout: 900
   waitForResult: true
   securityContext:
