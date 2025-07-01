@@ -73,6 +73,7 @@ runs:
     - name: Create namespace
       if: inputs.deploy_mode == 'install'
       shell: bash
+      # language=bash
       run: |
         if ! kubectl get namespace ${{inputs.namespace}} >/dev/null 2>&1; then
         kubectl create namespace ${{inputs.namespace}}
@@ -83,6 +84,7 @@ runs:
     - name: Create resources
       if: inputs.resource_folder != ''
       shell: bash
+      # language=bash
       run: |
         folder="qubership-test-pipelines/${{inputs.resource_folder}}"
         files=($(find "$folder" -type f))
@@ -103,11 +105,13 @@ runs:
 
     - name: Copy template
       shell: bash
+      # language=bash
       run: |
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
 
     - name: Check helm_charts_release_config file
       shell: bash
+      # language=bash
       run: |
         file_path=$(echo ${{inputs.repository_name}}/.github/helm-charts-release-config.yaml)
         config_source=$(echo ${{inputs.helm_charts_release_config}})
@@ -125,6 +129,7 @@ runs:
     - name: Replace slash in service branch
       id: replace_slash
       shell: bash
+      # language=bash
       run: |
         service_branch="${{inputs.service_branch}}"
         if [[ "${service_branch}" == *"/"* ]]; then
@@ -148,19 +153,12 @@ runs:
 
     - name: Install/update service with helm
       shell: bash
+      # language=bash
       run: |
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
-        echo -------------------------------------------------------
-        ls -la
-        echo -------------------------------------------------------
         echo $template_name
-        cat qubership-zookeeper/charts/helm/zookeeper-service/values.yaml
-        cat qubership-zookeeper/charts/helm/zookeeper-service/Chart.yaml
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-        echo -------------------------------------------------------
-        ls -la
-        echo -------------------------------------------------------
         if [[ ${{inputs.restricted}} == 'false' ]]; then
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
         else
@@ -169,6 +167,7 @@ runs:
 
     - name: Get docker images
       shell: bash
+      # language=bash
       run: |
         # ▶️ Get docker images
         kubectl get pods -n ${{inputs.namespace}} -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
@@ -176,4 +175,5 @@ runs:
     - name: Use default context
       if: inputs.restricted == 'true'
       shell: bash
+      # language=bash
       run: kubectl config use-context kind-kind
