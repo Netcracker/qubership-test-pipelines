@@ -39,7 +39,7 @@ backupDaemon:
 integrationTests:
   install: true
   pvType: "standalone"
-  tags: "zookeeperNOTzookeeper_backup_daemonNOTzookeeper_ha"
+  tags: "zookeeperNOTzookeeper_backup_daemon"
   timeout: 600
   securityContext:
     fsGroup: 1000
