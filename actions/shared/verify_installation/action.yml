@@ -91,13 +91,10 @@ runs:
           fi
         else
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-            #cr_yaml=$(kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml)
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
               if ! [[ -z "$condition" ]]; then
-                echo $condition
                 status=$(echo "$condition" | yq eval '.status' -)
-                echo $status
                 if [[ "$status" == 'True' ]]; then
                   break
                 fi
@@ -109,7 +106,6 @@ runs:
              echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
              echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
-          echo $cr_yaml
         fi
 
     - name: Get pods
@@ -148,7 +144,7 @@ runs:
       run: |
         # ▶️ Get yaml from PVC
         file_name=artifacts/${{inputs.namespace}}_get_pvc_yaml.txt
-        #kubectl get pvc -n ${{inputs.namespace}}
+        kubectl get pvc -n ${{inputs.namespace}}
         kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
 
     - name: Get PV from namespace
@@ -157,8 +153,7 @@ runs:
       run: |
         # ▶️ Get PV from namespace
         file_name=artifacts/${{inputs.namespace}}_get_pv.txt
-        #kubectl get pv
-        #kubectl get pv | grep ${{inputs.namespace}}
+        kubectl get pv | grep ${{inputs.namespace}}
         kubectl get pv | grep ${{inputs.namespace}} > $file_name
 
     - name: Get logs from all containers in pods
