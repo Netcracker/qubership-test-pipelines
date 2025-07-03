@@ -23,9 +23,9 @@ on:
 jobs:   #run in parallel
   prepare-versions:
     runs-on: ${{inputs.runner_type}}
-    outputs:
-      versions: ${{steps.process-versions.outputs.versions}}
-      previous_version: ${{steps.process-versions.outputs.previous_version}}
+    # outputs:
+    #   versions: ${{steps.process-versions.outputs.versions}}
+    #   previous_version: ${{steps.process-versions.outputs.previous_version}}
     steps:    #run sequentially one by one
       - name: Checkout repo
         uses: actions/checkout@v4
