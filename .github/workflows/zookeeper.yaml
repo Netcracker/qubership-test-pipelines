@@ -50,7 +50,7 @@ jobs:
 
   # ---------- Current service branch ----------
   #3-Clean [LATEST], 4-Upgrade [LATEST] Diff Params
-  Clean-Latest:
+  Clean-Latest-Upgrade-Diff-Params:
     runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST], Upgrade [LATEST] Diff Params
     steps:
@@ -74,7 +74,7 @@ jobs:
       - name: Update to [LATEST] Version With Diff Params
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
-          #zookeeper_update_APP_k8s.yaml + zookeeper_rollingupdate_APP_k8s
+          #combined 2 cases: update params + rollingupdate
           path_to_template: 'templates/zookeeper-service/zookeeper_update_APP_k8s.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
