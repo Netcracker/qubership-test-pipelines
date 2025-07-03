@@ -75,7 +75,8 @@ jobs:
       - name: Update to [LATEST] Version With Diff Params
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
-          path_to_template: 'templates/zookeeper-service/zookeeper_rollingupdate_APP_k8s.yml'
+          #zookeeper_update_APP_k8s.yaml + zookeeper_rollingupdate_APP_k8s
+          path_to_template: 'templates/zookeeper-service/zookeeper_update_APP_k8s.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
       - name: Verify Zookeeper upgrade

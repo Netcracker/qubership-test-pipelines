@@ -99,7 +99,6 @@ runs:
                   break
                 fi
               fi
-            kubectl get pods -n ${{inputs.namespace}}
             sleep ${{inputs.timeout_for_provisioner}}
           done
           if [[ "$status" != 'True' ]]; then
