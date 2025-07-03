@@ -18,7 +18,7 @@ on:
         description: 'Runner type (self-hosted or ubuntu-latest)'
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: 'self-hosted'
 
 jobs:   #run in parallel
   prepare-versions:
