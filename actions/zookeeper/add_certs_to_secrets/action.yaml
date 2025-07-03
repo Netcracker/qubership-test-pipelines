@@ -3,7 +3,7 @@ description: "GitHub Action to add certs to Zookeeper secrets"
 runs:
   using: 'composite'
   steps:
-    - name: Add certs to template
+    - name: Add Zookeeper CA CRT to template
       shell: bash
       run: >-
         python qubership-test-pipelines/python/update_yaml.py
@@ -11,7 +11,7 @@ runs:
         --path='data/ca.crt'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_ca_crt.txt)"
 
-    - name: Add certs to template
+    - name: Add Zookeeper TLS CRT to template
       shell: bash
       run: >-
         python qubership-test-pipelines/python/update_yaml.py
@@ -19,7 +19,7 @@ runs:
         --path='data/tls.crt'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_tls_crt.txt)"
 
-    - name: Add certs to template
+    - name: Add Zookeeper TLS KEY to template
       shell: bash
       run: >-
         python qubership-test-pipelines/python/update_yaml.py
@@ -27,7 +27,7 @@ runs:
         --path='data/tls.key'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_tls_key.txt)"
 
-    - name: Add certs to template
+    - name: Add Backup Daemon CA CRT to template
       shell: bash
       run: >-
         python qubership-test-pipelines/python/update_yaml.py
@@ -35,7 +35,7 @@ runs:
         --path='data/ca.crt'
         --value="$(cat certs_artifacts/zookeeper-backup-daemon-tls-secret_ca_crt.txt)"
 
-    - name: Add certs to template
+    - name: Add Backup Daemon TLS CRT to template
       shell: bash
       run: >-
         python qubership-test-pipelines/python/update_yaml.py
@@ -43,7 +43,7 @@ runs:
         --path='data/tls.crt'
         --value="$(cat certs_artifacts/zookeeper-backup-daemon-tls-secret_tls_crt.txt)"
 
-    - name: Add certs to template
+    - name: Add Backup Daemon TLS KEY to template
       shell: bash
       run: >-
         python qubership-test-pipelines/python/update_yaml.py

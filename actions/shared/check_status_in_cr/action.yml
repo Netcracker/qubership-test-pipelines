@@ -24,6 +24,7 @@ runs:
   using: 'composite'
   steps:
     - name: Create namespace
+      shell: bash
       # language=bash
       run: |
         for i in {1..${{inputs.max_attempts}}}; do
@@ -40,5 +41,3 @@ runs:
           sleep ${{inputs.timeout}}
         done
         kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml
-      shell: bash
-

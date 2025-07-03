@@ -41,7 +41,7 @@ zooKeeper:
 backupDaemon:
   install: true
   backupStorage:
-    #persistentVolumeType: "standalone"
+    persistentVolumeType: "standalone"
     storageClass: standard
     volumeSize: 1Gi
   securityContext:
@@ -57,6 +57,7 @@ monitoring:
 integrationTests:
   install: true
   tags: "zookeeper"
+  pvType: "standalone"
   timeout: 900
   waitForResult: true
   securityContext:

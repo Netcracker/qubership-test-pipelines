@@ -48,14 +48,17 @@ runs:
   steps:
     - name: Create folder for artifacts
       shell: bash
+      # language=bash
       run: mkdir -p artifacts
 
     - name: Initialize error flag
       shell: bash
+      # language=bash
       run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
 
     - name: Check service is ready
       shell: bash
+      # language=bash
       run: |
         # ▶️ Check service is ready
         provisioner_pod="NOT_FOUND"
@@ -88,13 +91,10 @@ runs:
           fi
         else
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-            #cr_yaml=$(kubectl get ZooKeeperService zookeeper -n "${{inputs.namespace}}" -o yaml)
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
               if ! [[ -z "$condition" ]]; then
-                echo $condition
                 status=$(echo "$condition" | yq eval '.status' -)
-                echo $status
                 if [[ "$status" == 'True' ]]; then
                   break
                 fi
@@ -105,11 +105,11 @@ runs:
              echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
              echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
-          echo $cr_yaml
         fi
 
     - name: Get pods
       shell: bash
+      # language=bash
       run: |
         # ▶️ Get pods
         file_name=artifacts/${{inputs.namespace}}_get_pods.txt
@@ -118,6 +118,7 @@ runs:
 
     - name: Get yaml from pods
       shell: bash
+      # language=bash
       run: |
         # ▶️ Get yaml from pods
         file_name=artifacts/${{inputs.namespace}}_get_pods_yaml.txt
@@ -130,6 +131,7 @@ runs:
 
     - name: Get events from namespace
       shell: bash
+      # language=bash
       run: |
         # ▶️ Get events from namespace
         file_name=artifacts/${{inputs.namespace}}_get_events.txt
@@ -137,23 +139,25 @@ runs:
 
     - name: Get yaml from PVC
       shell: bash
+      # language=bash
       run: |
         # ▶️ Get yaml from PVC
         file_name=artifacts/${{inputs.namespace}}_get_pvc_yaml.txt
-        #kubectl get pvc -n ${{inputs.namespace}}
+        kubectl get pvc -n ${{inputs.namespace}}
         kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
 
     - name: Get PV from namespace
       shell: bash
+      # language=bash
       run: |
         # ▶️ Get PV from namespace
         file_name=artifacts/${{inputs.namespace}}_get_pv.txt
-        #kubectl get pv
-        #kubectl get pv | grep ${{inputs.namespace}}
+        kubectl get pv | grep ${{inputs.namespace}}
         kubectl get pv | grep ${{inputs.namespace}} > $file_name
 
     - name: Get logs from all containers in pods
       shell: bash
+      # language=bash
       run: |
         # ▶️ Get logs from all containers in pods
         file_name=artifacts/${{inputs.namespace}}_log_from_containers.txt
@@ -170,6 +174,7 @@ runs:
 
     - name: Get logs from test pod
       shell: bash
+      # language=bash
       run: |
         # ▶️ Get logs from test pod
         file_name=artifacts/${{inputs.namespace}}_tests.txt
@@ -212,6 +217,7 @@ runs:
     - name: Generate artifact name
       if: always()
       shell: bash
+      # language=bash
       run: |
         # ▶️ Generate artifact name
         release_name=$(echo ${{inputs.service_branch}})
@@ -230,6 +236,7 @@ runs:
 
     - name: Check job status
       shell: bash
+      # language=bash
       run: |
         echo "${{ env.ERROR_FLAG }}"
         if [ "${{ env.ERROR_FLAG }}" == 'true' ]; then

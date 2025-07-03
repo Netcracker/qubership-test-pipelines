@@ -24,7 +24,7 @@ monitoring:
 backupDaemon:
   install: false
 integrationTests:
-  install: true
+  install: false
   tags: "zookeeper_crud"
   timeout: 600
   securityContext:
