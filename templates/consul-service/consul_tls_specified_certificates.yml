@@ -6,7 +6,7 @@ global:
     httpsOnly: true
     certManager:
       enabled: false
-      clusterIssuerName: qa-issuer-self
+      clusterIssuerName: test-clusterissuer
     mode: active
     region: one
     httpAuth:

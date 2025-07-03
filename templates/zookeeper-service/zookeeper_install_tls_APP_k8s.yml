@@ -1,0 +1,65 @@
+global:
+  name: zookeeper
+  secrets:
+    zooKeeper:
+      adminUsername: "zadmin"
+      adminPassword: "zadmin"
+      clientUsername: "zclient"
+      clientPassword: "zclient"
+      additionalUsers: user:pass
+    backupDaemon:
+      username: "admin"
+      password: "admin"
+    integrationTests:
+      prometheus:
+        user: "admin"
+        password: "admin"
+  tls:
+    enabled: true
+    cipherSuites: []
+    allowNonencryptedAccess: false
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      durationDays: 365
+      clusterIssuerName: test-clusterissuer
+operator:
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+zooKeeper:
+  replicas: 3
+  storage:
+    className:
+      - standard
+    size: 1Gi
+    securityContext:
+      fsGroup: 1000
+      runAsUser: 1000
+  tls:
+    enabled: true
+backupDaemon:
+  install: true
+  backupStorage:
+    persistentVolumeType: "standalone"
+    storageClass: standard
+    volumeSize: 1Gi
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  tls:
+    enabled: true
+monitoring:
+  install: false
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+integrationTests:
+  install: true
+  tags: "zookeeper"
+  pvType: "standalone"
+  timeout: 900
+  waitForResult: true
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
