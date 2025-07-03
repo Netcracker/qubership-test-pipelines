@@ -26,46 +26,60 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Echo
-      run: echo creating resources
-      shell: bash
 #Create CRD
     - name: Create ClusterRoles
-      run: |
-        kubectl create -f qubership-test-pipelines/restricted/${{inputs.service_name}}/clusterRoles
       shell: bash
+      # language=bash
+      run: |
+        restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
+        if [ ! -d "restricted_folder" ]; then
+          echo "::warning::Files with restricted resources not found. Resources not created."
+        else
+          echo "Applying ClusterRoles..."
+          kubectl create -f $restricted_folder/clusterRoles
+        fi
 
     - name: Create ClusterRoleBindings
-      run: |
-        kubectl create -f qubership-test-pipelines/restricted/${{inputs.service_name}}/clusterRoleBindings
       shell: bash
+      # language=bash
+      run: |
+        restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
+        if [ ! -d "restricted_folder" ]; then
+          echo "::warning::Files with restricted resources not found. Resources not created."
+        else
+          echo "Applying clusterRoleBindings..."
+          kubectl create -f $restricted_folder/clusterRoleBindings
+        fi
 
     - name: Create CRD
-      run: |
-        kubectl create -f ${{inputs.repository_name}}/${{inputs.path_to_chart}}/crds
       shell: bash
+      # language=bash
+      run: kubectl create -f ${{inputs.repository_name}}/${{inputs.path_to_chart}}/crds
 
     - name: Get CRD
-      run: kubectl get crd -n ${{inputs.namespace}} -oyaml
       shell: bash
+      # language=bash
+      run: kubectl get crd -n ${{inputs.namespace}} -oyaml
 
 #Create Certificate
     - name: Install openssl
-      run: |
-        sudo apt install openssl
       shell: bash
+      # language=bash
+      run: sudo apt install openssl
 
     - name: Generate private key
-      run: |
-        openssl genrsa -out restricted.key 2048
       shell: bash
+      # language=bash
+      run: openssl genrsa -out restricted.key 2048
 
     - name: Generate CSR
-      run: |
-        openssl req -new -key restricted.key -out restricted.csr -subj "/CN=restricted/O=dev-team"
       shell: bash
+      # language=bash
+      run: openssl req -new -key restricted.key -out restricted.csr -subj "/CN=restricted/O=dev-team"
 
     - name: Create CSR object
+      shell: bash
+      # language=bash
       run: |
         cat <<EOF | kubectl apply -f -
         apiVersion: certificates.k8s.io/v1
@@ -78,52 +92,61 @@ runs:
           usages:
           - client auth
         EOF
-      shell: bash
 
     - name: Approve CSR
-      run: kubectl certificate approve restricted-csr
       shell: bash
+      # language=bash
+      run: kubectl certificate approve restricted-csr
 
     - name: Retrieve certificate
-      run: kubectl get csr restricted-csr -o jsonpath='{.status.certificate}' | base64 --decode > restricted.crt
       shell: bash
+      # language=bash
+      run: kubectl get csr restricted-csr -o jsonpath='{.status.certificate}' | base64 --decode > restricted.crt
 
 #Create Role and RB
     - name: Update yaml with Role
+      shell: bash
+      # language=bash
       run: >-
-        python qubership-test-pipelines/python/replace_nc_in_template.py 
+        python qubership-test-pipelines/python/replace_nc_in_template.py
         --path_to_file='qubership-test-pipelines/restricted/restricted-role.yml'
         --nc='${{inputs.namespace}}'
-      shell: bash
 
     - name: Update yaml with RoleBinding
+      shell: bash
+      # language=bash
       run: >-
-        python qubership-test-pipelines/python/replace_nc_in_template.py 
+        python qubership-test-pipelines/python/replace_nc_in_template.py
         --path_to_file='qubership-test-pipelines/restricted/restricted-rb.yml'
         --nc='${{inputs.namespace}}'
-      shell: bash
 
     - name: Create Role
-      run: kubectl create -f qubership-test-pipelines/restricted/restricted-role.yml
       shell: bash
+      # language=bash
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-role.yml
 
     - name: Create RoleBindings
-      run: kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml
       shell: bash
+      # language=bash
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml
 
 #Add user to kubeconfig
     - name: Add user configuration
-      run: kubectl config set-credentials restricted --client-certificate=restricted.crt --client-key=restricted.key
       shell: bash
+      # language=bash
+      run: kubectl config set-credentials restricted --client-certificate=restricted.crt --client-key=restricted.key
 
     - name: Create context for user
-      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=${{inputs.namespace}} --user=restricted
       shell: bash
+      # language=bash
+      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=${{inputs.namespace}} --user=restricted
 
     - name: Use context
-      run: kubectl config use-context restricted-context
       shell: bash
+      # language=bash
+      run: kubectl config use-context restricted-context
 
     - name: Get config
-      run: kubectl config view --raw
       shell: bash
+      # language=bash
+      run: kubectl config view --raw

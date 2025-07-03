@@ -66,8 +66,7 @@ integrationTests:
     prometheus:
       user: admin
       password: ''
-  tags: backupORcrudORhaORbackupORconsul_images
-  prometheusUrl: http://vmsingle-k8s.prometheus-operator:8429
+  tags: backupORcrudORhaORbackup
 statusProvisioner:
   lifetimeAfterCompletion: 60
   integrationTestsTimeout: 1500
