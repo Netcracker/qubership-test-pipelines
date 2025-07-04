@@ -21,26 +21,26 @@ on:
         default: 'self-hosted'
 
 jobs:   #run in parallel
-#  prepare-versions:
-#    runs-on: ${{inputs.runner_type}}
-#    outputs:
-#      versions: ${{steps.process-versions.outputs.versions}}
-#      previous_version: ${{steps.process-versions.outputs.previous_version}}
-#    steps:    #run sequentially one by one
-#      - name: Checkout repo
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.service_branch}}'
-#          repository: 'Netcracker/qubership-opensearch'
-#          path: 'qubership-opensearch'
-#      - name: Process versions file
-#        id: process-versions
-#        run: |
-#          versions_str=$(cat qubership-opensearch/${{inputs.versions_file}})
-#          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
-#          echo "versions=$versions_json" >> $GITHUB_OUTPUT
-#          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
-#          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
+  prepare-versions:
+    runs-on: ${{inputs.runner_type}}
+    outputs:
+      versions: ${{steps.process-versions.outputs.versions}}
+      previous_version: ${{steps.process-versions.outputs.previous_version}}
+    steps:    #run sequentially one by one
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.service_branch}}'
+          repository: 'Netcracker/qubership-opensearch'
+          path: 'qubership-opensearch'
+      - name: Process versions file
+        id: process-versions
+        run: |
+          versions_str=$(cat qubership-opensearch/${{inputs.versions_file}})
+          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
+          echo "versions=$versions_json" >> $GITHUB_OUTPUT
+          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
+          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
   # ---------- Current service branch ----------
   #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
