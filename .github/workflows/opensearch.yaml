@@ -46,9 +46,9 @@ jobs:   #run in parallel
           previous_version=$(echo "$versions_json" | jq -r '.[-1]')
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
- # ---------- Current service branch ----------
- #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
- Clean-Latest-Upgrade-Diff-Params:
+  # ---------- Current service branch ----------
+  #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
+  Clean-Latest-Upgrade-Diff-Params:
    runs-on: ${{inputs.runner_type}}
    name: Clean [LATEST], Upgrade [LATEST] Diff Params
    steps:
