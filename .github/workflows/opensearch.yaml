@@ -106,9 +106,9 @@ jobs:   #run in parallel
           path: 'qubership-test-pipelines'
       - name: Set up Python
         uses: actions/setup-python@v5
-      - name: Check Python version
         with:
           python-version: '3.13'
+      - name: Check Python version
         run: python --version
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
