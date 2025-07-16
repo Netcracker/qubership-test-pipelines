@@ -19,11 +19,11 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
-    secrets:
-      AWS_S3_ACCESS_KEY_ID:
-        required: true
-      AWS_S3_ACCESS_KEY_SECRET:
-        required: true
+#    secrets:
+#      AWS_S3_ACCESS_KEY_ID:
+#        required: true
+#      AWS_S3_ACCESS_KEY_SECRET:
+#        required: true
 
 jobs:   #run in parallel
   prepare-versions:
