@@ -54,7 +54,7 @@ jobs:   #run in parallel
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: python version
+      - run: python --version
 
 
   #  # ---------- Current service branch ----------
