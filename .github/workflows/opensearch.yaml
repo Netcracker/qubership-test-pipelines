@@ -92,72 +92,72 @@ jobs:   #run in parallel
 #      - name: Verify Opensearch upgrade
 #        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
 
-#  #12-Clean [LATEST_SPRINT] Restricted
-#  Clean-Latest-Restricted:
-#    name: Clean [LATEST] Restricted
-#    runs-on: ${{inputs.runner_type}}
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#      - name: Install Opensearch in restricted mode
-#        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
-#        with:
-#          restricted: true
-#          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Opensearch installation
-#        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
+  #12-Clean [LATEST_SPRINT] Restricted
+  Clean-Latest-Restricted:
+    name: Clean [LATEST] Restricted
+    runs-on: ${{inputs.runner_type}}
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install Opensearch in restricted mode
+        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
+        with:
+          restricted: true
+          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Opensearch installation
+        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
 
 
-#  #18-Clean [LATEST_SPRINT] S3 TLS
-#  Clean-Latest-S3-TLS:
-#    name: Clean [LATEST] S3 TLS
-#    runs-on: ${{inputs.runner_type}}
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#      - name: Install cert-manager
-#        run: |
-#          helm repo add jetstack https://charts.jetstack.io --force-update
-#          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
-#            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-#      - name: Create ClusterIssuer
-#        run: |
-#          kubectl apply -f - <<EOF
-#          apiVersion: cert-manager.io/v1
-#          kind: ClusterIssuer
-#          metadata:
-#            name: test-clusterissuer
-#          spec:
-#            selfSigned: {}
-#          EOF
-#      - name: Get clusterissuer
-#        run: kubectl get clusterissuer
+  #18-Clean [LATEST_SPRINT] S3 TLS
+  Clean-Latest-S3-TLS:
+    name: Clean [LATEST] S3 TLS
+    runs-on: ${{inputs.runner_type}}
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install cert-manager
+        run: |
+          helm repo add jetstack https://charts.jetstack.io --force-update
+          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
+      - name: Create ClusterIssuer
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: test-clusterissuer
+          spec:
+            selfSigned: {}
+          EOF
+      - name: Get clusterissuer
+        run: kubectl get clusterissuer
 #      - name: Add secrets to template
 #        run: >-
 #          python qubership-test-pipelines/python/add_secrets_for_s3.py
 #          --path_to_file='qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_tls.yml'
 #          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
 #          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-#      - name: Clean Install opensearch [LATEST] S3 TLS
-#        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
-#        with:
-#          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc_tls.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify opensearch installation
-#        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
+      - name: Clean Install opensearch [LATEST] S3 TLS
+        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
+        with:
+          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc_tls.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify opensearch installation
+        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
 
 
 #  #22-Clean [LATEST_SPRINT] Full-AT Ports-specifying Custom-labels
