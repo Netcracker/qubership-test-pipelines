@@ -96,6 +96,7 @@ jobs:   #run in parallel
   Clean-Latest-Restricted:
     name: Clean [LATEST] Restricted
     runs-on: ${{inputs.runner_type}}
+    needs: install-python
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -119,6 +120,7 @@ jobs:   #run in parallel
   Clean-Latest-S3-TLS:
     name: Clean [LATEST] S3 TLS
     runs-on: ${{inputs.runner_type}}
+    needs: install-python
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
