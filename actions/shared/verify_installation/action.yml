@@ -156,6 +156,7 @@ runs:
       shell: bash
 
     - name: Get logs from all containers in pods
+      if: always()
       run: |
         # ▶️ Get logs from all containers in pods
         file_name=artifacts/${{inputs.namespace}}_log_from_containers.txt
@@ -172,6 +173,7 @@ runs:
       shell: bash
 
     - name: Get logs from test pod
+      if: always()
       run: |
         # ▶️ Get logs from test pod
         file_name=artifacts/${{inputs.namespace}}_tests.txt
