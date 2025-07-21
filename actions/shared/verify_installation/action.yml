@@ -107,6 +107,21 @@ runs:
         kubectl get pv -o yaml > $file_name
       shell: bash
 
+    - name: Get secrets from namespace
+      run: |
+        # ▶️ Get secrets from namespace
+        kubectl get secrets -n ${{inputs.namespace}}
+        file_name=artifacts/${{inputs.namespace}}_get_secrets.txt
+        kubectl get secrets -n ${{inputs.namespace}} > $file_name
+      shell: bash
+
+    - name: Get yaml from secrets
+      run: |
+        # ▶️ Save yaml from secrets
+        file_name=artifacts/${{inputs.namespace}}_get_secrets_yaml.txt
+        kubectl get secrets -n ${{inputs.namespace}} -o yaml > $file_name
+      shell: bash
+
     - name: Get status provisioner logs
       run: |
         # ▶️ Get status provisioner logs
