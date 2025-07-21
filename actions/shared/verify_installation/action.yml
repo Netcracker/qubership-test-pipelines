@@ -90,11 +90,13 @@ runs:
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         else
+          echo "provisioner_pod isn't found. Checking CR..."
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
               if ! [[ -z "$condition" ]]; then
                 status=$(echo "$condition" | yq eval '.status' -)
+                echo CR status: "$status"
                 if [[ "$status" == 'True' ]]; then
                   break
                 fi
@@ -190,9 +192,9 @@ runs:
         fi
         echo "test_pod=$test_pod"
         for i in {1..${{inputs.max_attempts}}}; do
-          echo attempt $i
+          #echo attempt $i
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-          echo "$status"
+          #echo "$status"
           if [[ "$status" == 'Running' ]]; then
             break
           fi
@@ -201,7 +203,9 @@ runs:
         for i in {1..${{inputs.max_attempts}}}; do
           logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
           if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
-            kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
+            kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
+            $logs > $file_name
+            ls -la artifacts/robot-results
             break
           fi
           sleep ${{inputs.timeout}}
@@ -211,8 +215,6 @@ runs:
         if [[ $logs == *"| FAIL |"* ]]; then
           echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
-        kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
-        ls -la artifacts/robot-results
 
     - name: Generate artifact name
       if: always()

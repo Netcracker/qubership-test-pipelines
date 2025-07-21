@@ -1,0 +1,51 @@
+name: 'Verify Consul Installation Action'
+description: 'A GitHub Action to verify tests, get logs from pods'
+inputs:
+  namespace:
+    description: 'See verify_installation.namespace'
+    required: true
+    default: pgskipper
+  max_attempts:
+    description: 'See verify_installation.max_attempts'
+    required: true
+    default: 40
+  timeout:
+    description: 'See verify_installation.timeout'
+    required: true
+    default: '10s'
+  max_attempts_for_provisioner:
+    description: 'See verify_installation.max_attempts'
+    required: true
+    default: 40
+  timeout_for_provisioner:
+    description: 'See verify_installation.timeout'
+    required: true
+    default: '10s'
+  service_branch:
+    description: 'See verify_installation.service_branch'
+    required: true
+    default: ''
+  cr_kind:
+    description: 'See verify_installation.cr_kind'
+    required: true
+    default: 'PatroniCore'
+  cr_name:
+    description: 'See verify_installation.cr_name'
+    required: true
+    default: 'patroni-core'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run verify_installation action for Pgskipper
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      with:
+        namespace: ${{inputs.namespace}}
+        max_attempts: ${{inputs.max_attempts}}
+        timeout: ${{inputs.timeout}}
+        max_attempts_for_provisioner: ${{inputs.max_attempts_for_provisioner}}
+        timeout_for_provisioner: ${{inputs.timeout_for_provisioner}}
+        service_branch: ${{inputs.service_branch}}
+        cr_kind: ${{inputs.cr_kind}}
+        cr_name: ${{inputs.cr_name}}
+

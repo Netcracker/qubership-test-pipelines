@@ -147,18 +147,21 @@ runs:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
         config-file: .github/helm-charts-release-config.yaml
         create-release-branch: "false"
-        version-replace-method: 'replace'
+        version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}
         chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
 
     - name: Install/update service with helm
       shell: bash
+      continue-on-error: true
       # language=bash
       run: |
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
+        echo path_to_template ${{inputs.path_to_template}}
         echo $template_name
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
+        cat $template_name
         if [[ ${{inputs.restricted}} == 'false' ]]; then
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
         else

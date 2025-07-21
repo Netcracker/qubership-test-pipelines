@@ -61,12 +61,20 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      #- name: Install Monitoring
-        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Clean Install Pgskipper [LATEST]
-        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper
+      - name: Clean Install Pgskipper Core [LATEST]
+        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
         with:
-          path_to_template: 'templates/pgskipper/clean.yml'
+          path_to_template: 'templates/pgskipper/patroni-core-quickstart-sample.yaml'
           service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Consul installation
-#        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Verify Pgskipper installation
+        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
+      - name: Clean Install Pgskipper Services [LATEST]
+        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
+        with:
+          path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Get logs
+        run: |
+          kubectl get events --sort-by=.metadata.creationTimestamp -n pgskipper
+      - name: Verify Pgskipper installation
+        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
