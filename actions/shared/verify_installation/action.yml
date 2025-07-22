@@ -111,13 +111,6 @@ runs:
           fi
         fi
 
-#    - name: Wait pods is ready
-#      run: |
-#        # ▶️ Wait pods is ready
-#        kubectl wait pod --all --for=condition=Ready -n=${{inputs.namespace}} --timeout 200s
-#      shell: bash
-#      continue-on-error: true
-
     - name: Get pods
       run: |
         # ▶️ Get pods
