@@ -43,6 +43,62 @@ runs:
       run: mkdir -p artifacts
       shell: bash
 
+    - name: Initialize error flag
+      shell: bash
+      # language=bash
+      run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
+
+#    - name: Check service is ready
+#      shell: bash
+#      # language=bash
+#      run: |
+#        # ▶️ Check service is ready
+#        provisioner_pod="NOT_FOUND"
+#        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+#        for pod in "${pods[@]}"; do
+#          if [[ $pod == *"provisioner"* ]]; then
+#            provisioner_pod=$pod
+#          fi
+#        done
+#        if [[ $provisioner_pod != "NOT_FOUND" ]]; then
+#          echo "provisioner_pod=$provisioner_pod"
+#          for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
+#            status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+#            if [[ "$status" == 'Succeeded' ]]; then
+#              break
+#            fi
+#            sleep ${{inputs.timeout_for_provisioner}}
+#          done
+#          if [[ "$status" != 'Succeeded' ]]; then
+#            echo $provisioner_pod pod has not Succeeded status
+#          fi
+#          echo PROVISIONER LOGS:
+#          kubectl logs $provisioner_pod -n ${{inputs.namespace}}
+#          logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
+#          if [[ $logs != *"Failed components statuses are []"* ]]; then
+#            echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
+#            echo PODS:
+#            kubectl get pods -n ${{inputs.namespace}}
+#            echo "ERROR_FLAG=true" >> $GITHUB_ENV
+#          fi
+#        else
+#          for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
+#            cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
+#            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
+#              if ! [[ -z "$condition" ]]; then
+#                status=$(echo "$condition" | yq eval '.status' -)
+#                if [[ "$status" == 'True' ]]; then
+#                  break
+#                fi
+#              fi
+#            sleep ${{inputs.timeout_for_provisioner}}
+#          done
+#          if [[ "$status" != 'True' ]]; then
+#             echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
+#             echo "ERROR_FLAG=true" >> $GITHUB_ENV
+#          fi
+#        fi
+
     - name: Wait pods is ready
       run: |
         # ▶️ Wait pods is ready
@@ -166,7 +222,7 @@ runs:
           echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
           echo PODS:
           kubectl get pods -n ${{inputs.namespace}}
-          exit 1
+          echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
       shell: bash
 
@@ -225,7 +281,7 @@ runs:
         echo 'TEST LOGS:'
         kubectl logs $test_pod -n ${{inputs.namespace}}
         if [[ $logs == *"| FAIL |"* ]]; then
-          exit 1
+          echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
       shell: bash
 
@@ -247,3 +303,13 @@ runs:
       with:
         name: ${{env.ARTIFACT_NAME}}
         path: artifacts/
+
+    - name: Check job status
+      shell: bash
+      # language=bash
+      run: |
+        echo "${{ env.ERROR_FLAG }}"
+        if [ "${{ env.ERROR_FLAG }}" == 'true' ]; then
+          echo "Service was installed with errors!"
+          exit 1
+        fi

@@ -6,6 +6,8 @@ global:
       certProvider: cert-manager
       clusterIssuerName: dev-clusterissuer
 opensearch:
+  tls:
+    enabled: false
   securityConfig:
     authc:
       basic:
