@@ -26,11 +26,15 @@ opensearch:
         cpu: 900m
         memory: 2Gi
   snapshots:
-    enabled: false
+    enabled: true
     size: 1Gi
     s3:
-      enabled: false
+      enabled: true
       pathStyleAccess: true
+      url: https://s3.amazonaws.com/
+      bucket: test-pipelines-storage
+      keyId: ''
+      keySecret: ''
   client:
     ingress:
       enabled: true
