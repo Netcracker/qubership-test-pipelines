@@ -32,8 +32,8 @@ runs:
       # language=bash
       run: |
         restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
-        if [ ! -d "restricted_folder" ]; then
-          echo "::warning::Files with restricted resources not found. Resources not created."
+        if [ ! -d "$restricted_folder" ] || [ ! -d "$restricted_folder/clusterRoles" ]; then
+          echo "::warning::Files with clusterRoles not found. Resources not created."
         else
           echo "Applying ClusterRoles..."
           kubectl create -f $restricted_folder/clusterRoles
@@ -44,8 +44,8 @@ runs:
       # language=bash
       run: |
         restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
-        if [ ! -d "restricted_folder" ]; then
-          echo "::warning::Files with restricted resources not found. Resources not created."
+        if [ ! -d "$restricted_folder" ] || [ ! -d "$restricted_folder/clusterRoleBindings" ]; then
+          echo "::warning::Files with clusterRoleBindings not found. Resources not created."
         else
           echo "Applying clusterRoleBindings..."
           kubectl create -f $restricted_folder/clusterRoleBindings
