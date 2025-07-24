@@ -19,14 +19,21 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      sp_release:
+        description: 'Status Provisioner Release version'
+        required: true
+        type: string
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
       AWS_S3_ACCESS_KEY_SECRET:
         required: true
 
+#env:
+#  sp_release: 'main'
+
 env:
-  sp_release: 'main'
+  sp_release: ${{ inputs.sp_release }}
 
 jobs:
   prepare-versions:
