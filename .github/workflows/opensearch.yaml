@@ -178,11 +178,11 @@ jobs:   #run in parallel
         run: |
           python qubership-test-pipelines/python/update_yaml.py \
             --file='qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml' \
-            --path='snapshots/s3/keyId' \
+            --path='opensearch/snapshots/s3/keyId' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
           && python qubership-test-pipelines/python/update_yaml.py \
             --file='qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml' \
-            --path='snapshots/s3/keySecret' \
+            --path='opensearch/snapshots/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       - name: Display finale template
         run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml
