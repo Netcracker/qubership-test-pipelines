@@ -25,6 +25,9 @@ on:
       AWS_S3_ACCESS_KEY_SECRET:
         required: true
 
+env:
+  sp_release: 'main'
+
 jobs:
   prepare-versions:
     runs-on: ${{inputs.runner_type}}
