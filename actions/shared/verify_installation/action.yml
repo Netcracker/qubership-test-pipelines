@@ -71,17 +71,29 @@ runs:
         if [[ $provisioner_pod != "NOT_FOUND" ]]; then
           echo "provisioner_pod=$provisioner_pod"
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
+            output=$(kubectl get pod $provisioner_pod --ignore-not-found -n ${{inputs.namespace}})
+            if [ -z "$output" ]; then
+                echo "::error::Provisioner pod $provisioner_pod no longer exists"
+                echo "ERROR_FLAG=true" >> $GITHUB_ENV
+                exit 0
+            fi
             status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+            echo $i Status $status
             if [[ "$status" == 'Succeeded' ]]; then
-              break
+                logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
+                echo $logs
+                if [[ $logs == *"Failed components statuses are []"* ]]; then
+                  echo "All components are in succeed status!"
+                  echo PROVISIONER LOGS: $logs
+                  break
+                fi
             fi
             sleep ${{inputs.timeout_for_provisioner}}
           done
           if [[ "$status" != 'Succeeded' ]]; then
-            echo $provisioner_pod pod has not Succeeded status
+            echo "::error:: $provisioner_pod pod has not Succeeded status. Current status: $status"
+            echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
-          echo PROVISIONER LOGS:
-          kubectl logs $provisioner_pod -n ${{inputs.namespace}}
           logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
           if [[ $logs != *"Failed components statuses are []"* ]]; then
             echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
@@ -91,6 +103,7 @@ runs:
           fi
         else
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
+            echo "Status provisioner pod is not found. Checking CR..."
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
               if ! [[ -z "$condition" ]]; then
@@ -103,6 +116,7 @@ runs:
           done
           if [[ "$status" != 'True' ]]; then
              echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
+             echo $condition
              echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         fi
@@ -209,6 +223,7 @@ runs:
         echo 'TEST LOGS:'
         kubectl logs $test_pod -n ${{inputs.namespace}}
         if [[ $logs == *"| FAIL |"* ]]; then
+          echo "::error:: Tests failed!"
           echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
         kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
@@ -240,6 +255,6 @@ runs:
       run: |
         echo "${{ env.ERROR_FLAG }}"
         if [ "${{ env.ERROR_FLAG }}" == 'true' ]; then
-          echo "Service was installed with errors!"
+          echo "::error:: Service was installed with errors!"
           exit 1
         fi
