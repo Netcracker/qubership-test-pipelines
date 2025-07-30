@@ -78,10 +78,8 @@ runs:
                 exit 0
             fi
             status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-            echo $i Status $status
             if [[ "$status" == 'Succeeded' ]]; then
                 logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
-                echo $logs
                 if [[ $logs == *"Failed components statuses are []"* ]]; then
                   echo "All components are in succeed status!"
                   echo PROVISIONER LOGS: $logs

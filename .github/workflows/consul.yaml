@@ -289,6 +289,5 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
-        continue-on-error: true
       - name: Describe Daemonset
         run: kubectl describe daemonset consul -n consul
