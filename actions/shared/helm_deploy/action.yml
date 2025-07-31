@@ -120,6 +120,10 @@ runs:
         echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
       shell: bash
 
+    - name: Install packaging
+      shell: bash
+      run: sudo apt-get install python3-packaging
+
     - name: Update versions in values
       id: update-versions
       uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
