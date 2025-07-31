@@ -122,12 +122,12 @@ runs:
 
     - name: Update versions in values
       id: update-versions
-      uses: netcracker/qubership-workflow-hub/actions/helm-charts-release@main
+      uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
         config-file: .github/helm-charts-release-config.yaml
         create-release-branch: "false"
-        version-replace-method: 'replace'
+        version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}
         chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
 
