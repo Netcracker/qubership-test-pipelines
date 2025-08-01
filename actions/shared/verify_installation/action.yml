@@ -114,10 +114,10 @@ runs:
             echo cr_yaml $cr_yaml
             #condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
             echo "----------------------------------"
-            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleSucceeded")' -o=json)
-            echo inputs.cr_reason "${{inputs.cr_reason}}"
+            #condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleSucceeded")' -o=json)
+            #echo inputs.cr_reason "${{inputs.cr_reason}}"
             echo "----------------------------------"
-            #condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "${{inputs.cr_reason}}")' -o=json)
+            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "${{inputs.cr_reason}}")' -o=json)
             echo "----------------------------------"
             echo condition $condition
             echo "----------------------------------"
@@ -232,7 +232,9 @@ runs:
           sleep ${{inputs.timeout}}
         done
         for i in {1..${{inputs.max_attempts}}}; do
-          logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
+          #logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
+          (kubectl logs $test_pod -n ${{inputs.namespace}}) > test_logs.txt
+          logs=$(cat test_logs.txt)
           if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
             kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
             kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
@@ -243,7 +245,8 @@ runs:
         done
         echo 'TEST LOGS:'
         #kubectl logs $test_pod -n ${{inputs.namespace}}
-        echo $logs
+        #echo $logs
+        cat test_logs.txt
         if [[ $logs == *"| FAIL |"* ]]; then
           echo "::error:: Tests failed!"
           echo "ERROR_FLAG=true" >> $GITHUB_ENV
