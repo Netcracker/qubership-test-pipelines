@@ -43,4 +43,6 @@ runs:
         namespace: ${{inputs.namespace}}
         max_attempts: ${{inputs.max_attempts}}
         timeout: ${{inputs.timeout}}
+        max_attempts_for_provisioner: ${{inputs.max_attempts_for_provisioner}}
+        timeout_for_provisioner: ${{inputs.timeout_for_provisioner}}
         service_branch: ${{inputs.service_branch}}
