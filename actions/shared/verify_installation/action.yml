@@ -169,6 +169,55 @@ runs:
         kubectl get pv | grep ${{inputs.namespace}}
         kubectl get pv | grep ${{inputs.namespace}} > $file_name
 
+    - name: Get status provisioner logs
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Get status provisioner logs
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        for pod in "${pods[@]}"; do
+          if [[ $pod == *"provisioner"* ]]; then
+            provisioner_pod=$pod
+          fi
+        done
+        if ! [[ $provisioner_pod ]]; then
+          echo Provisioner pod is not found
+          exit 0
+        fi
+        echo "provisioner_pod=$provisioner_pod"
+        for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
+          status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
+          IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+          for pod in "${pods[@]}"; do
+            if [[ $pod == *"tests"* ]]; then
+              test_pod=$pod
+            fi
+          done
+          if ! [[ $test_pod ]]; then
+            echo There is no test pod
+            exit 0
+          fi
+          echo 'INITIAL TESTS POD LOGS:'
+          kubectl get pod $test_pod -n ${{inputs.namespace}}
+          kubectl logs $test_pod -n ${{inputs.namespace}}
+          if [[ "$status" == 'Succeeded' ]]; then
+            break
+          fi
+          sleep ${{inputs.timeout_for_provisioner}}
+        done
+        if [[ "$status" != 'Succeeded' ]]; then
+          echo $provisioner_pod pod has not Succeeded status
+        fi
+        echo PROVISIONER POD LOGS:
+        kubectl logs $provisioner_pod -n ${{inputs.namespace}}
+        logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
+        if [[ $logs != *"Failed components statuses are []"* ]]; then
+          echo Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts
+          echo PODS:
+          kubectl get pods -n ${{inputs.namespace}}
+          echo "ERROR_FLAG=true" >> $GITHUB_ENV
+        fi
+
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
