@@ -6,11 +6,11 @@ operator:
   # Resource limits for patroni-services-operator pod
   resources:
     limits:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 256m
+      memory: 256Mi
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 256m
+      memory: 256Mi
 
 ##  This section describes values for metricCollector deployment
 metricCollector:

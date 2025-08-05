@@ -68,6 +68,8 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
+      - name: Describe nodes
+        run: kubectl describe nodes
       - name: Clean Install Pgskipper Services [LATEST]
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
         with:
@@ -76,5 +78,7 @@ jobs:
       - name: Get logs
         run: |
           kubectl get events --sort-by=.metadata.creationTimestamp -n pgskipper
+      - name: Describe nodes
+        run: kubectl describe nodes
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
