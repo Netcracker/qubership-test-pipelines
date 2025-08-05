@@ -14,10 +14,20 @@ on:
         description: 'Test pipeline branch name'
         type: string
         required: true
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
 
 jobs:
   prepare-versions:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     outputs:
       versions: ${{steps.process-versions.outputs.versions}}
       previous_version: ${{steps.process-versions.outputs.previous_version}}
@@ -40,7 +50,7 @@ jobs:
   # ---------- Current service branch ----------
   #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
   Clean-Latest-Upgrade-Diff-Params:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST], Upgrade [LATEST] Diff Params
     steps:
       - name: Get current workflow branch
@@ -75,7 +85,7 @@ jobs:
   #12-Clean [LATEST_SPRINT] Restricted
   Clean-Latest-Restricted:
     name: Clean [LATEST] Restricted
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -96,7 +106,7 @@ jobs:
 
   #22-Clean [LATEST_SPRINT] Full-AT Ports-specifying Custom-labels
   Clean-Latest-Full-At-ports-Specifying-Custom-Labels:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] Full-AT Ports-specifying Custom-labels
     steps:
       - name: Checkout pipeline
@@ -115,10 +125,10 @@ jobs:
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
-  #13-Clean [LATEST_SPRINT] W/O Components
-  Clean-WO-Components:
-    runs-on: ubuntu-latest
-    name: Clean [LATEST] W/O Components
+  #13-Clean [LATEST_SPRINT] W/O Components, 14-Upgrade [LATEST_SPRINT] All Components S3
+  Clean-WO-Components-Upgrade-All-Components-S3:
+    runs-on: ${{inputs.runner_type}}
+    name: Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -135,6 +145,21 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Add secrets to template
+        run: >-
+          python qubership-test-pipelines/python/add_secrets_for_s3.py
+          --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
+          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+        shell: bash
+      - name: Update Consul [LATEST] All Components S3
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
   #---------- Update from old releases ----------
   #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
@@ -142,7 +167,7 @@ jobs:
   Clean-Previous-Update-To-Latest:
     name: Clean [PREVIOUS], Update to [LATEST]
     needs: prepare-versions
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     strategy:
       matrix:
         release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
@@ -181,7 +206,7 @@ jobs:
   Clean-Previous-Upgrade-To-Latest-Restricted:
     name: Clean [PREVIOUS] Restricted, Upgrade To [LATEST] Restricted
     needs: prepare-versions
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -214,3 +239,55 @@ jobs:
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
         with:
           service_branch: ${{inputs.service_branch}}
+
+  #18-Clean [LATEST_SPRINT] S3 TLS
+  Clean-Latest-S3-TLS:
+    name: Clean [LATEST] S3 TLS
+    runs-on: ${{inputs.runner_type}}
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Describe nodes
+        run: kubectl describe nodes
+      - name: Install cert-manager
+        run: |
+          helm repo add jetstack https://charts.jetstack.io --force-update
+          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
+      - name: Create ClusterIssuer
+        run: |
+          kubectl apply -f - <<EOF
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: test-clusterissuer
+          spec:
+            selfSigned: {}
+          EOF
+      - name: Get clusterissuer
+        run: kubectl get clusterissuer
+      - name: Add secrets to template
+        run: >-
+          python qubership-test-pipelines/python/add_secrets_for_s3.py
+          --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml'
+          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      - name: Add label to namespace
+        run: |
+          kubectl create namespace consul
+          kubectl label --overwrite ns consul pod-security.kubernetes.io/enforce=privileged
+      - name: Clean Install Consul [LATEST] S3 TLS
+        uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Describe Daemonset
+        run: kubectl describe daemonset consul -n consul

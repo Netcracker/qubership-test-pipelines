@@ -55,6 +55,11 @@ inputs:
       Path to helm-charts-release-config.yaml in pipeline repository
     required: true
 
+  resource_folder:
+    description: |
+      Folder with resources for creating before installation
+    required: true
+
 runs:
   using: 'composite'
   steps:
@@ -67,8 +72,27 @@ runs:
 
     - name: Create namespace
       if: inputs.deploy_mode == 'install'
-      run: kubectl create namespace '${{inputs.namespace}}'
       shell: bash
+      # language=bash
+      run: |
+        if ! kubectl get namespace ${{inputs.namespace}} >/dev/null 2>&1; then
+        kubectl create namespace ${{inputs.namespace}}
+        else
+        echo "Namespace '${{inputs.namespace}}' already exists"
+        fi
+
+    - name: Create resources
+      if: inputs.resource_folder != ''
+      shell: bash
+      # language=bash
+      run: |
+        folder="qubership-test-pipelines/${{inputs.resource_folder}}"
+        files=($(find "$folder" -type f))
+        echo $files
+        for file in "${files[@]}"; do
+          echo "Applying $file"
+          kubectl create -f "$file"
+        done
 
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
@@ -80,11 +104,14 @@ runs:
         namespace: ${{inputs.namespace}}
 
     - name: Copy template
+      shell: bash
+      # language=bash
       run: |
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-      shell: bash
 
     - name: Check helm_charts_release_config file
+      shell: bash
+      # language=bash
       run: |
         file_path=$(echo ${{inputs.repository_name}}/.github/helm-charts-release-config.yaml)
         config_source=$(echo ${{inputs.helm_charts_release_config}})
@@ -98,10 +125,11 @@ runs:
                 exit 1
             fi
         fi
-      shell: bash
 
     - name: Replace slash in service branch
       id: replace_slash
+      shell: bash
+      # language=bash
       run: |
         service_branch="${{inputs.service_branch}}"
         if [[ "${service_branch}" == *"/"* ]]; then
@@ -111,39 +139,41 @@ runs:
         fi
         echo ${service_branch_updated}
         echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
-      shell: bash
 
     - name: Update versions in values
       id: update-versions
-      uses: netcracker/qubership-workflow-hub/actions/helm-charts-release@main
+      uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
         config-file: .github/helm-charts-release-config.yaml
         create-release-branch: "false"
-        version-replace-method: 'replace'
+        version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}
         chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
 
     - name: Install/update service with helm
+      shell: bash
+      # language=bash
       run: |
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ ${{inputs.restricted}} == 'false' ]]; then
-          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m
+          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
         else
-          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} $SET_NEW_IMAGES --timeout 10m --skip-crds
+          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --skip-crds
         fi
-      shell: bash
 
     - name: Get docker images
+      shell: bash
+      # language=bash
       run: |
         # ▶️ Get docker images
         kubectl get pods -n ${{inputs.namespace}} -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
-      shell: bash
 
     - name: Use default context
       if: inputs.restricted == 'true'
-      run: kubectl config use-context kind-kind
       shell: bash
+      # language=bash
+      run: kubectl config use-context kind-kind

@@ -26,7 +26,7 @@ on:
 
 jobs:
   verification:
-    runs-on: ubuntu-latest
+    runs-on: ${{inputs.runner_type}}
     steps:
       - name: Run Deployment Verification
         uses: Netcracker/your-repo/actions/verify-installation@main
