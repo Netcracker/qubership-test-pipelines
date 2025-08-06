@@ -1,5 +1,5 @@
-name: "Helm deploy Action for Opensearch"
-description: "GitHub Action for install/upgrade Opensearch using Helm"
+name: "Helm deploy Action for opensearch"
+description: "GitHub Action for install/upgrade opensearch using Helm"
 inputs:
   deploy_mode:
     description: 'See helm_deploy.deploy_mode'
@@ -28,10 +28,6 @@ inputs:
     description: 'See helm_deploy.path_to_chart'
     required: true
     default: 'operator/charts/helm/opensearch-service'
-  components:
-    description: 'See helm_deploy.components'
-    required: true
-    default: 'integrationTests'
   namespace:
     description: 'See helm_deploy.namespace'
     required: true
@@ -40,10 +36,14 @@ inputs:
     description: 'See helm_deploy.helm_charts_release_config'
     required: true
     default: 'release_configs/opensearch/helm-charts-release-config.yaml'
+  resource_folder:
+    description: 'See helm_deploy.resource_folder'
+    required: true
+    default: ''
 runs:
   using: 'composite'
   steps:
-    - name: Run helm_install action for Opensearch
+    - name: Run helm_install action for opensearch
       uses: ./qubership-test-pipelines/actions/shared/helm_deploy
       with:
         deploy_mode: ${{inputs.deploy_mode}}
@@ -53,6 +53,6 @@ runs:
         service_name: ${{inputs.service_name}}
         repository_name: ${{inputs.repository_name}}
         path_to_chart: ${{inputs.path_to_chart}}
-        components: ${{inputs.components}}
         namespace: ${{inputs.namespace}}
         helm_charts_release_config: ${{inputs.helm_charts_release_config}}
+        resource_folder: ${{inputs.resource_folder}}
