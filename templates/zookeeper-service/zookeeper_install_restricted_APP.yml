@@ -1,0 +1,46 @@
+global:
+  name: "zookeeper"
+  secrets:
+    zooKeeper:
+      adminUsername: "zadmin"
+      adminPassword: "zadmin"
+      clientUsername: "zclient"
+      clientPassword: "zclient"
+    backupDaemon:
+      username: "admin"
+      password: "admin"
+operator:
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+zooKeeper:
+  replicas: 3
+  storage:
+    className:
+      - standard
+    size: 1Gi
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+monitoring:
+  install: false
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+backupDaemon:
+  install: true
+  backupStorage:
+    persistentVolumeType: "standalone"
+    storageClass: standard
+    volumeSize: 1Gi
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+integrationTests:
+  install: true
+  tags: "zookeeperNOTzookeeper_backup_daemon"
+  timeout: 600
+  pvType: "standalone"
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000

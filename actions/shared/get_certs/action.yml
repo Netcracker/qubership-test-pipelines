@@ -1,0 +1,37 @@
+name: "Get Certs Action"
+description: "GitHub Action to get certs from secret"
+inputs:
+  service_name:
+    description: |
+      Helm release name
+    required: true
+  secret_name:
+    description: |
+      Name of secret with certs
+    required: true
+  namespace:
+    description: |
+      Kubernetes namespace for service installation
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Get secrets
+      shell: bash
+      # language=bash
+      run: |
+        sudo snap install yq
+        secret=$(kubectl get secret ${{inputs.secret_name}} -oyaml -n ${{inputs.namespace}})
+        ca_crt=$(echo "$secret" | yq eval '.data["ca.crt"]' -)
+        tls_crt=$(echo "$secret" | yq eval '.data["tls.crt"]' -)
+        tls_key=$(echo "$secret" | yq eval '.data["tls.key"]' -)
+
+        if [ -z "$ca_crt" ] || [ -z "$tls_crt" ] || [ -z "$tls_key" ]; then
+          echo "ERROR: Failed to extract certificates!"
+          exit 1
+        fi
+
+        echo "$ca_crt" > ${{runner.temp}}/${{inputs.secret_name}}_ca_crt.txt
+        echo "$tls_crt" > ${{runner.temp}}/${{inputs.secret_name}}_tls_crt.txt
+        echo "$tls_key" > ${{runner.temp}}/${{inputs.secret_name}}_tls_key.txt

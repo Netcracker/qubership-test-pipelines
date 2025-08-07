@@ -4,6 +4,8 @@ runs:
   using: 'composite'
   steps:
       - name: Get info
+        shell: bash
+        # language=bash
         run: |
           free -h
           echo '================================================================================'
@@ -12,24 +14,25 @@ runs:
           lsblk
           echo '================================================================================'
           sysctl vm.max_map_count
+      - name: Install kind
         shell: bash
-      - name: Download kind
+        # language=bash
         run: |
           echo Download kind
           [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
           chmod +x ./kind
           # sudo mv ./kind /usr/local/bin/kind
-        shell: bash
       - name: Delete kind
         run: |
           ./kind get clusters
           ./kind delete cluster --name kind || true
         shell: bash
       - name: Run kind
+        shell: bash
+        # language=bash
         run: >-
           ./kind create cluster
           --image kindest/node:v1.32.2
           --config qubership-test-pipelines/kind-configs/kind-multi-node.yaml
           --wait 5m
-        shell: bash
         #! check kubernetes version is actual
