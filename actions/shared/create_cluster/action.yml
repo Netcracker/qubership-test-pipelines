@@ -12,6 +12,8 @@ runs:
           lscpu
           echo '================================================================================'
           lsblk
+          echo '================================================================================'
+          sysctl vm.max_map_count
       - name: Install kind
         shell: bash
         # language=bash
@@ -20,6 +22,11 @@ runs:
           [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
           chmod +x ./kind
           # sudo mv ./kind /usr/local/bin/kind
+      - name: Delete kind
+        run: |
+          ./kind get clusters
+          ./kind delete cluster --name kind || true
+        shell: bash
       - name: Run kind
         shell: bash
         # language=bash
