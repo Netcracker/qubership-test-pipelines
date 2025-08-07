@@ -41,9 +41,6 @@ ui:
     enabled: true
 client:
   enabled: true
-  nodeSelector:
-    role: compute
-    kubernetes.io/hostname: kind-worker
   resources:
     requests:
       memory: 64Mi
