@@ -52,7 +52,7 @@ inputs:
 
   helm_charts_release_config:
     description: |
-      Path to helm-charts-release-config.yaml in pipeline repository
+      Path to charts-values-update-config.yaml in pipeline repository
     required: true
 
   resource_folder:

@@ -30,8 +30,8 @@ It implements a complete CI/CD lifecycle from infrastructure provisioning to pos
 
 ## How to create a test workflow for new service
 
-1. Add '.github/helm-charts-release-config.yaml' (file with images) to service. 
-If it is not possible to add file to service project, then add it to 'qubership-test-pipelines/release_configs/<service>/helm-charts-release-config.yaml'
+1. Add '.github/charts-values-update-config.yaml' (file with images) to service. 
+If it is not possible to add file to service project, then add it to 'qubership-test-pipelines/release_configs/<service>/charts-values-update-config.yaml'
 ```yaml
 charts:
   - name: <repository_name>
