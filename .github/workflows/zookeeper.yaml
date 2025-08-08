@@ -274,7 +274,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_template
       - name: Print template
         run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml
-      - name: Clean Zookeeper to [LATEST] TLS Certificates
+      - name: Clean Zookeeper [LATEST] TLS Certificates
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_certs.yml'

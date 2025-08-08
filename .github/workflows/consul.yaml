@@ -4,14 +4,15 @@ on:
   workflow_call:
     inputs:
       service_branch:
+        description: 'Branch of qubership-consul repository'
         required: false
         type: string
       versions_file:
-        description: 'Path to versions list file'
+        description: 'Path to file with version list'
         type: string
         required: true
       pipeline_branch:
-        description: 'Test pipeline branch name'
+        description: 'Branch of qubership-test-pipelines repository'
         type: string
         required: true
       runner_type:
@@ -278,10 +279,6 @@ jobs:
           --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml'
           --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-      - name: Add label to namespace
-        run: |
-          kubectl create namespace consul
-          kubectl label --overwrite ns consul pod-security.kubernetes.io/enforce=privileged
       - name: Clean Install Consul [LATEST] S3 TLS
         uses: ./qubership-test-pipelines/actions/consul/helm_deploy_consul
         with:
