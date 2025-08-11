@@ -1,17 +1,144 @@
 # Zookeeper Workflow
 
-## Jobs list
+## Overview
+Workflow performs testing of the [Qubership-zookeeper service](https://github.com/Netcracker/qubership-zookeeper) across various scenarios.
+
+## Input Parameters
 <!-- markdownlint-disable line-length -->
-| Job                                                       | Name                                                              | Type       | Steps                                                                                                  | Description                                                                                                                                |
-|-----------------------------------------------------------|-------------------------------------------------------------------|------------|--------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------------| 
-| Clean-Latest-Upgrade-Diff-Params                          | Clean [LATEST], Upgrade [LATEST] Diff Params                      | Single Job | Clean Install Zookeeper [LATEST], Update to [LATEST] Version With Diff Params                          | Clean Deploy with latest release. Rolling Update with same manifest from previous step, but with changed deployment config                 |
-| Clean-WO-Components-Upgrade-All-Components-S3             | Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3 | Single Job | Clean Install Zookeeper [LATEST] W/O Components, Update Zookeeper [LATEST] All Components S3           | Clean Deploy without additional components, then upgrade to include all components and S3 storage                                          |
-| Clean-Latest-non-TLS-Upgrade-Latest-TLS                   | Clean [LATEST], Upgrade [LATEST] TLS                              | Single Job | Clean Install Zookeeper [LATEST], Update Zookeeper to [LATEST] TLS                                     | Test non-TLS to TLS migration during upgrade                                                                                               |
-| Clean-Latest-TLS                                          | Clean [LATEST] TLS                                                | Single Job | Clean Install Zookeeper [LATEST] with TLS                                                              | Clean Deploy with TLS, Get Zookeeper Certs, Get Backup-Daemon Certs                                                                        |
-| Clean-Latest-TLS-Secrets                                  | Clean Zookeeper [LATEST] TLS Secrets                              | Single Job | Clean Install Zookeeper [LATEST] TLS Secrets                                                           | Clean Deploy with TLS, use Certs from Clean-Latest-TLS in secrets                                                                          |
-| Clean-Latest-TLS-Certificates                             | Clean [LATEST] TLS Certificates                                   | Single Job | Clean Zookeeper [LATEST] TLS Certificates                                                              | Clean Deploy with TLS, use Certs from Clean-Latest-TLS in template                                                                         |
-| Clean-Latest-Restricted                                   | Clean [LATEST] Restricted                                         | Single Job | Clean Install Zookeeper [LATEST] in Restricted mode                                                    | Clean Deploy with latest release in restricted mode                                                                                        |
-| Clean-Previous-Update-To-Latest                           | Clean [PREVIOUS], Update to [LATEST]                              | Matrix     | Clean Install Zookeeper [PREVIOUS], Update Zookeeper to [LATEST]                                       | Clean Deploy with previous releases from file.  Rolling Update from previous release to latest                                             |
-| Clean-Previous-Upgrade-To-Latest-Restricted               | Clean [PREVIOUS] Restricted, Upgrade To [LATEST] Restricted       | Single Job | Clean Install Zookeeper [PREVIOUS] in Restricted mode, Update Zookeeper to [LATEST] in Restricted mode | Clean Deploy job with previous release in restricted mode.  Rolling Update job to latest release from previous release in restricted mode  |
+| Parameter       | Type   | Required | Description                                                      | Default        |
+|-----------------|--------|----------|------------------------------------------------------------------|----------------|
+| service_branch  | string | No       | Branch of qubership-zookeeper repository                         | -              |
+| versions_file   | string | Yes      | Path to file with version list in qubership-zookeeper repository | -              |
+| pipeline_branch | string | Yes      | Branch of qubership-test-pipelines repository                    | -              |
+| runner_type     | string | No       | Runner type (self-hosted or ubuntu-latest)                       | ubuntu-latest  |
 <!-- markdownlint-enable line-length -->
+
+## Secrets list
+<!-- markdownlint-disable line-length -->
+| Secret                     | Required | Description             |
+|----------------------------|----------|-------------------------|
+| AWS_S3_ACCESS_KEY_ID       | Yes      | AWS Access Key for S3   |
+| AWS_S3_ACCESS_KEY_SECRET   | Yes      | AWS Secret Key for S3   |
+<!-- markdownlint-enable line-length -->
+
+## Jobs list
+
+### Versions
+- **[LATEST]**: Current Zookeeper branch (`${{inputs.service_branch}}`) that triggered the pipeline
+- **[PREVIOUS]**: Version(s) from the `versions` output generated by `prepare-versions` step
+
+## 0. prepare-versions
+**Name**: Prepare versions for testing  
+**Description**: Prepares version list for testing.  
+**Outputs**:  
+- `versions`: JSON array of versions (e.g., `["1.0.0", "1.0.1"]`)  
+- `previous_version`: Last version in the list (e.g., `"1.0.1"`)  
+**Key Steps**:  
+- Process versions file   
+Reads `version.yaml` file from Zookeeper repository and converts to JSON 
+
+## 1. Clean-Latest-Upgrade-Diff-Params
+**Name**: Clean [LATEST], Upgrade [LATEST] Diff Params  
+**Description**:  
+Clean Deploy with [LATEST] version. Rolling Update with same version, but with changed deployment config    
+**Key Steps**:  
+- Clean Install Zookeeper [LATEST]  
+  (Uses template: `zookeeper_install_APP_k8s.yml`)  
+- Update to [LATEST] Version With Diff Params  
+  (Uses template: `zookeeper_update_APP_k8s.yml`)  
+- Verify Zookeeper upgrade  
+
+## 2. Clean-WO-Components-Upgrade-All-Components-S3
+**Name**: Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3  
+**Description**:  
+Clean Deploy [LATEST] version without additional components, upgrade to include all components and S3 storage.  
+**Key Steps**:  
+- Clean Install Zookeeper [LATEST] W/O Components  
+  (Uses template: `zookeeper_install_minimal_APP_k8s.yml`)  
+- Update YAML secrets  
+  (Uses script `update_yaml.py` for S3 credentials)  
+- Update Zookeeper [LATEST] All Components S3  
+  (Uses template: `zookeeper_install_s3_APP_k8s.yml`)  
+
+## 3. Clean-Latest-non-TLS-Upgrade-Latest-TLS
+**Name**: Clean [LATEST], Upgrade [LATEST] TLS  
+**Description**:
+Test non-TLS to TLS migration during upgrade. 
+**Key Steps**:  
+- Clean Install Zookeeper [LATEST] 
+  (Uses template: `zookeeper_install_APP_k8s.yml`)  
+- Install cert-manager  
+- Create ClusterIssuer  
+  (Resource: `test-clusterissuer.yaml`)  
+- Update Zookeeper to [LATEST] TLS  
+  (Uses template: `zookeeper_install_tls_APP_k8s.yml`)  
+
+## 4. Clean-Latest-TLS
+**Name**: Clean [LATEST] TLS  
+**Description**:  
+Clean Deploy [LATEST] version with TLS, Get Zookeeper Certs, Get Backup-Daemon Certs. 
+**Key Steps**:  
+- Install cert-manager  
+- Create ClusterIssuer  
+- Install Zookeeper [LATEST] TLS  
+  (Uses template: `zookeeper_install_tls_APP_k8s.yml`)
+- Get Zookeeper Certs  
+- Get Backup-Daemon Certs  
+- Copy certs to artifacts  
+- Upload certs artifacts  
+
+## 5. Clean-Latest-TLS-Secrets
+**Name**: Clean Zookeeper [LATEST] TLS Secrets  
+**Dependencies**: `Clean-Latest-TLS`  
+**Description**:  
+Clean Deploy [LATEST] version with TLS, use Certs from Clean-Latest-TLS in secrets  
+**Key Steps**:  
+- Download zookeeper certs artifacts  
+- Update secrets  
+  (Action: `add_certs_to_secrets`)  
+- Clean Install Zookeeper [LATEST] TLS Secrets  
+  (Uses template: `zookeeper_install_tls_secrets.yml`)  
+
+## 6. Clean-Latest-TLS-Certificates
+**Name**: Clean [LATEST] TLS Certificates  
+**Dependencies**: `Clean-Latest-TLS`  
+**Description**:  
+Clean Deploy [LATEST] version with TLS, use Certs from Clean-Latest-TLS in template  
+**Key Steps**:  
+- Download certs artifacts  
+- Update template  
+  (Action: `add_certs_to_template`)  
+- Clean Zookeeper [LATEST] TLS Certificates  
+  (Uses template: `zookeeper_install_tls_certs.yml`)  
+
+## 7. Clean-Latest-Restricted
+**Name**: Clean [LATEST] Restricted  
+**Description**:  
+Clean Deploy [LATEST] version in restricted mode    
+**Key Steps**:  
+- Clean Install Zookeeper [LATEST] in Restricted mode  
+  (Uses template: `zookeeper_install_restricted_APP.yml` with `restricted: true`)  
+
+## 8. Clean-Previous-Update-To-Latest
+**Name**: Clean [PREVIOUS], Update to [LATEST]  
+**Dependencies**: `prepare-versions` (version matrix)  
+**Description**:  
+Clean Deploy with [PREVIOUS] releases from file. Rolling Update from [PREVIOUS] release to [LATEST] 
+**Key Steps**:  
+- Clean Install Zookeeper [PREVIOUS] 
+  (Uses template: `zookeeper_install_tls_APP_k8s.yml`)  
+- Update Zookeeper to [LATEST]  
+  (Same template with `deploy_mode: upgrade`)  
+
+## 9. Clean-Previous-Upgrade-To-Latest-Restricted
+**Name**: Clean [PREVIOUS] Restricted, Upgrade To [LATEST] Restricted  
+**Dependencies**: `prepare-versions` (previous version)  
+**Description**:  
+Clean Deploy job with [PREVIOUS] release in restricted mode. Rolling Update job to [LATEST] version from [PREVIOUS] release in restricted mode
+**Key Steps**:  
+- Clean Install Zookeeper [PREVIOUS] in Restricted mode
+  (Uses template: `zookeeper_install_tls_APP_k8s.yml` with `restricted: true`)
+- Update Zookeeper to [LATEST] in Restricted mode  
+  (Uses template: `zookeeper_install_tls_APP_k8s.yml` with `restricted: true`)
+
 
