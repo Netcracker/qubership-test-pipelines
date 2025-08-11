@@ -47,21 +47,6 @@ jobs:
           previous_version=$(echo "$versions_json" | jq -r '.[-1]')
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
-  install-python:
-    runs-on: ${{inputs.runner_type}}
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - name: Check Python version
-        run: python --version
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pyyaml
-
   # ---------- Current service branch ----------
   #[V] Clean [LATEST_SPRINT], Upgrade [LATEST_SPRINT] Diff Params
   Clean-Latest-Upgrade-Diff-Params:
