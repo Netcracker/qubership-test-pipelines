@@ -52,7 +52,7 @@ inputs:
 
   helm_charts_release_config:
     description: |
-      Path to helm-charts-release-config.yaml in pipeline repository
+      Path to charts-values-update-action.yaml in pipeline repository
     required: true
 
   resource_folder:
@@ -113,7 +113,7 @@ runs:
       shell: bash
       # language=bash
       run: |
-        file_path=$(echo ${{inputs.repository_name}}/.github/helm-charts-release-config.yaml)
+        file_path=$(echo ${{inputs.repository_name}}/.github/charts-values-update-action.yaml)
         config_source=$(echo ${{inputs.helm_charts_release_config}})
         if [ -f "$file_path" ]; then
             echo "$file_path" exists in service repository
@@ -145,7 +145,7 @@ runs:
       uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
-        config-file: .github/helm-charts-release-config.yaml
+        config-file: Netcracker/${{inputs.repository_name}}/.github/charts-values-update-action.yaml
         create-release-branch: "false"
         version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}

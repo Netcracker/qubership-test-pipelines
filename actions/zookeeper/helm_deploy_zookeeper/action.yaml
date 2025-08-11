@@ -35,7 +35,7 @@ inputs:
   helm_charts_release_config:
     description: 'See helm_deploy.helm_charts_release_config'
     required: true
-    default: 'release_configs/zookeeper/helm-charts-release-config.yaml'
+    default: 'release_configs/zookeeper/charts-values-update-action.yaml'
   resource_folder:
     description: 'See helm_deploy.resource_folder'
     required: true
