@@ -67,7 +67,7 @@ monitoring:
   slowQueries:
     enabled: true
 curator:
-  enabled: false
+  enabled: true
   backupSchedule: 0 * * * *
   evictionPolicy: 0/1d,7d/delete
   username: backup
