@@ -32,10 +32,6 @@ inputs:
     description: 'See helm_deploy.namespace'
     required: true
     default: 'zookeeper'
-  helm_charts_release_config:
-    description: 'See helm_deploy.helm_charts_release_config'
-    required: true
-    default: 'release_configs/zookeeper/charts-values-update-action.yaml'
   resource_folder:
     description: 'See helm_deploy.resource_folder'
     required: true
@@ -54,5 +50,4 @@ runs:
         repository_name: ${{inputs.repository_name}}
         path_to_chart: ${{inputs.path_to_chart}}
         namespace: ${{inputs.namespace}}
-        helm_charts_release_config: ${{inputs.helm_charts_release_config}}
         resource_folder: ${{inputs.resource_folder}}
