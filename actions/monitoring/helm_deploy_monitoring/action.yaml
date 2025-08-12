@@ -24,7 +24,7 @@ inputs:
   repository_name:
     description: 'See helm_deploy.repository_name'
     required: true
-    default: 'qubership-monitoring-operator'
+    default: 'Netcracker/qubership-monitoring-operator'
   path_to_chart:
     description: 'See helm_deploy.path_to_chart'
     required: true

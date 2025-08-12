@@ -50,11 +50,6 @@ inputs:
       Kubernetes namespace for service installation
     required: true
 
-  helm_charts_release_config:
-    description: |
-      Path to charts-values-update-action.yaml in pipeline repository
-    required: true
-
   resource_folder:
     description: |
       Folder with resources for creating before installation
@@ -67,7 +62,7 @@ runs:
       uses: actions/checkout@v4
       with:
         ref: '${{inputs.service_branch}}'
-        repository: 'Netcracker/${{inputs.repository_name}}'
+        repository: '${{inputs.repository_name}}'
         path: '${{inputs.repository_name}}'
 
     - name: Create namespace
@@ -114,16 +109,11 @@ runs:
       # language=bash
       run: |
         file_path=$(echo ${{inputs.repository_name}}/.github/charts-values-update-action.yaml)
-        config_source=$(echo ${{inputs.helm_charts_release_config}})
         if [ -f "$file_path" ]; then
             echo "$file_path" exists in service repository
         else
-            if cp "qubership-test-pipelines/$config_source" "$file_path"; then
-                echo "Config file is missing in ${{inputs.service_name}} repository. Using config file from pipeline repository"
-            else
-                echo "File $config_source is not found in pipeline repository" >&2
-                exit 1
-            fi
+            echo "Config file is missing in ${{inputs.repository_name}} repository!"
+            exit 1
         fi
 
     - name: Replace slash in service branch
@@ -145,7 +135,7 @@ runs:
       uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
-        config-file: Netcracker/${{inputs.repository_name}}/.github/charts-values-update-action.yaml
+        config-file: ${{inputs.repository_name}}/.github/charts-values-update-action.yaml
         create-release-branch: "false"
         version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}
