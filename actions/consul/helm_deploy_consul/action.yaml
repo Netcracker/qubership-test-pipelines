@@ -23,7 +23,7 @@ inputs:
   repository_name:
     description: 'See helm_deploy.repository_name'
     required: true
-    default: 'qubership-consul'
+    default: 'Netcracker/qubership-consul'
   path_to_chart:
     description: 'See helm_deploy.path_to_chart'
     required: true
@@ -32,10 +32,6 @@ inputs:
     description: 'See helm_deploy.namespace'
     required: true
     default: 'consul'
-  helm_charts_release_config:
-    description: 'See helm_deploy.helm_charts_release_config'
-    required: true
-    default: 'release_configs/consul/charts-values-update-action.yaml'
 runs:
   using: 'composite'
   steps:
@@ -50,4 +46,3 @@ runs:
         repository_name: ${{inputs.repository_name}}
         path_to_chart: ${{inputs.path_to_chart}}
         namespace: ${{inputs.namespace}}
-        helm_charts_release_config: ${{inputs.helm_charts_release_config}}
