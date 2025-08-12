@@ -123,7 +123,7 @@ runs:
       uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
-        config-file: ${{github.workspace}}/${{inputs.repository_name}}/.github/charts-values-update-config.yaml
+        config-file: .github/charts-values-update-config.yaml
         create-release-branch: "false"
         version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}
