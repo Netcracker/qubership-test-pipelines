@@ -67,8 +67,34 @@ jobs:
         with:
           path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
           service_branch: '${{inputs.service_branch}}'
+      - name: Sleep
+        run: sleep 2m
+      - name: Get CRD
+        run: |
+          kubectl get crd -n monitoring
+          crds=$(kubectl get crd -o jsonpath='{.items[*].metadata.name}' -n monitoring)
+          for crd in $crds; do
+            echo "Processing CRD: $crd"
+            resources=$(kubectl get "$crd" --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{" "}{.metadata.name}{"\n"}{end}')
+            if [ -n "$resources" ]; then
+              while read -r line; do
+                namespace=$(echo "$line" | awk '{print $1}')
+                cr_name=$(echo "$line" | awk '{print $2}')
+                #echo name $cr_name
+                cr_yaml=$(kubectl get "$crd" "$cr_name" -n "$namespace" -o yaml)
+                #echo $cr_yaml
+                #echo "Got YAML for $crd/$cr_name in namespace $namespace"
+                #echo "YAML length: ${#cr_yaml} characters"
+              done <<< "$resources"
+            else
+              echo "No resources found for $crd"
+            fi
+          done
+      - name: Get PlatformMonitoring
+        run: kubectl get PlatformMonitoring platformmonitoring -n monitoring -o yaml
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+        #continue-on-error: true
 #      - name: Update to [LATEST] Version With Diff Params
 #        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
 #        with:

@@ -210,3 +210,5 @@
 #  tags: smoke
 global:
   profile: "small"
+integrationTests:
+  install: true

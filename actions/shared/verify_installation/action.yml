@@ -158,14 +158,14 @@ runs:
         kubectl get pvc -n ${{inputs.namespace}}
         kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
 
-    - name: Get PV from namespace
-      shell: bash
-      # language=bash
-      run: |
-        # ▶️ Get PV from namespace
-        file_name=artifacts/${{inputs.namespace}}_get_pv.txt
-        kubectl get pv | grep ${{inputs.namespace}}
-        kubectl get pv | grep ${{inputs.namespace}} > $file_name
+#    - name: Get PV from namespace
+#      shell: bash
+#      # language=bash
+#      run: |
+#        # ▶️ Get PV from namespace
+#        file_name=artifacts/${{inputs.namespace}}_get_pv.txt
+#        kubectl get pv | grep ${{inputs.namespace}}
+#        kubectl get pv | grep ${{inputs.namespace}} > $file_name
 
     - name: Get logs from all containers in pods
       shell: bash
