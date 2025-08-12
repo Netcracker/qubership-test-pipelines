@@ -23,7 +23,7 @@ inputs:
   repository_name:
     description: 'See helm_deploy.repository_name'
     required: true
-    default: 'qubership-zookeeper'
+    default: 'Netcracker/qubership-zookeeper'
   path_to_chart:
     description: 'See helm_deploy.path_to_chart'
     required: true
