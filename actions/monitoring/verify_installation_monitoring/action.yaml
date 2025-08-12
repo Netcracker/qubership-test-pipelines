@@ -28,11 +28,11 @@ inputs:
   cr_kind:
     description: 'See verify_installation.cr_kind'
     required: true
-    default: ''
+    default: 'PlatformMonitoring'
   cr_name:
     description: 'See verify_installation.cr_name'
     required: true
-    default: ''
+    default: 'platformmonitoring'
 
 
 runs:
