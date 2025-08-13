@@ -1,5 +1,5 @@
-name: "Helm deploy Action for Monitoring"
-description: "GitHub Action for install/upgrade Consul using Helm"
+name: "Helm deploy Action for Opensearch"
+description: "GitHub Action for install/upgrade Opensearch using Helm"
 inputs:
   deploy_mode:
     description: 'See helm_deploy.deploy_mode'
@@ -9,35 +9,41 @@ inputs:
     description: 'See helm_deploy.restricted'
     required: true
     default: 'false'
+    type: boolean
   path_to_template:
     description: 'See helm_deploy.path_to_template'
-    required: false
-    default: 'templates/monitoring/vm_with_smoke_at.yml'
-  service_branch:
-    description: 'See helm_deploy.service_branch'
     required: true
-    default: 'main'
+  service_branch:
+    description: 'branch name in repository with service'
+    required: true
   service_name:
     description: 'See helm_deploy.service_name'
     required: true
-    default: 'monitoring'
+    default: 'opensearch'
   repository_name:
     description: 'See helm_deploy.repository_name'
     required: true
-    default: 'qubership-monitoring-operator'
+    default: 'qubership-opensearch'
   path_to_chart:
     description: 'See helm_deploy.path_to_chart'
     required: true
-    default: 'charts/qubership-monitoring-operator'
+    default: 'charts/helm/opensearch-service'
+  components:
+    description: 'See helm_deploy.components'
+    required: true
+    default: 'integrationTests'
   namespace:
     description: 'See helm_deploy.namespace'
     required: true
-    default: 'monitoring'
-
+    default: 'opensearch'
+  helm_charts_release_config:
+    description: 'See helm_deploy.helm_charts_release_config'
+    required: true
+    default: 'release_configs/opensearch/helm-charts-release-config.yaml'
 runs:
   using: 'composite'
   steps:
-    - name: Run helm_install action for Monitoring
+    - name: Run helm_install action for Opensearch
       uses: ./qubership-test-pipelines/actions/shared/helm_deploy
       with:
         deploy_mode: ${{inputs.deploy_mode}}
@@ -47,10 +53,6 @@ runs:
         service_name: ${{inputs.service_name}}
         repository_name: ${{inputs.repository_name}}
         path_to_chart: ${{inputs.path_to_chart}}
+        components: ${{inputs.components}}
         namespace: ${{inputs.namespace}}
-
-    - name: get pods
-      run: |
-        sleep 30s
-        kubectl get pods -n monitoring
-      shell: bash
+        helm_charts_release_config: ${{inputs.helm_charts_release_config}}

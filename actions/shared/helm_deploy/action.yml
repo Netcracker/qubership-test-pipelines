@@ -35,8 +35,8 @@ inputs:
 
   repository_name:
     description: |
-      Service repository name (without organization prefix)
-      Example: 'qubership-consul' for https://github.com/Netcracker/qubership-consul
+      Service repository name
+      Example: 'Netcracker/qubership-consul' for https://github.com/Netcracker/qubership-consul
     required: true
 
   path_to_chart:
@@ -48,11 +48,6 @@ inputs:
   namespace:
     description: |
       Kubernetes namespace for service installation
-    required: true
-
-  helm_charts_release_config:
-    description: |
-      Path to helm-charts-release-config.yaml in pipeline repository
     required: true
 
   resource_folder:
@@ -67,7 +62,7 @@ runs:
       uses: actions/checkout@v4
       with:
         ref: '${{inputs.service_branch}}'
-        repository: 'Netcracker/${{inputs.repository_name}}'
+        repository: '${{inputs.repository_name}}'
         path: '${{inputs.repository_name}}'
 
     - name: Create namespace
@@ -109,23 +104,6 @@ runs:
       run: |
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
 
-    - name: Check helm_charts_release_config file
-      shell: bash
-      # language=bash
-      run: |
-        file_path=$(echo ${{inputs.repository_name}}/.github/helm-charts-release-config.yaml)
-        config_source=$(echo ${{inputs.helm_charts_release_config}})
-        if [ -f "$file_path" ]; then
-            echo "$file_path" exists in service repository
-        else
-            if cp "qubership-test-pipelines/$config_source" "$file_path"; then
-                echo "Config file is missing in ${{inputs.service_name}} repository. Using config file from pipeline repository"
-            else
-                echo "File $config_source is not found in pipeline repository" >&2
-                exit 1
-            fi
-        fi
-
     - name: Replace slash in service branch
       id: replace_slash
       shell: bash
@@ -145,7 +123,7 @@ runs:
       uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
-        config-file: .github/helm-charts-release-config.yaml
+        config-file: ${{github.workspace}}/${{inputs.repository_name}}/.github/charts-values-update-config.yaml
         create-release-branch: "false"
         version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}

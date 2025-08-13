@@ -18,7 +18,6 @@ server:
     certificates:
       crt: ''
       key: ''
-      crt: ''
   replicas: 3
   bootstrapExpect: 3
   storage: 1Gi
@@ -44,7 +43,6 @@ client:
     certificates:
       crt: ''
       key: ''
-      crt: ''
   resources:
     requests:
       memory: 64Mi
@@ -58,7 +56,6 @@ backupDaemon:
     certificates:
       crt: ''
       key: ''
-      crt: ''
   storage: 1Gi
   storageClass: standard
   backupSchedule: "*/15 * * * *"
