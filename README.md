@@ -24,4 +24,6 @@ It implements a complete CI/CD lifecycle from infrastructure provisioning to pos
 ```
 ## Workflows list
 Added workflow for the following services:
-- [Consul](https://github.com/Netcracker/qubership-consul)
+- [Consul](https://github.com/Netcracker/qubership-test-pipelines/blob/main/.github/workflows/consul.yaml)
+- [Zookeeper](https://github.com/Netcracker/qubership-test-pipelines/blob/main/.github/workflows/zookeeper.yaml)
+- [Opensearch](https://github.com/Netcracker/qubership-test-pipelines/blob/main/.github/workflows/opensearch.yaml)
