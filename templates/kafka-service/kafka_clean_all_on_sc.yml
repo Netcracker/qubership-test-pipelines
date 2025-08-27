@@ -1,0 +1,43 @@
+global:
+  name: kafka
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: admin
+      clientUsername: client
+      clientPassword: client
+      zookeeperClientUsername: zclient
+      zookeeperClientPassword: zclient
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: admin
+kafka:
+  install: true
+  replicas: 3
+  storage:
+    size: 1Gi
+    className:
+      - standard
+  zookeeperConnect: zookeeper.zookeeper-service:2181
+monitoring:
+  install: false
+  securityContext:
+    runAsUser: 1000
+akhq:
+  install: true
+  ingress:
+    host: akhq-kafka-service.qa-kubernetes.openshift.sdntest.netcracker.com
+backupDaemon:
+  install: true
+  storage: 1Gi
+  storageClass: standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+integrationTests:
+  install: true
+  waitForResult: true
+  tags: kafka_crudORkafka_images
