@@ -1,0 +1,391 @@
+name: Kafka Tests
+
+on:
+  workflow_call:
+    inputs:
+      service_branch:
+        required: false
+        type: string
+      versions_file:
+        description: 'Path to versions list file'
+        type: string
+        required: true
+      pipeline_branch:
+        description: 'Test pipeline branch name'
+        type: string
+        required: true
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
+
+jobs:
+  prepare-versions:
+    runs-on: ${{inputs.runner_type}}
+    outputs:
+      versions: ${{steps.process-versions.outputs.versions}}
+      previous_version: ${{steps.process-versions.outputs.previous_version}}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.service_branch}}'
+          repository: 'Netcracker/qubership-kafka'
+          path: 'qubership-kafka'
+      - name: Process versions file
+        id: process-versions
+        # language=bash
+        run: |
+          versions_str=$(cat qubership-kafka/${{inputs.versions_file}})
+          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
+          echo "versions=$versions_json" >> $GITHUB_OUTPUT
+          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
+          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
+
+  # ---------- Current service branch ----------
+  #3-Clean [LATEST], 4-Upgrade [LATEST] Diff Params
+  Clean-Latest-Upgrade-Diff-Params:
+    runs-on: ${{inputs.runner_type}}
+    name: Clean [LATEST], Upgrade [LATEST] Diff Params
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      #- name: Install Monitoring
+        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      - name: Clean Install Kafka [LATEST]
+        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+        with:
+          path_to_template: 'templates/kafka-service/kafka_clean_kraft_mode.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Kafka installation
+        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#      - name: Update to [LATEST] Version With Diff Params
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          #combined 2 cases: update params + rollingupdate
+#          path_to_template: 'templates/kafka-service/kafka_clean_all_on_sc.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#          deploy_mode: upgrade
+#      - name: Sleep 1m
+#        run: sleep 1m
+#      - name: Verify Kafka upgrade
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+
+#  #11-Clean [LATEST] W/O Components -> 12-Upgrade [LATEST] All Components S3
+#  Clean-WO-Components-Upgrade-All-Components-S3:
+#    runs-on: ${{inputs.runner_type}}
+#    name: Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      - name: Clean Install Kafka [LATEST] W/O Components
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          path_to_template: 'templates/kafka-service/kafka_install_minimal_APP_k8s.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Verify Kafka installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#      - name: Update YAML secrets
+#        # language=bash
+#        run: |
+#          python qubership-test-pipelines/python/update_yaml.py \
+#            --file='qubership-test-pipelines/templates/kafka-service/kafka_install_s3_APP_k8s.yml' \
+#            --path='backupDaemon/s3/keyId' \
+#            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+#          && python qubership-test-pipelines/python/update_yaml.py \
+#            --file='qubership-test-pipelines/templates/kafka-service/kafka_install_s3_APP_k8s.yml' \
+#            --path='backupDaemon/s3/keySecret' \
+#            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+#      - name: Update Kafka [LATEST] All Components S3
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          deploy_mode: upgrade
+#          path_to_template: 'templates/kafka-service/kafka_install_s3_APP_k8s.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Verify Kafka installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#
+#  #13-Clean [LATEST] non-TLS, 14-Upgrade [LATEST] TLS
+#  Clean-Latest-non-TLS-Upgrade-Latest-TLS:
+#    runs-on: ${{inputs.runner_type}}
+#    name: Clean [LATEST], Upgrade [LATEST] TLS
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      - name: Clean Install Kafka [LATEST]
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          path_to_template: 'templates/kafka-service/kafka_install_APP_k8s.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Verify Kafka installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#      - name: Install cert-manager
+#        # language=bash
+#        run: |
+#          helm repo add jetstack https://charts.jetstack.io --force-update
+#          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+#            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
+#      - name: Create ClusterIssuer
+#        # language=bash
+#        run: kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+#      - name: Update Kafka to [LATEST] TLS
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          deploy_mode: upgrade
+#          path_to_template: 'templates/kafka-service/kafka_install_tls_APP_k8s.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Sleep 1m
+#        run: sleep 1m
+#      - name: Verify installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#        with:
+#          service_branch: ${{inputs.service_branch}}
+#
+#  #15-Clean [LATEST] TLS
+#  Clean-Latest-TLS:
+#    runs-on: ${{inputs.runner_type}}
+#    name: Clean [LATEST] TLS
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      - name: Install cert-manager
+#        # language=bash
+#        run: |
+#          helm repo add jetstack https://charts.jetstack.io --force-update
+#          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+#            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
+#      - name: Create ClusterIssuer
+#        # language=bash
+#        run: kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+#      - name: Install Kafka [LATEST] TLS
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          path_to_template: 'templates/kafka-service/kafka_install_tls_APP_k8s.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Verify installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#        with:
+#          service_branch: ${{inputs.service_branch}}
+#      - name: Get Kafka Certs
+#        uses: ./qubership-test-pipelines/actions/shared/get_certs
+#        with:
+#          service_name: kafka
+#          secret_name: kafka-tls-secret
+#          namespace: kafka
+#      - name: Get Backup-Daemon Certs
+#        uses: ./qubership-test-pipelines/actions/shared/get_certs
+#        with:
+#          service_name: kafka
+#          secret_name: kafka-backup-daemon-tls-secret
+#          namespace: kafka
+#      - name: Copy certs to artifacts
+#        # language=bash
+#        run: |
+#          mkdir -p certs_artifacts
+#          cp ${{runner.temp}}/kafka-tls-secret_*.txt certs_artifacts/
+#          cp ${{runner.temp}}/kafka-backup-daemon-tls-secret_*.txt certs_artifacts/
+#      - name: Upload certs artifacts
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: kafka-certs
+#          path: certs_artifacts
+#          retention-days: 1
+#
+#  #16-Clean [LATEST] TLS Secrets
+#  Clean-Latest-TLS-Secrets:
+#    runs-on: ${{inputs.runner_type}}
+#    needs: Clean-Latest-TLS
+#    name: Clean Kafka [LATEST] TLS Secrets
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      - name: Download kafka certs artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: kafka-certs
+#          path: certs_artifacts
+#      - name: Update secrets
+#        uses: ./qubership-test-pipelines/actions/kafka/add_certs_to_secrets
+#      - name: Clean Install Kafka [LATEST] TLS Secrets
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          path_to_template: 'templates/kafka-service/kafka_install_tls_secrets.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#          resource_folder: 'resources/kafka'
+#      - name: Verify Kafka installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#
+#  #17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
+#  Clean-Latest-TLS-Certificates:
+#    runs-on: ${{inputs.runner_type}}
+#    needs: Clean-Latest-TLS
+#    name: Clean [LATEST] TLS Certificates
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      - name: Download certs artifacts
+#        uses: actions/download-artifact@v4
+#        with:
+#          name: kafka-certs
+#          path: certs_artifacts
+#      - name: Update template
+#        uses: ./qubership-test-pipelines/actions/kafka/add_certs_to_template
+#      - name: Print template
+#        run: cat qubership-test-pipelines/templates/kafka-service/kafka_install_tls_certs.yml
+#      - name: Clean Kafka [LATEST] TLS Certificates
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          path_to_template: 'templates/kafka-service/kafka_install_tls_certs.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Verify installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#        with:
+#          service_branch: ${{inputs.service_branch}}
+#
+#  #21-Clean [LATEST] Restricted
+#  Clean-Latest-Restricted:
+#    name: Clean [LATEST] Restricted
+#    runs-on: ${{inputs.runner_type}}
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      - name: Clean Install Kafka [LATEST] in Restricted mode
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          restricted: true
+#          path_to_template: 'templates/kafka-service/kafka_install_restricted_APP.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Verify Kafka installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#
+#  #---------- Update from old releases ----------
+#  #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
+#  #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
+#  Clean-Previous-Update-To-Latest:
+#    name: Clean [PREVIOUS], Update to [LATEST]
+#    needs: prepare-versions
+#    runs-on: ${{inputs.runner_type}}
+#    strategy:
+#      matrix:
+#        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      #- name: Install monitoring
+#        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+#      - name: Clean Install Kafka [PREVIOUS]
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          path_to_template: 'templates/kafka-service/kafka_install_APP_k8s.yml'
+#          service_branch: '${{matrix.release}}'
+#      - name: Verify Kafka installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#        with:
+#          service_branch: '${{matrix.release}}'
+#      - name: Update Kafka to [LATEST]
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          deploy_mode: upgrade
+#          path_to_template: 'templates/kafka-service/kafka_install_APP_k8s.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Sleep 1m
+#        run: sleep 1m
+#      - name: Verify installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#        with:
+#          service_branch: ${{inputs.service_branch}}
+#
+#  # ---------- Upgrade from previous versions ----------
+#  #19-Clean [PREVIOUS] Restricted, 20-Upgrade From [PREVIOUS] To [LATEST] Restricted
+#  Clean-Previous-Upgrade-To-Latest-Restricted:
+#    name: Clean [PREVIOUS] Restricted, Upgrade To [LATEST] Restricted
+#    needs: prepare-versions
+#    runs-on: ${{inputs.runner_type}}
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Get version
+#        run: echo ${{needs.prepare-versions.outputs.previous_version}}
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      - name: Clean Install Kafka [PREVIOUS] in Restricted mode
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          restricted: true
+#          path_to_template: 'templates/kafka-service/kafka_install_APP_k8s.yml'
+#          service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
+#      - name: Verify Kafka installation
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#        with:
+#          service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
+#      - name: Update Kafka to [LATEST] in Restricted mode
+#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+#        with:
+#          restricted: true
+#          deploy_mode: upgrade
+#          path_to_template: 'templates/kafka-service/kafka_install_APP_k8s.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Sleep 1m
+#        run: sleep 1m
+#      - name: Verify Kafka upgrade
+#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+#        with:
+#          service_branch: ${{inputs.service_branch}}
