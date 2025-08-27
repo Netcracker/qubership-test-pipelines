@@ -48,6 +48,10 @@ operator:
   akhqConfigurator:
     enabled: true
     watchNamespace: kafka-service
+monitoring:
+  install: false
+  securityContext:
+    runAsUser: 1000
 akhq:
   install: true
   ingress:
