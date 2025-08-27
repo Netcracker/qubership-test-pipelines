@@ -28,7 +28,7 @@ inputs:
   cr_kind:
     description: 'See verify_installation.cr_kind'
     required: true
-    default: 'ZooKeeperService'
+    default: 'KafkaService'
   cr_name:
     description: 'See verify_installation.cr_name'
     required: true
