@@ -344,5 +344,5 @@ cloudEventsExporter:
   metricsPath: /metrics
 integrationTests:
   install: true
-  tags: grafanaORsmoke
+  tags: full
   timeoutBeforeStart: 200

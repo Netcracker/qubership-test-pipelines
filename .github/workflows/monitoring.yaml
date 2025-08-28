@@ -94,7 +94,7 @@ jobs:
         run: kubectl get PlatformMonitoring platformmonitoring -n monitoring -o yaml
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
-        #continue-on-error: true
+        continue-on-error: true
 #      - name: Update to [LATEST] Version With Diff Params
 #        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
 #        with:
@@ -105,3 +105,21 @@ jobs:
 #        run: sleep 1m
 #      - name: Verify Monitoring upgrade
 #        uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+
+#1-VmClean[PREVIOUS_SPRINT], 2-VmUpgradeFrom[PREVIOUS_SPRINT]To[LATEST_SPRINT]
+
+#3-VmClean[LATEST_SPRINT], 4-VmUpgrade[LATEST_SPRINT]DiffParams
+
+#5-VmClean[N1_RELEASE], 6-VmUpgradeFrom[N1_RELEASE]To[LATEST_SPRINT], 7-VmClean[N2_RELEASE], 8-VmUpgradeFrom[N2_RELEASE]To[LATEST_SPRINT]
+
+#9-VmClean[PREVIOUS_SPRINT]Restricted, 10-VmUpgrade[LATEST_SPRINT]Restricted
+
+#?11-VmClean[N1_RELEASE]Restricted
+
+#15-VmClean[LATEST_SPRINT]Restricted
+
+#16-Clean[PREVIOUS_SPRINT]W/OComponents, 17-UpgradeTo[LATEST_SPRINT]W/OComponents
+
+#?18-Clean[N1_RELEASE]W/OComponents
+
+#37-VmCleanWithVmauth

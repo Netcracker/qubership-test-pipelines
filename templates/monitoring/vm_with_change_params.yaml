@@ -7,8 +7,8 @@ grafana:
     host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
   resources:
     requests:
-      cpu: 300m
-      memory: 400Mi
+      cpu: 301m
+      memory: 401Mi
     limits:
       cpu: 500m
       memory: 800Mi
@@ -17,10 +17,10 @@ grafana:
     resources:
       requests:
         cpu: 150m
-        memory: 250Mi
+        memory: 251Mi
       limits:
-        cpu: 300m
-        memory: 500Mi
+        cpu: 301m
+        memory: 501Mi
   securityContext:
     fsGroup: 2002
     runAsUser: 2002
@@ -44,19 +44,19 @@ monitoringOperator:
     runAsUser: 2002
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 51m
+      memory: 51Mi
     limits:
-      cpu: 100m
-      memory: 100Mi
+      cpu: 101m
+      memory: 101Mi
 kubeStateMetrics:
   install: true
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 51m
+      memory: 51Mi
     limits:
-      cpu: 150m
+      cpu: 151m
       memory: 256Mi
   securityContext:
     fsGroup: 2002
@@ -64,11 +64,11 @@ kubeStateMetrics:
 nodeExporter:
   resources:
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 51m
+      memory: 51Mi
     limits:
-      cpu: 200m
-      memory: 200Mi
+      cpu: 201m
+      memory: 201Mi
   securityContext:
     fsGroup: 2002
     runAsUser: 2002
@@ -78,11 +78,11 @@ victoriametrics:
     install: true
     resources:
       requests:
-        cpu: 200m
-        memory: 100Mi
+        cpu: 201m
+        memory: 101Mi
       limits:
         cpu: 400m
-        memory: 200Mi
+        memory: 201Mi
     securityContext:
       runAsUser: 2000
       fsGroup: 2000
@@ -118,11 +118,11 @@ victoriametrics:
       fsGroup: 2001
     resources:
       requests:
-        cpu: 200m
-        memory: 100Mi
+        cpu: 201m
+        memory: 101Mi
       limits:
         cpu: 700m
-        memory: 1000Mi
+        memory: 1001Mi
   vmSingle:
     install: true
     ingress:
@@ -135,11 +135,11 @@ victoriametrics:
       fsGroup: 2000
     resources:
       requests:
-        cpu: 500m
-        memory: 1000Mi
+        cpu: 501m
+        memory: 1001Mi
       limits:
-        cpu: 1000m
-        memory: 2000Mi
+        cpu: 1001m
+        memory: 2001Mi
     storage:
       accessModes:
         - ReadWriteOnce
@@ -158,10 +158,10 @@ victoriametrics:
       fsGroup: 2001
     resources:
       requests:
-        cpu: 30m
+        cpu: 31m
         memory: 56Mi
       limits:
-        cpu: 100m
+        cpu: 101m
         memory: 256Mi
   vmAlert:
     install: true
@@ -173,20 +173,20 @@ victoriametrics:
       fsGroup: 2001
     resources:
       requests:
-        cpu: 50m
-        memory: 200Mi
+        cpu: 51m
+        memory: 201Mi
       limits:
-        cpu: 200m
-        memory: 500Mi
+        cpu: 201m
+        memory: 501Mi
   vmAuth:
     install: true
     resources:
       requests:
-        cpu: 50m
-        memory: 200Mi
+        cpu: 51m
+        memory: 201Mi
       limits:
-        cpu: 200m
-        memory: 500Mi
+        cpu: 201m
+        memory: 501Mi
     secretName: vmauth-secret
     extraVarsSecret:
       pass: ""
@@ -203,11 +203,11 @@ graphite_remote_adapter:
   install: true
   resources:
     requests:
-      cpu: 200m
-      memory: 300Mi
+      cpu: 201m
+      memory: 301Mi
     limits:
-      cpu: 1500m
-      memory: 1500Mi
+      cpu: 1501m
+      memory: 1501Mi
   securityContext:
     fsGroup: 2002
     runAsUser: 2002
@@ -232,22 +232,22 @@ prometheusAdapter:
   prometheusUrl: http://vmsingle-k8s.prometheus-operator.svc:8429
   resources:
     requests:
-      cpu: 100m
+      cpu: 101m
       memory: 256Mi
     limits:
-      cpu: 200m
-      memory: 400Mi
+      cpu: 201m
+      memory: 401Mi
   securityContext:
     fsGroup: 2002
     runAsUser: 2002
   operator:
     resources:
       requests:
-        cpu: 20m
+        cpu: 21m
         memory: 20Mi
       limits:
         cpu: 50m
-        memory: 100Mi
+        memory: 101Mi
     securityContext:
       fsGroup: 2002
       runAsUser: 2002
@@ -266,7 +266,7 @@ promxy:
         cpu: 5m
         memory: 3Mi
       limits:
-        cpu: 10m
+        cpu: 11m
         memory: 20Mi
     securityContext:
       fsGroup: 2002
@@ -276,10 +276,10 @@ promxy:
     runAsUser: 2002
   resources:
     requests:
-      cpu: 50m
+      cpu: 51m
       memory: 128Mi
     limits:
-      cpu: 150m
+      cpu: 151m
       memory: 256Mi
 jsonExporter:
   install: true
@@ -330,10 +330,10 @@ jsonExporter:
         module: tsdbstatus
   resources:
     requests:
-      cpu: 50m
+      cpu: 51m
       memory: 128Mi
     limits:
-      cpu: 100m
+      cpu: 101m
       memory: 128Mi
   securityContext:
     fsGroup: 2000
@@ -342,7 +342,18 @@ cloudEventsExporter:
   install: true
   port: 9999
   metricsPath: /metrics
+  resources:
+    limits:
+      cpu: 101m
+      memory: 101Mi
+    requests:
+      cpu: 51m
+      memory: 51Mi
 integrationTests:
   install: true
   tags: grafanaORsmoke
   timeoutBeforeStart: 200
+  resources:
+    requests:
+      cpu: 41m
+      memory: 99Mi

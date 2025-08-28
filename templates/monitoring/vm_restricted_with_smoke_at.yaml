@@ -1,9 +1,12 @@
 global:
   hweProfile: small
+  privilegedRights: false
+prometheus:
+  install: false
+alertManager:
+  install: false
 grafana:
   ingress:
-    host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
-  route:
     host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
   resources:
     requests:
@@ -12,15 +15,6 @@ grafana:
     limits:
       cpu: 500m
       memory: 800Mi
-  imageRenderer:
-    install: true
-    resources:
-      requests:
-        cpu: 150m
-        memory: 250Mi
-      limits:
-        cpu: 300m
-        memory: 500Mi
   securityContext:
     fsGroup: 2002
     runAsUser: 2002
@@ -50,7 +44,6 @@ monitoringOperator:
       cpu: 100m
       memory: 100Mi
 kubeStateMetrics:
-  install: true
   resources:
     requests:
       cpu: 50m
@@ -61,6 +54,7 @@ kubeStateMetrics:
   securityContext:
     fsGroup: 2002
     runAsUser: 2002
+  install: true
 nodeExporter:
   resources:
     requests:
@@ -91,28 +85,6 @@ victoriametrics:
     ingress:
       host: vmagent.qa-kubernetes.openshift.sdntest.qubership.org
       install: true
-    remoteWrite:
-      - url: http://graphite-remote-adapter:9201/write
-        remoteTimeout: 45s
-        inlineUrlRelabelConfig:
-          - action: keep
-            sourceLabels:
-              - job
-            regex: (node-exporter|kubelet|kube-state-metrics)
-      - url: https://***.***.***.***:8429/api/v1/write
-        basicAuth:
-          createSecret:
-            username: prometheus
-            password: ""
-            secretName: vmagent-basicauth
-        tlsConfig:
-          insecureSkipVerify: true
-    remoteWriteSettings:
-      label:
-        project: development
-        environment: qa-kubernetes
-        cluster: qa-kubernetes
-        team: test_team
     securityContext:
       runAsUser: 2001
       fsGroup: 2001
@@ -178,27 +150,6 @@ victoriametrics:
       limits:
         cpu: 200m
         memory: 500Mi
-  vmAuth:
-    install: true
-    resources:
-      requests:
-        cpu: 50m
-        memory: 200Mi
-      limits:
-        cpu: 200m
-        memory: 500Mi
-    secretName: vmauth-secret
-    extraVarsSecret:
-      pass: ""
-    securityContext:
-      runAsUser: 2001
-      fsGroup: 2001
-  vmUser:
-    install: true
-    username: admin
-    passwordRef:
-      key: ""
-      name: vmauth-secret
 graphite_remote_adapter:
   install: true
   resources:
@@ -228,7 +179,7 @@ graphite_remote_adapter:
   enableTags: true
   writeCarbonAddress: gmon-infra04cn.qubership.org:2003
 prometheusAdapter:
-  install: true
+  install: false
   prometheusUrl: http://vmsingle-k8s.prometheus-operator.svc:8429
   resources:
     requests:
@@ -338,11 +289,8 @@ jsonExporter:
   securityContext:
     fsGroup: 2000
     runAsUser: 2000
-cloudEventsExporter:
-  install: true
-  port: 9999
-  metricsPath: /metrics
 integrationTests:
   install: true
   tags: grafanaORsmoke
   timeoutBeforeStart: 200
+
