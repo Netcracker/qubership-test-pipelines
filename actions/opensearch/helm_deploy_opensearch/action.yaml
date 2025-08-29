@@ -1,0 +1,53 @@
+name: "Helm deploy Action for opensearch"
+description: "GitHub Action for install/upgrade opensearch using Helm"
+inputs:
+  deploy_mode:
+    description: 'See helm_deploy.deploy_mode'
+    required: true
+    default: 'install'
+  restricted:
+    description: 'See helm_deploy.restricted'
+    required: true
+    default: 'false'
+    type: boolean
+  path_to_template:
+    description: 'See helm_deploy.path_to_template'
+    required: true
+  service_branch:
+    description: 'branch name in repository with service'
+    required: true
+  service_name:
+    description: 'See helm_deploy.service_name'
+    required: true
+    default: 'opensearch'
+  repository_name:
+    description: 'See helm_deploy.repository_name'
+    required: true
+    default: 'Netcracker/qubership-opensearch'
+  path_to_chart:
+    description: 'See helm_deploy.path_to_chart'
+    required: true
+    default: 'operator/charts/helm/opensearch-service'
+  namespace:
+    description: 'See helm_deploy.namespace'
+    required: true
+    default: 'opensearch'
+  resource_folder:
+    description: 'See helm_deploy.resource_folder'
+    required: true
+    default: ''
+runs:
+  using: 'composite'
+  steps:
+    - name: Run helm_install action for opensearch
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        deploy_mode: ${{inputs.deploy_mode}}
+        restricted: ${{inputs.restricted}}
+        path_to_template: ${{inputs.path_to_template}}
+        service_branch: ${{inputs.service_branch}}
+        service_name: ${{inputs.service_name}}
+        repository_name: ${{inputs.repository_name}}
+        path_to_chart: ${{inputs.path_to_chart}}
+        namespace: ${{inputs.namespace}}
+        resource_folder: ${{inputs.resource_folder}}
