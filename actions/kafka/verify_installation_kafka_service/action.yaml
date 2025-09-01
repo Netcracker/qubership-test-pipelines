@@ -32,7 +32,7 @@ inputs:
   cr_name:
     description: 'See verify_installation.cr_name'
     required: true
-    default: 'kafka'
+    default: 'kafka-service'
 
 runs:
   using: 'composite'
