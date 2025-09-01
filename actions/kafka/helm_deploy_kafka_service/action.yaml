@@ -19,7 +19,7 @@ inputs:
   service_name:
     description: 'See helm_deploy.service_name'
     required: true
-    default: 'kafka'
+    default: 'kafka-service'
   repository_name:
     description: 'See helm_deploy.repository_name'
     required: true
