@@ -87,7 +87,8 @@ victoriametrics:
       runAsUser: 2000
       fsGroup: 2000
   vmAgent:
-    install: true
+    #install: true
+    install: false
     ingress:
       host: vmagent.qa-kubernetes.openshift.sdntest.qubership.org
       install: true
@@ -228,7 +229,8 @@ graphite_remote_adapter:
   enableTags: true
   writeCarbonAddress: gmon-infra04cn.qubership.org:2003
 prometheusAdapter:
-  install: true
+  #install: true
+  install: false
   prometheusUrl: http://vmsingle-k8s.prometheus-operator.svc:8429
   resources:
     requests:
