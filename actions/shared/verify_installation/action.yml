@@ -108,6 +108,7 @@ runs:
                 status=$(echo "$condition" | yq eval '.status' -)
                 if [[ "$status" == 'True' ]]; then
                   break
+                  sleep 120
                 fi
               fi
             sleep ${{inputs.timeout_for_provisioner}}
