@@ -71,6 +71,13 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Kafka installation
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+      - name: Clean Install Kafka Service [LATEST]
+        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka_service
+        with:
+          path_to_template: 'templates/kafka-service/kafka_clean_kraft_mode.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Kafka Service installation
+        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
 #      - name: Update to [LATEST] Version With Diff Params
 #        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
 #        with:
