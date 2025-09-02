@@ -77,18 +77,17 @@ jobs:
           path_to_template: 'templates/kafka-service/kafka_clean_kraft_mode.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Kafka Service installation
+        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka_service
+      - name: Update to [LATEST] Version With Diff Params
+        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+        with:
+          path_to_template: 'templates/kafka-service/kafka_update_kraft_mode.yml'
+          service_branch: '${{inputs.service_branch}}'
+          deploy_mode: upgrade
+      - name: Sleep 1m
+        run: sleep 1m
+      - name: Verify Kafka upgrade
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
-#      - name: Update to [LATEST] Version With Diff Params
-#        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
-#        with:
-#          #combined 2 cases: update params + rollingupdate
-#          path_to_template: 'templates/kafka-service/kafka_clean_all_on_sc.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#          deploy_mode: upgrade
-#      - name: Sleep 1m
-#        run: sleep 1m
-#      - name: Verify Kafka upgrade
-#        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
 
 #  #11-Clean [LATEST] W/O Components -> 12-Upgrade [LATEST] All Components S3
 #  Clean-WO-Components-Upgrade-All-Components-S3:
