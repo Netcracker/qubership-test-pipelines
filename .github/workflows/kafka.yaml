@@ -49,10 +49,10 @@ jobs:
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
   # ---------- Current service branch ----------
-  #3-Clean [LATEST], 4-Upgrade [LATEST] Diff Params
-  Clean-Latest-Upgrade-Diff-Params:
+  #Clean [LATEST], Update [LATEST] Diff Params in Kraft mode
+  Clean-Latest-Update-Diff-Params-Kraft:
     runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST], Upgrade [LATEST] Diff Params
+    name: Clean [LATEST], Update [LATEST] Diff Params in Kraft mode
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -78,7 +78,7 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka_service
-      - name: Update to [LATEST] Version With Diff Params
+      - name: Update Kafka to [LATEST] Version With Diff Params
         uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
         with:
           path_to_template: 'templates/kafka-service/kafka_update_kraft_mode.yml'
@@ -88,6 +88,55 @@ jobs:
         run: sleep 1m
       - name: Verify Kafka upgrade
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+      - name: Update Kafka Service to [LATEST] Version With Diff Params
+        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka_service
+        with:
+          path_to_template: 'templates/kafka-service/kafka_update_kraft_mode.yml'
+          service_branch: '${{inputs.service_branch}}'
+          deploy_mode: upgrade
+      - name: Sleep 1m
+        run: sleep 1m
+      - name: Verify Kafka Service upgrade
+        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka_service
+
+  # ---------- Current service branch ----------
+  #Clean [LATEST] with Zookeeper
+  Clean-Latest-Upgrade-Diff-Params:
+    runs-on: ${{inputs.runner_type}}
+    name: Clean [LATEST] with Zookeeper
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        #- name: Install Monitoring
+        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      - name: Clean Install Zookeeper [LATEST]
+        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
+        with:
+          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Zookeeper installation
+        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+      - name: Clean Install Kafka [LATEST]
+        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
+        with:
+          path_to_template: 'templates/kafka-service/kafka_clean_sc_zoo.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Kafka installation
+        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
+      - name: Clean Install Kafka Service [LATEST]
+        uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka_service
+        with:
+          path_to_template: 'templates/kafka-service/kafka_clean_sc_zoo.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Kafka Service installation
+        uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka_service
+
 
 #  #11-Clean [LATEST] W/O Components -> 12-Upgrade [LATEST] All Components S3
 #  Clean-WO-Components-Upgrade-All-Components-S3:

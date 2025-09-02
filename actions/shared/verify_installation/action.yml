@@ -114,7 +114,6 @@ runs:
                 status=$(echo "$condition" | yq eval '.status' -)
                 if [[ "$status" == 'True' ]]; then
                   echo "CR status condition is met"
-                  sleep 120s
                   break
                 fi
               fi
