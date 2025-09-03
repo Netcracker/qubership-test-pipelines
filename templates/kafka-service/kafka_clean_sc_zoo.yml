@@ -31,7 +31,7 @@ kafka:
     size: 1Gi
     className:
       - standard
-  zookeeperConnect: zookeeper.zookeeper-service:2181
+  zookeeperConnect: zookeeper.zookeeper:2181
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
