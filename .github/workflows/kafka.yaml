@@ -119,7 +119,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
+          service_branch: 'main'
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
       - name: Clean Install Kafka [LATEST]
