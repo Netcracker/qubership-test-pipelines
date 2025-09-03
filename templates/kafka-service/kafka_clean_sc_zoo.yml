@@ -54,3 +54,4 @@ integrationTests:
   install: true
   waitForResult: true
   tags: kafka_crudORkafka_images
+  zookeeperOsProject: "zookeeper"
