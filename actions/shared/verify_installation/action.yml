@@ -174,6 +174,15 @@ runs:
         kubectl get pv | grep ${{inputs.namespace}}
         kubectl get pv | grep ${{inputs.namespace}} > $file_name
 
+    - name: Get SVC from namespace
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Get SVC from namespace
+        file_name=artifacts/${{inputs.namespace}}_get_svc.txt
+        kubectl get svc -n ${{inputs.namespace}}
+        kubectl get svc -n ${{inputs.namespace}} > $file_name
+
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
