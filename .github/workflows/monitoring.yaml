@@ -100,11 +100,11 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install Monitoring
+      - name: Install Monitoring [LATEST]
         uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
         with:
-          #path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
-          path_to_template: 'templates/monitoring/vm_with_full_at.yaml'
+          path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
+          #path_to_template: 'templates/monitoring/vm_with_full_at.yaml'
           service_branch: '${{inputs.service_branch}}'
       - name: Sleep
         run: sleep 2m
@@ -205,7 +205,7 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install Monitoring
+      - name: Install Monitoring [LATEST] without vmauth
         uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
         with:
           path_to_template: 'templates/monitoring/vm_without_vmauth.yaml'
