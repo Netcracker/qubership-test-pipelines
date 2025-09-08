@@ -5,20 +5,20 @@ inputs:
     description: 'See verify_installation.namespace'
     required: true
     default: consul
-  max_attempts:
-    description: 'See verify_installation.max_attempts'
+  test_completion_max_retries:
+    description: 'See verify_installation.test_completion_max_retries'
     required: true
     default: 50
-  timeout:
-    description: 'See verify_installation.timeout'
+  test_completion_retry_interval:
+    description: 'See verify_installation.test_completion_retry_interval'
     required: true
     default: '10s'
-  max_attempts_for_provisioner:
-    description: 'See verify_installation.max_attempts'
+  service_ready_max_retries:
+    description: 'See verify_installation.test_completion_max_retries'
     required: true
     default: 50
-  timeout_for_provisioner:
-    description: 'See verify_installation.timeout'
+  service_ready_retry_interval:
+    description: 'See verify_installation.test_completion_retry_interval'
     required: true
     default: '10s'
   service_branch:
@@ -33,8 +33,8 @@ runs:
       uses: ./qubership-test-pipelines/actions/shared/verify_installation
       with:
         namespace: ${{inputs.namespace}}
-        max_attempts: ${{inputs.max_attempts}}
-        timeout: ${{inputs.timeout}}
-        max_attempts_for_provisioner: ${{inputs.max_attempts_for_provisioner}}
-        timeout_for_provisioner: ${{inputs.timeout_for_provisioner}}
+        test_completion_max_retries: ${{inputs.test_completion_max_retries}}
+        test_completion_retry_interval: ${{inputs.test_completion_retry_interval}}
+        service_ready_max_retries: ${{inputs.service_ready_max_retries}}
+        service_ready_retry_interval: ${{inputs.service_ready_retry_interval}}
         service_branch: ${{inputs.service_branch}}
