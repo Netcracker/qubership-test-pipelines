@@ -38,7 +38,7 @@ kafka:
     className:
       - standard
   zookeeperConnect: zookeeper.zookeeper:2181
-  zookeeperEnableSsl: false
+  zookeeperEnableSsl: true
   tls:
     enabled: true
   securityContext:
