@@ -200,7 +200,12 @@ runs:
               echo '================================================================================' >> $file_name
             done
         done
-
+    - name: Get All
+      shell: bash
+      run: kubectl get all -n ${{inputs.namespace}}
+    - name: Get Secrets
+      shell: bash
+      run: kubectl get secrets -n ${{inputs.namespace}}
     - name: Get logs from test pod
       shell: bash
       # language=bash
