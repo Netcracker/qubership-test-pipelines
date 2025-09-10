@@ -2,9 +2,9 @@ global:
   hweProfile: small
 grafana:
   ingress:
-    host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
+    host: grafana.testdomain.local
   route:
-    host: grafana.qa-kubernetes.openshift.sdntest.qubership.org
+    host: grafana.testdomain.local
   resources:
     requests:
       cpu: 300m
@@ -87,10 +87,10 @@ victoriametrics:
       runAsUser: 2000
       fsGroup: 2000
   vmAgent:
-    #install: true
-    install: false
+    install: true
+    #install: false
     ingress:
-      host: vmagent.qa-kubernetes.openshift.sdntest.qubership.org
+      host: vmagent.testdomain.local
       install: true
     remoteWrite:
       - url: http://graphite-remote-adapter:9201/write
@@ -100,7 +100,7 @@ victoriametrics:
             sourceLabels:
               - job
             regex: (node-exporter|kubelet|kube-state-metrics)
-      - url: https://***.***.***.***:8429/api/v1/write
+      - url: http://vmsingle.monitoring:8429/api/v1/write
         basicAuth:
           createSecret:
             username: prometheus
@@ -128,7 +128,7 @@ victoriametrics:
     install: true
     ingress:
       install: true
-      host: vmsingle.qa-kubernetes.openshift.sdntest.qubership.org
+      host: vmsingle.testdomain.local
     paused: false
     retentionPeriod: 14d
     securityContext:
@@ -151,7 +151,7 @@ victoriametrics:
   vmAlertManager:
     install: true
     ingress:
-      host: vmalertmanager.qa-kubernetes.openshift.sdntest.qubership.org
+      host: vmalertmanager.testdomain.local
       install: true
     selectAllByDefault: true
     securityContext:
@@ -167,7 +167,7 @@ victoriametrics:
   vmAlert:
     install: true
     ingress:
-      host: vmalert.qa-kubernetes.openshift.sdntest.qubership.org
+      host: vmalert.testdomain.local
       install: true
     securityContext:
       runAsUser: 2001
@@ -229,9 +229,9 @@ graphite_remote_adapter:
   enableTags: true
   writeCarbonAddress: gmon-infra04cn.qubership.org:2003
 prometheusAdapter:
-  #install: true
-  install: false
-  prometheusUrl: http://vmsingle-k8s.prometheus-operator.svc:8429
+  install: true
+  #install: false
+  prometheusUrl: http://vmsingle.monitoring:8429
   resources:
     requests:
       cpu: 100m
@@ -257,10 +257,10 @@ promxy:
   install: true
   config:
     serverGroups:
-      - address: vmsingle-k8s.prometheus-operator.svc:8429
+      - address: vmsingle.monitoring:8429
         label: qa-kubernetes
-      - address: vmsingle-prometheus-operator.support-left-kubernetes.openshift.sdntest.qubership.org
-        label: support-left
+      - address: vmsingle.monitoring:8429
+        #label: support-left
         scheme: https
   configmapReload:
     resources:
@@ -324,7 +324,7 @@ jsonExporter:
   serviceMonitor:
     targets:
       - name: vmsingle-tsdb-status
-        url: http://vmsingle-k8s.prometheus-operator.svc:8429/api/v1/status/tsdb
+        url: http://vmsingle.monitoring:8429/api/v1/status/tsdb
         labels: {}
         interval: 60s
         scrapeTimeout: 60s
