@@ -183,6 +183,24 @@ runs:
         kubectl get svc -n ${{inputs.namespace}}
         kubectl get svc -n ${{inputs.namespace}} > $file_name
 
+    - name: Get secrets from namespace
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Get secrets from namespace
+        file_name=artifacts/${{inputs.namespace}}_get_secret.txt
+        kubectl get secret -n ${{inputs.namespace}}
+        kubectl get secret -n ${{inputs.namespace}} > $file_name
+
+    - name: Get yaml from secrets
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Get yaml from secrets
+        file_name=artifacts/${{inputs.namespace}}_get_secret_yaml.txt
+        kubectl get secret -n ${{inputs.namespace}}
+        kubectl get secret -n ${{inputs.namespace}} -o yaml > $file_name
+
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
