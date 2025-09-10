@@ -198,7 +198,6 @@ runs:
       run: |
         # ▶️ Get yaml from secrets
         file_name=artifacts/${{inputs.namespace}}_get_secret_yaml.txt
-        kubectl get secret -n ${{inputs.namespace}}
         kubectl get secret -n ${{inputs.namespace}} -o yaml > $file_name
 
     - name: Get logs from all containers in pods

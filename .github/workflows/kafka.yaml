@@ -219,14 +219,14 @@ jobs:
       - name: Clean Install Kafka [LATEST] in TLS
         uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka
         with:
-          path_to_template: 'templates/kafka-service/kafka_clean_sc_zoo_tls.yml'
+          path_to_template: 'templates/kafka-service/kafka_clean_sc_zoo_tls_false.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Kafka installation
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
       - name: Clean Install Kafka Service [LATEST] in TLS
         uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka_service
         with:
-          path_to_template: 'templates/kafka-service/kafka_clean_sc_zoo_tls.yml'
+          path_to_template: 'templates/kafka-service/kafka_clean_sc_zoo_tls_false.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka_service
