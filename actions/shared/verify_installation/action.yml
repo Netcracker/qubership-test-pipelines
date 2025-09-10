@@ -228,6 +228,7 @@ runs:
           sleep ${{inputs.test_completion_retry_interval}}
         done
         for i in {1..${{inputs.test_completion_max_retries}}}; do
+          echo attempt $i
           logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
           if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
             kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name

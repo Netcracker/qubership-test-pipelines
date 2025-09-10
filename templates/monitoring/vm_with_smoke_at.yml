@@ -188,7 +188,7 @@ victoriametrics:
       limits:
         cpu: 200m
         memory: 500Mi
-    secretName: vmauth-secret
+    #secretName: vmauth-secret
     extraVarsSecret:
       pass: ""
     securityContext:
