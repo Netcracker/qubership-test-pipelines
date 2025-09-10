@@ -95,7 +95,6 @@ runs:
 
         check_cr_status() {
           for i in {1..${{inputs.service_ready_max_retries}}}; do
-            #condition_status=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n ${{inputs.namespace}} -o jsonpath='{.status.conditions[?(@.reason=="ReconcileCycleStatus")].status}')
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=yaml)
             echo  $condition
@@ -103,7 +102,7 @@ runs:
               status=$(echo "$condition" | yq eval '.status' -)
               if [[ "$status" == 'True' ]]; then
                 echo "CR ${{inputs.cr_kind}} ${{inputs.cr_name}} has successful status"
-                #return 0
+                return 0
               fi
             fi
             sleep ${{inputs.service_ready_retry_interval}}
