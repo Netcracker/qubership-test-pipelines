@@ -199,7 +199,7 @@ victoriametrics:
     username: admin
     passwordRef:
       key: ""
-      name: vmauth-secret
+      #name: vmauth-secret
 graphite_remote_adapter:
   install: true
   resources:
