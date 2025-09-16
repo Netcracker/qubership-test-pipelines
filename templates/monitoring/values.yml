@@ -484,7 +484,7 @@ jsonExporter:
             values:
               value: '{.value}'
 networkLatencyExporter:
-  install: false
+  install: true
 versionExporter:
   install: true
 cloudEventsExporter:

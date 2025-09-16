@@ -105,8 +105,8 @@ jobs:
       - name: Install Monitoring [LATEST]
         uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
         with:
-          #path_to_template: 'templates/monitoring/values.yml'
-          path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
+          path_to_template: 'templates/monitoring/values.yml'
+          #path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
           #path_to_template: 'templates/monitoring/vm_with_full_at.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Sleep
