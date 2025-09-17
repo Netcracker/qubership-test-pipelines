@@ -427,7 +427,8 @@ integrationTests:
   #tolerations: []
   #nodeSelector: {}
   #affinity: {}
-  tags: grafanaORtest-appORprometheus-adapterORsmoke
+  #tags: grafanaORtest-appORprometheus-adapterORsmoke
+  tags: grafana
   timeoutBeforeStart: 120
   statusWriting:
     enabled: true
