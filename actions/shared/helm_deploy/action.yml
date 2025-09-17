@@ -120,7 +120,7 @@ runs:
 
     - name: Update versions in values
       id: update-versions
-      uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
+      uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@v1.0.5
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
         config-file: ${{github.workspace}}/${{inputs.repository_name}}/.github/charts-values-update-config.yaml
