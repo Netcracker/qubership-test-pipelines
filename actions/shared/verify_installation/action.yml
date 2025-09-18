@@ -103,9 +103,6 @@ runs:
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
             echo "Status provisioner pod is not found. Checking CR..."
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
-            echo ">>>>"
-            echo "$cr_yaml"
-            echo "<<<<"
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
             echo ">>>>"
             echo "$condition"
