@@ -59,3 +59,15 @@ runs:
         # language=bash
         run: |
           kubectl delete pod -n kube-system -l k8s-app=kube-dns
+
+      - name: Sleep
+        shell: bash
+        run: sleep 5m
+
+      - name: Get pods
+        shell: bash
+        run: kubectl get pods -n ingress-nginx
+
+      - name: Get events
+        shell: bash
+        run: kubectl events -n ingress-nginx
