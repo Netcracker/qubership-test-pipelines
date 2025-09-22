@@ -49,7 +49,7 @@ runs:
     - name: Start timing
       shell: bash
       # language=bash
-      run: echo "Start $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
 
     - name: Create folder for artifacts
       shell: bash
@@ -129,7 +129,7 @@ runs:
     - name: Service readiness timing
       shell: bash
       # language=bash
-      run: echo "Stop $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
 
     - name: Get pods
       shell: bash
@@ -265,6 +265,11 @@ runs:
         kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
         ls -la artifacts/robot-results
 
+    - name: When resources saved timing
+      shell: bash
+      # language=bash
+      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+
     - name: Generate artifact name
       if: always()
       shell: bash
@@ -285,6 +290,11 @@ runs:
         name: ${{env.ARTIFACT_NAME}}
         path: artifacts/
 
+    - name: After artifacts uploaded timing
+      shell: bash
+      # language=bash
+      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+
     - name: Check job status
       shell: bash
       # language=bash
@@ -295,7 +305,7 @@ runs:
           exit 1
         fi
 
-    - name: Stop timing
+    - name: End timing
       shell: bash
       # language=bash
-      run: echo "Stop $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
