@@ -126,6 +126,11 @@ runs:
           fi
         fi
 
+    - name: Service readiness timing
+      shell: bash
+      # language=bash
+      run: echo "Stop $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+
     - name: Get pods
       shell: bash
       # language=bash
