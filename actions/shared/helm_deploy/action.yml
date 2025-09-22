@@ -120,8 +120,7 @@ runs:
 
     - name: Update versions in values
       id: update-versions
-      #uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@v1.0.5
-      uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@main
+      uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@v1.0.5
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
         config-file: .github/charts-values-update-config.yaml
@@ -137,7 +136,8 @@ runs:
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
-        cat ${{inputs.repository_name}}/${{inputs.path_to_chart}}/$template_name
+        #cat ${{inputs.repository_name}}/${{inputs.path_to_chart}}/$template_name
+        cat ${{inputs.repository_name}}/charts/qubership-monitoring-operator/values.yaml
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ ${{inputs.restricted}} == 'false' ]]; then
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
