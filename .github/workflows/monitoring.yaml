@@ -111,6 +111,13 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Sleep
         run: sleep 2m
+      - name: Port forwarding
+        run: |
+          kubectl port-forward -n monitoring service/grafana-service 3000:3000 &
+          echo $! > /tmp/kubectl-port-forward.pid
+          sleep 5
+      - name: Get ingress
+        run: kubectl get ingress -n monitoring monitoring-grafana -o jsonpath='{.spec.rules[0].host}'
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
 #      - name: Update to [LATEST] Version With Diff Params
@@ -123,7 +130,12 @@ jobs:
 #        run: sleep 1m
 #      - name: Verify Monitoring upgrade
 #        uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
-
+      - name: Stop port-forwarding
+        if: always()
+        run: |
+          if [ -f /tmp/kubectl-port-forward.pid ]; then
+            kill $(cat /tmp/kubectl-port-forward.pid) 2>/dev/null || true
+          fi
   #3)
   #9-VmClean[PREVIOUS_SPRINT]Restricted, 10-VmUpgrade[LATEST_SPRINT]Restricted
   #vm_restricted_with_smoke_at
