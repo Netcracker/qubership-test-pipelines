@@ -46,6 +46,11 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Start timing
+      shell: bash
+      # language=bash
+      run: echo "Start $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+
     - name: Create folder for artifacts
       shell: bash
       # language=bash
@@ -100,17 +105,15 @@ runs:
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         else
+          echo "Status provisioner pod is not found. Checking CR..."
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-            echo "Status provisioner pod is not found. Checking CR..."
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
-            echo ">>>>"
-            echo "$condition"
-            echo "<<<<"
               if ! [[ -z "$condition" ]]; then
                 status=$(echo "$condition" | yq eval '.status' -)
                 if [[ "$status" == 'True' ]]; then
                   echo "CR status condition is met"
+                  echo "$condition"
                   break
                 fi
               fi
@@ -286,3 +289,8 @@ runs:
           echo "::error:: Service was installed with errors!"
           exit 1
         fi
+
+    - name: Stop timing
+      shell: bash
+      # language=bash
+      run: echo "Stop $(date +"%Y-%m-%d %H:%M:%S,%3N")"

@@ -84,9 +84,9 @@ jobs:
           path_to_template: 'templates/kafka-service/kafka_update_kraft_mode.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
-      - name: Sleep 1m
-        run: sleep 1m
-      - name: Verify Kafka upgrade
+      - name: sleep 3m
+        run: sleep 3m
+      - name: Verify Kafka update
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
       - name: Update Kafka Service to [LATEST] Version With Diff Params
         uses: ./qubership-test-pipelines/actions/kafka/helm_deploy_kafka_service
@@ -94,9 +94,9 @@ jobs:
           path_to_template: 'templates/kafka-service/kafka_update_kraft_mode.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
-      - name: Sleep 1m
-        run: sleep 1m
-      - name: Verify Kafka Service upgrade
+      - name: sleep 3m
+        run: sleep 3m
+      - name: Verify Kafka Service update
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka_service
 
   # ---------- Current service branch ----------
@@ -370,8 +370,8 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/kafka-service/kafka_clean_sc_zoo.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Sleep 1m
-        run: sleep 1m
+      - name: sleep 3m
+        run: sleep 3m
       - name: Verify Kafka installation
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka
         with:
@@ -382,8 +382,8 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/kafka-service/kafka_clean_sc_zoo.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Sleep 1m
-        run: sleep 1m
+      - name: sleep 3m
+        run: sleep 3m
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka_service
         with:
