@@ -111,7 +111,7 @@ runs:
       run: |
         service_branch="${{inputs.service_branch}}"
         if [[ "${service_branch}" == *"/"* ]]; then
-          service_branch_updated=$(echo "${service_branch}" | tr '/' '_')
+          service_branch_updated=$(echo "${service_branch}" | tr '/' '-')
         else
           service_branch_updated=${service_branch}
         fi
