@@ -263,7 +263,7 @@ runs:
         for i in $(seq 1 ${{inputs.max_attempts}}); do
           echo "Attempt logs $i"
           logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
-          if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
+          if [[ $logs =~ Report.*html ]]; then
             echo "$logs" > $file_name
             break
           fi
