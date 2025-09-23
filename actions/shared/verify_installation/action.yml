@@ -46,11 +46,6 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Start timing
-      shell: bash
-      # language=bash
-      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
-
     - name: Create folder for artifacts
       shell: bash
       # language=bash
@@ -126,11 +121,6 @@ runs:
           fi
         fi
 
-    - name: Service readiness timing
-      shell: bash
-      # language=bash
-      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
-
     - name: Get pods
       shell: bash
       # language=bash
@@ -205,11 +195,6 @@ runs:
         file_name=artifacts/${{inputs.namespace}}_get_secret_yaml.txt
         kubectl get secret -n ${{inputs.namespace}} -o yaml > $file_name
 
-    - name:  After get resources timing
-      shell: bash
-      # language=bash
-      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
-
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
@@ -226,11 +211,6 @@ runs:
               echo '================================================================================' >> $file_name
             done
         done
-
-    - name:  After logs timing
-      shell: bash
-      # language=bash
-      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
 
     - name: Get logs from test pod
       shell: bash
@@ -280,11 +260,6 @@ runs:
         fi
         ls -la artifacts/robot-results
 
-    - name: After test logs timing
-      shell: bash
-      # language=bash
-      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
-
     - name: Generate artifact name
       if: always()
       shell: bash
@@ -305,11 +280,6 @@ runs:
         name: ${{env.ARTIFACT_NAME}}
         path: artifacts/
 
-    - name: After artifacts uploaded timing
-      shell: bash
-      # language=bash
-      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
-
     - name: Check job status
       shell: bash
       # language=bash
@@ -319,8 +289,3 @@ runs:
           echo "::error:: Service was installed with errors!"
           exit 1
         fi
-
-    - name: End timing
-      shell: bash
-      # language=bash
-      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
