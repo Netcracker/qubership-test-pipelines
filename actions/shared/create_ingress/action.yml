@@ -18,6 +18,7 @@ runs:
 
       - name: Patch coredns with wildcard record to testdomain.local zone
         run: |
+          NGINX_IP="$(kubectl get -n ingress-nginx service/ingress-nginx-controller -o jsonpath='{.spec.clusterIP}')"
           cat <<EOF | kubectl replace -f -
           apiVersion: v1
           data:
