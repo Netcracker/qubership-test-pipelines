@@ -251,7 +251,7 @@ runs:
           exit 0
         fi
         echo "test_pod=$test_pod"
-        for i in (seq 1 ${{inputs.max_attempts}}); do
+        for i in $(seq 1 ${{inputs.max_attempts}}); do
           echo "Attempt status $i"
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
           echo "$status"
@@ -260,7 +260,7 @@ runs:
           fi
           sleep ${{inputs.timeout}}
         done
-        for i in (seq 1 ${{inputs.max_attempts}}); do
+        for i in $(seq 1 ${{inputs.max_attempts}}); do
           echo "Attempt logs $i"
           logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
           if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
