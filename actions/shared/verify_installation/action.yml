@@ -49,7 +49,7 @@ runs:
     - name: Start timing
       shell: bash
       # language=bash
-      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
 
     - name: Create folder for artifacts
       shell: bash
@@ -129,7 +129,7 @@ runs:
     - name: Service readiness timing
       shell: bash
       # language=bash
-      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
 
     - name: Get pods
       shell: bash
@@ -205,6 +205,11 @@ runs:
         file_name=artifacts/${{inputs.namespace}}_get_secret_yaml.txt
         kubectl get secret -n ${{inputs.namespace}} -o yaml > $file_name
 
+    - name:  After get resources timing
+      shell: bash
+      # language=bash
+      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
@@ -221,6 +226,11 @@ runs:
               echo '================================================================================' >> $file_name
             done
         done
+
+    - name:  After logs timing
+      shell: bash
+      # language=bash
+      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
 
     - name: Get logs from test pod
       shell: bash
@@ -240,7 +250,7 @@ runs:
         fi
         echo "test_pod=$test_pod"
         for i in {1..${{inputs.max_attempts}}}; do
-          echo attempt $i
+          echo attempt status $i
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
           echo "$status"
           if [[ "$status" == 'Running' ]]; then
@@ -249,6 +259,7 @@ runs:
           sleep ${{inputs.timeout}}
         done
         for i in {1..${{inputs.max_attempts}}}; do
+          echo attempt logs $i
           logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
           if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
             kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
@@ -265,10 +276,10 @@ runs:
         kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
         ls -la artifacts/robot-results
 
-    - name: When resources saved timing
+    - name: After test logs timing
       shell: bash
       # language=bash
-      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
 
     - name: Generate artifact name
       if: always()
@@ -293,7 +304,7 @@ runs:
     - name: After artifacts uploaded timing
       shell: bash
       # language=bash
-      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
 
     - name: Check job status
       shell: bash
@@ -308,4 +319,4 @@ runs:
     - name: End timing
       shell: bash
       # language=bash
-      run: echo "Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
+      run: echo "🕐 Timing $(date +"%Y-%m-%d %H:%M:%S,%3N")"
