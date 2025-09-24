@@ -48,8 +48,8 @@ jobs:
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
   # ---------- Current service branch ----------
-  #[V] Clean [LATEST_SPRINT], Upgrade [LATEST_SPRINT] Diff Params
-  Clean-Latest-Upgrade-Diff-Params:
+  #[V] Clean [LATEST_SPRINT], Update [LATEST_SPRINT] Diff Params
+  Clean-Latest-Update-Diff-Params:
     runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST], Upgrade [LATEST] Diff Params
     steps:
@@ -76,6 +76,8 @@ jobs:
           path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc_updated.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Opensearch upgrade
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
 
@@ -171,7 +173,7 @@ jobs:
   #---------- Update from old releases ----------
   #[V] Clean [N1_RELEASE], Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
   #[V] Clean [N2_RELEASE], Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
-  Clean-Previous-Update-To-Latest:
+  Clean-Previous-Upgrade-To-Latest:
     name: Clean [PREVIOUS], Update to [LATEST]
     needs: prepare-versions
     runs-on: ${{inputs.runner_type}}
@@ -198,12 +200,14 @@ jobs:
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
         with:
           service_branch: '${{matrix.release}}'
-      - name: Update Opensearch to [LATEST]
+      - name: Upgrade Opensearch to [LATEST]
         uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
         with:
           deploy_mode: upgrade
           path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc.yml'
           service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after upgrade
+        run: sleep 1m
       - name: Verify Opensearch installation
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
         with:
