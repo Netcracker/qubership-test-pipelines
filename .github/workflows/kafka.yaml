@@ -101,7 +101,7 @@ jobs:
 
   # ---------- Current service branch ----------
   #V Clean [LATEST] with Zookeeper in non-TLS
-  Clean-Latest-Zookeeper:
+  Clean-Latest-Zookeeper-non-TLS:
     runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] with Zookeeper in non-TLS
     steps:
@@ -272,9 +272,9 @@ jobs:
         uses: ./qubership-test-pipelines/actions/kafka/verify_installation_kafka_service
 
   #V Clean [LATEST] with Zookeeper on S3
-  Clean-S3:
+  Clean-Latest-Zookeeper-S3:
     runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST] with Zookeeper on S3
+    name: Clean [LATEST] with Zookeeper on S3 storage
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
