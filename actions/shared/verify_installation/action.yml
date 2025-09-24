@@ -190,10 +190,12 @@ runs:
       run: |
         # ▶️ Get logs from test pod
         file_name=artifacts/${{inputs.namespace}}_tests.txt
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        IFS=' ' read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')"
+        test_pod=""
         for pod in "${pods[@]}"; do
           if [[ $pod == *"tests"* ]]; then
             test_pod=$pod
+            break
           fi
         done
         if ! [[ $test_pod ]]; then
@@ -201,8 +203,8 @@ runs:
           exit 0
         fi
         echo "test_pod=$test_pod"
-        for i in {1..${{inputs.max_attempts}}}; do
-          echo attempt $i
+        for i in $(seq 1 ${{inputs.max_attempts}}); do
+          echo "Attempt status $i"
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
           echo "$status"
           if [[ "$status" == 'Running' ]]; then
@@ -210,21 +212,24 @@ runs:
           fi
           sleep ${{inputs.timeout}}
         done
-        for i in {1..${{inputs.max_attempts}}}; do
+        for i in $(seq 1 ${{inputs.max_attempts}}); do
+          echo "Attempt logs $i"
           logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
-          if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
-            kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
+          if [[ $logs =~ Report.*html ]]; then
+            echo "$logs" > $file_name
             break
           fi
           sleep ${{inputs.timeout}}
         done
         echo 'TEST LOGS:'
-        kubectl logs $test_pod -n ${{inputs.namespace}}
+        echo "$logs"
         if [[ $logs == *"| FAIL |"* ]]; then
           echo "::error:: Tests failed!"
           echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
-        kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
+        if ! kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}; then
+        echo "::warning:: Failed to copy robot results"
+        fi
         ls -la artifacts/robot-results
 
     - name: Generate artifact name
