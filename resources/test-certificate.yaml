@@ -1,0 +1,16 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: test-certificate
+  namespace: cert-manager
+spec:
+  isCA: true
+  commonName: test-ca
+  secretName: test-ca-secret
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: test-issuer
+    kind: Issuer
+    group: cert-manager.io
