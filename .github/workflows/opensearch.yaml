@@ -47,11 +47,10 @@ jobs:
           previous_version=$(echo "$versions_json" | jq -r '.[-1]')
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
-  # ---------- Current service branch ----------
   #[V] Clean [LATEST_SPRINT], Update [LATEST_SPRINT] Diff Params
   Clean-Latest-Update-Diff-Params:
     runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST], Upgrade [LATEST] Diff Params
+    name: Clean [LATEST], Update [LATEST] Diff Params
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -170,11 +169,10 @@ jobs:
       - name: Verify opensearch installation
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
 
-  #---------- Update from old releases ----------
   #[V] Clean [N1_RELEASE], Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
   #[V] Clean [N2_RELEASE], Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
   Clean-Previous-Upgrade-To-Latest:
-    name: Clean [PREVIOUS], Update to [LATEST]
+    name: Clean [PREVIOUS], Upgrade to [LATEST]
     needs: prepare-versions
     runs-on: ${{inputs.runner_type}}
     strategy:
