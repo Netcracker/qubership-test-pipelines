@@ -48,7 +48,7 @@ opensearch:
   master:
     persistence:
       storageClass: standard
-      size: 10Gi
+      size: 20Gi
     resources:
       requests:
         cpu: 600m
