@@ -60,5 +60,5 @@ backupDaemon:
 integrationTests:
   install: true
   waitForResult: true
-  tags: kafka
+  tags: kafka_crudORkafka_imagesORkafka_haORkafka_consumer_producerORrebalanceORacl
   zookeeperOsProject: "zookeeper"
