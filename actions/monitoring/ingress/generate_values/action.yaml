@@ -1,0 +1,168 @@
+name: 'Generate Prometheus stack values'
+inputs:
+  matrix:
+    description: "Matrix with ingress config variations"
+    required: true
+    default: ''
+  values_file:
+    description: "Path to values file"
+    required: true
+    default: 'templates/monitoring/generated-ingress-values.yaml'
+  cert_dir:
+    description: "Path to certificates directory"
+    required: true
+    default: ''
+  stack:
+    description: "Monitoring stack"
+    required: true
+    default: 'prometheus'
+  vmauth_enabled:
+    description: "Is vmauth enabled (true/false)"
+    required: false
+    default: 'false'
+runs:
+  using: 'composite'
+  steps:
+    - name: Generate CA and wildcard certificates
+      shell: bash
+      run: |
+        set -euo pipefail
+        CERTS_DIR='${{ inputs.cert_dir }}'
+        if [[ -z "$CERTS_DIR" ]]; then
+          CERTS_DIR="certs"
+        fi
+        echo "📜 Generating CA and wildcard certificate for CN=monitoring.qubership.org with SAN=*.qubership.org"
+        # 1️⃣ Create simple CA
+        openssl req -x509 -newkey rsa:2048 -days 30 -nodes \
+          -keyout "$CERTS_DIR/ca.key" -out "$CERTS_DIR/ca.crt" \
+          -subj "/CN=Qubership Test Root CA"
+
+        # 2️⃣ Create wildcard key and CSR
+        openssl req -newkey rsa:2048 -nodes \
+          -keyout "$CERTS_DIR/tls.key" -out "$CERTS_DIR/server.csr" \
+          -subj "/CN=*.qubership.org"
+
+        # 3️⃣ Sign server cert with CA
+        echo "subjectAltName=DNS:monitoring.qubership.org,DNS:*.qubership.org" > "$CERTS_DIR/san.cnf"
+        openssl x509 -req -in "$CERTS_DIR/server.csr" \
+          -CA "$CERTS_DIR/ca.crt" -CAkey "$CERTS_DIR/ca.key" -CAcreateserial \
+          -out "$CERTS_DIR/tls.crt" -days 30 -sha256 -extfile "$CERTS_DIR/san.cnf"
+
+        echo "✅ Test certificates generated:"
+        ls -l "$CERTS_DIR"
+    - name: Generate values.yaml
+      run: |
+        set -euo pipefail
+        MATRIX='${{ inputs.matrix }}'
+        VALUES_FILE='${{ inputs.values_file }}'
+        CERTS_DIR='${{ inputs.cert_dir }}'
+        VMAUTH_ENABLED='${{ inputs.vmauth_enabled }}'
+        STACK='${{ inputs.stack }}'
+
+        if [[ -z "$MATRIX" ]]; then
+          echo "❌ MATRIX is empty" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit 1
+        fi
+        INDENT=""
+        if [[ "$STACK" == "prometheus" ]]; then
+          COMPONENTS=(prometheus alertmanager pushgateway)
+          echo "# Auto-generated values for Prometheus stack" > $VALUES_FILE
+          echo "victoriametrics:" >> $VALUES_FILE
+          echo "  vmOperator:" >> $VALUES_FILE
+          echo "    install: false" >> $VALUES_FILE
+        elif [[ "$STACK" == "victoriametrics" && "$VMAUTH_ENABLED" == "true" ]]; then
+          COMPONENTS=(vmauth vmalert)
+          echo "victoriametrics:" >> $VALUES_FILE
+          INDENT="  "
+        elif [[ "$STACK" == "victoriametrics" && "$VMAUTH_ENABLED" == "false" ]]; then
+          COMPONENTS=(vmagent vmalertmanager vmsingle)
+          INDENT="  "
+          echo "victoriametrics:" >> $VALUES_FILE
+          echo "$INDENTvmAuth:" >> $VALUES_FILE
+          echo "$INDENT  install: false" >> $VALUES_FILE
+        else
+          echo "❌ Unknown stack or vmauth configuration: stack=$STACK, vmauth_enabled=$VMAUTH_ENABLED"
+          exit 1
+        fi
+
+        generate_values() {
+          local local_matrix="$1"
+          local local_component="$2"
+          local local_values_file="$3"
+          local local_cert_dir="$4"
+          local local_indent="$5"
+          echo "🔸 Generating values for component: $local_component"
+          echo "$local_indent$local_component:" >> $local_values_file
+          echo "$local_indent  install: true"  >> $local_values_file
+          echo "$local_indent  ingress:" >> $local_values_file
+          echo "$local_indent    install: true" >> $local_values_file
+          HOST_TYPE=$(echo "$local_matrix" | jq -r ".[] | select(.component==\"$local_component\") | .ingress_host_source")
+          if [[ "$HOST_TYPE" == "host" ]]; then
+            echo "$local_indent    host: ${local_component}.example.dev" >> $local_values_file
+          elif [[ "$HOST_TYPE" == "rules" ]]; then
+            echo "$local_indent    rules:" >> $local_values_file
+            echo "$local_indent      - host: ${local_component}.example.dev" >> $local_values_file
+            echo "$local_indent        paths:" >> $local_values_file
+            echo "$local_indent          - path: /" >> $local_values_file
+            echo "$local_indent            pathType: Prefix" >> $local_values_file
+            echo "$local_indent            backend:" >> $local_values_file
+            echo "$local_indent              service:" >> $local_values_file
+            echo "$local_indent                name: ${local_component}-service" >> $local_values_file
+            echo "$local_indent                port:" >> $local_values_file
+            echo "$local_indent                  number: 80" >> $local_values_file
+          elif [[ "$HOST_TYPE" == "empty" ]]; then
+            echo "$local_indent    host: \"\"" >> $local_values_file
+          fi
+
+          TLS_TYPE=$(echo "$local_matrix" | jq -r ".[] | select(.component==\"$local_component\") | .ingress_tls_source")
+          case "$TLS_TYPE" in
+            "tlsSecretName")
+              echo "$local_indent    tlsSecretName: ${local_component}-tls" >> $local_values_file
+              ;;
+            "tlsBlock")
+              echo "$local_indent    tls:" >> $local_values_file
+              echo "$local_indent      - secretName: ${local_component}-block-tls" >> $local_values_file
+              echo "$local_indent        hosts: [\"${local_component}.example.dev\"]" >> $local_values_file
+              ;;
+            "existingSecret")
+              echo "$local_indent  tlsEnabled: true" >> $local_values_file
+              echo "$local_indent  tlsConfig:" >> $local_values_file
+              echo "$local_indent    existingSecret: ${local_component}-existing-tls" >> $local_values_file
+              ;;
+            "generateCerts")
+              echo "$local_indent  tlsEnabled: true" >> $local_values_file
+              echo "$local_indent  tlsConfig:" >> $local_values_file
+              echo "$local_indent    generateCerts:" >> $local_values_file
+              echo "$local_indent      enabled: true" >> $local_values_file
+              echo "$local_indent      secretName: ${local_component}-generated-tls" >> $local_values_file
+              ;;
+            "createSecret")
+              echo "$local_indent  tlsEnabled: true" >> $local_values_file
+              echo "$local_indent  tlsConfig:" >> $local_values_file
+              echo "$local_indent    generateCerts:" >> $local_values_file
+              echo "$local_indent      enabled: false" >> $local_values_file
+              echo "$local_indent    createSecret:" >> $local_values_file
+              echo "$local_indent      secretName: ${local_component}-created-tls" >> $local_values_file
+              echo "$local_indent      ca: |" >> $local_values_file
+              sed "s/^/$local_indent        /" "$GITHUB_WORKSPACE/$CERTS_DIR/ca.crt" >> $local_values_file
+              echo "$local_indent      cert: |" >> $local_values_file
+              sed "s/^/$local_indent        /" "$GITHUB_WORKSPACE/$CERTS_DIR/tls.crt" >> $local_values_file
+              echo "$local_indent      key: |" >> $local_values_file
+              sed "s/^/$local_indent        /" "$GITHUB_WORKSPACE/$CERTS_DIR/tls.key" >> $local_values_file
+              ;;
+          esac
+        }
+
+        echo "" >> $VALUES_FILE
+        for COMPONENT in "${COMPONENTS[@]}"; do
+          generate_values "$MATRIX" "$COMPONENT" "$VALUES_FILE" "$CERTS_DIR" "$INDENT"
+        done
+        # Generate Grafana values separately or root level
+        generate_values "$MATRIX" "grafana" "$VALUES_FILE" "$CERTS_DIR" ""
+        echo "clusterIssuerName: dev-cluster-issuer" >> $VALUES_FILE
+
+        echo "Stack: $STACK" >> "$GITHUB_STEP_SUMMARY"
+        echo "Generated values:" >> "$GITHUB_STEP_SUMMARY"
+        echo "```yaml" >> "$GITHUB_STEP_SUMMARY"
+        cat $VALUES_FILE | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "```" >> "$GITHUB_STEP_SUMMARY"

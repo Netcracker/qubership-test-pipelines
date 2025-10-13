@@ -1,0 +1,47 @@
+name: 'Generate ingress matrix'
+description: 'Generates ingress config variations for all components'
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        node <<'EOF'
+        const { MatrixBuilder } = require('./qubership-test-pipelines/.github/workflows/matrix_builder.js');
+        const mb = new MatrixBuilder();
+        mb.addAxis({
+          name: 'component',
+          values: [
+            { name: 'prometheus' },
+            { name: 'pushgateway' },
+            { name: 'alertManager' },
+            { name: 'grafana' },
+            { name: 'vmAuth' },
+            { name: 'vmAlert' },
+            { name: 'vmAgent' },
+            { name: 'vmAlertManager' },
+            { name: 'vmSingle' }
+          ]
+        });
+        mb.addAxis({
+          name: 'ingress_host_source',
+          values: [
+            { value: 'host' },
+            { value: 'rules' },
+            { value: 'empty' }
+          ]
+        });
+        mb.addAxis({
+          name: 'ingress_tls_source',
+          values: [
+            { value: 'tlsSecretName' },
+            { value: 'tlsBlock' },
+            { value: 'existingSecret' },
+            { value: 'generateCerts' },
+            { value: 'createSecret' },
+            { value: 'disabled' }
+          ]
+        });
+        mb.include({ component: /(prometheus|pushgateway|alertManager|grafana|vmAuth|vmAlert|vmAgent|vmAlertmanager|vmSingle)/ });
+        const rows = mb.generateRows(9); // one case per component
+        console.log(JSON.stringify(rows, null, 2));
+        console.log(`::set-output name=matrix::${JSON.stringify(rows)}`);
+        EOF

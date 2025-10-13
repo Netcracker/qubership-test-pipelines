@@ -227,3 +227,71 @@ jobs:
 #        run: kubectl get PlatformMonitoring platformmonitoring -n monitoring -o yaml
 #      - name: Verify Monitoring installation
 #        uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+
+  build-matrix:
+    name: Generate Ingress Matrix
+    runs-on: ${{ inputs.runner_type }}
+    outputs:
+      matrix: ${{ steps.matrix_gen.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - uses: ./qubership-test-pipelines/actions/monitoring/ingress/generate_matrix
+        id: matrix_gen
+  test-stacks-ingress:
+    name: Test stacks ingresses creation
+    needs: build-matrix
+    runs-on: ${{ inputs.runner_type }}
+    env:
+      NAMESPACE: monitoring
+      CERT_DIR: qubership-test-pipelines/resources/monitoring/certs
+      VALUES_FILE: ./templates/monitoring/generated-ingress-values.yaml
+    strategy:
+      matrix:
+        scenario:
+          - id: prometheus
+            title: Test Prometheus stack ingresses
+            stack: prometheus
+            vmauth_enabled: 'false'
+          - id: vm-with-vmauth
+            title: Test VM stack ingresses (VmAuth enabled)
+            stack: victoriametrics
+            vmauth_enabled: 'true'
+          - id: vm-without-vmauth
+            title: Test VM stack ingresses (VmAuth disabled)
+            stack: victoriametrics
+            vmauth_enabled: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Install cert-manager
+        uses: ./qubership-test-pipelines/actions/shared/install_cert_manager
+      - name: Generate values.yaml for stack
+        uses: ./qubership-test-pipelines/actions/monitoring/ingress/generate_values
+        id: generate_values
+        with:
+          matrix: ${{ needs.build-matrix.outputs.matrix }}
+          values_file: '${{ env.VALUES_FILE }}'
+          cert_dir: '${{ env.CERT_DIR }}'
+          stack: ${{ matrix.scenario.stack }}
+          vmauth_enabled: ${{ matrix.scenario.vmauth_enabled }}
+      - name: Install stack
+        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+        with:
+          path_to_template: '${{ env.VALUES_FILE }}'
+          service_branch: '${{ inputs.service_branch }}'
+      - name: Verify ingresses creation
+        uses: ./qubership-test-pipelines/actions/monitoring/verify_ingress
+        with:
+          matrix: ${{ needs.build-matrix.outputs.matrix }}
+          cert_dir: '${{ env.CERT_DIR }}'
+          stack: ${{ matrix.scenario.stack }}
+          vmauth_enabled: ${{ matrix.scenario.vmauth_enabled }}

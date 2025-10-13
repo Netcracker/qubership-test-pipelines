@@ -1,0 +1,156 @@
+name: Verify actual ingress configuration
+inputs:
+  matrix:
+    description: "Matrix with ingress config variations"
+    required: true
+    default: ''
+  namespace:
+    description: "Monitoring namespace"
+    required: true
+    default: 'monitoring'
+  cr_name:
+    description: "Name of platformmonitoring CR"
+    required: true
+    default: 'platformmonitoring'
+  stack:
+    description: "Monitoring stack"
+    required: true
+    default: 'prometheus'
+  vmauth_enabled:
+    description: "Is vmauth enabled (true/false)"
+    required: false
+    default: 'false'
+runs:
+  using: 'composite'
+  steps:
+    - name: Verify actual ingress configuration
+      run: |
+        set -euo pipefail
+        NAMESPACE="${{ inputs.namespace }}"
+        MATRIX="${{ inputs.matrix }}"
+        STACK="${{ inputs.stack }}"
+        CR_NAME="${{ inputs.cr_name }}"
+        VMAUTH_ENABLED="${{ inputs.vmauth_enabled }}"
+        echo
+        if [[ -z "$MATRIX" ]]; then
+          echo "❌ MATRIX is empty" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit 1
+        fi
+        if [[ "$STACK" == "prometheus" ]]; then
+          COMPONENTS=(prometheus alertmanager pushgateway grafana)
+        elif [[ "$STACK" == "victoriametrics" && "$VMAUTH_ENABLED" == "true" ]]; then
+          COMPONENTS=(vmauth vmalert grafana)
+        elif [[ "$STACK" == "victoriametrics" && "$VMAUTH_ENABLED" == "false" ]]; then
+          COMPONENTS=(vmagent vmalertmanager vmsingle grafana)
+        else
+          echo "❌ Unknown stack or vmauth configuration: stack=$STACK, vmauth_enabled=$VMAUTH_ENABLED" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit 1
+        fi
+
+        CR_JSON=$(kubectl get platformmonitoring $CR_NAME -n $NAMESPACE -o json)
+        if [[ -z "$CR_JSON" ]]; then
+          echo "❌ PlatformMonitoring CR not found" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit 1
+        fi
+
+        INGRESSES_JSON=$(kubectl get ingress -n $NAMESPACE -o json)
+        check_ingress() {
+          local local_matrix="$1"
+          local local_component="$2"
+          local local_cr_json="$3"
+          local local_ingress_json="$4"
+          local local_stack="$5"
+
+          # Prefix for victoriametrics components except grafana
+          local prefix=""
+          if [[ "$local_stack" == "victoriametrics" && "$local_component" != "grafana" ]]; then
+            prefix="victoriametrics."
+          fi
+
+          # Host
+          local host_type
+          host_type=$(echo "$local_matrix" | jq -r ".[] | select(.component==\"$local_component\") | .ingress_host_source")
+          local expected_host="${local_component}.example.dev"
+          local lower_component
+          lower_component=$(echo "$local_component" | tr '[:upper:]' '[:lower:]')
+
+          local ingress_path="ingress.host"
+          [[ "$host_type" == "rules" ]] && ingress_path="ingress.rules[].host"
+
+          local actual_cr_host
+          actual_cr_host=$(echo "$local_cr_json" | jq -r ".spec.${prefix}${local_component}.${ingress_path}")
+          local actual_ingress_host
+          actual_ingress_host=$(echo "$local_ingress_json" | jq -r --arg comp "$lower_component" '
+            .items[] | select(.metadata.labels["platform.monitoring.app"] == $comp) | .spec.rules[].host
+          ')
+
+          case "$host_type" in
+            "host" | "rules")
+              [[ "$actual_cr_host" != "$expected_host" ]] && { echo "❌ $local_component host in CR expected $expected_host, got $actual_cr_host" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
+              [[ "$actual_ingress_host" != "$expected_host" ]] && { echo "❌ $local_component host in ingress expected $expected_host, got $actual_ingress_host | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+              ;;
+            "empty")
+              [[ -n "$actual_cr_host" && "$actual_cr_host" != "null" ]] && { echo "❌ $local_component host in CR expected empty, got $actual_cr_host | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+              [[ -n "$actual_ingress_host" && "$actual_ingress_host" != "null" ]] && { echo "❌ $local_component host in ingress expected empty, got $actual_ingress_host | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+              ;;
+          esac
+
+          # TLS
+          local tls_type
+          tls_type=$(echo "$local_matrix" | jq -r ".[] | select(.component==\"$local_component\") | .ingress_tls_source")
+
+          if [[ "$tls_type" == "disabled" ]]; then
+            # Check TLS is not set in CR or Ingress
+            local has_tls_cr
+            has_tls_cr=$(jq -e "
+              (.spec.${prefix}${local_component}.ingress.tlsSecretName? != null) or
+              (.spec.${prefix}${local_component}.ingress.tls? != null) or
+              (.spec.${prefix}${local_component}.tlsConfig != null)
+            " <<< "$local_cr_json" >/dev/null && echo true || echo false)
+            [[ "$has_tls_cr" == "true" ]] && { echo "❌ $local_component TLS expected disabled in CR, but found config | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+
+            local has_tls_ingress
+            has_tls_ingress=$(jq -e --arg comp "$lower_component" '
+              .items[] | select(.metadata.labels["platform.monitoring.app"] == $comp)
+              | has("spec") and (.spec | has("tls"))
+            ' <<< "$local_ingress_json" >/dev/null && echo true || echo false)
+            [[ "$has_tls_ingress" == "true" ]] && { echo "❌ $local_component TLS expected disabled in ingress, but found config | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+          else
+            # Define desired TLS secret name
+            local expected_tls_secret=""
+            case "$tls_type" in
+              "tlsSecretName") expected_tls_secret="${local_component}-tls" ;;
+              "tlsBlock") expected_tls_secret="${local_component}-block-tls" ;;
+              "existingSecret") expected_tls_secret="${local_component}-existing-tls" ;;
+              "generateCerts") expected_tls_secret="${local_component}-generated-tls" ;;
+              "createSecret") expected_tls_secret="${local_component}-created-tls" ;;
+            esac
+
+            local tls_path="ingress.tlsSecretName"
+            case "$tls_type" in
+              "tlsBlock") tls_path="ingress.tls[0].secretName" ;;
+              "existingSecret" | "generateCerts" | "createSecret") tls_path="tlsConfig.secretName" ;;
+            esac
+
+            local actual_cr_tls_secret
+            actual_cr_tls_secret=$(jq -r ".spec.${prefix}${local_component}.${tls_path} // empty" <<< "$local_cr_json")
+
+            local actual_ingress_tls_secret
+            actual_ingress_tls_secret=$(jq -r --arg comp "$lower_component" '
+              .items[] | select(.metadata.labels["platform.monitoring.app"] == $comp)
+              | .spec.tls[].secretName // empty
+            ' <<< "$local_ingress_json")
+
+            [[ "$actual_cr_tls_secret" != "$expected_tls_secret" ]] && { echo "❌ $local_component TLS secret in CR expected $expected_tls_secret, got $actual_cr_tls_secret" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
+            [[ "$actual_ingress_tls_secret" != "$expected_tls_secret" ]] && { echo "❌ $local_component TLS secret in ingress expected $expected_tls_secret, got $actual_ingress_tls_secret" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
+          fi
+        }
+        for component in "${COMPONENTS[@]}"; do
+          check_ingress "$MATRIX" "$component" "$CR_JSON" "$INGRESSES_JSON" "$STACK"
+        done
+
+        echo "✅ Ingress verified" | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "details:" | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "```json" | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "$INGRESSES_JSON" | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "```" | tee -a "$GITHUB_STEP_SUMMARY"
