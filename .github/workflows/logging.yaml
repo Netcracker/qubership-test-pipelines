@@ -62,6 +62,7 @@ jobs:
         with:
           path_to_template: 'templates/opensearch-service/opensearch_clean_basic_for_logging.yaml'
           service_branch: '${{ inputs.opensearch_version }}'
+          path_to_chart: 'charts/helm/opensearch-service'
       - name: Check opensearch deployment status
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation
         with:
