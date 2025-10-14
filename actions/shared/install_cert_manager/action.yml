@@ -17,6 +17,7 @@ runs:
         helm upgrade --icert-manager jetstack/cert-manager   --namespace cert-manager \
         --create-namespace --version ${{ inputs.cert_manager_version }} \
         --set prometheus.enabled=true --set crds.enabled=true
+      shell: bash
     - run: |
           kubectl apply -f - <<EOF
           apiVersion: cert-manager.io/v1
@@ -26,4 +27,4 @@ runs:
           spec:
             selfSigned: {}
           EOF
-      
+      shell: bash
