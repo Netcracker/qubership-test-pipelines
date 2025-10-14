@@ -42,7 +42,7 @@ opensearch:
     s3:
       enabled: false
       pathStyleAccess: true
-      url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.netcracker.com/
+      url: http://test-minio-gateway-nas.qa-k8s.demo.qubership.org/
       bucket: opensearch-qa-k8s
       keyId: Z4nz2bxWnWM36lf3K21y
       keySecret: oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr
@@ -53,7 +53,7 @@ opensearch:
     ingress:
       enabled: true
       hosts:
-        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+        - opensearch-opensearch-service.qa-k8s.demo.qubership.org
 dbaasAdapter:
   enabled: false
   dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
@@ -61,8 +61,8 @@ dbaasAdapter:
   opensearchRepoRoot: /usr/share/opensearch/
   dbaasUsername: dbaas-adapter
   dbaasPassword: dbaas-adapter
-  registrationAuthUsername: cluster-dba
-  registrationAuthPassword: Bnmq5567_PO
+  registrationAuthUsername: dba-user
+  registrationAuthPassword: dba-password
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
@@ -76,7 +76,7 @@ dashboards:
   ingress:
     enabled: true
     hosts:
-      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+      - host: dashboards-opensearch-service.qa-k8s.demo.qubership.org
         paths:
           - path: /
 curator:

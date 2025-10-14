@@ -1,0 +1,27 @@
+skipMetricsService: false
+containerRuntimeType: containerd
+graylog:
+  install: true
+  mongoStorageClassName: standard
+  graylogStorageClassName: standard
+  host: http://graylog.demo.qubership.org
+  initContainerDockerImage: alpine:3.17.2
+  elasticsearchHost: http://admin:admin@opensearch.opensearch:9200
+  indexShards: "1"
+  indexReplicas: "0"
+cloudEventsReader:
+  dockerImage: ghcr.io/netcracker/qubership-kube-events-reader:main
+fluentbit:
+  install: true
+  configmapReload:
+    dockerImage: ghcr.io/jimmidyson/configmap-reload:v0.13.1
+  graylogHost: graylog-service
+  graylogPort: 12201
+fluentd:
+  install: false
+integrationTests:
+  install: true
+  tags: smokeORlog-generator
+  externalGraylogServer: "false"
+  graylogHost: graylog-service
+  graylogPort: 9000

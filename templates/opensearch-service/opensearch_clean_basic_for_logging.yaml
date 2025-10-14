@@ -1,0 +1,24 @@
+dashboards:
+  enabled: false
+opensearch:
+  master:
+    enabled: true
+    replicas: 1
+    persistence:
+      enabled: true
+      storageClass: "standard"
+  securityConfig:
+    authc:
+      basic:
+        username: "admin"
+        password: "admin"
+  tls:
+    enabled: false
+monitoring:
+  enabled: false
+dbaasAdapter:
+  enabled: false
+curator:
+  enabled: false
+  username: "admin"
+  password: "admin"

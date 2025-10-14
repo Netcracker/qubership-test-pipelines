@@ -45,7 +45,7 @@ monitoring:
 akhq:
   install: true
   ingress:
-    host: akhq-kafka-service.qa-kubernetes.openshift.sdntest.netcracker.com
+    host: akhq-kafka-service.qa-k8s.demo.qubership.org
 backupDaemon:
   install: true
   storage: 1Gi

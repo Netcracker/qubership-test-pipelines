@@ -40,13 +40,13 @@ opensearch:
     ingress:
       enabled: true
       hosts:
-        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+        - opensearch-opensearch-service.qa-k8s.demo.qubership.org
 dashboards:
   enabled: true
   ingress:
     enabled: false
     hosts:
-      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+      - host: dashboards-opensearch-service.qa-k8s.demo.qubership.org
         paths:
           - path: /
 dbaasAdapter:
@@ -56,8 +56,8 @@ dbaasAdapter:
   opensearchRepoRoot: /usr/share/opensearch/
   dbaasUsername: dbaas-adapter
   dbaasPassword: dbaas-adapter
-  registrationAuthUsername: cluster-dba
-  registrationAuthPassword: Bnmq5567_PO
+  registrationAuthUsername: dba-user
+  registrationAuthPassword: dba-password
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
