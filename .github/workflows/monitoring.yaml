@@ -106,20 +106,27 @@ jobs:
         uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
         with:
           path_to_template: 'templates/monitoring/values.yml'
-          #path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
-          #path_to_template: 'templates/monitoring/vm_with_full_at.yml'
           service_branch: '${{inputs.service_branch}}'
-      - name: Sleep
-        run: sleep 2m
+      #- name: Sleep
+        #run: sleep 2m
+      - name: Verify Monitoring installation
+        uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+      - name: Install Tests
+        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+        with:
+          path_to_template: 'templates/monitoring/values_test.yml'
+          service_branch: '${{inputs.service_branch}}'
+          deploy_mode: upgrade
       - name: Port forwarding
         run: |
           kubectl port-forward -n monitoring service/grafana-service 3000:3000 &
           echo $! > /tmp/kubectl-port-forward.pid
-          sleep 5
+          sleep 2m
       - name: Get ingress
         run: kubectl get ingress -n monitoring monitoring-grafana -o jsonpath='{.spec.rules[0].host}'
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+
 #      - name: Update to [LATEST] Version With Diff Params
 #        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
 #        with:
