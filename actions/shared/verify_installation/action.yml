@@ -61,80 +61,27 @@ runs:
       # language=bash
       run: |
         # ▶️ Check service is ready
-        check_provisioner_pod() {
-          echo "provisioner_pod=$provisioner_pod"
-          for i in {1..${{inputs.service_ready_max_retries}}}; do
-            output=$(kubectl get pod $provisioner_pod --ignore-not-found -n ${{inputs.namespace}})
-            if [ -z "$output" ]; then
-                echo "::error::Provisioner pod $provisioner_pod no longer exists"
-                return 1
-            fi
-            status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-            if [[ "$status" == 'Succeeded' ]]; then
-                logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
-                if [[ $logs == *"Failed components statuses are []"* ]]; then
-                  echo "All components are in succeed status!"
-                  echo PROVISIONER LOGS: $logs
-                  break
-                fi
-            fi
-            sleep ${{inputs.service_ready_retry_interval}}
-          done
-          if [[ "$status" != 'Succeeded' ]]; then
-            echo "::error:: $provisioner_pod pod has not Succeeded status. Current status: $status"
-            return 1
+        chmod +x ./qubership-test-pipelines/scripts/check_crd.sh
+        for i in {1..${{inputs.service_ready_max_retries}}}; do
+          ./qubership-test-pipelines/scripts/check_crd.sh "platformmonitorings.monitoring.qubership.org"
+          echo $check_crd
+          check_crd=$?
+          echo "Exit code: $check_crd"
+          if [ $check_crd -eq 0 ]; then
+            echo "::info:: CRD check successful"
+            exit 0
           fi
-          logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
-          if [[ $logs != *"Failed components statuses are []"* ]]; then
-            echo "::error:: Not all components are in succeed status after ${{inputs.service_ready_max_retries}} attempts"
-            echo PODS:
-            kubectl get pods -n ${{inputs.namespace}}
-            return 1
-          fi
-        }
-
-        check_cr_status() {
-          for i in {1..${{inputs.service_ready_max_retries}}}; do
-            cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
-            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=yaml)
-            echo  $condition
-            if ! [[ -z "$condition" ]]; then
-              status=$(echo "$condition" | yq eval '.status' -)
-              if [[ "$status" == 'True' ]]; then
-                echo "CR ${{inputs.cr_kind}} ${{inputs.cr_name}} has successful status"
-                return 0
-              fi
-            fi
-            sleep ${{inputs.service_ready_retry_interval}}
-          done
-        }
-
-        provisioner_pod="NOT_FOUND"
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
-        for pod in "${pods[@]}"; do
-          if [[ $pod == *"provisioner"* ]]; then
-            provisioner_pod=$pod
-          fi
+          sleep ${{inputs.service_ready_retry_interval}}
         done
-
-        check_result=1
-
-        if [[ $provisioner_pod != "NOT_FOUND" ]]; then
-          if ! check_provisioner_pod; then
-            check_result=0
-          fi
-        else
-          echo "Status provisioner pod is not found. Checking CR..."
-          if ! check_cr_status; then
-            check_result=0
-          fi
-        fi
-
-        if [[ $check_result -eq 0 ]]; then
-          echo "::error:: Not all components are in succeed status after ${{inputs.service_ready_max_retries}} attempts"
-          echo "$condition"
-          echo "ERROR_FLAG=true" >> $GITHUB_ENV
-        fi
+#        if ! check_crd; then
+#          check_result=0
+#        fi
+#
+#        if [[ $check_result -eq 0 ]]; then
+#          echo "::error:: Not all components are in succeed status after ${{inputs.service_ready_max_retries}} attempts"
+#          echo "$condition"
+#          echo "ERROR_FLAG=true" >> $GITHUB_ENV
+#        fi
 
     - name: Get pods
       shell: bash

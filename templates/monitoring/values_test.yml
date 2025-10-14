@@ -419,7 +419,7 @@ pushgateway:
   #labels: {}
 integrationTests:
   name: monitoring-tests
-  install: false
+  install: true
   image: ghcr.io/netcracker/qubership-monitoring-int-tests:add-test-workflow
   #resources: {}
   #securityContext: {}

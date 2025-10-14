@@ -16,7 +16,7 @@ It implements a complete CI/CD lifecycle from infrastructure provisioning to pos
     └── [service]/
         └── helm_deploy_[service]/           # Reuse of shared actions with service specifics   
 ├── kind-configs/                            # Kind cluster configurations
-├── python/                                  # Helper scripts
+├── scripts/                                  # Helper scripts
 ├── restricted/                              # Resources for restricted installation
 └── templates/                               # Service configuration templates
     └── [service]/
