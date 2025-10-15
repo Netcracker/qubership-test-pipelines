@@ -61,6 +61,7 @@ runs:
       # language=bash
       run: |
         set -euo pipefail
+        
         # ▶️ Check service is ready
         provisioner_pod="NOT_FOUND"
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
@@ -102,8 +103,10 @@ runs:
           fi
         else
           echo "Status provisioner pod is not found. Checking ${{ inputs.cr_kind }} ${{ inputs.cr_name }} CR status"
-          for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-          echo "attempt $i / $${{ inputs.max_attempts_for_provisioner }}"
+          max_attempts=${{ inputs.max_attempts_for_provisioner}}
+          while [[ $attempt -le $max_attempts ]]; do
+          # for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
+          echo "attempt $attempt / $max_attempts"
             cr_json=$(kubectl get ${{ inputs.cr_kind }} ${{ inputs.cr_name }} -n "${{ inputs.namespace }}" -o json)
             condition=$(echo "$cr_json" | jq '.status.conditions[]? | select(.reason == "ReconcileCycleStatus")')
               if ! [[ -z "$condition" ]]; then
@@ -118,6 +121,7 @@ runs:
             echo -e "CR conditions:\n$cr_conditions"
             echo "Sleeping for ${{inputs.timeout_for_provisioner}} before checking the CR again..."
             sleep ${{inputs.timeout_for_provisioner}}
+            ((attempt++))
           done
           if [[ "$status" != 'True' ]]; then
              echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
