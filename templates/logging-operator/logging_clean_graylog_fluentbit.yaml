@@ -7,8 +7,6 @@ graylog:
   host: http://graylog.demo.qubership.org
   initContainerDockerImage: alpine:3.17.2
   elasticsearchHost: http://admin:admin@opensearch.opensearch:9200
-  indexShards: "1"
-  indexReplicas: "0"
 cloudEventsReader:
   dockerImage: ghcr.io/netcracker/qubership-kube-events-reader:main
 fluentbit:
