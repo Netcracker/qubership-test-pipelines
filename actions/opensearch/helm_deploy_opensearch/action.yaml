@@ -27,7 +27,7 @@ inputs:
   path_to_chart:
     description: 'See helm_deploy.path_to_chart'
     required: true
-    default: ''
+    default: 'operator/charts/helm/opensearch-service'
   namespace:
     description: 'See helm_deploy.namespace'
     required: true
@@ -39,8 +39,13 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - name: Debug inputs
+      shell: bash
+      run:
+        echo "path_to_chart: ${{ inputs.path_to_chart }}"
+        echo "service_branch: ${{ inputs.service_branch }}"
     - name: Run helm_install action for opensearch
-      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      uses: ${{ github.action_path }}/../../shared/helm_deploy
       with:
         deploy_mode: ${{inputs.deploy_mode}}
         restricted: ${{inputs.restricted}}
