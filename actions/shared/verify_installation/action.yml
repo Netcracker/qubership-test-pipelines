@@ -60,6 +60,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        set -euo pipefail
         # ▶️ Check service is ready
         provisioner_pod="NOT_FOUND"
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
@@ -104,7 +105,7 @@ runs:
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
           echo "attempt $i / $${{ inputs.max_attempts_for_provisioner }}"
             cr_json=$(kubectl get ${{ inputs.cr_kind }} ${{ inputs.cr_name }} -n "${{ inputs.namespace }}" -o json)
-            condition=$(echo "$cr_json" | jq '.status.conditions[] | select(.reason == "ReconcileCycleStatus")')
+            condition=$(echo "$cr_json" | jq '.status.conditions[]? | select(.reason == "ReconcileCycleStatus")')
               if ! [[ -z "$condition" ]]; then
                 status=$(echo "$condition" | jq -r '.status')
                 if [[ "$status" == 'True' ]]; then
@@ -113,7 +114,7 @@ runs:
                   break
                 fi
               fi
-            cr_conditions=$(echo "$cr_json" | jq '.status.conditions[]')
+            cr_conditions=$(echo "$cr_json" | jq '.status.conditions[]? // []')
             echo -e "CR conditions:\n$cr_conditions"
             echo "Sleeping for ${{inputs.timeout_for_provisioner}} before checking the CR again..."
             sleep ${{inputs.timeout_for_provisioner}}
