@@ -71,6 +71,9 @@ jobs:
         with:
           service_branch: '${{ inputs.opensearch_version }}'
 
+      - name: Install required CRDs
+        uses: ./qubership-test-pipelines/actions/logging/install_crds
+
       - name: Install logging-operator
         uses: ./qubership-test-pipelines/actions/logging/helm_deploy_logging
         with:
