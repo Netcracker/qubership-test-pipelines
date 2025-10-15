@@ -67,7 +67,7 @@ jobs:
           service_branch: '${{ inputs.opensearch_version }}'
 
       - name: Check opensearch deployment status
-        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation
+        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
         with:
           service_branch: '${{ inputs.opensearch_version }}'
 
