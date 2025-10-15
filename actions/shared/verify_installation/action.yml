@@ -103,6 +103,7 @@ runs:
           fi
         else
           echo "Status provisioner pod is not found. Checking ${{ inputs.cr_kind }} ${{ inputs.cr_name }} CR status"
+          attempt=1
           max_attempts=${{ inputs.max_attempts_for_provisioner}}
           while [[ $attempt -le $max_attempts ]]; do
           # for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
