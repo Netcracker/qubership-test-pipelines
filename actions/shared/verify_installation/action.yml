@@ -125,7 +125,7 @@ runs:
             sleep ${{inputs.timeout_for_provisioner}}
             ((attempt++))
           done
-          if [[ "$status" != 'True' ]]; then
+          if [[ "$status" != 'true' ]]; then
              echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
              echo $condition
              echo "ERROR_FLAG=true" >> $GITHUB_ENV
