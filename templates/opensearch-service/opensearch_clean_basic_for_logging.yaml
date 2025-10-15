@@ -3,7 +3,6 @@ dashboards:
 opensearch:
   master:
     enabled: true
-    replicas: 1
     persistence:
       enabled: true
       storageClass: "standard"
