@@ -9,7 +9,6 @@ inputs:
     description: 'See helm_deploy.restricted'
     required: true
     default: 'false'
-    type: boolean
   path_to_template:
     description: 'See helm_deploy.path_to_template'
     required: true

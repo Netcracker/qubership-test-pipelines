@@ -65,6 +65,20 @@ runs:
         repository: '${{inputs.repository_name}}'
         path: '${{inputs.repository_name}}'
 
+    - name: Debug
+      shell: bash
+      run: |
+        We're in helm_deploy action!!!
+        echo "deploy_mode: ${{ inputs.deploy_mode }}"
+        echo "restricted: ${{ inputs.restricted }}"
+        echo "path_to_template: ${{ inputs.path_to_template }}"
+        echo "service_branch: ${{ inputs.service_branch }}"
+        echo "service_name: ${{ inputs.service_name }}"
+        echo "repository_name: ${{ inputs.repository_name }}"
+        echo "path_to_chart: ${{ inputs.path_to_chart }}"
+        echo "namespace: ${{ inputs.namespace }}"
+        echo "resource_folder: ${{ inputs.resource_folder }}"
+
     - name: Create namespace
       if: inputs.deploy_mode == 'install'
       shell: bash
