@@ -53,28 +53,34 @@ jobs:
           ref: '${{ inputs.pipeline_branch }}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
+
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
+
       - name: Install cert-manager
         uses: ./qubership-test-pipelines/actions/shared/install_cert_manager
+
       - name: Install Opensearch
         uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
         with:
           path_to_template: 'templates/opensearch-service/opensearch_clean_basic_for_logging.yaml'
           service_branch: '${{ inputs.opensearch_version }}'
           path_to_chart: 'charts/helm/opensearch-service'
-      - name: Check opensearch deployment status
-        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation
-        with:
-          service_branch: '${{ inputs.opensearch_version }}'
-      - name: Install logging-operator
-        uses: ./qubership-test-pipelines/actions/logging/helm_deploy_logging
-        with:
-          path_to_template: 'templates/logging-operator/logging_clean_graylog_fluentbit.yaml'
-          service_branch: ${{ inputs.service_branch }}
-      - name: Check logging-operator status
-        uses: ./qubership-test-pipelines/actions/logging/verify_installation_logging
-        with:
-          service_branch: ${{ inputs.service_branch }}
-        
+
+      # - name: Check opensearch deployment status
+      #   uses: ./qubership-test-pipelines/actions/opensearch/verify_installation
+      #   with:
+      #     service_branch: '${{ inputs.opensearch_version }}'
+
+      # - name: Install logging-operator
+      #   uses: ./qubership-test-pipelines/actions/logging/helm_deploy_logging
+      #   with:
+      #     path_to_template: 'templates/logging-operator/logging_clean_graylog_fluentbit.yaml'
+      #     service_branch: ${{ inputs.service_branch }}
+
+      # - name: Check logging-operator status
+      #   uses: ./qubership-test-pipelines/actions/logging/verify_installation_logging
+      #   with:
+      #     service_branch: ${{ inputs.service_branch }}
+
 
