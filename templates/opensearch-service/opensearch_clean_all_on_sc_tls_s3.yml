@@ -56,8 +56,6 @@ dbaasAdapter:
   opensearchRepoRoot: /usr/share/opensearch/
   dbaasUsername: dbaas-adapter
   dbaasPassword: dbaas-adapter
-  registrationAuthUsername: cluster-dba
-  registrationAuthPassword: Bnmq5567_PO
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
