@@ -70,6 +70,14 @@ jobs:
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
         with:
           service_branch: '${{ inputs.opensearch_version }}'
+      - name: Create audit directory required for fluentbit
+        shell: bash
+        run: |
+          set -euo pipefail
+          for node in $(docker ps --format '{{.Names}}' | grep '^kind-'); do
+            echo "Creating the folder on the $node node"
+            docker exec "$node" bash -c "mkdir -p /var/log/audit && chown 1000:1000 /var/log/audit && echo 'Created /var/log/audit with the permissions:' && ls -ld /var/log/audit" 
+          done
 
       - name: Install required CRDs
         uses: ./qubership-test-pipelines/actions/logging/install_crds

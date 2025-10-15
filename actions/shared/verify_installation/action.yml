@@ -100,18 +100,22 @@ runs:
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         else
-          echo "Status provisioner pod is not found. Checking CR..."
+          echo "Status provisioner pod is not found. Checking ${{ inputs.cr_kind }} ${{ inputs.cr_name }} CR status"
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-            cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
-            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
+          echo "attempt $i / $${{ inputs.max_attempts_for_provisioner }}"
+            cr_json=$(kubectl get ${{ inputs.cr_kind }} ${{ inputs.cr_name }} -n "${{ inputs.namespace }}" -o json)
+            condition=$(echo "$cr_json" | jq '.status.conditions[] | select(.reason == "ReconcileCycleStatus")')
               if ! [[ -z "$condition" ]]; then
-                status=$(echo "$condition" | yq eval '.status' -)
+                status=$(echo "$condition" | jq -r '.status')
                 if [[ "$status" == 'True' ]]; then
                   echo "CR status condition is met"
                   echo "$condition"
                   break
                 fi
               fi
+            cr_conditions=$(echo "$cr_json" | jq '.status.conditions[]')
+            echo -e "CR conditions:\n$cr_conditions"
+            echo "Sleeping for ${{inputs.timeout_for_provisioner}} before checking the CR again..."
             sleep ${{inputs.timeout_for_provisioner}}
           done
           if [[ "$status" != 'True' ]]; then
