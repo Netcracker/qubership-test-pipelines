@@ -41,11 +41,11 @@ runs:
   steps:
     - name: Debug inputs
       shell: bash
-      run:
+      run: |
         echo "path_to_chart: ${{ inputs.path_to_chart }}"
         echo "service_branch: ${{ inputs.service_branch }}"
     - name: Run helm_install action for opensearch
-      uses: ${{ github.action_path }}/../../shared/helm_deploy
+      uses: ./actions/shared/helm_deploy
       with:
         deploy_mode: ${{inputs.deploy_mode}}
         restricted: ${{inputs.restricted}}
