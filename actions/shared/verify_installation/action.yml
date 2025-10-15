@@ -113,7 +113,7 @@ runs:
               if [[ -n "$condition" ]]; then
                 status=$(echo "$condition" | jq -r '.status' | tr '[:upper:]' '[:lower:]')
                 type=$(echo "$condition" | jq -r '.type')
-                if [[ "$type" == "Successful" && "status == "true" ]]; then
+                if [[ "$type" == "Successful" && "$status" == "true" ]]; then
                   echo "CR status condition is met"
                   echo "$condition"
                   break
