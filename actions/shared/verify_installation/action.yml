@@ -110,9 +110,10 @@ runs:
           echo "attempt $attempt / $max_attempts"
             cr_json=$(kubectl get ${{ inputs.cr_kind }} ${{ inputs.cr_name }} -n "${{ inputs.namespace }}" -o json)
             condition=$(echo "$cr_json" | jq '.status.conditions[]? | select(.reason == "ReconcileCycleStatus")')
-              if ! [[ -z "$condition" ]]; then
-                status=$(echo "$condition" | jq -r '.status')
-                if [[ "$status" == 'True' ]]; then
+              if [[ -n "$condition" ]]; then
+                status=$(echo "$condition" | jq -r '.status' | tr '[:upper:]' '[:lower:]')
+                type=$(echo "$condition" | jq -r '.type')
+                if [[ "$type" == "Successful" && "status == "true" ]]; then
                   echo "CR status condition is met"
                   echo "$condition"
                   break
