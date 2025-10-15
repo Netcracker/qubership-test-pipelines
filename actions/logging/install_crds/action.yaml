@@ -1,0 +1,21 @@
+name: Install CRDs required for logging
+description: "GitHub Action for install CRDs required for logging"
+
+inputs:
+  namespace:
+    description: 'Namespace where logging is installed'
+    required: 'true'
+    default: 'logging'
+  monitoring_branch:
+    description: 'Branch with CRDs to be used'
+    required: 'true'
+    default: 'tags/0.81.0'
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Apply CRDs required for logging'
+      run: |
+        kubectl apply -f https://raw.githubusercontent.com/Netcracker/qubership-monitoring-operator/refs/${{ inputs.monitoring_branch }}/charts/qubership-monitoring-operator/charts/grafana-operator/crds/integreatly.org_grafanadashboards.yaml
+        kubectl apply -f https://raw.githubusercontent.com/Netcracker/qubership-monitoring-operator/refs/${{ inputs.monitoring_branch }}/charts/qubership-monitoring-operator/charts/victoriametrics-operator/crds/monitoring.coreos.com_prometheusrules.yaml
+        kubectl apply -f https://raw.githubusercontent.com/Netcracker/qubership-monitoring-operator/refs/${{ inputs.monitoring_branch }}/charts/qubership-monitoring-operator/charts/victoriametrics-operator/crds/monitoring.coreos.com_servicemonitors.yaml
+        kubectl apply -f https://raw.githubusercontent.com/Netcracker/qubership-monitoring-operator/refs/${{ inputs.monitoring_branch }}/charts/qubership-monitoring-operator/charts/victoriametrics-operator/crds/monitoring.coreos.com_podmonitors.yaml
