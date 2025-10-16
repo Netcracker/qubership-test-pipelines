@@ -8,7 +8,7 @@ inputs:
   max_attempts:
     description: 'See verify_installation.max_attempts'
     required: true
-    default: 60
+    default: 30
   timeout:
     description: 'See verify_installation.timeout'
     required: true
