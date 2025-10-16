@@ -6,7 +6,7 @@ graylog:
   graylogStorageClassName: standard
   host: http://graylog.demo.qubership.org
   initContainerDockerImage: alpine:3.17.2
-  elasticsearchHost: http://admin:admin@opensearch.opensearch:9200
+  elasticsearchHost: http://admin:Root1234#@opensearch.opensearch:9200
 cloudEventsReader:
   dockerImage: ghcr.io/netcracker/qubership-kube-events-reader:main
 fluentbit:

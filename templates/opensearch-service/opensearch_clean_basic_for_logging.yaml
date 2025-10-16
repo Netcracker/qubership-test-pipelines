@@ -1,23 +1,48 @@
-dashboards:
-  enabled: false
+global:
+  cloudIntegrationEnabled: false
+  tls:
+    enabled: false
 opensearch:
-  master:
-    enabled: true
-    persistence:
-      enabled: true
-      storageClass: "standard"
+  tls:
+    enabled: false
   securityConfig:
     authc:
       basic:
-        username: "admin"
-        password: "admin"
-  tls:
+        username: admin
+        password: Root1234#
+  securityContextCustom:
+    runAsUser: 1000
+    fsGroup: 1000
+  master:
+    persistence:
+      storageClass: standard
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 600m
+        memory: 2Gi
+      limits:
+        cpu: 900m
+        memory: 2Gi
+  snapshots:
     enabled: false
-monitoring:
+    size: 1Gi
+    s3:
+      enabled: false
+      pathStyleAccess: true
+dashboards:
   enabled: false
+  ingress:
+    enabled: false
 dbaasAdapter:
+  enabled: false
+monitoring:
   enabled: false
 curator:
   enabled: false
-  username: "admin"
-  password: "admin"
+integrationTests:
+  enabled: false
+statusProvisioner:
+  lifetimeAfterCompletion: 30
+  integrationTestsTimeout: 900
+  podReadinessTimeout: 900
