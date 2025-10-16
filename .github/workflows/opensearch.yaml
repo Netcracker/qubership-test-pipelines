@@ -69,6 +69,8 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Opensearch installation
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
+      - name: Sleep 1m
+        run: sleep 1m
       - name: Update to [LATEST] with diff params
         uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
         with:
@@ -97,6 +99,7 @@ jobs:
       - name: Check Python version
         run: python --version
       - name: Install dependencies
+        # language=bash
         run: |
           python -m pip install --upgrade pip
           pip install pyyaml
@@ -130,6 +133,7 @@ jobs:
       - name: Check Python version
         run: python --version
       - name: Install dependencies
+        # language=bash
         run: |
           python -m pip install --upgrade pip
           pip install pyyaml
@@ -196,6 +200,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
         with:
           service_branch: '${{matrix.release}}'
+      - name: Sleep 1m
+        run: sleep 1m
       - name: Upgrade Opensearch to [LATEST]
         uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
         with:
