@@ -23,7 +23,7 @@ rabbitmq:
     limits:
       cpu: 650m
       memory: 650Mi
-    storageClass: standard
+    storageсlass: standard
   storage: 750Mi
   enabledPlugins:
     - rabbitmq_prometheus
