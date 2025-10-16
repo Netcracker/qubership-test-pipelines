@@ -62,13 +62,25 @@ runs:
       run: |
         # ▶️ Check service is ready
         chmod +x ./qubership-test-pipelines/scripts/check_crd.sh
+        chmod +x ./qubership-test-pipelines/scripts/check_resources.sh
         for i in {1..${{inputs.service_ready_max_retries}}}; do
+          echo "retry $i"
           ./qubership-test-pipelines/scripts/check_crd.sh "platformmonitorings.monitoring.qubership.org"
           echo $check_crd
           check_crd=$?
           echo "Exit code: $check_crd"
           if [ $check_crd -eq 0 ]; then
             echo "::info:: CRD check successful"
+          fi
+          ./qubership-test-pipelines/scripts/check_resources.sh "monitoring"
+          echo $check_resources
+          check_resources=$?
+          echo "Exit code: $resources"
+          if [ $check_resources -eq 0 ]; then
+            echo "::info:: Resources check successful"
+          fi
+          if [ $check_crd -eq 0 ] && [ $check_resources -eq 0 ]; then
+            echo "::info:: All checks successful"
             exit 0
           fi
           sleep ${{inputs.service_ready_retry_interval}}

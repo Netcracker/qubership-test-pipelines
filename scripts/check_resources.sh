@@ -35,6 +35,8 @@ check_resources() {
             return 1
         fi
     done
+
+    return 0
 }
 
-check_resources "monitoring"
+check_resources "$@"
