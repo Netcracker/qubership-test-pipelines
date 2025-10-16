@@ -2,6 +2,7 @@ dashboards:
   enabled: false
 opensearch:
   master:
+    replicas: 3
     enabled: true
     persistence:
       enabled: true
@@ -12,7 +13,7 @@ opensearch:
         cpu: 100m
       limits:
         memory: "3Gi"
-        cpi: 1000m
+        cpu: 1000m
   securityConfig:
     authc:
       basic:
