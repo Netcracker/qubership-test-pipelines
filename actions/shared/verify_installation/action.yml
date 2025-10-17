@@ -69,11 +69,10 @@ runs:
 
           if ./qubership-test-pipelines/scripts/check_crd.sh "platformmonitorings.monitoring.qubership.org" && \
              ./qubership-test-pipelines/scripts/check_resources.sh "monitoring"; then
-            echo "::info:: All checks successful"
+            echo "All checks successful"
             exit 0
           fi
-
-          echo "::warning:: Checks failed, retrying in ${{inputs.service_ready_retry_interval}} seconds..."
+          echo "Checks failed, retrying in ${{inputs.service_ready_retry_interval}} seconds..."
           sleep ${{inputs.service_ready_retry_interval}}
         done
 
