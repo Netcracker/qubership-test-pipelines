@@ -116,6 +116,8 @@ runs:
           done
           if [[ "$status" != 'True' ]]; then
              echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
+             echo $cr_yaml
+             echo '==============================='
              echo $condition
              echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
