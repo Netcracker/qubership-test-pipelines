@@ -63,37 +63,22 @@ runs:
         # ▶️ Check service is ready
         chmod +x ./qubership-test-pipelines/scripts/check_crd.sh
         chmod +x ./qubership-test-pipelines/scripts/check_resources.sh
+
         for i in {1..${{inputs.service_ready_max_retries}}}; do
-          echo "retry $i"
-          ./qubership-test-pipelines/scripts/check_crd.sh "platformmonitorings.monitoring.qubership.org"
-          echo $check_crd
-          check_crd=$?
-          echo "Exit code: $check_crd"
-          if [ $check_crd -eq 0 ]; then
-            echo "::info:: CRD check successful"
-          fi
-          ./qubership-test-pipelines/scripts/check_resources.sh "monitoring"
-          echo $check_resources
-          check_resources=$?
-          echo "Exit code: $resources"
-          if [ $check_resources -eq 0 ]; then
-            echo "::info:: Resources check successful"
-          fi
-          if [ $check_crd -eq 0 ] && [ $check_resources -eq 0 ]; then
+          echo "Attempt $i/${{inputs.service_ready_max_retries}}"
+
+          if ./qubership-test-pipelines/scripts/check_crd.sh "platformmonitorings.monitoring.qubership.org" && \
+             ./qubership-test-pipelines/scripts/check_resources.sh "monitoring"; then
             echo "::info:: All checks successful"
             exit 0
           fi
+
+          echo "::warning:: Checks failed, retrying in ${{inputs.service_ready_retry_interval}} seconds..."
           sleep ${{inputs.service_ready_retry_interval}}
         done
-#        if ! check_crd; then
-#          check_result=0
-#        fi
-#
-#        if [[ $check_result -eq 0 ]]; then
-#          echo "::error:: Not all components are in succeed status after ${{inputs.service_ready_max_retries}} attempts"
-#          echo "$condition"
-#          echo "ERROR_FLAG=true" >> $GITHUB_ENV
-#        fi
+
+        echo "::error:: Service not ready after ${{inputs.service_ready_max_retries}} retries"
+        exit 1
 
     - name: Get pods
       shell: bash
