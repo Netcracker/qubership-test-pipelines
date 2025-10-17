@@ -64,7 +64,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       #- name: Install Monitoring
         #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Print deployment parameters
+      - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc.yml
       - name: Clean Install Rabbitmq [LATEST]
         uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
