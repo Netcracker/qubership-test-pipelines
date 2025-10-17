@@ -74,7 +74,7 @@ jobs:
       - name: Update to [LATEST] with diff params
         uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
         with:
-          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc_updated.yml'
+          path_to_template: 'templates/opensearch-service/opensearch_update_all_on_sc.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
       - name: Verify Opensearch update
