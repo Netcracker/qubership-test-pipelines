@@ -31,16 +31,9 @@ inputs:
       Branch in service repository
     required: false
 
-  cr_kind:
+  crd_list:
     description: |
-      Kind of custom resource for checking deploy status.
-      CR is used to check the status if status provisioner is missing
-    required: false
-
-  cr_name:
-    description: |
-      Name of custom resource for checking deploy status.
-      CR is used to check the status if status provisioner is missing
+      List of custom resource definitions for checking deploy status.
     required: false
 
 runs:
@@ -67,8 +60,10 @@ runs:
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
 
-          if ./qubership-test-pipelines/scripts/check_crd.sh "platformmonitorings.monitoring.qubership.org" && \
-             ./qubership-test-pipelines/scripts/check_resources.sh "monitoring"; then
+          echo "${{inputs.crd_list}}"
+
+          if ./qubership-test-pipelines/scripts/check_crd.sh "${{inputs.crd_list}}" && \
+             ./qubership-test-pipelines/scripts/check_resources.sh ${{inputs.namespace}}; then
             echo "All checks successful"
             exit 0
           fi

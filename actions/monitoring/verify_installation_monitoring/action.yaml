@@ -25,14 +25,10 @@ inputs:
     description: 'See verify_installation.service_branch'
     required: true
     default: ''
-  cr_kind:
-    description: 'See verify_installation.cr_kind'
+  crd_list:
+    description: 'See verify_installation.crd_list'
     required: true
-    default: 'PlatformMonitoring'
-  cr_name:
-    description: 'See verify_installation.cr_name'
-    required: true
-    default: 'platformmonitoring'
+    default: 'platformmonitorings.monitoring.qubership.org'
 
 
 runs:
@@ -47,5 +43,4 @@ runs:
         service_ready_max_retries: ${{inputs.service_ready_max_retries}}
         service_ready_retry_interval: ${{inputs.service_ready_retry_interval}}
         service_branch: ${{inputs.service_branch}}
-        cr_kind: ${{inputs.cr_kind}}
-        cr_name: ${{inputs.cr_name}}
+        crd_list: ${{inputs.crd_list}}
