@@ -5,6 +5,7 @@ global:
     generateCerts:
       certProvider: cert-manager
       clusterIssuerName: dev-clusterissuer
+  restrictedEnvironment: true
 opensearch:
   tls:
     enabled: false
