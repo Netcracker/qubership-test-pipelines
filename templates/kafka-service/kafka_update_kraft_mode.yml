@@ -1,0 +1,76 @@
+kafka:
+  install: true
+  kraft:
+    enabled: true
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: component
+                operator: In
+                values:
+                  - kafka
+          topologyKey: kubernetes.io/hostname
+  replicas: 3
+  storage:
+    size: 1Gi
+    className:
+      - standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  resources:
+    requests:
+      cpu: 51m
+      memory: 301Mi
+    limits:
+      cpu: 401m
+      memory: 801Mi
+global:
+  name: kafka
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: admin
+      clientUsername: client
+      clientPassword: client
+      zookeeperClientUsername: zclient
+      zookeeperClientPassword: zclient
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: admin
+backupDaemon:
+  install: true
+  storage: 1Gi
+  storageClass: standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  resources:
+    requests:
+      memory: 61Mi
+      cpu: 31m
+    limits:
+      memory: 251Mi
+      cpu: 201m
+operator:
+  kmmConfiguratorEnabled: false
+  akhqConfigurator:
+    enabled: true
+    watchNamespace: kafka-service
+monitoring:
+  install: false
+  securityContext:
+    runAsUser: 1000
+akhq:
+  install: true
+  ingress:
+    host: akhq-kafka-service.qa-kubernetes.openshift.sdntest.netcracker.com
+integrationTests:
+  install: true
+  waitForResult: true
+  tags: kafka_crudORkafka_images

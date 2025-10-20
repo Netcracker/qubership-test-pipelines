@@ -113,14 +113,14 @@ runs:
         kubectl get pvc -n ${{inputs.namespace}}
         kubectl get pvc -n ${{inputs.namespace}} -o yaml > $file_name
 
-#    - name: Get PV from namespace
-#      shell: bash
-#      # language=bash
-#      run: |
-#        # ▶️ Get PV from namespace
-#        file_name=artifacts/${{inputs.namespace}}_get_pv.txt
-#        kubectl get pv | grep ${{inputs.namespace}}
-#        kubectl get pv | grep ${{inputs.namespace}} > $file_name
+    - name: Get PV from namespace
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Get PV from namespace
+        file_name=artifacts/${{inputs.namespace}}_get_pv.txt
+        kubectl get pv | grep ${{inputs.namespace}}
+        kubectl get pv | grep ${{inputs.namespace}} > $file_name
 
     - name: Get logs from all containers in pods
       shell: bash
@@ -150,10 +150,12 @@ runs:
       run: |
         # ▶️ Get logs from test pod
         file_name=artifacts/${{inputs.namespace}}_tests.txt
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
+        IFS=' ' read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')"
+        test_pod=""
         for pod in "${pods[@]}"; do
           if [[ $pod == *"tests"* ]]; then
             test_pod=$pod
+            break
           fi
         done
         if ! [[ $test_pod ]]; then
@@ -161,8 +163,8 @@ runs:
           exit 0
         fi
         echo "test_pod=$test_pod"
-        for i in {1..${{inputs.test_completion_max_retries}}}; do
-          echo attempt $i
+        for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
+          echo "Attempt logs $i"
           status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
           echo "$status"
           if [[ "$status" == 'Running' ]]; then
@@ -170,22 +172,24 @@ runs:
           fi
           sleep ${{inputs.test_completion_retry_interval}}
         done
-        for i in {1..${{inputs.test_completion_max_retries}}}; do
-          echo attempt $i
+        for i in $(seq 1 ${{inputs.max_attempts}}); do
+          echo "Attempt logs $i"
           logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
-          if [[ $logs == *"Report: /opt/robot/output/report.html"* ]]; then
-            kubectl logs $test_pod -n ${{inputs.namespace}} > $file_name
+          if [[ $logs =~ Report.*html ]]; then
+            echo "$logs" > $file_name
             break
           fi
           sleep ${{inputs.test_completion_retry_interval}}
         done
         echo 'TEST LOGS:'
-        kubectl logs $test_pod -n ${{inputs.namespace}}
+        echo "$logs"
         if [[ $logs == *"| FAIL |"* ]]; then
           echo "::error:: Tests failed!"
           echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
-        kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}
+        if ! kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}; then
+        echo "::warning:: Failed to copy robot results"
+        fi
         ls -la artifacts/robot-results
 
     - name: Generate artifact name
