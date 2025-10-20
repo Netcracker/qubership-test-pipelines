@@ -1,6 +1,6 @@
 global:
   cloudIntegrationEnabled: false
-  name: rabbitmq-service
+name: rabbitmq-service
 rabbitmqPrometheusMonitoring: false
 rabbitmq:
   fsGroup: 5000

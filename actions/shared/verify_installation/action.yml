@@ -105,7 +105,7 @@ runs:
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
             echo "$cr_yaml"
             echo '=============================================================='
-            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.message == "RabbitMQ service installed and tested successfully")' -o=json)
+            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus" or .message == "RabbitMQ service installed and tested successfully" or .message == "RabbitMQ service updated and tested successfully")' -o=json)
             echo "$condition"
               if ! [[ -z "$condition" ]]; then
                 status=$(echo "$condition" | yq eval '.status' -)

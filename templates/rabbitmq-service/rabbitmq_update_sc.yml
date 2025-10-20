@@ -1,7 +1,7 @@
 global:
   cloudIntegrationEnabled: false
-name: rabbitmq-service;
-rabbitmqPrometheusMonitoring: true;
+name: rabbitmq-service
+rabbitmqPrometheusMonitoring: false
 rabbitmq:
   fsGroup: 5000
   runAsUser: 5000
@@ -23,7 +23,7 @@ rabbitmq:
     limits:
       cpu: 650m
       memory: 650Mi
-    storageсlass: standard
+    storageclass: standard
   storage: 750Mi
   enabledPlugins:
     - rabbitmq_prometheus

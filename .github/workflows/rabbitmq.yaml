@@ -75,14 +75,14 @@ jobs:
         uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
       - name: Print updated deployment parameters
         run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_update_sc.yml
-      - name: Sleep 1m before update
-        run: sleep 1m
       - name: Update Rabbitmq to [LATEST] Version With Diff Params
         uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
         with:
           path_to_template: 'templates/rabbitmq-service/rabbitmq_update_sc.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Rabbitmq update
         uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
 
