@@ -8,6 +8,12 @@ check_crd_conditions() {
             return 1
         fi
         crd_json=$(kubectl get crd "$crd_name" -o json 2>/dev/null)
+        if [ $? -eq 0 ] && [ -n "$crd_json" ]; then
+            echo 'Conditions:'
+            echo "$crd_json" | jq -r '.status.conditions? // "No conditions found"'
+        else
+            echo "Error: CRD '$crd_name' not found or unable to retrieve"
+        fi
         failed_conditions=$(echo "$crd_json" | jq '.status.conditions | map(select(.status == "Failed"))')
         failed_count=$(echo "$failed_conditions" | jq 'length')
         if [[ $failed_count -gt 0 ]]; then

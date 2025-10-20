@@ -29,6 +29,10 @@ inputs:
     description: 'See verify_installation.crd_list'
     required: true
     default: 'platformmonitorings.monitoring.qubership.org'
+  check_tests:
+    description: 'See verify_installation.check_tests'
+    required: false
+    type: boolean
 
 
 runs:
@@ -44,3 +48,4 @@ runs:
         service_ready_retry_interval: ${{inputs.service_ready_retry_interval}}
         service_branch: ${{inputs.service_branch}}
         crd_list: ${{inputs.crd_list}}
+        check_tests: ${{inputs.check_tests}}

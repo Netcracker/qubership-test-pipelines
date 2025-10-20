@@ -6,9 +6,10 @@ check_resources() {
         ready=$(kubectl get deployment "$deployment" -n "$namespace" -o jsonpath='{.status.readyReplicas}' 2>/dev/null)
         total=$(kubectl get deployment "$deployment" -n "$namespace" -o jsonpath='{.status.replicas}' 2>/dev/null)
         if [[ "$ready" -eq "$total" ]] && [[ "$total" -gt 0 ]]; then
-           echo "Deployment $deployment is ready"
+            echo "Deployment $deployment is ready"
         else
-           return 1
+            echo "Deployment $deployment is not ready"
+            return 1
         fi
     done
 
@@ -19,7 +20,8 @@ check_resources() {
         if [[ "$ready" -eq "$total" ]] && [[ "$total" -gt 0 ]]; then
             echo "StatefulSet $statefulset is ready"
         else
-           return 1
+            echo "StatefulSet $statefulset is not ready"
+            return 1
         fi
     done
 
@@ -30,7 +32,8 @@ check_resources() {
         if [[ "$ready" -eq "$desired" ]] && [[ "$desired" -gt 0 ]]; then
             echo "DaemonSet $daemonset is ready"
         else
-           return 1
+            echo "DaemonSet $daemonset is not ready"
+            return 1
         fi
     done
 

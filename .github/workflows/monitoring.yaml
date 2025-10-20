@@ -124,8 +124,10 @@ jobs:
           sleep 2m
       - name: Get ingress
         run: kubectl get ingress -n monitoring monitoring-grafana -o jsonpath='{.spec.rules[0].host}'
-      - name: Verify Monitoring installation
+      - name: Verify Upgrade With Tests
         uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+        with:
+          check_tests: true
 
 #      - name: Update to [LATEST] Version With Diff Params
 #        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
