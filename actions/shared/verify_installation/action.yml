@@ -155,48 +155,18 @@ runs:
       # language=bash
       run: |
         # ▶️ Get logs from test pod
+        chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
+        ls -la ./qubership-test-pipelines/scripts/check_tests.sh
+        namespace="${{ inputs.namespace }}"
         if [[ "${{inputs.check_tests}}" == "true" ]]; then
-          file_name=artifacts/${{inputs.namespace}}_tests.txt
           for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
             echo "Attempt $i/${{inputs.test_completion_max_retries}}"
-            IFS=' ' read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')"
-            test_pod=""
-            for pod in "${pods[@]}"; do
-              if [[ $pod == *"tests"* ]]; then
-                test_pod=$pod
-                break
-              fi
-            done
-            if ! [[ $test_pod ]]; then
-              echo "There is no test pod"
-              continue
-            fi
-            echo "test_pod=$test_pod"
-
-            status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-            echo "Pod status: $status"
-
-            logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
-            if [[ $logs =~ Report.*html ]]; then
-              echo "$logs" > $file_name
-              echo 'TEST LOGS:'
-              echo "$logs"
-              if [[ $logs == *"| FAIL |"* ]]; then
-                echo "::error:: Tests failed!"
-                echo "ERROR_FLAG=true" >> $GITHUB_ENV
-              fi
-
-              if ! kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}; then
-                echo "::warning:: Failed to copy robot results"
-              fi
-              ls -la artifacts/robot-results
-              break
-            else
-               continue
-            fi
-            sleep ${{inputs.test_completion_retry_interval}}
+            ./qubership-test-pipelines/scripts/check_tests.sh "$namespace"
           done
+        else
+          echo "Don't check tests"
         fi
+
 
     - name: Generate artifact name
       if: always()
