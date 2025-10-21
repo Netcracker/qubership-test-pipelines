@@ -60,7 +60,7 @@ runs:
       # language=bash
       run: |
         # ▶️ Check service is ready
-        chmod +x ./qubership-test-pipelines/scripts/check_crd.sh
+        chmod +x ./qubership-test-pipelines/scripts/check_cr.sh
         chmod +x ./qubership-test-pipelines/scripts/check_resources.sh
 
         for i in {1..${{inputs.service_ready_max_retries}}}; do
@@ -68,7 +68,7 @@ runs:
 
           echo "${{inputs.crd_list}}"
 
-          if ./qubership-test-pipelines/scripts/check_crd.sh "${{inputs.crd_list}}" && \
+          if ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}" && \
              ./qubership-test-pipelines/scripts/check_resources.sh ${{inputs.namespace}}; then
             echo "All checks successful"
             exit 0

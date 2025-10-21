@@ -26,7 +26,7 @@ check_tests() {
       echo "$logs"
       if [[ $logs == *"| FAIL |"* ]]; then
         echo "::error:: Tests failed!"
-        echo "ERROR_FLAG=true" >> $GITHUB_ENV
+        exit
       fi
 
       if ! kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n "$namespace"; then
