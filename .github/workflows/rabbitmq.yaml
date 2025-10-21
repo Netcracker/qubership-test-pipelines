@@ -86,7 +86,7 @@ jobs:
       - name: Verify Rabbitmq update
         uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
 
-  # Clean [LATEST_SPRINT] Restricted
+  #[V] Clean [LATEST] Restricted
   Clean-Latest-Restricted:
     name: Clean [LATEST] Restricted
     runs-on: ${{inputs.runner_type}}
@@ -110,44 +110,40 @@ jobs:
       - name: Verify Rabbitmq installation
         uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
 
-#  # ---------- Current service branch ----------
-#  #V Clean [LATEST] with Zookeeper in non-TLS
-#  Clean-Latest-Zookeeper-non-TLS:
-#    runs-on: ${{inputs.runner_type}}
-#    name: Clean [LATEST] with Zookeeper in non-TLS
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#        #- name: Install Monitoring
-#        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-#      - name: Clean Install Zookeeper [LATEST]
-#        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-#        with:
-#          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-#          service_branch: 'main'
-#      - name: Verify Zookeeper installation
-#        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-#      - name: Clean Install Rabbitmq [LATEST]
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-#        with:
-#          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_zoo.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Rabbitmq installation
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
-#      - name: Clean Install Rabbitmq Service [LATEST]
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq_service
-#        with:
-#          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_zoo.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Rabbitmq Service installation
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq_service
-#
+  # Clean [LATEST] on S3
+  Clean-Latest-S3:
+    runs-on: ${{inputs.runner_type}}
+    name: Clean [LATEST] on S3 storage
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Update YAML secrets
+        # language=bash
+        run: |
+          python qubership-test-pipelines/python/update_yaml.py \
+            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml' \
+            --path='backupDaemon/s3/keyId' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+          && python qubership-test-pipelines/python/update_yaml.py \
+            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml' \
+            --path='backupDaemon/s3/keySecret' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml
+      - name: Clean Install Rabbitmq [LATEST] on s3
+        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
+        with:
+          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Rabbitmq installation
+        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
+
 #  #---------- Current service branch ----------
 #  #V Clean [LATEST] with Zookeeper in TLS
 #  Clean-Latest-Zookeeper-TLS:
@@ -281,53 +277,6 @@ jobs:
 #          service_branch: '${{inputs.service_branch}}'
 #      - name: Verify Rabbitmq Service installation
 #        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq_service
-#
-#  #V Clean [LATEST] with Zookeeper on S3
-#  Clean-Latest-Zookeeper-S3:
-#    runs-on: ${{inputs.runner_type}}
-#    name: Clean [LATEST] with Zookeeper on S3 storage
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#      - name: Clean Install Zookeeper [LATEST]
-#        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-#        with:
-#          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-#          service_branch: 'main'
-#      - name: Verify Zookeeper installation
-#        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-#      - name: Update YAML secrets
-#        # language=bash
-#        run: |
-#          python qubership-test-pipelines/python/update_yaml.py \
-#            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_zoo_s3.yml' \
-#            --path='global/secrets/backupDaemon/s3/keyId' \
-#            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-#          && python qubership-test-pipelines/python/update_yaml.py \
-#            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_zoo_s3.yml' \
-#            --path='global/secrets/backupDaemon/s3/keySecret' \
-#            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-#      - name: Clean Install Rabbitmq [LATEST] on s3
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-#        with:
-#          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_zoo_s3.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Rabbitmq installation
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
-#      - name: Clean Install Rabbitmq Service [LATEST] on s3
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq_service
-#        with:
-#          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_zoo_s3.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Rabbitmq Service installation
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq_service
-#
 #
 #  #---------- Upgrade from old releases ----------
 #  #Clean [N1_RELEASE], Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
