@@ -12,7 +12,7 @@ check_tests() {
     done
     if ! [[ $test_pod ]]; then
       echo "There is no test pod"
-      exit
+      exit 0
     fi
     echo "test_pod=$test_pod"
 
@@ -26,7 +26,7 @@ check_tests() {
       echo "$logs"
       if [[ $logs == *"| FAIL |"* ]]; then
         echo "::error:: Tests failed!"
-        exit
+        exit 0
       fi
 
       if ! kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n "$namespace"; then
