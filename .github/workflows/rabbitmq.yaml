@@ -48,7 +48,7 @@ jobs:
           previous_version=$(echo "$versions_json" | jq -r '.[-1]')
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
-  # ---------- Current service branch ----------
+  #----------- Current service branch ----------
   #[V] Clean [LATEST], Update [LATEST] Diff Params
   Clean-Latest-Update-Diff-Params:
     runs-on: ${{inputs.runner_type}}
@@ -88,7 +88,7 @@ jobs:
 
   #[V] Clean [LATEST] Restricted
   Clean-Latest-Restricted:
-    name: Clean [LATEST] Restricted
+    name: Clean [LATEST] in Restricted mode
     runs-on: ${{inputs.runner_type}}
     steps:
       - name: Checkout pipeline
@@ -110,7 +110,7 @@ jobs:
       - name: Verify Rabbitmq installation
         uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
 
-  # Clean [LATEST] on S3
+  #[V] Clean [LATEST] on S3
   Clean-Latest-S3:
     runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] on S3 storage
@@ -136,7 +136,7 @@ jobs:
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml
-      - name: Clean Install Rabbitmq [LATEST] on s3
+      - name: Clean Install Rabbitmq [LATEST] on S3
         uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
         with:
           path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml'
@@ -144,7 +144,7 @@ jobs:
       - name: Verify Rabbitmq installation
         uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
 
-  # Clean [LATEST] on S3 in disasterRecovery
+  #[V] Clean [LATEST] on S3 in disasterRecovery
   Clean-Latest-S3-drd:
     runs-on: ${{inputs.runner_type}}
     name: Clean [LATEST] on S3 storage in disasterRecovery mode
@@ -170,7 +170,7 @@ jobs:
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd.yml
-      - name: Clean Install Rabbitmq [LATEST] on s3 in disasterRecovery
+      - name: Clean Install Rabbitmq [LATEST] on S3 in disasterRecovery mode
         uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
         with:
           path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd.yml'
@@ -178,70 +178,66 @@ jobs:
       - name: Verify Rabbitmq installation
         uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
 
-#  #---------- Current service branch ----------
-#  #V Clean [LATEST] with Zookeeper in TLS
-#  Clean-Latest-Zookeeper-TLS:
-#    runs-on: ${{inputs.runner_type}}
-#    name: Clean [LATEST] with Zookeeper in TLS
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#        #- name: Install Monitoring
-#        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-#      - name: Install cert-manager
-#        # language=bash
-#        run: |
-#          helm repo add jetstack https://charts.jetstack.io --force-update
-#          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
-#            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-#      - name: Create cert-manager entities
-#        # language=bash
-#        run: |
-#          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
-#          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
-#          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-#      - name: Get cert-manager resources
-#        # language=bash
-#        run: |
-#          kubectl get pods -n cert-manager
-#          kubectl get secrets -n cert-manager
-#          kubectl get certificates -A
-#      - name: Get clusterissuer
-#        # language=bash
-#        run: |
-#          kubectl get clusterissuer
-#          kubectl get clusterissuer test-clusterissuer -o yaml
-#      - name: Clean Install Zookeeper [LATEST] without TLS
-#        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-#        with:
-#          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-#          service_branch: 'main'
-#      - name: Verify Zookeeper installation
-#        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-#      - name: Clean Install Rabbitmq [LATEST] in TLS
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-#        with:
-#          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_zoo_tls_false.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Rabbitmq installation
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
-#      - name: Get Rabbitmq secrets
-#        run: |
-#          kubectl get secrets -n rabbitmq
-#          kubectl get secret rabbitmq-tls-secret -n rabbitmq -o yaml
-#      - name: Clean Install Rabbitmq Service [LATEST] in TLS
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq_service
-#        with:
-#          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_zoo_tls_false.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Rabbitmq Service installation
-#        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq_service
+  #---------- Current service branch ----------
+  #V Clean [LATEST] on S3 in disasterRecovery with TLS
+  Clean-Latest-S3-drd-TLS:
+    runs-on: ${{inputs.runner_type}}
+    name: Clean [LATEST] on S3 storage in disasterRecovery mode using cert-manager
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        #- name: Install Monitoring
+        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      - name: Install cert-manager
+        # language=bash
+        run: |
+          helm repo add jetstack https://charts.jetstack.io --force-update
+          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
+      - name: Create cert-manager entities
+        # language=bash
+        run: |
+          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+      - name: Get cert-manager resources
+        # language=bash
+        run: |
+          kubectl get pods -n cert-manager
+          kubectl get secrets -n cert-manager
+          kubectl get certificates -A
+      - name: Get clusterissuer
+        # language=bash
+        run: |
+          kubectl get clusterissuer
+          kubectl get clusterissuer test-clusterissuer -o yaml
+      - name: Update YAML secrets
+        # language=bash
+        run: |
+          python qubership-test-pipelines/python/update_yaml.py \
+            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml' \
+            --path='backupDaemon/s3/keyId' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+          && python qubership-test-pipelines/python/update_yaml.py \
+            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml' \
+            --path='backupDaemon/s3/keySecret' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml
+      - name: Clean Install Rabbitmq [LATEST] on S3 in drd with TLS
+        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
+        with:
+          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Rabbitmq installation
+        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
+
 #
 #  #---------- Current service branch ----------
 #  #V Clean [LATEST] with Zookeeper when both are in TLS
