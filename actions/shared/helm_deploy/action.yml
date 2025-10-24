@@ -129,6 +129,33 @@ runs:
         working-directory: ${{inputs.repository_name}}
         chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
 
+    - name: Replace CRDs
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Replace CRDs
+        cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
+        if [ -d "./crds" ]; then
+          echo "CRDs directory exists"
+          for file in ./crds/*; do
+            if [ -f "$file" ]; then
+              echo file $file
+              CRD_NAME=$(yq e '.metadata.name' "$file" 2>/dev/null)
+              echo "Found CRD: $CRD_NAME"
+              if kubectl get crd "$CRD_NAME" > /dev/null 2>&1; then
+                  echo "CRD $CRD_NAME already exists. Updating..."
+                  kubectl replace -f $file
+              else
+                  echo "CRD $CRD_NAME doesn't exist. Creating..."
+                  kubectl create -f $file
+              fi
+            fi
+          done
+        else
+          echo "Directory  with CRDs not found!"
+          exit 1
+        fi
+
     - name: Install/update service with helm
       shell: bash
       # language=bash
