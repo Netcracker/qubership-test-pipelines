@@ -66,8 +66,9 @@ runs:
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
           echo "${{inputs.crd_list}}"
-          ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"  || true
-          cr_exit_code=$?
+          #./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"  || true
+          #cr_exit_code=$?
+          cr_exit_code=$(./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}" >/dev/null 2>&1)
           echo cr_exit_code $cr_exit_code
           if [ $cr_exit_code -eq 0 ]; then
             echo "CR check successful"
@@ -76,12 +77,15 @@ runs:
           elif [ $cr_exit_code -eq 2 ]; then
             echo "CR check failed"
           fi
-          ./qubership-test-pipelines/scripts/check_resources.sh ${{inputs.namespace}} || true
-          resources_exit_code=$?
+          resources_exit_code=$(./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}" >/dev/null 2>&1)
+          #resources_exit_code=$?
+          echo "resources_exit_code $resources_exit_code"
           if [ $resources_exit_code -eq 0 ]; then
-            echo "All checks successful"
+            echo "Resources checks successful"
             exit 0
           elif [ $resources_exit_code -eq 2 ]; then
+            echo "::error:: Some resources are not ready"
+          elif [ $resources_exit_code -eq 1 ]; then
             echo "::error:: Resources check failed"
           fi
           echo "Checks failed, retrying in ${{inputs.service_ready_retry_interval}} seconds..."
