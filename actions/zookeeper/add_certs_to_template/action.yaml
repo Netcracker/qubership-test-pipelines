@@ -6,7 +6,7 @@ runs:
     - name: Add certs to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml'
         --path='zooKeeper/tls/certificates/ca'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_ca_crt.txt)"
@@ -14,7 +14,7 @@ runs:
     - name: Add certs to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml'
         --path='zooKeeper/tls/certificates/key'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_tls_key.txt)"
@@ -22,7 +22,7 @@ runs:
     - name: Add certs to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml'
         --path='zooKeeper/tls/certificates/crt'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_tls_crt.txt)"
@@ -30,7 +30,7 @@ runs:
     - name: Add certs to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml'
         --path='backupDaemon/tls/certificates/ca'
         --value="$(cat certs_artifacts/zookeeper-backup-daemon-tls-secret_ca_crt.txt)"
@@ -38,7 +38,7 @@ runs:
     - name: Add certs to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml'
         --path='backupDaemon/tls/certificates/crt'
         --value="$(cat certs_artifacts/zookeeper-backup-daemon-tls-secret_tls_crt.txt)"
@@ -46,7 +46,7 @@ runs:
     - name: Add certs to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml'
         --path='backupDaemon/tls/certificates/key'
         --value="$(cat certs_artifacts/zookeeper-backup-daemon-tls-secret_tls_key.txt)"

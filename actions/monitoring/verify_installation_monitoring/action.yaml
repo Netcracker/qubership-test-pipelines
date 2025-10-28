@@ -1,14 +1,14 @@
-name: 'Verify Opensearch Installation Action'
+name: 'Verify Monitoring Installation Action'
 description: 'A GitHub Action to verify tests, get logs from pods'
 inputs:
   namespace:
     description: 'See verify_installation.namespace'
     required: true
-    default: opensearch
+    default: monitoring
   test_completion_max_retries:
     description: 'See verify_installation.test_completion_max_retries'
     required: true
-    default: 40
+    default: 60
   test_completion_retry_interval:
     description: 'See verify_installation.test_completion_retry_interval'
     required: true
@@ -16,7 +16,7 @@ inputs:
   service_ready_max_retries:
     description: 'See verify_installation.test_completion_max_retries'
     required: true
-    default: 100
+    default: 150
   service_ready_retry_interval:
     description: 'See verify_installation.test_completion_retry_interval'
     required: true
@@ -25,19 +25,20 @@ inputs:
     description: 'See verify_installation.service_branch'
     required: true
     default: ''
-  cr_kind:
-    description: 'See verify_installation.cr_kind'
+  crd_list:
+    description: 'See verify_installation.crd_list'
     required: true
-    default: 'OpenSearchService'
-  cr_name:
-    description: 'See verify_installation.cr_name'
-    required: true
-    default: 'opensearch'
+    default: 'platformmonitorings.monitoring.qubership.org'
+  check_tests:
+    description: 'See verify_installation.check_tests'
+    required: false
+    type: boolean
+
 
 runs:
   using: 'composite'
   steps:
-    - name: Run verify_installation action for Opensearch
+    - name: Run verify_installation action for Monitoring
       uses: ./qubership-test-pipelines/actions/shared/verify_installation
       with:
         namespace: ${{inputs.namespace}}
@@ -46,3 +47,5 @@ runs:
         service_ready_max_retries: ${{inputs.service_ready_max_retries}}
         service_ready_retry_interval: ${{inputs.service_ready_retry_interval}}
         service_branch: ${{inputs.service_branch}}
+        crd_list: ${{inputs.crd_list}}
+        check_tests: ${{inputs.check_tests}}

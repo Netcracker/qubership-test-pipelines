@@ -6,24 +6,24 @@ inputs:
       Kubernetes namespace for service installation
     required: true
 
-  max_attempts:
+  service_ready_max_retries:
+    description: |
+      Maximum retries for provisioner pod or custom resource to be completed
+    required: true
+
+  service_ready_retry_interval:
+    description: |
+      Delay between provisioner pod / CR check attempts (in seconds)
+    required: true
+
+  test_completion_max_retries:
     description: |
       Maximum verification retries for test pod to be completed
     required: true
 
-  timeout:
+  test_completion_retry_interval:
     description: |
       Delay between test pod check attempts
-    required: true
-
-  max_attempts_for_provisioner:
-    description: |
-      Maximum retries for provisioner pod to be completed
-    required: true
-
-  timeout_for_provisioner:
-    description: |
-      Delay between provisioner pod check attempts
     required: true
 
   service_branch:
@@ -31,17 +31,16 @@ inputs:
       Branch in service repository
     required: false
 
-  cr_kind:
+  crd_list:
     description: |
-      Kind of custom resource for checking deploy status.
-      CR is used to check the status if status provisioner is missing
+      List of custom resource definitions for checking deploy status.
     required: false
 
-  cr_name:
+  check_tests:
     description: |
-      Name of custom resource for checking deploy status.
-      CR is used to check the status if status provisioner is missing
+      Enable test checks (true) or disable them (false)
     required: false
+    type: boolean
 
 runs:
   using: 'composite'
@@ -61,65 +60,39 @@ runs:
       # language=bash
       run: |
         # ▶️ Check service is ready
-        provisioner_pod="NOT_FOUND"
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
-        for pod in "${pods[@]}"; do
-          if [[ $pod == *"provisioner"* ]]; then
-            provisioner_pod=$pod
+        chmod +x ./qubership-test-pipelines/scripts/check_cr.sh
+        chmod +x ./qubership-test-pipelines/scripts/check_resources.sh
+
+        for i in {1..${{inputs.service_ready_max_retries}}}; do
+          echo "Attempt $i/${{inputs.service_ready_max_retries}}"
+          echo "${{inputs.crd_list}}"
+          #./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"  || true
+          #cr_exit_code=$?
+          cr_exit_code=$(./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}" >/dev/null 2>&1)
+          echo cr_exit_code $cr_exit_code
+          if [ $cr_exit_code -eq 0 ]; then
+            echo "CR check successful"
+          elif [ $cr_exit_code -eq 1 ]; then
+            echo "CR check in progress"
+          elif [ $cr_exit_code -eq 2 ]; then
+            echo "CR check failed"
           fi
+          resources_exit_code=$(./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}" >/dev/null 2>&1)
+          #resources_exit_code=$?
+          echo "resources_exit_code $resources_exit_code"
+          if [ $resources_exit_code -eq 0 ]; then
+            echo "Resources checks successful"
+            exit 0
+          elif [ $resources_exit_code -eq 2 ]; then
+            echo "::error:: Some resources are not ready"
+          elif [ $resources_exit_code -eq 1 ]; then
+            echo "::error:: Resources check failed"
+          fi
+          echo "Checks failed, retrying in ${{inputs.service_ready_retry_interval}} seconds..."
+          sleep ${{inputs.service_ready_retry_interval}}
         done
-        if [[ $provisioner_pod != "NOT_FOUND" ]]; then
-          echo "provisioner_pod=$provisioner_pod"
-          for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-            output=$(kubectl get pod $provisioner_pod --ignore-not-found -n ${{inputs.namespace}})
-            if [ -z "$output" ]; then
-                echo "::error::Provisioner pod $provisioner_pod no longer exists"
-                echo "ERROR_FLAG=true" >> $GITHUB_ENV
-                exit 0
-            fi
-            status=$(kubectl get pod $provisioner_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-            if [[ "$status" == 'Succeeded' ]]; then
-                logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
-                if [[ $logs == *"Failed components statuses are []"* ]]; then
-                  echo "All components are in succeed status!"
-                  echo PROVISIONER LOGS: $logs
-                  break
-                fi
-            fi
-            sleep ${{inputs.timeout_for_provisioner}}
-          done
-          if [[ "$status" != 'Succeeded' ]]; then
-            echo "::error:: $provisioner_pod pod has not Succeeded status. Current status: $status"
-            echo "ERROR_FLAG=true" >> $GITHUB_ENV
-          fi
-          logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
-          if [[ $logs != *"Failed components statuses are []"* ]]; then
-            echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
-            echo PODS:
-            kubectl get pods -n ${{inputs.namespace}}
-            echo "ERROR_FLAG=true" >> $GITHUB_ENV
-          fi
-        else
-          echo "Status provisioner pod is not found. Checking CR..."
-          for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-            cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
-            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
-              if ! [[ -z "$condition" ]]; then
-                status=$(echo "$condition" | yq eval '.status' -)
-                if [[ "$status" == 'True' ]]; then
-                  echo "CR status condition is met"
-                  echo "$condition"
-                  break
-                fi
-              fi
-            sleep ${{inputs.timeout_for_provisioner}}
-          done
-          if [[ "$status" != 'True' ]]; then
-             echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
-             echo $condition
-             echo "ERROR_FLAG=true" >> $GITHUB_ENV
-          fi
-        fi
+        echo "::error:: Service not ready after ${{inputs.service_ready_max_retries}} retries"
+
 
     - name: Get pods
       shell: bash
@@ -169,32 +142,6 @@ runs:
         kubectl get pv | grep ${{inputs.namespace}}
         kubectl get pv | grep ${{inputs.namespace}} > $file_name
 
-    - name: Get SVC from namespace
-      shell: bash
-      # language=bash
-      run: |
-        # ▶️ Get SVC from namespace
-        file_name=artifacts/${{inputs.namespace}}_get_svc.txt
-        kubectl get svc -n ${{inputs.namespace}}
-        kubectl get svc -n ${{inputs.namespace}} > $file_name
-
-    - name: Get secrets from namespace
-      shell: bash
-      # language=bash
-      run: |
-        # ▶️ Get secrets from namespace
-        file_name=artifacts/${{inputs.namespace}}_get_secret.txt
-        kubectl get secret -n ${{inputs.namespace}}
-        kubectl get secret -n ${{inputs.namespace}} > $file_name
-
-    - name: Get yaml from secrets
-      shell: bash
-      # language=bash
-      run: |
-        # ▶️ Get yaml from secrets
-        file_name=artifacts/${{inputs.namespace}}_get_secret_yaml.txt
-        kubectl get secret -n ${{inputs.namespace}} -o yaml > $file_name
-
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
@@ -211,54 +158,30 @@ runs:
               echo '================================================================================' >> $file_name
             done
         done
+    - name: Get All
+      shell: bash
+      run: kubectl get all -n ${{inputs.namespace}}
+    - name: Get Secrets
+      shell: bash
+      run: kubectl get secrets -n ${{inputs.namespace}}
 
     - name: Get logs from test pod
       shell: bash
       # language=bash
       run: |
         # ▶️ Get logs from test pod
-        file_name=artifacts/${{inputs.namespace}}_tests.txt
-        IFS=' ' read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')"
-        test_pod=""
-        for pod in "${pods[@]}"; do
-          if [[ $pod == *"tests"* ]]; then
-            test_pod=$pod
-            break
-          fi
-        done
-        if ! [[ $test_pod ]]; then
-          echo There is no test pod
-          exit 0
+        chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
+        ls -la ./qubership-test-pipelines/scripts/check_tests.sh
+        namespace="${{inputs.namespace}}"
+        if [[ "${{inputs.check_tests}}" == "true" ]]; then
+          for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
+            echo "Attempt $i/${{inputs.test_completion_max_retries}}"
+            ./qubership-test-pipelines/scripts/check_tests.sh "$namespace"
+          done
+        else
+          echo "inputs.check_tests is 'false'. Don't check tests"
         fi
-        echo "test_pod=$test_pod"
-        for i in $(seq 1 ${{inputs.max_attempts}}); do
-          echo "Attempt status $i"
-          status=$(kubectl get pod $test_pod -n ${{inputs.namespace}} -o jsonpath="{.status.phase}")
-          echo "$status"
-          if [[ "$status" == 'Running' ]]; then
-            break
-          fi
-          sleep ${{inputs.timeout}}
-        done
-        for i in $(seq 1 ${{inputs.max_attempts}}); do
-          echo "Attempt logs $i"
-          logs=$(kubectl logs $test_pod -n ${{inputs.namespace}})
-          if [[ $logs =~ Report.*html ]]; then
-            echo "$logs" > $file_name
-            break
-          fi
-          sleep ${{inputs.timeout}}
-        done
-        echo 'TEST LOGS:'
-        echo "$logs"
-        if [[ $logs == *"| FAIL |"* ]]; then
-          echo "::error:: Tests failed!"
-          echo "ERROR_FLAG=true" >> $GITHUB_ENV
-        fi
-        if ! kubectl cp $test_pod:/opt/robot/output artifacts/robot-results -n ${{inputs.namespace}}; then
-        echo "::warning:: Failed to copy robot results"
-        fi
-        ls -la artifacts/robot-results
+
 
     - name: Generate artifact name
       if: always()

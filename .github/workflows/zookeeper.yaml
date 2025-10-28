@@ -106,11 +106,11 @@ jobs:
       - name: Update YAML secrets
         # language=bash
         run: |
-          python qubership-test-pipelines/python/update_yaml.py \
+          python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml' \
             --path='backupDaemon/s3/keyId' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-          && python qubership-test-pipelines/python/update_yaml.py \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml' \
             --path='backupDaemon/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
