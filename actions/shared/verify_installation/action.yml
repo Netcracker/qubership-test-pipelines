@@ -103,15 +103,10 @@ runs:
           echo "Status provisioner pod is not found. Checking CR..."
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
             cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
-            echo "$cr_yaml"
-            echo '=============================================================='
             condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus" or .message == "RabbitMQ service installed and tested successfully" or .message == "RabbitMQ service updated and tested successfully")' -o=json)
-            echo "$condition"
               if ! [[ -z "$condition" ]]; then
                 status=$(echo "$condition" | yq eval '.status' -)
-                echo "$cr_yaml"
-                echo '=============================================================='
-                if [[ "$status" == 'true' ]]; then
+                if [[ "${status,,}" == 'true' ]]; then
                   echo "CR status condition is met"
                   echo "$condition"
                   break
@@ -119,7 +114,7 @@ runs:
               fi
             sleep ${{inputs.timeout_for_provisioner}}
           done
-          if [[ "$status" != 'true' ]]; then
+          if [[ "${status,,}" != 'true' ]]; then
              echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
              echo $condition
              echo "ERROR_FLAG=true" >> $GITHUB_ENV
