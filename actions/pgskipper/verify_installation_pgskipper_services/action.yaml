@@ -33,10 +33,6 @@ inputs:
     description: 'See verify_installation.cr_name'
     required: true
     default: 'patroni-services'
-  cr_reason:
-    description: 'See verify_installation.cr_reason'
-    required: true
-    default: 'ReconcileCycleSucceeded'
 
 runs:
   using: 'composite'
@@ -52,5 +48,4 @@ runs:
         service_branch: ${{inputs.service_branch}}
         cr_kind: ${{inputs.cr_kind}}
         cr_name: ${{inputs.cr_name}}
-        cr_reason: ${{inputs.cr_reason}}
 
