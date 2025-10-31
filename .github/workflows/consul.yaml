@@ -4,14 +4,15 @@ on:
   workflow_call:
     inputs:
       service_branch:
+        description: 'Branch of qubership-consul repository'
         required: false
         type: string
       versions_file:
-        description: 'Path to versions list file'
+        description: 'Path to file with version list'
         type: string
         required: true
       pipeline_branch:
-        description: 'Test pipeline branch name'
+        description: 'Branch of qubership-test-pipelines repository'
         type: string
         required: true
       runner_type:
@@ -253,6 +254,8 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Describe nodes
+        run: kubectl describe nodes
       - name: Install cert-manager
         run: |
           helm repo add jetstack https://charts.jetstack.io --force-update
@@ -283,3 +286,5 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
+      - name: Describe Daemonset
+        run: kubectl describe daemonset consul -n consul
