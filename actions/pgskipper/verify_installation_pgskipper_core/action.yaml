@@ -5,19 +5,19 @@ inputs:
     description: 'See verify_installation.namespace'
     required: true
     default: pgskipper
-  max_attempts:
+  service_ready_max_retries:
     description: 'See verify_installation.max_attempts'
     required: true
     default: 40
-  timeout:
+  service_ready_retry_interval:
     description: 'See verify_installation.timeout'
     required: true
     default: '10s'
-  max_attempts_for_provisioner:
+  test_completion_max_retries:
     description: 'See verify_installation.max_attempts'
     required: true
     default: 40
-  timeout_for_provisioner:
+  test_completion_retry_interval:
     description: 'See verify_installation.timeout'
     required: true
     default: '10s'
@@ -25,14 +25,18 @@ inputs:
     description: 'See verify_installation.service_branch'
     required: true
     default: ''
-  cr_kind:
-    description: 'See verify_installation.cr_kind'
+  crd_list:
+    description: 'See verify_installation.crd_list'
     required: true
     default: 'PatroniCore'
   cr_name:
     description: 'See verify_installation.cr_name'
     required: true
     default: 'patroni-core'
+  check_tests:
+    description: 'See verify_installation.check_tests'
+    required: false
+    type: boolean
 
 runs:
   using: 'composite'
@@ -41,11 +45,11 @@ runs:
       uses: ./qubership-test-pipelines/actions/shared/verify_installation
       with:
         namespace: ${{inputs.namespace}}
-        max_attempts: ${{inputs.max_attempts}}
-        timeout: ${{inputs.timeout}}
-        max_attempts_for_provisioner: ${{inputs.max_attempts_for_provisioner}}
-        timeout_for_provisioner: ${{inputs.timeout_for_provisioner}}
+        test_completion_max_retries: ${{inputs.test_completion_max_retries}}
+        test_completion_retry_interval: ${{inputs.test_completion_retry_interval}}
+        service_ready_max_retries: ${{inputs.service_ready_max_retries}}
+        service_ready_retry_interval: ${{inputs.service_ready_retry_interval}}
         service_branch: ${{inputs.service_branch}}
-        cr_kind: ${{inputs.cr_kind}}
-        cr_name: ${{inputs.cr_name}}
+        crd_list: ${{inputs.crd_list}}
+        check_tests: ${{inputs.check_tests}}
 

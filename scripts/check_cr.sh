@@ -7,7 +7,7 @@ check_cr_conditions() {
     echo "Start checking CR"
 
     cr_list=$(kubectl get "$crd_name" -n "$namespace" --no-headers -o custom-columns=":metadata.name" 2>/dev/null)
-
+    echo cr_list $cr_list
     for cr_name in $cr_list; do
         echo "Checking CR: $cr_name"
 
