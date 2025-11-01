@@ -1,0 +1,75 @@
+name: 'Create Ingress-Controller'
+description: 'A GitHub Action that install ingress-controller into kind cluster'
+runs:
+  using: 'composite'
+  steps:
+      - name: install ingress-controller
+        shell: bash
+        # language=bash
+        run: |
+          kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
+          kubectl patch ingressclass nginx -p '{"metadata": {"annotations":{"ingressclass.kubernetes.io/is-default-class": "true"}}}'
+
+      - name: Get cluster ip of ingress-controller service
+        shell: bash
+        # language=bash
+        run: |
+          NGINX_IP="$(kubectl get -n ingress-nginx service/ingress-nginx-controller -o jsonpath='{.spec.clusterIP}')"
+
+      - name: Patch coredns with wildcard record to testdomain.local zone
+        run: |
+          NGINX_IP="$(kubectl get -n ingress-nginx service/ingress-nginx-controller -o jsonpath='{.spec.clusterIP}')"
+          echo $NGINX_IP
+          cat <<EOF | kubectl replace -f -
+          apiVersion: v1
+          data:
+            Corefile: |
+              .:53 {
+                  errors
+                  health {
+                     lameduck 5s
+                  }
+                  ready
+                  kubernetes cluster.local in-addr.arpa ip6.arpa {
+                     pods insecure
+                     fallthrough in-addr.arpa ip6.arpa
+                     ttl 30
+                  }
+                  prometheus :9153
+                  forward . /etc/resolv.conf
+                  cache 30
+                  loop
+                  reload
+                  loadbalance
+              }
+              testdomain.local:53 {
+                  template ANY ANY  {
+                      match .*\.testdomain\.local\.$
+                      answer "{{ .Name }} 60 IN A $NGINX_IP"
+                      fallthrough
+                  }
+              }
+          kind: ConfigMap
+          metadata:
+            name: coredns
+            namespace: kube-system
+          EOF
+        shell: bash
+
+      - name: Restart coredns pods to apply changes
+        shell: bash
+        # language=bash
+        run: |
+          kubectl delete pod -n kube-system -l k8s-app=kube-dns
+
+      - name: Sleep
+        shell: bash
+        run: sleep 5m
+
+      - name: Get pods
+        shell: bash
+        run: kubectl get pods -n ingress-nginx
+
+      - name: Get events
+        shell: bash
+        run: kubectl events -n ingress-nginx

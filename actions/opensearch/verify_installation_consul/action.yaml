@@ -13,26 +13,10 @@ inputs:
     description: 'See verify_installation.test_completion_retry_interval'
     required: true
     default: '10s'
-  service_ready_max_retries:
-    description: 'See verify_installation.test_completion_max_retries'
-    required: true
-    default: 100
-  service_ready_retry_interval:
-    description: 'See verify_installation.test_completion_retry_interval'
-    required: true
-    default: '10s'
   service_branch:
     description: 'See verify_installation.service_branch'
     required: true
     default: ''
-  cr_kind:
-    description: 'See verify_installation.cr_kind'
-    required: true
-    default: 'OpenSearchService'
-  cr_name:
-    description: 'See verify_installation.cr_name'
-    required: true
-    default: 'opensearch'
 
 runs:
   using: 'composite'
@@ -43,6 +27,4 @@ runs:
         namespace: ${{inputs.namespace}}
         test_completion_max_retries: ${{inputs.test_completion_max_retries}}
         test_completion_retry_interval: ${{inputs.test_completion_retry_interval}}
-        service_ready_max_retries: ${{inputs.service_ready_max_retries}}
-        service_ready_retry_interval: ${{inputs.service_ready_retry_interval}}
         service_branch: ${{inputs.service_branch}}

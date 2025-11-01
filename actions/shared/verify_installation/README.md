@@ -10,11 +10,11 @@ This Action verifies Kubernetes deployments including status checks, log collect
 
 ## 📌 Inputs
 
-| Name           | Description                  | Required | Default |
-|----------------|------------------------------|----------|---------|
-| `namespace`    | Target Kubernetes namespace  | Yes      | -       |
-| `max_attempts` | Maximum verification retries | Yes      | 40      |
-| `timeout`      | Delay between attempts       | Yes      | 10s     |
+| Name                             | Description                  | Required | Default |
+|----------------------------------|------------------------------|----------|---------|
+| `namespace`                      | Target Kubernetes namespace  | Yes      | -       |
+| `test_completion_max_retries`    | Maximum verification retries | Yes      | 40      |
+| `test_completion_retry_interval` | Delay between attempts       | Yes      | 10s     |
 
 ## Usage Example
 
@@ -32,6 +32,6 @@ jobs:
         uses: Netcracker/your-repo/actions/verify-installation@main
         with:
           namespace: 'consul'
-          max_attempts: 30
-          timeout: '15s'
+          test_completion_max_retries: 30
+          test_completion_retry_interval: '15s'
 ```
