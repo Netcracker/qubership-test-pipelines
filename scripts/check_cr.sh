@@ -17,6 +17,9 @@ check_cr_conditions() {
             continue
         fi
 
+        echo "Json:"
+        echo $cr_json
+
         if [ -z "$cr_json" ]; then
             echo "::error:: Empty response for CR '$cr_name'"
             all_success=false

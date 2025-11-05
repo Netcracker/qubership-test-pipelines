@@ -28,7 +28,7 @@ inputs:
   crd_list:
     description: 'See verify_installation.crd_list'
     required: true
-    default: 'PatroniCore'
+    default: 'patronicores.netcracker.com'
   cr_name:
     description: 'See verify_installation.cr_name'
     required: true

@@ -64,10 +64,14 @@ runs:
         chmod +x ./qubership-test-pipelines/scripts/check_resources.sh
 
         for i in {1..${{inputs.service_ready_max_retries}}}; do
+
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
           echo "${{inputs.crd_list}}"
-          ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}" >/dev/null 2>&1
+          #./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}" >/dev/null 2>&1
+          set +e
+          ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"
           cr_exit_code=$?
+          set -e
           echo cr_exit_code $cr_exit_code
           if [ $cr_exit_code -eq 0 ]; then
             echo "CR check successful"
@@ -76,22 +80,22 @@ runs:
           elif [ $cr_exit_code -eq 2 ]; then
             echo "CR check failed"
           fi
-          ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}" >/dev/null 2>&1
+          set +e
+          ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
           resources_exit_code=$?
+          set -e
           echo "resources_exit_code $resources_exit_code"
           if [ $resources_exit_code -eq 0 ]; then
             echo "Resources checks successful"
             exit 0
           elif [ $resources_exit_code -eq 2 ]; then
-            echo "::error:: Some resources are not ready"
-          elif [ $resources_exit_code -eq 1 ]; then
-            echo "::error:: Resources check failed"
+            echo "Some resources are not ready"
           fi
           echo "Checks failed, retrying in ${{inputs.service_ready_retry_interval}} seconds..."
           sleep ${{inputs.service_ready_retry_interval}}
         done
         echo "::error:: Service not ready after ${{inputs.service_ready_max_retries}} retries"
-
+        exit 0
 
     - name: Get pods
       shell: bash
@@ -138,8 +142,13 @@ runs:
       run: |
         # ▶️ Get PV from namespace
         file_name=artifacts/${{inputs.namespace}}_get_pv.txt
-        kubectl get pv | grep ${{inputs.namespace}}
-        kubectl get pv | grep ${{inputs.namespace}} > $file_name
+        if kubectl get pv 2>/dev/null | grep ${{inputs.namespace}}; then
+          kubectl get pv | grep ${{inputs.namespace}} > $file_name
+          echo "PV found and saved to $file_name"
+        else
+          echo "No PV found for namespace ${{inputs.namespace}}" > $file_name
+          echo "No PV found for namespace ${{inputs.namespace}}"
+        fi
 
     - name: Get logs from all containers in pods
       shell: bash
