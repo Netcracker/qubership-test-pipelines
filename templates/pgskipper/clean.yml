@@ -19,6 +19,9 @@ patroni:
   install: true
   # The number of Patroni (Postgres) nodes. One of these nodes is a master, and the others are replicas.
   replicas: 2
+  securityContext:
+    fsGroup: 26
+    runAsUser: 26
   resources:
     requests:
       cpu: 125m
@@ -26,22 +29,32 @@ patroni:
     limits:
       cpu: 250m
       memory: 500Mi
-  securityContext:
-    fsGroup: 26
-    runAsUser: 26
   # Storage section.
   storage:
     # Describes the storage type. The possible values are `pv` and `provisioned`.
     type: provisioned
     # Size of the PVC that will be create for each of Patroni Pod as mount for data files
-    size: 2Gi
+    size: 5Gi
     # storageClass should  be specified only if storage.type is set to provisioned
-    storageClass: standard
+    storageClass: gp2
     # The names of all volumes to be used in this deployment. The number of lines must match the number of nodes.
     # storage.volumes can be used only if storage.type is set to pv
     #    volumes:
     #      - postgresql-pv-1
     #      - postgresql-pv-2
+
+  storage:
+    # Describes the storage type. The possible values are `pv` and `provisioned`.
+    type: provisioned
+    # Size of the PVC that will be create for each of Patroni Pod as mount for data files
+    size: 5Gi
+    # Parameter specifies the list of labels that is used to bind suitable
+    # persistent volumes with the persistent volume claims
+    #    selectors:
+    #      - "key1=value1"
+    #      - "key2=value2"
+    # storageClass should  be specified only if storage.type is set to provisioned
+    storageClass: standard
 
 tests:
   install: true
