@@ -43,6 +43,12 @@ inputs:
       CR is used to check the status if status provisioner is missing
     required: false
 
+  ADDITIONAL_SUCCESS_MESSAGES:
+    description: |
+      Additional success messages which are possible in custom cases, e.g. for RabbitMQ
+    required: false
+    default: ""
+
 runs:
   using: 'composite'
   steps:
@@ -102,21 +108,30 @@ runs:
         else
           echo "Status provisioner pod is not found. Checking CR..."
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
-            cr_yaml=$(kubectl get ${{inputs.cr_kind}} ${{inputs.cr_name}} -n "${{inputs.namespace}}" -o yaml)
-            condition=$(echo "$cr_yaml" | yq eval '.status.conditions[] | select(.reason == "ReconcileCycleStatus")' -o=json)
-              if ! [[ -z "$condition" ]]; then
-                status=$(echo "$condition" | yq eval '.status' -)
-                if [[ "$status" == 'True' ]]; then
-                  echo "CR status condition is met"
-                  echo "$condition"
-                  break
-                fi
+            cr_yaml=$(kubectl get "${{inputs.cr_kind}}" "${{inputs.cr_name}}" -n "${{inputs.namespace}}" -o yaml)
+            IFS='|' read -ra messages <<< "${{ inputs.ADDITIONAL_SUCCESS_MESSAGES || '' }}"
+            message_condition=""
+            for msg in "${messages[@]}"; do
+              msg="$(echo "$msg" | xargs)"
+              if [ -n "$message_condition" ]; then
+                message_condition+=" or "
               fi
+              message_condition+=".message == \"$msg\""
+            done
+            condition=$(echo "$cr_yaml" | yq eval ".status.conditions[] | select(.reason == \"ReconcileCycleStatus\" or $message_condition)" -o=json)
+            if [[ -n "$condition" ]]; then
+              status=$(echo "$condition" | yq eval '.status' -)
+              if [[ "${status,,}" == 'true' ]]; then
+                echo "CR status condition is met"
+                echo "$condition"
+                break
+              fi
+            fi
             sleep ${{inputs.timeout_for_provisioner}}
           done
-          if [[ "$status" != 'True' ]]; then
+          if [[ "${status,,}" != 'true' ]]; then
              echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
-             echo $condition
+             echo "$condition"
              echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         fi
