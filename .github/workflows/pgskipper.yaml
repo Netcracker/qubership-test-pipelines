@@ -64,7 +64,7 @@ jobs:
       - name: Clean Install Pgskipper Core [LATEST]
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
         with:
-          path_to_template: 'templates/pgskipper/patroni-core-quickstart-sample.yaml'
+          path_to_template: 'templates/pgskipper/clean.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
@@ -73,7 +73,7 @@ jobs:
       - name: Clean Install Pgskipper Services [LATEST]
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
         with:
-          path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
+          path_to_template: 'templates/pgskipper/clean.yml'
           service_branch: '${{inputs.service_branch}}'
       - name: Get logs
         run: |

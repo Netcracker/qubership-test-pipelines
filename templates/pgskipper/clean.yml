@@ -30,18 +30,6 @@ patroni:
       cpu: 250m
       memory: 500Mi
   # Storage section.
-  storage:
-    # Describes the storage type. The possible values are `pv` and `provisioned`.
-    type: provisioned
-    # Size of the PVC that will be create for each of Patroni Pod as mount for data files
-    size: 5Gi
-    # storageClass should  be specified only if storage.type is set to provisioned
-    storageClass: gp2
-    # The names of all volumes to be used in this deployment. The number of lines must match the number of nodes.
-    # storage.volumes can be used only if storage.type is set to pv
-    #    volumes:
-    #      - postgresql-pv-1
-    #      - postgresql-pv-2
 
   storage:
     # Describes the storage type. The possible values are `pv` and `provisioned`.
