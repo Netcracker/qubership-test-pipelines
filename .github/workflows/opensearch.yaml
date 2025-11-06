@@ -158,8 +158,6 @@ jobs:
             --file='qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml' \
             --path='opensearch/snapshots/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-      - name: Display finale template
-        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml
       - name: Clean Install opensearch [LATEST] S3 with TLS
         uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
         with:
