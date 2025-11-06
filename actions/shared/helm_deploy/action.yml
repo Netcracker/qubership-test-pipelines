@@ -134,6 +134,8 @@ runs:
       # language=bash
       run: |
         # ▶️ Replace CRDs
+        sudo apt update
+        sudo DEBIAN_FRONTEND=noninteractive apt install -y yq
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [ -d "./crds" ]; then
           echo "CRDs directory exists"
