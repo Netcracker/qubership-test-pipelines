@@ -206,3 +206,4 @@ jobs:
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
         with:
           service_branch: '${{inputs.service_branch}}'
+
