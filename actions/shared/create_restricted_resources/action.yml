@@ -51,16 +51,6 @@ runs:
           kubectl create -f $restricted_folder/clusterRoleBindings
         fi
 
-    - name: Create CRD
-      shell: bash
-      # language=bash
-      run: kubectl create -f ${{inputs.repository_name}}/${{inputs.path_to_chart}}/crds
-
-    - name: Get CRD
-      shell: bash
-      # language=bash
-      run: kubectl get crd -n ${{inputs.namespace}} -oyaml
-
 #Create Certificate
     - name: Install openssl
       shell: bash
