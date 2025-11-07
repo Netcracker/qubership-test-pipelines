@@ -1,4 +1,4 @@
-name: "Helm deploy Action for opensearch"
+name: "Helm deploy Action for Opensearch"
 description: "GitHub Action for install/upgrade opensearch using Helm"
 inputs:
   deploy_mode:

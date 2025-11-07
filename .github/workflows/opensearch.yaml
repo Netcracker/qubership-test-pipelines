@@ -219,4 +219,4 @@ jobs:
       - name: Verify Opensearch upgrade
         uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
         with:
-          service_branch: ${{inputs.service_branch}}
+          service_branch: '${{inputs.service_branch}}'

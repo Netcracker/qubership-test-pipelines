@@ -53,8 +53,8 @@ dbaasAdapter:
   opensearchRepoRoot: /usr/share/opensearch/
   dbaasUsername: dbaas-adapter
   dbaasPassword: dbaas-adapter
-  registrationAuthUsername: registr-auth
-  registrationAuthPassword: registr-auth
+  registrationAuthUsername: test
+  registrationAuthPassword: test
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
