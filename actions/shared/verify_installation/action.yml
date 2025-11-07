@@ -109,23 +109,26 @@ runs:
           echo "Status provisioner pod is not found. Checking CR..."
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
             cr_yaml=$(kubectl get "${{inputs.cr_kind}}" "${{inputs.cr_name}}" -n "${{inputs.namespace}}" -o yaml)
-            IFS='|' read -ra messages <<< "${{ inputs.ADDITIONAL_SUCCESS_MESSAGES || '' }}"
-            message_condition=""
+            IFS='|' read -ra messages <<< "${{ inputs.ADDITIONAL_SUCCESS_MESSAGES }}"
+            yq_expr='.status.conditions[] | select(.reason == "ReconcileCycleStatus"'
             for msg in "${messages[@]}"; do
               msg="$(echo "$msg" | xargs)"
-              if [ -n "$message_condition" ]; then
-                message_condition+=" or "
-              fi
-              message_condition+=".message == \"$msg\""
+              esc_msg=$(printf '%s' "$msg" | sed 's/"/\\"/g')
+              yq_expr+=" or .message == \"$esc_msg\""
             done
-            condition=$(echo "$cr_yaml" | yq eval ".status.conditions[] | select(.reason == \"ReconcileCycleStatus\" or $message_condition)" -o=json)
+            yq_expr+=")"
+            condition=$(echo "$cr_yaml" | yq eval "$yq_expr" -o=json)
             if [[ -n "$condition" ]]; then
               status=$(echo "$condition" | yq eval '.status' -)
               if [[ "${status,,}" == 'true' ]]; then
                 echo "CR status condition is met"
                 echo "$condition"
                 break
+              else
+                echo "Condition found but status is not true"
               fi
+            else
+              echo "No matching condition found"
             fi
             sleep ${{inputs.timeout_for_provisioner}}
           done
