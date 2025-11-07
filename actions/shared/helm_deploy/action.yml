@@ -169,6 +169,9 @@ runs:
         else
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --skip-crds
         fi
+        if [[ ${{inputs.deploy_mode}} == 'update' ]]; then
+          sleep 30s
+        fi
 
     - name: Get docker images
       shell: bash
