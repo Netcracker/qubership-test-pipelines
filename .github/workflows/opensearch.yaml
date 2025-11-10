@@ -47,78 +47,78 @@ jobs:
           previous_version=$(echo "$versions_json" | jq -r '.[-1]')
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
-#  #[V] Clean [LATEST_SPRINT], Update [LATEST_SPRINT] Diff Params
-#  Clean-Latest-Update-Diff-Params:
-#    runs-on: ${{inputs.runner_type}}
-#    name: Clean [LATEST], Update [LATEST] Diff Params
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#        #- name: Install Monitoring
-#        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-#      - name: Print clean install deployment parameters
-#        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc.yml
-#      - name: Install Opensearch [LATEST]
-#        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
-#        with:
-#          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Opensearch installation
-#        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
-#      - name: Sleep 1m
-#        run: sleep 1m
-#      - name: Print updated deployment parameters
-#        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_update_all_on_sc.yml
-#      - name: Update to [LATEST] with diff params
-#        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
-#        with:
-#          path_to_template: 'templates/opensearch-service/opensearch_update_all_on_sc.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#          deploy_mode: upgrade
-#      - name: Verify Opensearch update
-#        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
+  #[V] Clean [LATEST_SPRINT], Update [LATEST_SPRINT] Diff Params
+  Clean-Latest-Update-Diff-Params:
+    runs-on: ${{inputs.runner_type}}
+    name: Clean [LATEST], Update [LATEST] Diff Params
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        #- name: Install Monitoring
+        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc.yml
+      - name: Install Opensearch [LATEST]
+        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
+        with:
+          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Opensearch installation
+        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
+      - name: Sleep 1m
+        run: sleep 1m
+      - name: Print updated deployment parameters
+        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_update_all_on_sc.yml
+      - name: Update to [LATEST] with diff params
+        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
+        with:
+          path_to_template: 'templates/opensearch-service/opensearch_update_all_on_sc.yml'
+          service_branch: '${{inputs.service_branch}}'
+          deploy_mode: upgrade
+      - name: Verify Opensearch update
+        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
 
-#  #[V] Clean [LATEST_SPRINT] Restricted
-#  Clean-Latest-Restricted:
-#    name: Clean [LATEST] Restricted
-#    runs-on: ${{inputs.runner_type}}
-#    #needs: install-python
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Set up Python
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.13'
-#      - name: Check Python version
-#        run: python --version
-#      - name: Install dependencies
-#        # language=bash
-#        run: |
-#          python -m pip install --upgrade pip
-#          pip install pyyaml
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#      - name: Print clean install deployment parameters
-#        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml
-#      - name: Install Opensearch [LATEST] in Restricted mode
-#        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
-#        with:
-#          restricted: true
-#          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Opensearch installation
-#        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
+  #[V] Clean [LATEST_SPRINT] Restricted
+  Clean-Latest-Restricted:
+    name: Clean [LATEST] Restricted
+    runs-on: ${{inputs.runner_type}}
+    #needs: install-python
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Check Python version
+        run: python --version
+      - name: Install dependencies
+        # language=bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml
+      - name: Install Opensearch [LATEST] in Restricted mode
+        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
+        with:
+          restricted: true
+          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Opensearch installation
+        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
 
   #[V] Clean [LATEST_SPRINT] S3 with TLS
   Clean-Latest-S3-TLS:
@@ -155,7 +155,9 @@ jobs:
         # language=bash
         run: |
           kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          sleep 10s
           kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          sleep 10s
           kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
       - name: Get cert-manager resources
         # language=bash
@@ -192,46 +194,46 @@ jobs:
         run: |
           kubectl get secrets -n opensearch
 
-#  #[V] Clean [N1_RELEASE], Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
-#  #[V] Clean [N2_RELEASE], Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
-#  Clean-Previous-Upgrade-To-Latest:
-#    name: Clean [PREVIOUS], Upgrade to [LATEST]
-#    needs: prepare-versions
-#    runs-on: ${{inputs.runner_type}}
-#    strategy:
-#      matrix:
-#        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#        #- name: Install monitoring
-#        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-#      - name: Print clean install deployment parameters
-#        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc.yml
-#      - name: Install Opensearch [PREVIOUS]
-#        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
-#        with:
-#          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc.yml'
-#          service_branch: '${{matrix.release}}'
-#      - name: Verify Opensearch installation
-#        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
-#        with:
-#          service_branch: '${{matrix.release}}'
-#      - name: Sleep 1m
-#        run: sleep 1m
-#      - name: Upgrade Opensearch to [LATEST]
-#        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
-#        with:
-#          deploy_mode: upgrade
-#          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Opensearch upgrade
-#        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
-#        with:
-#          service_branch: '${{inputs.service_branch}}'
+  #[V] Clean [N1_RELEASE], Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
+  #[V] Clean [N2_RELEASE], Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
+  Clean-Previous-Upgrade-To-Latest:
+    name: Clean [PREVIOUS], Upgrade to [LATEST]
+    needs: prepare-versions
+    runs-on: ${{inputs.runner_type}}
+    strategy:
+      matrix:
+        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        #- name: Install monitoring
+        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc.yml
+      - name: Install Opensearch [PREVIOUS]
+        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
+        with:
+          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc.yml'
+          service_branch: '${{matrix.release}}'
+      - name: Verify Opensearch installation
+        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
+        with:
+          service_branch: '${{matrix.release}}'
+      - name: Sleep 1m
+        run: sleep 1m
+      - name: Upgrade Opensearch to [LATEST]
+        uses: ./qubership-test-pipelines/actions/opensearch/helm_deploy_opensearch
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/opensearch-service/opensearch_clean_all_on_sc.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Verify Opensearch upgrade
+        uses: ./qubership-test-pipelines/actions/opensearch/verify_installation_opensearch
+        with:
+          service_branch: '${{inputs.service_branch}}'
