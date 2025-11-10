@@ -13,7 +13,7 @@ server:
 consulAclConfigurator:
   enabled: false
 statusProvisioner:
-  lifetimeAfterCompletion: 60
+  lifetimeAfterCompletion: 120
 dns:
   enabled: false
 monitoring:

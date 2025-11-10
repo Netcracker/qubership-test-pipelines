@@ -5,7 +5,7 @@ inputs:
     description: |
       Deployment mode:
       - 'install' for clean installation
-      - 'update' to upgrade an existing release
+      - 'upgrade' to upgrade an existing release
     required: true
     default: 'install'
 
@@ -168,9 +168,6 @@ runs:
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
         else
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --skip-crds
-        fi
-        if [[ ${{inputs.deploy_mode}} == 'update' ]]; then
-          sleep 30s
         fi
 
     - name: Get docker images
