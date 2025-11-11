@@ -2,7 +2,7 @@ dashboards:
   enabled: false
 opensearch:
   master:
-    replicas: 1
+    replicas: 3
     enabled: true
     persistence:
       enabled: true
