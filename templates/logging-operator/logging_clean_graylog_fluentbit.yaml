@@ -2,6 +2,8 @@ skipMetricsService: false
 containerRuntimeType: containerd
 graylog:
   install: true
+  indexShards: 1
+  indexReplicas: 1
   mongoStorageClassName: standard
   graylogStorageClassName: standard
   host: http://graylog.demo.qubership.org
