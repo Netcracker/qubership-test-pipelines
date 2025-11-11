@@ -8,7 +8,7 @@ inputs:
   service_ready_max_retries:
     description: 'See verify_installation.max_attempts'
     required: true
-    default: 40
+    default: 100
   service_ready_retry_interval:
     description: 'See verify_installation.timeout'
     required: true
@@ -33,6 +33,7 @@ inputs:
     description: 'See verify_installation.check_tests'
     required: false
     type: boolean
+    default: false
 
 runs:
   using: 'composite'

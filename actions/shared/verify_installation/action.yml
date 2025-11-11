@@ -186,8 +186,10 @@ runs:
             echo "Attempt $i/${{inputs.test_completion_max_retries}}"
             ./qubership-test-pipelines/scripts/check_tests.sh "$namespace"
           done
-        else
+        elif [[ "${{inputs.check_tests}}" == "false" ]]; then
           echo "inputs.check_tests is 'false'. Don't check tests"
+        else
+          echo "Incorrect inputs.check_tests value: '${{inputs.check_tests}}'"
         fi
 
 

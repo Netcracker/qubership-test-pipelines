@@ -82,3 +82,5 @@ jobs:
         run: kubectl describe nodes
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
+        with:
+          check_tests: true
