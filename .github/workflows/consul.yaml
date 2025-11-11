@@ -80,6 +80,8 @@ jobs:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_updated.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Consul upgrade
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
@@ -159,6 +161,8 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
           service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
@@ -198,6 +202,8 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
           service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
         with:
@@ -236,6 +242,8 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
           service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Consul upgrade
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
         with:

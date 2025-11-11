@@ -56,7 +56,7 @@ integrationTests:
   enabled: true
   tags: backupORcrud
 statusProvisioner:
-  lifetimeAfterCompletion: 60
+  lifetimeAfterCompletion: 120
   integrationTestsTimeout: 600
   podReadinessTimeout: 900
   cleanupEnabled: true
