@@ -203,7 +203,9 @@ jobs:
         # language=bash
         run: |
           kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          sleep 10s
           kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          sleep 10s
           kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
       - name: Get cert-manager resources
         # language=bash
