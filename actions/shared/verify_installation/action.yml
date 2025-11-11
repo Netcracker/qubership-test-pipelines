@@ -76,6 +76,7 @@ runs:
         done
         if [[ $provisioner_pod != "NOT_FOUND" ]]; then
           echo "provisioner_pod=$provisioner_pod"
+          logs=""
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
             output=$(kubectl get pod $provisioner_pod --ignore-not-found -n ${{inputs.namespace}})
             if [ -z "$output" ]; then
@@ -88,7 +89,7 @@ runs:
                 logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
                 if [[ $logs == *"Failed components statuses are []"* ]]; then
                   echo "All components are in succeed status!"
-                  echo PROVISIONER LOGS: $logs
+                  echo "PROVISIONER LOGS: $logs"
                   break
                 fi
             fi
@@ -98,15 +99,18 @@ runs:
             echo "::error:: $provisioner_pod pod has not Succeeded status. Current status: $status"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
-          logs=$(kubectl logs $provisioner_pod -n ${{inputs.namespace}})
           if [[ $logs != *"Failed components statuses are []"* ]]; then
-            echo "::error:: Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
+            echo "::error::Not all components are in succeed status after ${{inputs.max_attempts_for_provisioner}} attempts"
             echo PODS:
             kubectl get pods -n ${{inputs.namespace}}
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
         else
           echo "Status provisioner pod is not found. Checking CR..."
+          if [ -z "${{inputs.cr_kind}}" ] || [ -z "${{inputs.cr_name}}" ]; then
+              echo "::error::Missing parameters for CR check"
+              exit 1
+          fi
           for i in {1..${{inputs.max_attempts_for_provisioner}}}; do
             cr_yaml=$(kubectl get "${{inputs.cr_kind}}" "${{inputs.cr_name}}" -n "${{inputs.namespace}}" -o yaml)
             IFS='|' read -ra messages <<< "${{ inputs.ADDITIONAL_SUCCESS_MESSAGES }}"
