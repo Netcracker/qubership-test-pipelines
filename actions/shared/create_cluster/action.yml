@@ -2,7 +2,7 @@ name: 'Create Kubernetes cluster Action'
 description: 'A GitHub Action that creates Kubernetes cluster using Kind'
 inputs:
   path_to_template:
-    description: 'A path to template of kind-cluster layout
+    description: 'A path to template of kind-cluster layout'
     required: true
     default: 'qubership-test-pipelines/kind-configs/kind-multi-node.yaml'
 runs:
