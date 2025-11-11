@@ -223,7 +223,7 @@ runs:
                 kubectl logs "$pod" -n ${{inputs.namespace}} -c "$container" >> "$file_name-$pod-${container}-log.txt"
               else
                 echo "Skipping $pod $container (not ready)"
-              end
+              fi
               #echo '================================================================================' >> $file_name
             done
         done
