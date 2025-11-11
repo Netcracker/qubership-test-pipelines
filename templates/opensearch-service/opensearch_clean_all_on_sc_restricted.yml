@@ -93,4 +93,4 @@ secret:
     password: ""
     registrationToken: ""
 statusProvisioner:
-  lifetimeAfterCompletion: 60
+  lifetimeAfterCompletion: 120

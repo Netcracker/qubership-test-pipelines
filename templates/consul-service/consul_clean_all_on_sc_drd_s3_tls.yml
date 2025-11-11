@@ -66,6 +66,6 @@ integrationTests:
       password: ''
   tags: backupORcrudORhaORbackup
 statusProvisioner:
-  lifetimeAfterCompletion: 60
+  lifetimeAfterCompletion: 120
   integrationTestsTimeout: 1500
   podReadinessTimeout: 900
