@@ -23,10 +23,16 @@ runs:
           chmod +x ./kind
           # sudo mv ./kind /usr/local/bin/kind
       - name: Delete kind
+        shell: bash
+        # language=bash
         run: |
           ./kind get clusters
+          for node in kind-worker kind-control-plane2 kind-external-load-balancer kind-control-plane kind-control-plane3 kind-worker3 kind-worker2; do
+            if docker ps -a --format '{{.Names}}' | grep -q "^${node}$"; then
+              docker rm -f -v "$node"
+            fi
+          done
           ./kind delete cluster --name kind || true
-        shell: bash
       - name: Run kind
         shell: bash
         # language=bash
