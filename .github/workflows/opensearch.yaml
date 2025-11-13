@@ -47,6 +47,16 @@ jobs:
           previous_version=$(echo "$versions_json" | jq -r '.[-1]')
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
+  Prune-Docker-Images:
+    runs-on: ${{inputs.runner_type}}
+    steps:
+      - name: List and delete docker volumes
+        shell: bash
+        # language=bash
+        run: |
+          docker volume ls
+          docker system prune -af --volumes
+
   #[V] Clean [LATEST_SPRINT], Update [LATEST_SPRINT] Diff Params
   Clean-Latest-Update-Diff-Params:
     runs-on: ${{inputs.runner_type}}
