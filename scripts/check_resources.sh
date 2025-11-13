@@ -10,9 +10,9 @@ check_resources() {
         total=${total:-0}
 
         if [[ "$ready" -eq "$total" ]] && [[ "$total" -gt 0 ]]; then
-            echo "✅ Deployment $deployment is ready"
+            echo "Deployment $deployment is ready"
         else
-            echo "❌ Deployment $deployment is not ready: $ready/$total"
+            echo "Deployment $deployment is not ready: $ready/$total"
             all_ready=false
         fi
     done
@@ -25,9 +25,9 @@ check_resources() {
         total=${total:-0}
 
         if [[ "$ready" -eq "$total" ]] && [[ "$total" -gt 0 ]]; then
-            echo "✅ StatefulSet $statefulset is ready"
+            echo "StatefulSet $statefulset is ready"
         else
-            echo "❌ StatefulSet $statefulset is not ready: $ready/$total"
+            echo "StatefulSet $statefulset is not ready: $ready/$total"
             all_ready=false
         fi
     done
@@ -40,18 +40,18 @@ check_resources() {
         desired=${desired:-0}
 
         if [[ "$ready" -eq "$desired" ]] && [[ "$desired" -gt 0 ]]; then
-            echo "✅ DaemonSet $daemonset is ready"
+            echo "DaemonSet $daemonset is ready"
         else
-            echo "❌ DaemonSet $daemonset is not ready: $ready/$desired"
+            echo "DaemonSet $daemonset is not ready: $ready/$desired"
             all_ready=false
         fi
     done
 
     if [ "$all_ready" = true ]; then
-        echo "✅ All resources are ready"
+        #All resources are ready
         return 0
     else
-        echo "❌ Some resources are not ready"
+        #Some resources are not ready
         return 1
     fi
 }

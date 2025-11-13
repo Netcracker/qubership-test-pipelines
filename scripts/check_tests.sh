@@ -32,7 +32,7 @@ check_tests() {
       if ! kubectl cp "$test_pod":/opt/robot/output artifacts/robot-results -n "$namespace"; then
         echo "::warning:: ⚠️ Failed to copy robot results"
       else
-        echo "✅ Robot results copied successfully"
+        echo "Robot results copied successfully"
       fi
 
       if [[ "$logs" == *"| FAIL |"* ]]; then

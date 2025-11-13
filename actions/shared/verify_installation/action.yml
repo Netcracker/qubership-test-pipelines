@@ -63,16 +63,15 @@ runs:
         chmod +x ./qubership-test-pipelines/scripts/check_cr.sh
         chmod +x ./qubership-test-pipelines/scripts/check_resources.sh
 
-        echo "📋 Checking CRDs: ${{inputs.crd_list}}"
+        echo "Checking CRDs: ${{inputs.crd_list}}"
         for i in {1..${{inputs.service_ready_max_retries}}}; do
-          echo "📋 Attempt $i/${{inputs.service_ready_max_retries}}"
+          echo "Attempt $i/${{inputs.service_ready_max_retries}}"
 
           set +e
           ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"
           cr_exit_code=$?
           set -e
 
-          echo "cr_exit_code: $cr_exit_code"
           case $cr_exit_code in
             0) echo "✅ CR check successful" ;;
             1) echo "⏳ CR check in progress" ;;
@@ -88,7 +87,6 @@ runs:
           resources_exit_code=$?
           set -e
 
-          echo "resources_exit_code: $resources_exit_code"
           if [ $resources_exit_code -eq 0 ]; then
             echo "✅ Resources checks successful"
             break
