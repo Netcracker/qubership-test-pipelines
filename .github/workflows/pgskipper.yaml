@@ -26,32 +26,73 @@ on:
         required: true
 
 jobs:
-#  prepare-versions:
-#    runs-on: ${{inputs.runner_type}}
-#    outputs:
-#      versions: ${{steps.process-versions.outputs.versions}}
-#      previous_version: ${{steps.process-versions.outputs.previous_version}}
-#    steps:
-#      - name: Checkout repo
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.service_branch}}'
-#          repository: 'Netcracker/qubership-consul'
-#          path: 'qubership-consul'
-#      - name: Process versions file
-#        id: process-versions
-#        run: |
-#          versions_str=$(cat qubership-consul/${{inputs.versions_file}})
-#          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
-#          echo "versions=$versions_json" >> $GITHUB_OUTPUT
-#          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
-#          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
+  prepare-versions:
+    runs-on: ${{inputs.runner_type}}
+    outputs:
+      versions: ${{steps.process-versions.outputs.versions}}
+      previous_version: ${{steps.process-versions.outputs.previous_version}}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.service_branch}}'
+          repository: 'Netcracker/pgskipper-operator'
+          path: 'pgskipper-operator'
+      - name: Process versions file
+        id: process-versions
+        run: |
+          versions_str=$(cat pgskipper-operator/${{inputs.versions_file}})
+          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
+          echo "versions=$versions_json" >> $GITHUB_OUTPUT
+          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
+          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
   # ---------- Current service branch ----------
   #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
+#  Clean-Latest:
+#    runs-on: ${{inputs.runner_type}}
+#    name: Clean [LATEST]
+#    steps:
+#      - name: Checkout pipeline
+#        uses: actions/checkout@v4
+#        with:
+#          ref: '${{inputs.pipeline_branch}}'
+#          repository: 'Netcracker/qubership-test-pipelines'
+#          path: 'qubership-test-pipelines'
+#      - name: Create cluster
+#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+#      - name: Clean Install Pgskipper Core [LATEST]
+#        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
+#        with:
+#          path_to_template: 'templates/pgskipper/clean.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Verify Pgskipper Core installation
+#        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
+#      - name: Describe nodes
+#        run: kubectl describe nodes
+#      - name: Clean Install Pgskipper Services [LATEST]
+#        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
+#        with:
+#          path_to_template: 'templates/pgskipper/clean.yml'
+#          service_branch: '${{inputs.service_branch}}'
+#      - name: Get logs
+#        run: |
+#          kubectl get events --sort-by=.metadata.creationTimestamp -n pgskipper
+#      - name: Describe nodes
+#        run: kubectl describe nodes
+#      - name: Verify Pgskipper Services installation
+#        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
+#        with:
+#          check_tests: true
+
+  #Clean [N1_RELEASE], Upgrade From [N1_RELEASE] To [LATEST]
   Clean-Latest:
+    name: Clean [PREVIOUS], Update to [LATEST]
+    needs: prepare-versions
     runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST]
+    strategy:
+      matrix:
+        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -61,26 +102,46 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Clean Install Pgskipper Core [LATEST]
+      - name: Clean Install Pgskipper Core [PREVIOUS]
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
         with:
           path_to_template: 'templates/pgskipper/clean.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify Pgskipper Core installation
+          service_branch: '${{matrix.release}}'
+      - name: Verify Pgskipper Core installation [PREVIOUS]
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
-      - name: Describe nodes
-        run: kubectl describe nodes
-      - name: Clean Install Pgskipper Services [LATEST]
+        with:
+          service_branch: '${{matrix.release}}'
+      - name: Clean Install Pgskipper Services [PREVIOUS]
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
         with:
           path_to_template: 'templates/pgskipper/clean.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Get logs
-        run: |
-          kubectl get events --sort-by=.metadata.creationTimestamp -n pgskipper
-      - name: Describe nodes
-        run: kubectl describe nodes
-      - name: Verify Pgskipper Services installation
+          service_branch: '${{matrix.release}}'
+      - name: Verify Pgskipper Services installation [PREVIOUS]
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
         with:
-          check_tests: true
+          service_branch: '${{matrix.release}}'
+      - name: Upgrade Pgskipper Services to [LATEST]
+        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/pgskipper/clean.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
+      - name: Verify Pgskipper Services Upgrade [LATEST]
+        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
+        with:
+          service_branch: ${{inputs.service_branch}}
+      - name: Upgrade Pgskipper Services to [LATEST]
+        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/pgskipper/clean.yml'
+          service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
+      - name: Verify Pgskipper Services Upgrade [LATEST]
+        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
+        with:
+          service_branch: ${{inputs.service_branch}}
+
