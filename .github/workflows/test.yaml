@@ -21,7 +21,7 @@ on:
         required: false
         default: 'ubuntu-latest'
 env:
-  versions: "${{ toJson(inputs.versions) }}"
+  versions: "${{ toJson(fromJson(inputs.versions)) }}"
   previous_version: ${{ toJson(inputs.versions)[-1] }}
 jobs:
   prepare-versions:
