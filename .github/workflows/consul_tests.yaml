@@ -175,10 +175,10 @@ jobs:
         with:
           path_to_template: ${{ matrix.test.template }}
           service_branch: '${{ matrix.test.install_version }}'
-          service_name: 'consul'
+          service_name: consul
           repository_name: 'Netcracker/qubership-consul'
           path_to_chart: 'charts/helm/consul-service'
-          namespace: 'consul'
+          namespace: consul
           restricted: ${{ matrix.test.restricted }}
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -211,10 +211,10 @@ jobs:
           path_to_template: ${{ matrix.test.upgrade_template }}
           service_branch: '${{ matrix.test.upgrade_version }}'
           deploy_mode: upgrade
-          service_name: 'consul'
-          repository_name: 'Netcracker/qubership-consul'
-          path_to_chart: 'charts/helm/consul-service'
-          namespace: 'consul'
+          service_name: consul
+          repository_name: Netcracker/qubership-consul
+          path_to_chart: charts/helm/consul-service
+          namespace: consul
           restricted: ${{ matrix.test.restricted }}
 
       - name: Sleep 2m after update
@@ -239,24 +239,24 @@ jobs:
   #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
   #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
   Clean-Previous-Update-To-Latest:
-    name: Clean [${{ matrix.release }}], Upgrade to [${{ inputs.service_branch }}]
+    name: "Clean [${{ matrix.release }}], Upgrade to [${{ inputs.service_branch }}]"
     needs: prepare-versions
     runs-on: ${{inputs.runner_type}}
     strategy:
       matrix:
         release: ${{ fromJson(needs.prepare-versions.outputs.versions) }}
     steps:
-      - name: Checkout pipeline
+      - name: "Checkout pipeline"
         uses: actions/checkout@v4
         with:
           ref: '${{ inputs.pipeline_branch }}'
           repository: '${{ github.repository_owner }}/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
-      - name: Create cluster
+      - name: "Create cluster"
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       #- name: Install monitoring
         #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Clean Install Consul [${{ matrix.release }}]
+      - name: "Clean Install Consul [${{ matrix.release }}]"
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
@@ -274,7 +274,7 @@ jobs:
           timeout: 10s
           max_attempts_for_provisioner: 50
           timeout_for_provisioner: 10s
-      - name: Upgrade Consul to [${{ inputs.service_branch }}]
+      - name: "Upgrade Consul to [${{ inputs.service_branch }}]"
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           deploy_mode: upgrade
