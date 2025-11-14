@@ -219,7 +219,7 @@ jobs:
 
       - name: Sleep 1m after update
         if: matrix.test.sequence == 'upgrade'
-        run: sleep 1m
+        run: sleep 2m
       - name: Verify Consul upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
