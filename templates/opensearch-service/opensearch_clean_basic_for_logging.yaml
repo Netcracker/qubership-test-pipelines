@@ -1,0 +1,31 @@
+dashboards:
+  enabled: false
+opensearch:
+  master:
+    replicas: 1
+    enabled: true
+    persistence:
+      enabled: true
+      storageClass: "standard"
+    resources:
+      requests:
+        memory: "2Gi"
+        cpu: 100m
+      limits:
+        memory: "3Gi"
+        cpu: 1000m
+  securityConfig:
+    authc:
+      basic:
+        username: "admin"
+        password: "admin"
+  tls:
+    enabled: false
+monitoring:
+  enabled: false
+dbaasAdapter:
+  enabled: false
+curator:
+  enabled: false
+  username: "admin"
+  password: "admin"

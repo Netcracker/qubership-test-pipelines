@@ -1,0 +1,30 @@
+name: 'Install cert-manager'
+description: 'Installs cert-manager and creates cluster issuer'
+inputs:
+  cert_manager_version:
+    description: 'Version of cert-manager to install'
+    required: true
+    default: 'v1.16.3'
+  cluster_issuer:
+    description: 'ClusterIssuer name to create'
+    required: true
+    default: 'dev-cluster-issuer'
+runs:
+  using: 'composite'
+  steps:
+    - run: |
+        helm repo add jetstack https://charts.jetstack.io --force-update
+        helm upgrade -i cert-manager jetstack/cert-manager   --namespace cert-manager \
+        --create-namespace --version ${{ inputs.cert_manager_version }} \
+        --set prometheus.enabled=true --set crds.enabled=true
+      shell: bash
+    - run: |
+          kubectl apply -f - <<EOF
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: ${{ inputs.cluster_issuer }}
+          spec:
+            selfSigned: {}
+          EOF
+      shell: bash
