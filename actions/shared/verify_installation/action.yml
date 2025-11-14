@@ -84,7 +84,7 @@ runs:
                 echo "⏳ CR check in progress" ;;
               2)
                 echo "::error:: ❌ CR check failed"
-                echo "ERROR_FLAG=true" >> "$GITHUB_ENV"
+                echo "ERROR_FLAG=true" >> $GITHUB_ENV
                 break ;;
             esac
           fi
@@ -100,6 +100,8 @@ runs:
               resources_success=true
             elif [ $resources_exit_code -eq 1 ]; then
               echo "⏳ Some resources are not ready"
+              echo "PODS:"
+              kubectl get pods -n "${{inputs.namespace}}"
             fi
           fi
 
@@ -114,11 +116,11 @@ runs:
           else
             if [ "$cr_success" = "false" ]; then
               echo "::error:: ❌ CR check not successful after ${{inputs.service_ready_max_retries}} retries"
-              echo "ERROR_FLAG=true" >> "$GITHUB_ENV"
+              echo "ERROR_FLAG=true" >> $GITHUB_ENV
             fi
             if [ "$resources_success" = "false" ]; then
               echo "::error:: ❌ Resources not ready after ${{inputs.service_ready_max_retries}} retries"
-              echo "ERROR_FLAG=true" >> "$GITHUB_ENV"
+              echo "ERROR_FLAG=true" >> $GITHUB_ENV
             fi
           fi
         done
@@ -229,14 +231,14 @@ runs:
                 ;;
               2)
                 echo "::error:: ❌ Tests failed"
-                echo "ERROR_FLAG=true" >> "$GITHUB_ENV"
+                echo "ERROR_FLAG=true" >> $GITHUB_ENV
                 break
                 ;;
             esac
 
             if [ $i -eq ${{inputs.test_completion_max_retries}} ]; then
               echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
-              echo "ERROR_FLAG=true" >> "$GITHUB_ENV"
+              echo "ERROR_FLAG=true" >> $GITHUB_ENV
             else
               sleep ${{inputs.service_ready_retry_interval}}
             fi
@@ -245,7 +247,7 @@ runs:
           echo "ℹ️ Test checking disabled"
         else
           echo "::error:: ❌ Incorrect inputs.check_tests value: '${{inputs.check_tests}}'"
-          echo "ERROR_FLAG=true" >> "$GITHUB_ENV"
+          echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
 
     - name: Generate artifact name
@@ -254,12 +256,19 @@ runs:
       # language=bash
       run: |
         # ▶️ Generate artifact name
-        release_name="${{inputs.service_branch}}"
+        service_branch=$(echo "${{inputs.service_branch}}" | tr -d '[:space:]')
         if [[ -n "$release_name" ]]; then
-          release_name="_${release_name//\//_}"
+          service_branch="_${service_branch//\//_}"
         fi
-        ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}${release_name}_artifacts_$(date -u +"%Y%m%d%H%M%S")"
-        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> "$GITHUB_ENV"
+        echo matrix_version ${{matrix.version}}
+        matrix_suffix=""
+        if [[ -n "${{ matrix.version }}" ]]; then
+          echo ${{ matrix.version }}
+          matrix_suffix="${{matrix.version}}_"
+        fi
+
+        ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S")"
+        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
 
     - name: Upload artifact
       if: always()
