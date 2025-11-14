@@ -104,7 +104,7 @@ jobs:
             upgrade_template: "templates/consul-service/consul_clean_all_on_sc_updated.yml"
             sequence: upgrade
             restricted: false
-          - name: "Clean [${{ inputs.service_branch }}] W/O Components, Upgrade"
+          - name: "Clean [${{ inputs.service_branch }}] W/O Components, Upgrade [${{ inputs.service_branch }}] All Components S3"
             install_version: '${{ inputs.service_branch }}'
             template: "templates/consul-service/consul_clean_on_sc_without_components.yml"
             upgrade_version: '${{ inputs.service_branch }}'
@@ -202,7 +202,7 @@ jobs:
       # == End ======= Specific steps for S3 =======
 
       # == Start ======= Specific steps for upgrade tests =======
-      - name: Update to [${{ matrix.test.upgrade_version }}] Version With Diff Params
+      - name: Upgrade to [${{ matrix.test.upgrade_version }}] Version With Diff Params
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -232,11 +232,11 @@ jobs:
 
 
 
-  #---------- Update from old releases ----------
+  #---------- Upgrade from old releases ----------
   #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
   #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
   Clean-Previous-Update-To-Latest:
-    name: Clean [${{ matrix.release }}], Update to [${{ inputs.service_branch }}]
+    name: Clean [${{ matrix.release }}], Upgrade to [${{ inputs.service_branch }}]
     needs: prepare-versions
     runs-on: ${{inputs.runner_type}}
     strategy:
@@ -271,7 +271,7 @@ jobs:
           timeout: 10s
           max_attempts_for_provisioner: 50
           timeout_for_provisioner: 10s
-      - name: Update Consul to [${{ inputs.service_branch }}]
+      - name: Upgrade Consul to [${{ inputs.service_branch }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           deploy_mode: upgrade
