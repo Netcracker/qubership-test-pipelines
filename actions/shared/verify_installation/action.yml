@@ -42,7 +42,11 @@ inputs:
       Name of custom resource for checking deploy status.
       CR is used to check the status if status provisioner is missing
     required: false
-
+  artifact_name:
+    description: |
+      Name of the artifact to be uploaded
+    required: false
+    default: ""
   ADDITIONAL_SUCCESS_MESSAGES:
     description: |
       Additional success messages which are possible in custom cases, e.g. for RabbitMQ
@@ -292,9 +296,12 @@ runs:
         if [[ $release_name ]]; then
           release_name=$(echo "_$release_name" | tr '/' '_')
         fi
-        ARTIFACT_NAME=${{github.job}}_${{inputs.namespace}}${release_name}_artifacts_$(date -u +'%Y%m%d%H%M%S')
+        if [[ "${{inputs.artifact_name}}" != "" ]]; then
+          ARTIFACT_NAME=${{ inputs.artifact_name }}_$(date -u +'%Y%m%d%H%M%S%N')
+        else
+          ARTIFACT_NAME=${{ github.job }}_${{ inputs.namespace }}${release_name}_artifacts_$(date -u +'%Y%m%d%H%M%S%N')
+        fi
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
-
     - name: Upload artifact
       if: always()
       uses: actions/upload-artifact@v4

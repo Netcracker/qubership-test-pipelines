@@ -79,6 +79,7 @@ jobs:
     needs: prepare-versions
     runs-on: ${{inputs.runner_type}}
     strategy:
+      fail-fast: false
       matrix:
         test:
           - name: "Clean [${{ inputs.service_branch }}] restricted"
@@ -97,14 +98,14 @@ jobs:
             sequence: install
             restricted: false
             backend: s3-tls
-          - name: "Clean [${{ inputs.service_branch }}], Upgrade [${{ inputs.service_branch }}] Diff Params"
+          - name: "Clean [${{ inputs.service_branch }}]. Upgrade [${{ inputs.service_branch }}] Diff Params"
             install_version: '${{ inputs.service_branch }}'
             template: "templates/consul-service/consul_clean_all_on_sc.yml"
             upgrade_version: '${{ inputs.service_branch }}'
             upgrade_template: "templates/consul-service/consul_clean_all_on_sc_updated.yml"
             sequence: upgrade
             restricted: false
-          - name: "Clean [${{ inputs.service_branch }}] W/O Components, Upgrade [${{ inputs.service_branch }}] All Components S3"
+          - name: "Clean [${{ inputs.service_branch }}] W/O Components. Upgrade [${{ inputs.service_branch }}] All Components S3"
             install_version: '${{ inputs.service_branch }}'
             template: "templates/consul-service/consul_clean_on_sc_without_components.yml"
             upgrade_version: '${{ inputs.service_branch }}'
@@ -112,7 +113,7 @@ jobs:
             sequence: upgrade
             restricted: false
             backend: s3
-          - name: "Clean [${{ needs.prepare-versions.outputs.previous_version }}] Restricted, Upgrade To [${{ inputs.service_branch }}] Restricted"
+          - name: "Clean [${{ needs.prepare-versions.outputs.previous_version }}] Restricted. Upgrade To [${{ inputs.service_branch }}] Restricted"
             install_version: '${{ needs.prepare-versions.outputs.previous_version }}'
             template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
             upgrade_version: '${{ inputs.service_branch }}'
@@ -188,6 +189,7 @@ jobs:
           max_attempts_for_provisioner: 50
           timeout_for_provisioner: 10s
           service_branch: ${{ matrix.test.install_version }}
+          artifact_name: "${{ matrix.test.install_version }}_installation_artifact"
       # == 02 End ======= Common steps for all tests =======
 
       # == Start ======= Specific steps for S3 =======
@@ -228,6 +230,7 @@ jobs:
           max_attempts_for_provisioner: 50
           timeout_for_provisioner: 10s
           service_branch: ${{ matrix.test.upgrade_version }}
+          artifact_name: "${{ matrix.test.upgrade_version }}_upgrade_artifact"
       # == End ======= Specific steps for upgrade tests =======
 
 
