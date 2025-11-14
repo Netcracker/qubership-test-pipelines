@@ -1,0 +1,294 @@
+name: Consul Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      service_branch:
+        description: 'Branch of qubership-consul repository'
+        required: false
+        type: string
+        default: 'main'
+      versions_file:
+        description: 'Path to file with version list'
+        type: string
+        required: true
+        default: '.github/versions.yaml'
+      pipeline_branch:
+        description: 'Branch of qubership-test-pipelines repository'
+        type: string
+        required: true
+        default: 'main'
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+  workflow_call:
+    inputs:
+      service_branch:
+        description: 'Branch of qubership-consul repository'
+        required: false
+        type: string
+        default: 'main'
+      versions_file:
+        description: 'Path to file with version list'
+        type: string
+        required: true
+        default: '.github/versions.yaml'
+      pipeline_branch:
+        description: 'Branch of qubership-test-pipelines repository'
+        type: string
+        required: true
+        default: 'main'
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
+
+jobs:
+  prepare-versions:
+    runs-on: ${{inputs.runner_type}}
+    outputs:
+      versions: ${{steps.process-versions.outputs.versions}}
+      previous_version: ${{steps.process-versions.outputs.previous_version}}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.service_branch}}'
+          repository: 'Netcracker/qubership-consul'
+          path: 'qubership-consul'
+      - name: Process versions file
+        id: process-versions
+        run: |
+          versions_str=$(cat qubership-consul/${{inputs.versions_file}})
+          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
+          echo "versions=$versions_json" >> $GITHUB_OUTPUT
+          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
+          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
+
+  # ---------- Current service branch ----------
+  #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
+  matrix_tests:
+    needs: prepare-versions
+    runs-on: ${{inputs.runner_type}}
+    strategy:
+      matrix:
+        test:
+          - name: "Clean [${{ inputs.service_branch }}] restricted"
+            install_version: '${{ inputs.service_branch }}'
+            template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
+            sequence: install
+            restricted: true
+          - name: "Clean [${{ inputs.service_branch }}] Full-AT Ports-specifying Custom-labels"
+            install_version: '${{ inputs.service_branch }}'
+            template: "templates/consul-service/consul_clean_all_on_sc_full_at.yml"
+            sequence: install
+            restricted: false
+          - name: Clean [${{ inputs.service_branch }}] S3 TLS
+            install_version: '${{ inputs.service_branch }}'
+            template: "templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml"
+            sequence: install
+            restricted: false
+            backend: s3-tls
+          - name: "Clean [${{ inputs.service_branch }}], Upgrade [${{ inputs.service_branch }}] Diff Params"
+            install_version: '${{ inputs.service_branch }}'
+            template: "templates/consul-service/consul_clean_all_on_sc.yml"
+            upgrade_version: '${{ inputs.service_branch }}'
+            upgrade_template: "templates/consul-service/consul_clean_all_on_sc_updated.yml"
+            sequence: upgrade
+            restricted: false
+          - name: "Clean [${{ inputs.service_branch }}] W/O Components, Upgrade"
+            install_version: '${{ inputs.service_branch }}'
+            template: "templates/consul-service/consul_clean_on_sc_without_components.yml"
+            upgrade_version: '${{ inputs.service_branch }}'
+            upgrade_template: "templates/consul-service/consul_clean_all_on_sc_drd_s3.yml"
+            sequence: upgrade
+            restricted: false
+            backend: s3
+          - name: "Clean [${{ needs.prepare-versions.outputs.previous_version }}] Restricted, Upgrade To [${{ inputs.service_branch }}] Restricted"
+            install_version: '${{ needs.prepare-versions.outputs.previous_version }}'
+            template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
+            upgrade_version: '${{ inputs.service_branch }}'
+            upgrade_template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
+            sequence: upgrade
+            restricted: true
+    name: ${{ matrix.test.name }}
+    steps:
+      # == 01 Start ======= Common pre-steps for all tests =======
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{inputs.pipeline_branch}}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      # == 01 End ======= Common pre-steps for all tests =======
+
+      # == Start ======= Specific steps for S3-TLS =======
+      - name: S3-TLS specific step
+        if: matrix.test.backend == 's3-tls'
+        run: |
+          echo "::group::Describe nodes"
+          kubectl describe nodes
+          echo "::endgroup::"
+          echo "::group::Install cert-manager"
+          helm repo add jetstack https://charts.jetstack.io --force-update
+          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
+          echo "::endgroup::"
+          echo "::group::Create cert-manager entities"
+          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+          echo "::endgroup::"
+          echo "::group::Get cert-manager resources"
+          kubectl get pods -n cert-manager
+          kubectl get secrets -n cert-manager
+          kubectl get certificates -A
+          echo "::endgroup::"
+          echo "::group::Get clusterissuer"
+          kubectl get clusterissuer
+          kubectl get clusterissuer test-clusterissuer -o yaml
+          echo "::endgroup::"
+          echo "::group::Add secrets to template"
+          python qubership-test-pipelines/python/add_secrets_for_s3.py \
+          --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+          echo "::endgroup::"
+      # == End ======= Specific steps for S3-TLS =======
+
+      # == 02 Start ======= Common steps for all tests =======
+      - name: Install Consul [${{ matrix.test.install_version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: ${{ matrix.test.template }}
+          service_branch: '${{ matrix.test.install_version }}'
+          service_name: 'consul'
+          repository_name: 'Netcracker/qubership-consul'
+          path_to_chart: 'charts/helm/consul-service'
+          namespace: 'consul'
+          restricted: ${{ matrix.test.restricted }}
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: consul
+          max_attempts: 50
+          timeout: 10s
+          max_attempts_for_provisioner: 50
+          timeout_for_provisioner: 10s
+          service_branch: ${{ matrix.test.install_version }}
+      # == 02 End ======= Common steps for all tests =======
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Add secrets to template
+        if: matrix.test.sequence == 'upgrade' && matrix.test.backend == 's3'
+        shell: bash
+        run: >-
+          python qubership-test-pipelines/python/add_secrets_for_s3.py
+          --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
+          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for S3 =======
+
+      # == Start ======= Specific steps for upgrade tests =======
+      - name: Update to [${{ matrix.test.upgrade_version }}] Version With Diff Params
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: ${{ matrix.test.upgrade_template }}
+          service_branch: '${{ matrix.test.upgrade_version }}'
+          deploy_mode: upgrade
+          service_name: 'consul'
+          repository_name: 'Netcracker/qubership-consul'
+          path_to_chart: 'charts/helm/consul-service'
+          namespace: 'consul'
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Sleep 1m after update
+        if: matrix.test.sequence == 'upgrade'
+        run: sleep 1m
+      - name: Verify Consul upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: consul
+          max_attempts: 50
+          timeout: 10s
+          max_attempts_for_provisioner: 50
+          timeout_for_provisioner: 10s
+          service_branch: ${{ matrix.test.upgrade_version }}
+      # == End ======= Specific steps for upgrade tests =======
+
+
+
+  #---------- Update from old releases ----------
+  #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
+  #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
+  Clean-Previous-Update-To-Latest:
+    name: Clean [${{ matrix.release }}], Update to [${{ inputs.service_branch }}]
+    needs: prepare-versions
+    runs-on: ${{inputs.runner_type}}
+    strategy:
+      matrix:
+        release: ${{ fromJson(needs.prepare-versions.outputs.versions) }}
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'Netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      #- name: Install monitoring
+        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      - name: Clean Install Consul [${{ matrix.release }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          service_branch: '${{ matrix.release }}'
+          service_name: 'consul'
+          repository_name: 'Netcracker/qubership-consul'
+          path_to_chart: 'charts/helm/consul-service'
+          namespace: 'consul'
+      - name: Verify Consul installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          service_branch: '${{ matrix.release }}'
+          namespace: consul
+          max_attempts: 50
+          timeout: 10s
+          max_attempts_for_provisioner: 50
+          timeout_for_provisioner: 10s
+      - name: Update Consul to [${{ inputs.service_branch }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
+          service_branch: '${{ inputs.service_branch }}'
+          service_name: 'consul'
+          repository_name: 'Netcracker/qubership-consul'
+          path_to_chart: 'charts/helm/consul-service'
+          namespace: 'consul'
+      - name: Sleep 1m after update
+        run: sleep 1m
+      - name: Verify installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          service_branch: ${{ inputs.service_branch }}
+          namespace: consul
+          max_attempts: 50
+          timeout: 10s
+          max_attempts_for_provisioner: 50
+          timeout_for_provisioner: 10s
