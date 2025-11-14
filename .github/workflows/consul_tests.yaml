@@ -217,7 +217,7 @@ jobs:
           namespace: 'consul'
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Sleep 1m after update
+      - name: Sleep 2m after update
         if: matrix.test.sequence == 'upgrade'
         run: sleep 2m
       - name: Verify Consul upgrade
