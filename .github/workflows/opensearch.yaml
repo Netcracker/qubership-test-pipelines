@@ -61,8 +61,8 @@ jobs:
       - name: Prepare runners
         # language=bash
         run: |
-          mount /dev/sdb1 /var/lib/docker
-          systemctl restart docker
+          sudo mount /dev/sdb1 /var/lib/docker
+          sudo systemctl restart docker
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
         #- name: Install Monitoring
