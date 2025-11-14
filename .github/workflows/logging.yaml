@@ -57,7 +57,7 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
         with:
-          path_to_template: 'qubership-test-pipelines/kind-configs/kind-multi-node.yaml'
+          path_to_template: 'qubership-test-pipelines/kind-configs/kind-single-node.yaml'
 
       - name: Install cert-manager
         uses: ./qubership-test-pipelines/actions/shared/install_cert_manager
@@ -95,5 +95,3 @@ jobs:
         uses: ./qubership-test-pipelines/actions/logging/verify_installation_logging
         with:
           service_branch: ${{ inputs.service_branch }}
-        
-

@@ -227,7 +227,6 @@ runs:
               #echo '================================================================================' >> $file_name
             done
         done
-        
 
     - name: Get logs from test pod
       shell: bash
