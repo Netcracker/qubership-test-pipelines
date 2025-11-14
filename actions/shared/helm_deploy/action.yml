@@ -171,8 +171,10 @@ runs:
         echo $template_name
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ "${{inputs.restricted}}" == "false" ]]; then
+          echo "ℹ️ Using admin context"
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
         else
+          echo "ℹ️ Using restricted context"
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --skip-crds
         fi
 
