@@ -5,6 +5,7 @@ global:
     generateCerts:
       certProvider: cert-manager
       clusterIssuerName: dev-clusterissuer
+  restrictedEnvironment: true
 opensearch:
   tls:
     enabled: false
@@ -42,12 +43,6 @@ opensearch:
     s3:
       enabled: false
       pathStyleAccess: true
-      url: http://test-minio-gateway-nas.qa-kubernetes.openshift.sdntest.netcracker.com/
-      bucket: opensearch-qa-k8s
-      keyId: Z4nz2bxWnWM36lf3K21y
-      keySecret: oqtAdywaB7c7OJWHQ9rLVuJcKjpUR8iSJfXMPCLr
-      basePath: ""
-      region: ""
   client:
     enabled: true
     ingress:
@@ -61,6 +56,8 @@ dbaasAdapter:
   opensearchRepoRoot: /usr/share/opensearch/
   dbaasUsername: dbaas-adapter
   dbaasPassword: dbaas-adapter
+  registrationAuthUsername: test
+  registrationAuthPassword: test
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
@@ -96,4 +93,4 @@ secret:
     password: ""
     registrationToken: ""
 statusProvisioner:
-  lifetimeAfterCompletion: 60
+  lifetimeAfterCompletion: 120

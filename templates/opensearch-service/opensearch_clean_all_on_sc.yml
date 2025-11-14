@@ -6,35 +6,6 @@ global:
       certProvider: cert-manager
       clusterIssuerName: dev-clusterissuer
 opensearch:
-  config:
-    cluster.routing.allocation.disk.watermark.low: 1b
-    cluster.routing.allocation.disk.watermark.high: 1b
-    cluster.routing.allocation.disk.watermark.flood_stage: 1b
-    action.auto_create_index: false
-    plugins.security.allow_unsafe_democertificates: true
-    plugins.security.allow_default_init_securityindex: ${ALLOW_SECURITY_INITIALIZATION}
-    plugins.security.audit.type: log4j
-    plugins.security.audit.config.log4j.level: INFO
-    plugins.security.unsupported.restapi.allow_securityconfig_modification: true
-    plugins.security.restapi.roles_enabled: ["all_access", "security_rest_api_access"]
-    plugins.security.restapi.password_score_based_validation_strength: fair
-    plugins.security.nodes_dn:
-      - CN=opensearch-node,OU=Opensearch,O=Opensearch,L=Opensearch,C=CA
-    plugins.security.authcz.admin_dn:
-      - CN=opensearch-admin,OU=Opensearch,O=Opensearch,L=Opensearch,C=CA
-      - C=CA,L=Opensearch,O=Opensearch,OU=Opensearch,CN=opensearch-admin
-    plugins.security.enable_snapshot_restore_privilege: true
-    plugins.security.check_snapshot_restore_write_privileges: true
-    path.repo: ["/usr/share/opensearch/snapshots"]
-    plugins.security.ssl.transport.pemcert_filepath: transport-crt.pem
-    plugins.security.ssl.transport.pemkey_filepath: transport-key.pem
-    plugins.security.ssl.transport.pemtrustedcas_filepath: transport-root-ca.pem
-    plugins.security.ssl.transport.enforce_hostname_verification: false
-    plugins.security.ssl.http.enabled: ${TLS_ENABLED}
-    plugins.security.ssl.http.pemcert_filepath: rest-crt.pem
-    plugins.security.ssl.http.pemkey_filepath: rest-key.pem
-    plugins.security.ssl.http.pemtrustedcas_filepath: rest-root-ca.pem
-    plugins.security.ssl.transport.truststore_filepath: cacerts
   tls:
     enabled: false
   securityConfig:
@@ -48,7 +19,7 @@ opensearch:
   master:
     persistence:
       storageClass: standard
-      size: 20Gi
+      size: 10Gi
     resources:
       requests:
         cpu: 600m
@@ -82,6 +53,8 @@ dbaasAdapter:
   opensearchRepoRoot: /usr/share/opensearch/
   dbaasUsername: dbaas-adapter
   dbaasPassword: dbaas-adapter
+  registrationAuthUsername: test
+  registrationAuthPassword: test
   securityContext:
     runAsUser: 1000
     fsGroup: 1000

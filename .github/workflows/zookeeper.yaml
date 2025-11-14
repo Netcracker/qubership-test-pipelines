@@ -149,9 +149,25 @@ jobs:
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-      - name: Create ClusterIssuer
+      - name: Create cert-manager entities
         # language=bash
-        run: kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+        run: |
+          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+      - name: Get cert-manager resources
+        # language=bash
+        run: |
+          kubectl get pods -n cert-manager
+          kubectl get secrets -n cert-manager
+          kubectl get certificates -A
+      - name: Get clusterissuer
+        # language=bash
+        run: |
+          kubectl get clusterissuer
+          kubectl get clusterissuer test-clusterissuer -o yaml
       - name: Update Zookeeper to [LATEST] TLS
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:
@@ -184,9 +200,25 @@ jobs:
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-      - name: Create ClusterIssuer
+      - name: Create cert-manager entities
         # language=bash
-        run: kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+        run: |
+          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+      - name: Get cert-manager resources
+        # language=bash
+        run: |
+          kubectl get pods -n cert-manager
+          kubectl get secrets -n cert-manager
+          kubectl get certificates -A
+      - name: Get clusterissuer
+        # language=bash
+        run: |
+          kubectl get clusterissuer
+          kubectl get clusterissuer test-clusterissuer -o yaml
       - name: Install Zookeeper [LATEST] TLS
         uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
         with:

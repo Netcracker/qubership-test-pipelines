@@ -33,9 +33,9 @@ zooKeeper:
     className:
       - standard
     size: 1Gi
-    securityContext:
-      fsGroup: 1000
-      runAsUser: 1000
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
   tls:
     enabled: true
 backupDaemon:

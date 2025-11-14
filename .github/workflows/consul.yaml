@@ -80,6 +80,8 @@ jobs:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_updated.yml'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Consul upgrade
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
@@ -159,6 +161,8 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
           service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
 
@@ -198,6 +202,8 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
           service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify installation
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
         with:
@@ -236,6 +242,8 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc_restricted.yml'
           service_branch: '${{inputs.service_branch}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Consul upgrade
         uses: ./qubership-test-pipelines/actions/consul/verify_installation_consul
         with:
@@ -261,18 +269,25 @@ jobs:
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-      - name: Create ClusterIssuer
+      - name: Create cert-manager entities
+        # language=bash
         run: |
-          kubectl apply -f - <<EOF
-          apiVersion: cert-manager.io/v1
-          kind: ClusterIssuer
-          metadata:
-            name: test-clusterissuer
-          spec:
-            selfSigned: {}
-          EOF
+          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+      - name: Get cert-manager resources
+        # language=bash
+        run: |
+          kubectl get pods -n cert-manager
+          kubectl get secrets -n cert-manager
+          kubectl get certificates -A
       - name: Get clusterissuer
-        run: kubectl get clusterissuer
+        # language=bash
+        run: |
+          kubectl get clusterissuer
+          kubectl get clusterissuer test-clusterissuer -o yaml
       - name: Add secrets to template
         run: >-
           python qubership-test-pipelines/python/add_secrets_for_s3.py
