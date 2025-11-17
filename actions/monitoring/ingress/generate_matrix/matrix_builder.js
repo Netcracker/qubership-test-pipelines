@@ -147,13 +147,12 @@ class MatrixBuilder {
         this.duplicates[key] = true;
         res.name =
           this.namePattern.map(axisName => {
-            let value = res[axisName];
-            const title = value.title;
-            if (typeof title != 'undefined') {
-              return title;
-            }
-            const computeTitle = this.axisByName[axisName].title;
-            return computeTitle ? computeTitle(value) : value;
+            const valueObj = res[axisName];
+            if (!valueObj) return null;
+            if ('title' in valueObj) return valueObj.title;
+            if ('name' in valueObj) return valueObj.name;
+            if ('value' in valueObj) return valueObj.value;
+            return String(valueObj);
           }).filter(Boolean).join(", ");
         this.rows.push(res);
         return res;

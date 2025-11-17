@@ -5,7 +5,7 @@ runs:
   steps:
     - shell: bash
       run: |
-        node <<'EOF'
+        MATRIX_JSON=$(node - <<'EOF'
         const path = require('path');
         const { MatrixBuilder } = require(path.join(process.env.GITHUB_ACTION_PATH, '/matrix_builder.js'));
         const mb = new MatrixBuilder();
@@ -48,3 +48,5 @@ runs:
         console.log(JSON.stringify(rows, null, 2));
         console.log(`::set-output name=matrix::${JSON.stringify(rows)}`);
         EOF
+        )
+        echo "matrix=$MATRIX_JSON" >> $GITHUB_OUTPUT

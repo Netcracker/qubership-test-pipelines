@@ -55,7 +55,7 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        MATRIX='${{ inputs.matrix }}'
+        MATRIX=${{ inputs.matrix }}
         VALUES_FILE='${{ inputs.values_file }}'
         CERTS_DIR='${{ inputs.cert_dir }}'
         VMAUTH_ENABLED='${{ inputs.vmauth_enabled }}'
