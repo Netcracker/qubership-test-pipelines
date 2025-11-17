@@ -51,6 +51,7 @@ runs:
         echo "✅ Test certificates generated:"
         ls -l "$CERTS_DIR"
     - name: Generate values.yaml
+      shell: bash
       run: |
         set -euo pipefail
         MATRIX='${{ inputs.matrix }}'

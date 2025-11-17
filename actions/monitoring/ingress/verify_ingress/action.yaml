@@ -24,6 +24,7 @@ runs:
   using: 'composite'
   steps:
     - name: Verify actual ingress configuration
+      shell: bash
       run: |
         set -euo pipefail
         NAMESPACE="${{ inputs.namespace }}"
