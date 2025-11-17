@@ -244,8 +244,8 @@ runs:
       # language=bash
       run: |
         # ▶️ Get logs from all containers in pods
-        file_name=artifacts/consul_log_from_containers.txt
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n consul | tr $'\n' ' ')
+        file_name=artifacts/${{ inputs.namespace }}_log_from_containers.txt
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{ inputs.namespace }} | tr $'\n' ' ')
         echo "Logs from all containers in pods: " > $file_name
 
         # Array for pending containers "pod:container"
@@ -253,12 +253,12 @@ runs:
 
         # First pass: collect logs from ready containers, add unready ones to pending
         for pod in "${pods[@]}"; do
-            IFS=' ' read -ra containers <<< $(kubectl get pod "$pod" -n consul -o jsonpath="{.spec.containers[*].name}")
+            IFS=' ' read -ra containers <<< $(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.spec.containers[*].name}")
             for container in "${containers[@]}"; do
-                status=$(kubectl get pod "$pod" -n consul -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null)
+                status=$(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null)
                 if [[ $status == *"running"* || $status == *"terminated"* ]]; then
                     echo "$pod $container" >> $file_name
-                    kubectl logs "$pod" -n consul -c "$container" >> $file_name 2>> $file_name
+                    kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" >> $file_name 2>> $file_name
                     echo '================================================================================' >> $file_name
                 else
                     pending+=("$pod:$container")
@@ -286,10 +286,10 @@ runs:
             pending=()
             for item in "${current_pending[@]}"; do
                 IFS=':' read -r pod container <<< "$item"
-                status=$(kubectl get pod "$pod" -n consul -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null)
+                status=$(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null)
                 if [[ $status == *"running"* || $status == *"terminated"* ]]; then
                     echo "$pod $container" >> $file_name
-                    kubectl logs "$pod" -n consul -c "$container" >> $file_name 2>> $file_name
+                    kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" >> $file_name 2>> $file_name
                     echo '================================================================================' >> $file_name
                 else
                     pending+=("$pod:$container")
