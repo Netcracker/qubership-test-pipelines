@@ -84,7 +84,6 @@ jobs:
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
   # ---------- Current service branch ----------
-  #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
   matrix_tests:
     needs: prepare-versions
     runs-on: ${{inputs.runner_type}}
@@ -227,9 +226,9 @@ jobs:
           namespace: consul
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Sleep 90s after update
+      - name: Sleep 1m after update
         if: matrix.test.sequence == 'upgrade'
-        run: sleep 90s
+        run: sleep 1m
       - name: Verify Consul upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -294,8 +293,8 @@ jobs:
           repository_name: '${{ inputs.repository_name }}'
           path_to_chart: 'charts/helm/consul-service'
           namespace: 'consul'
-      - name: Sleep 90s after update
-        run: sleep 90s
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
