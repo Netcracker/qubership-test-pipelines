@@ -242,7 +242,7 @@ jobs:
       - uses: ./qubership-test-pipelines/actions/monitoring/ingress/generate_matrix
         id: matrix_gen
   test-stacks-ingress:
-    name: Test stacks ingresses creation
+    name: ${{ matrix.scenario.title }}
     needs: build-matrix
     runs-on: ${{ inputs.runner_type }}
     env:
