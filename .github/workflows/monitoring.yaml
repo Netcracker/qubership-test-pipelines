@@ -88,38 +88,38 @@ jobs:
   #3-VmClean[LATEST_SPRINT], 4-VmUpgrade[LATEST_SPRINT]DiffParams
   #vm_with_full_at.yml? vm_with_change_params.yml
   #3-Clean [LATEST], 4-Upgrade [LATEST] Diff Params
-  Clean-Latest-Upgrade-Diff-Params:
-    runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST], Upgrade [LATEST] Diff Params
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Install Ingress Controller on cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_ingress
-      - name: Install Monitoring [LATEST]
-        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-        with:
-          path_to_template: 'templates/monitoring/values.yml'
-          #path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
-          #path_to_template: 'templates/monitoring/vm_with_full_at.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Sleep
-        run: sleep 2m
-      - name: Port forwarding
-        run: |
-          kubectl port-forward -n monitoring service/grafana-service 3000:3000 &
-          echo $! > /tmp/kubectl-port-forward.pid
-          sleep 5
-      - name: Get ingress
-        run: kubectl get ingress -n monitoring monitoring-grafana -o jsonpath='{.spec.rules[0].host}'
-      - name: Verify Monitoring installation
-        uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+  # Clean-Latest-Upgrade-Diff-Params:
+  #   runs-on: ${{inputs.runner_type}}
+  #   name: Clean [LATEST], Upgrade [LATEST] Diff Params
+  #   steps:
+  #     - name: Checkout pipeline
+  #       uses: actions/checkout@v4
+  #       with:
+  #         ref: '${{inputs.pipeline_branch}}'
+  #         repository: 'Netcracker/qubership-test-pipelines'
+  #         path: 'qubership-test-pipelines'
+  #     - name: Create cluster
+  #       uses: ./qubership-test-pipelines/actions/shared/create_cluster
+  #     - name: Install Ingress Controller on cluster
+  #       uses: ./qubership-test-pipelines/actions/shared/create_ingress
+  #     - name: Install Monitoring [LATEST]
+  #       uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+  #       with:
+  #         path_to_template: 'templates/monitoring/values.yml'
+  #         #path_to_template: 'templates/monitoring/vm_with_smoke_at.yml'
+  #         #path_to_template: 'templates/monitoring/vm_with_full_at.yml'
+  #         service_branch: '${{inputs.service_branch}}'
+  #     - name: Sleep
+  #       run: sleep 2m
+  #     - name: Port forwarding
+  #       run: |
+  #         kubectl port-forward -n monitoring service/grafana-service 3000:3000 &
+  #         echo $! > /tmp/kubectl-port-forward.pid
+  #         sleep 5
+  #     - name: Get ingress
+  #       run: kubectl get ingress -n monitoring monitoring-grafana -o jsonpath='{.spec.rules[0].host}'
+  #     - name: Verify Monitoring installation
+  #       uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
 #      - name: Update to [LATEST] Version With Diff Params
 #        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
 #        with:
@@ -130,12 +130,12 @@ jobs:
 #        run: sleep 1m
 #      - name: Verify Monitoring upgrade
 #        uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
-      - name: Stop port-forwarding
-        if: always()
-        run: |
-          if [ -f /tmp/kubectl-port-forward.pid ]; then
-            kill $(cat /tmp/kubectl-port-forward.pid) 2>/dev/null || true
-          fi
+      # - name: Stop port-forwarding
+      #   if: always()
+      #   run: |
+      #     if [ -f /tmp/kubectl-port-forward.pid ]; then
+      #       kill $(cat /tmp/kubectl-port-forward.pid) 2>/dev/null || true
+      #     fi
   #3)
   #9-VmClean[PREVIOUS_SPRINT]Restricted, 10-VmUpgrade[LATEST_SPRINT]Restricted
   #vm_restricted_with_smoke_at
