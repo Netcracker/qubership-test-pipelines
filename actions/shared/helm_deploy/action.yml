@@ -8,6 +8,11 @@ inputs:
       - 'upgrade' to upgrade an existing release
     required: true
     default: 'install'
+  install_crds:
+    description: 'Install CRDs before helm installation'
+    required: false
+    default: true
+    type: boolean
 
   restricted:
     description: |
@@ -92,6 +97,7 @@ runs:
     - name: Replace CRDs
       shell: bash
       # language=bash
+      if: ${{inputs.install_crds}}
       run: |
         # ▶️ Replace CRDs
         cd "${{inputs.repository_name}}/${{inputs.path_to_chart}}"

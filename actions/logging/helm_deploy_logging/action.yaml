@@ -51,3 +51,4 @@ runs:
         path_to_chart: ${{ inputs.path_to_chart }}
         namespace: ${{ inputs.namespace }}
         resource_folder: ${{ inputs.resource_folder }}
+        install_crds: false
