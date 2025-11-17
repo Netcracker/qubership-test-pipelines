@@ -7,7 +7,7 @@ runs:
       run: |
         node <<'EOF'
         const path = require('path');
-        const { MatrixBuilder } = require(path.join(process.env.GITHUB_ACTION_PATH, '/matrix_builder.js');
+        const { MatrixBuilder } = require(path.join(process.env.GITHUB_ACTION_PATH, '/matrix_builder.js'));
         const mb = new MatrixBuilder();
         mb.addAxis({
           name: 'component',
