@@ -6,7 +6,8 @@ runs:
     - shell: bash
       run: |
         node <<'EOF'
-        const { MatrixBuilder } = require(__dirname + '/matrix_builder.js');
+        const path = require('path');
+        const { MatrixBuilder } = require(path.join(process.env.GITHUB_ACTION_PATH, '/matrix_builder.js');
         const mb = new MatrixBuilder();
         mb.addAxis({
           name: 'component',
