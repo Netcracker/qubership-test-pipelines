@@ -3,7 +3,8 @@ description: 'Generates ingress config variations for all components'
 runs:
   using: 'composite'
   steps:
-    - run: |
+    - shell: bash
+      run: |
         node <<'EOF'
         const { MatrixBuilder } = require('./qubership-test-pipelines/.github/workflows/matrix_builder.js');
         const mb = new MatrixBuilder();
