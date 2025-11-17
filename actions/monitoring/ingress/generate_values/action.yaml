@@ -31,6 +31,7 @@ runs:
         if [[ -z "$CERTS_DIR" ]]; then
           CERTS_DIR="certs"
         fi
+        mkdir -p "$CERTS_DIR"
         echo "📜 Generating CA and wildcard certificate for CN=monitoring.qubership.org with SAN=*.qubership.org"
         # 1️⃣ Create simple CA
         openssl req -x509 -newkey rsa:2048 -days 30 -nodes \
