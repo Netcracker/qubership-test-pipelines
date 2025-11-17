@@ -15,7 +15,7 @@ operator:
 ##  This section describes values for metricCollector deployment
 metricCollector:
   # Optional flag for Monitoring Agent deployment
-  install: true
+  install: false
   prometheusRules:
     # Threshold for backup storage size for alerting
     backupAlertThreshold: 5

@@ -100,6 +100,10 @@ jobs:
           ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
+      - name: Restart docker
+        run: |
+          sudo mount /dev/sdb1 /var/lib/docker
+          sudo systemctl restart docker
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Clean Install Pgskipper Core [PREVIOUS]

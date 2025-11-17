@@ -21,6 +21,9 @@ check_cr_conditions() {
             continue
         fi
 
+        echo "📄 JSON:"
+        echo "$cr_json"
+
         failed_conditions=$(echo "$conditions_json" | jq -r '.[] | select(.status == "False" or .reason == "Failed" or (.type | ascii_downcase | contains("failed"))) | .type' 2>/dev/null)
         in_progress_conditions=$(echo "$conditions_json" | jq -r '.[] | select(.status == "Unknown" or .reason == "Progressing" or (.type | ascii_downcase | contains("progress"))) | .type' 2>/dev/null)
 
