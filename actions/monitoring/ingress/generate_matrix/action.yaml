@@ -52,3 +52,4 @@ runs:
 
         MATRIX_ESCAPED=$(echo "$MATRIX_JSON" | jq -c '.')
         echo "matrix=$MATRIX_ESCAPED" >> $GITHUB_OUTPUT
+        echo "$MATRIX_ESCAPED"
