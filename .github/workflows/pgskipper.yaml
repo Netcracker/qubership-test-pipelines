@@ -116,6 +116,8 @@ jobs:
         with:
           path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
           service_branch: '${{matrix.release}}'
+      - name: Sleep 1m after update
+        run: sleep 1m
       - name: Verify Pgskipper Services installation [PREVIOUS]
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
         with:
