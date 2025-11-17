@@ -1,4 +1,4 @@
-name: Consul Tests
+name: Reusable Consul Tests
 
 on:
   workflow_dispatch:
