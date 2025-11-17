@@ -6,7 +6,7 @@ runs:
     - shell: bash
       run: |
         node <<'EOF'
-        const { MatrixBuilder } = require('./qubership-test-pipelines/.github/workflows/matrix_builder.js');
+        const { MatrixBuilder } = require(__dirname + '/matrix_builder.js');
         const mb = new MatrixBuilder();
         mb.addAxis({
           name: 'component',
