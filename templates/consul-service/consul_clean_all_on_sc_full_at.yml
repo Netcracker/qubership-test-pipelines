@@ -72,7 +72,7 @@ integrationTests:
       user: admin
       password: ''
 statusProvisioner:
-  lifetimeAfterCompletion: 180
+  lifetimeAfterCompletion: 240
   integrationTestsTimeout: 1800
   podReadinessTimeout: 1200
 
