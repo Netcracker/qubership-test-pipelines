@@ -34,7 +34,7 @@ patroni:
     # Describes the storage type. The possible values are `pv` and `provisioned`.
     type: provisioned
     # Size of the PVC that will be create for each of Patroni Pod as mount for data files
-    size: 5Gi
+    size: 1Gi
     # Parameter specifies the list of labels that is used to bind suitable
     # persistent volumes with the persistent volume claims
     #    selectors:
