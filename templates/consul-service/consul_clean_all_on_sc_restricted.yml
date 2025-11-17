@@ -44,6 +44,6 @@ integrationTests:
   enabled: true
   tags: backupORcrudORconsul_images
 statusProvisioner:
-  lifetimeAfterCompletion: 120
+  lifetimeAfterCompletion: 180
   integrationTestsTimeout: 600
   podReadinessTimeout: 900
