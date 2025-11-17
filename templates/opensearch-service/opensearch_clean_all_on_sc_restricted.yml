@@ -48,7 +48,7 @@ opensearch:
     ingress:
       enabled: true
       hosts:
-        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
 dbaasAdapter:
   enabled: false
   dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
