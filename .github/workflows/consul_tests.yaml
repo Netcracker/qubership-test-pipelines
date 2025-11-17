@@ -3,6 +3,11 @@ name: Consul Tests
 on:
   workflow_dispatch:
     inputs:
+      repository_name:
+        description: 'Repository with Consul service'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-consul'
       service_branch:
         description: 'Branch of qubership-consul repository'
         required: false
@@ -25,6 +30,11 @@ on:
         default: 'ubuntu-latest'
   workflow_call:
     inputs:
+      repository_name:
+        description: 'Repository with Consul service'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-consul'
       service_branch:
         description: 'Branch of qubership-consul repository'
         required: false
@@ -62,7 +72,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: '${{inputs.service_branch}}'
-          repository: 'Netcracker/qubership-consul'
+          repository: '${{ inputs.repository_name }}'
           path: 'qubership-consul'
       - name: Process versions file
         id: process-versions
@@ -176,7 +186,7 @@ jobs:
           path_to_template: ${{ matrix.test.template }}
           service_branch: '${{ matrix.test.install_version }}'
           service_name: consul
-          repository_name: 'Netcracker/qubership-consul'
+          repository_name: '${{ inputs.repository_name }}'
           path_to_chart: 'charts/helm/consul-service'
           namespace: consul
           restricted: ${{ matrix.test.restricted }}
@@ -212,7 +222,7 @@ jobs:
           service_branch: '${{ matrix.test.upgrade_version }}'
           deploy_mode: upgrade
           service_name: consul
-          repository_name: Netcracker/qubership-consul
+          repository_name: ${{ inputs.repository_name }}
           path_to_chart: charts/helm/consul-service
           namespace: consul
           restricted: ${{ matrix.test.restricted }}
@@ -262,7 +272,7 @@ jobs:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
           service_branch: '${{ matrix.release }}'
           service_name: 'consul'
-          repository_name: 'Netcracker/qubership-consul'
+          repository_name: '${{ inputs.repository_name }}'
           path_to_chart: 'charts/helm/consul-service'
           namespace: 'consul'
       - name: Verify Consul installation
@@ -281,7 +291,7 @@ jobs:
           path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
           service_branch: '${{ inputs.service_branch }}'
           service_name: 'consul'
-          repository_name: 'Netcracker/qubership-consul'
+          repository_name: '${{ inputs.repository_name }}'
           path_to_chart: 'charts/helm/consul-service'
           namespace: 'consul'
       - name: Sleep 2m after update
