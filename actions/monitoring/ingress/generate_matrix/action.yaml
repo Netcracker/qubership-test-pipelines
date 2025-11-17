@@ -42,6 +42,7 @@ runs:
             { value: 'disabled' }
           ]
         });
+        mb.setNamePattern(mb.axes.map(a => a.name));
         mb.include({ component: /(prometheus|pushgateway|alertManager|grafana|vmAuth|vmAlert|vmAgent|vmAlertmanager|vmSingle)/ });
         const rows = mb.generateRows(9); // one case per component
         console.log(JSON.stringify(rows, null, 2));
