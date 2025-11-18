@@ -62,18 +62,27 @@ on:
         required: true
 
 jobs:
-  prepare-versions:
-    runs-on: ${{inputs.runner_type}}
+  prepare:
+    runs-on: ${{ inputs.runner_type }}
     outputs:
-      versions: ${{steps.process-versions.outputs.versions}}
-      previous_version: ${{steps.process-versions.outputs.previous_version}}
+      versions: ${{ steps.process-versions.outputs.versions }}
+      previous_version: ${{ steps.process-versions.outputs.previous_version }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.service_branch}}'
+          ref: '${{ inputs.service_branch }}'
           repository: '${{ inputs.repository_name }}'
           path: 'qubership-consul'
+
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+
       - name: Process versions file
         id: process-versions
         run: |
@@ -82,53 +91,18 @@ jobs:
           echo "versions=$versions_json" >> $GITHUB_OUTPUT
           previous_version=$(echo "$versions_json" | jq -r '.[-1]')
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
+          export service_branch="${{ inputs.service_branch }}"
+          matrix=$(yq -o=json "." ./qubership-test-pipelines/workflow-config/consul.yaml | envsubst | jq -c '.jobs')
+          echo "matrix=${matrix}" >> $GITHUB_OUTPUT
 
   # ---------- Current service branch ----------
   matrix_tests:
-    needs: prepare-versions
+    needs: prepare
     runs-on: ${{inputs.runner_type}}
     strategy:
       fail-fast: false
       matrix:
-        test:
-          - name: "Clean [${{ inputs.service_branch }}] restricted"
-            install_version: '${{ inputs.service_branch }}'
-            template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
-            sequence: install
-            restricted: true
-          - name: "Clean [${{ inputs.service_branch }}] Full-AT Ports-specifying Custom-labels"
-            install_version: '${{ inputs.service_branch }}'
-            template: "templates/consul-service/consul_clean_all_on_sc_full_at.yml"
-            sequence: install
-            restricted: false
-          - name: Clean [${{ inputs.service_branch }}] S3 TLS
-            install_version: '${{ inputs.service_branch }}'
-            template: "templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml"
-            sequence: install
-            restricted: false
-            backend: s3-tls
-          - name: "Clean [${{ inputs.service_branch }}]. Upgrade [${{ inputs.service_branch }}] Diff Params"
-            install_version: '${{ inputs.service_branch }}'
-            template: "templates/consul-service/consul_clean_all_on_sc.yml"
-            upgrade_version: '${{ inputs.service_branch }}'
-            upgrade_template: "templates/consul-service/consul_clean_all_on_sc_updated.yml"
-            sequence: upgrade
-            restricted: false
-          - name: "Clean [${{ inputs.service_branch }}] W/O Components. Upgrade [${{ inputs.service_branch }}] All Components S3"
-            install_version: '${{ inputs.service_branch }}'
-            template: "templates/consul-service/consul_clean_on_sc_without_components.yml"
-            upgrade_version: '${{ inputs.service_branch }}'
-            upgrade_template: "templates/consul-service/consul_clean_all_on_sc_drd_s3.yml"
-            sequence: upgrade
-            restricted: false
-            backend: s3
-          - name: "Clean [${{ needs.prepare-versions.outputs.previous_version }}] Restricted. Upgrade To [${{ inputs.service_branch }}] Restricted"
-            install_version: '${{ needs.prepare-versions.outputs.previous_version }}'
-            template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
-            upgrade_version: '${{ inputs.service_branch }}'
-            upgrade_template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
-            sequence: upgrade
-            restricted: true
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
@@ -242,18 +216,16 @@ jobs:
           artifact_name: "${{ matrix.test.upgrade_version }}_upgrade_artifact"
       # == End ======= Specific steps for upgrade tests =======
 
-
-
   #---------- Upgrade from old releases ----------
   #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
   #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
   Clean-Previous-Update-To-Latest:
     name: "Clean [${{ matrix.release }}], Upgrade to [${{ inputs.service_branch }}]"
-    needs: prepare-versions
+    needs: prepare
     runs-on: ${{inputs.runner_type}}
     strategy:
       matrix:
-        release: ${{ fromJson(needs.prepare-versions.outputs.versions) }}
+        release: ${{ fromJson(needs.prepare.outputs.versions) }}
     steps:
       - name: "Checkout pipeline"
         uses: actions/checkout@v4

@@ -1,0 +1,39 @@
+jobs:
+  - name: "Clean [${service_branch}] restricted"
+    install_version: '${service_branch}'
+    template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
+    sequence: install
+    restricted: true
+  - name: "Clean [${service_branch}] Full-AT Ports-specifying Custom-labels"
+    install_version: '${service_branch}'
+    template: "templates/consul-service/consul_clean_all_on_sc_full_at.yml"
+    sequence: install
+    restricted: false
+  - name: Clean [${service_branch}] S3 TLS
+    install_version: '${service_branch}'
+    template: "templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml"
+    sequence: install
+    restricted: false
+    backend: s3-tls
+  - name: "Clean [${service_branch}]. Upgrade [${service_branch}] Diff Params"
+    install_version: '${service_branch}'
+    template: "templates/consul-service/consul_clean_all_on_sc.yml"
+    upgrade_version: '${service_branch}'
+    upgrade_template: "templates/consul-service/consul_clean_all_on_sc_updated.yml"
+    sequence: upgrade
+    restricted: false
+  - name: "Clean [${service_branch}] W/O Components. Upgrade [${service_branch}] All Components S3"
+    install_version: '${service_branch}'
+    template: "templates/consul-service/consul_clean_on_sc_without_components.yml"
+    upgrade_version: '${service_branch}'
+    upgrade_template: "templates/consul-service/consul_clean_all_on_sc_drd_s3.yml"
+    sequence: upgrade
+    restricted: false
+    backend: s3
+  - name: "Clean [${{ needs.prepare-versions.outputs.previous_version }}] Restricted. Upgrade To [${service_branch}] Restricted"
+    install_version: '${{ needs.prepare-versions.outputs.previous_version }}'
+    template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
+    upgrade_version: '${service_branch}'
+    upgrade_template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
+    sequence: upgrade
+    restricted: true
