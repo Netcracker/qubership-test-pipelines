@@ -5,50 +5,50 @@ runs:
   steps:
     - shell: bash
       run: |
-        MATRIX_JSON=$(node -e '
-        const path = require("path");
-        const { MatrixBuilder } = require(path.join(process.env.GITHUB_ACTION_PATH, "matrix_builder.js"));
-        const mb = new MatrixBuilder();
-        mb.addAxis({
-          name: "component",
-          values: [
-            { name: "prometheus" },
-            { name: "pushgateway" },
-            { name: "alertManager" },
-            { name: "grafana" },
-            { name: "vmAuth" },
-            { name: "vmAlert" },
-            { name: "vmAgent" },
-            { name: "vmAlertManager" },
-            { name: "vmSingle" }
-          ]
-        });
-        mb.addAxis({
-          name: "ingress_host_source",
-          values: [
-            { value: "host" },
-            { value: "rules" },
-            { value: "empty" }
-          ]
-        });
-        mb.addAxis({
-          name: "ingress_tls_source",
-          values: [
-            { value: "tlsSecretName" },
-            { value: "tlsBlock" },
-            { value: "existingSecret" },
-            { value: "generateCerts" },
-            { value: "createSecret" },
-            { value: "disabled" }
-          ]
-        });
-        mb.setNamePattern(mb.axes.map(a => a.name));
-        mb.include({ component: /(prometheus|pushgateway|alertManager|grafana|vmAuth|vmAlert|vmAgent|vmAlertManager|vmSingle)/ });
-        
-        const rows = mb.generateRows(9); // one case per component
-        console.log(JSON.stringify(rows));
-        ')
-        MATRIX_ESCAPED=$(echo "$MATRIX_JSON" | jq -c '.')
-        echo "matrix=$MATRIX_ESCAPED" >> $GITHUB_OUTPUT
-        echo "$MATRIX_ESCAPED"
+        MATRIX_JSON=$(node <<'EOF'
+        function pickRandom(arr) {
+          return arr[Math.floor(Math.random() * arr.length)];
+        }
 
+        const components = [
+          "prometheus",
+          "pushgateway",
+          "alertManager",
+          "grafana",
+          "vmSingle",
+          "vmAuth",
+          "vmAgent",
+          "vmAlert",
+          "vmAlertManager"
+        ];
+
+        const hostSources = ["host", "rules", "empty"];
+        const tlsSources = [
+          "tlsSecretName",
+          "tlsBlock",
+          "existingSecret",
+          "generateCerts",
+          "createSecret",
+          "disabled"
+        ];
+
+        const result = [];
+
+        for (const component of components) {
+          const ingress_host_source = pickRandom(hostSources);
+          const ingress_tls_source = pickRandom(tlsSources);
+
+          result.push({
+            component,
+            ingress_host_source,
+            ingress_tls_source,
+            name: `${component}, ${ingress_host_source}, ${ingress_tls_source}`
+          });
+        }
+
+        process.stdout.write(JSON.stringify(result));
+        EOF
+        )
+
+        MATRIX_JSON=$(echo "$MATRIX_JSON" | jq -c '.')
+        echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
