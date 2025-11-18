@@ -1,9 +1,14 @@
 name: 'Generate ingress matrix'
 description: 'Generates ingress config variations for all components'
+outputs:
+  matrix:
+    description: "Matrix with ingress config variations"
+    value: ${{ steps.generate_matrix.outputs.matrix }}
 runs:
   using: 'composite'
   steps:
-    - shell: bash
+    - id: generate_matrix
+      shell: bash
       run: |
         MATRIX_JSON=$(node <<'EOF'
         function pickRandom(arr) {
