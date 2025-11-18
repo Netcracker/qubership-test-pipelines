@@ -278,7 +278,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/monitoring/ingress/generate_values
         id: generate_values
         with:
-          matrix: ${{ needs.build-matrix.outputs.matrix }}
+          matrix: '${{ needs.build-matrix.outputs.matrix }}'
           values_file: '${{ env.VALUES_FILE }}'
           cert_dir: '${{ env.CERT_DIR }}'
           stack: ${{ matrix.scenario.stack }}
