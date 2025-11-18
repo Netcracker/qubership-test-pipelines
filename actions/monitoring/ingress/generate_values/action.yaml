@@ -84,8 +84,8 @@ runs:
           COMPONENTS=(vmagent vmalertmanager vmsingle)
           INDENT="  "
           echo "victoriametrics:" >> $VALUES_FILE
-          echo "$INDENTvmAuth:" >> $VALUES_FILE
-          echo "$INDENT  install: false" >> $VALUES_FILE
+          echo "${INDENT}vmAuth:" >> $VALUES_FILE
+          echo "${INDENT}  install: false" >> $VALUES_FILE
         else
           echo "❌ Unknown stack or vmauth configuration: stack=$STACK, vmauth_enabled=$VMAUTH_ENABLED"
           exit 1
