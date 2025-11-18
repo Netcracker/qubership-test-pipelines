@@ -291,7 +291,7 @@ jobs:
       - name: Verify ingresses creation
         uses: ./qubership-test-pipelines/actions/monitoring/verify_ingress
         with:
-          matrix: ${{ needs.build-matrix.outputs.matrix }}
+          matrix: '${{ needs.build-matrix.outputs.matrix }}'
           cert_dir: '${{ env.CERT_DIR }}'
           stack: ${{ matrix.scenario.stack }}
           vmauth_enabled: ${{ matrix.scenario.vmauth_enabled }}

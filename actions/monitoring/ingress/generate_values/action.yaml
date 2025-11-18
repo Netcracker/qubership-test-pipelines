@@ -55,11 +55,14 @@ runs:
       shell: bash
       run: |
         set -euo pipefail
-        MATRIX=${{ inputs.matrix }}
+        MATRIX='${{ inputs.matrix }}'
         VALUES_FILE='${{ inputs.values_file }}'
         CERTS_DIR='${{ inputs.cert_dir }}'
         VMAUTH_ENABLED='${{ inputs.vmauth_enabled }}'
         STACK='${{ inputs.stack }}'
+
+        echo "RAW MATRIX: $MATRIX"
+        echo "$MATRIX" | jq .
 
         if [[ -z "$MATRIX" ]]; then
           echo "❌ MATRIX is empty" | tee -a "$GITHUB_STEP_SUMMARY"
