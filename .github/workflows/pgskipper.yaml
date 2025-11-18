@@ -102,7 +102,7 @@ jobs:
           path: 'qubership-test-pipelines'
 #      - name: Restart docker
 #        run: |
-#          sudo mount /dev/sdb1 /var/lib/docker
+#          sudo mount /dev/sdb1 /var/lib/docker/
 #          sudo systemctl restart docker
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -120,6 +120,7 @@ jobs:
         with:
           path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
           service_branch: '${{matrix.release}}'
+          check_tests: false
       - name: Sleep 1m after update
         run: sleep 1m
       - name: Verify Pgskipper Services installation [PREVIOUS]
@@ -134,7 +135,7 @@ jobs:
           service_branch: '${{inputs.service_branch}}'
       - name: Sleep 1m after update
         run: sleep 1m
-      - name: Verify Pgskipper Services Upgrade [LATEST]
+      - name: Verify Pgskipper Core Upgrade [LATEST]
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
         with:
           service_branch: ${{inputs.service_branch}}
@@ -144,10 +145,23 @@ jobs:
           deploy_mode: upgrade
           path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
           service_branch: '${{inputs.service_branch}}'
+          check_tests: false
       - name: Sleep 1m after update
         run: sleep 1m
       - name: Verify Pgskipper Services Upgrade [LATEST]
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
         with:
           service_branch: ${{inputs.service_branch}}
-
+      - name: Upgrade Pgskipper Services to [LATEST]
+        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
+        with:
+          deploy_mode: upgrade
+          path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
+          service_branch: '${{inputs.service_branch}}'
+          check_tests: true
+      - name: Sleep 1m after update
+        run: sleep 1m
+      - name: Verify Pgskipper Services Upgrade [LATEST]
+        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
+        with:
+          service_branch: ${{inputs.service_branch}}
