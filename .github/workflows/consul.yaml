@@ -89,7 +89,7 @@ jobs:
           versions_str=$(cat qubership-consul/${{inputs.versions_file}})
           versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
           echo "versions=$versions_json" >> $GITHUB_OUTPUT
-          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
+          export previous_version=$(echo "$versions_json" | jq -r '.[-1]')
           echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
           export service_branch="${{ inputs.service_branch }}"
           matrix=$(yq -o=json "." ./qubership-test-pipelines/workflow-config/consul.yaml | envsubst | jq -c '.jobs')
