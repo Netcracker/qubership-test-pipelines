@@ -37,6 +37,10 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - shell: bash
+      run: |
+        echo $(pwd)
+        echo ${{inputs.path_to_template}}
     - name: Run helm_install action for Monitoring
       uses: ./qubership-test-pipelines/actions/shared/helm_deploy
       with:

@@ -57,6 +57,7 @@ runs:
         set -euo pipefail
         MATRIX='${{ inputs.matrix }}'
         VALUES_FILE='${{ inputs.values_file }}'
+        echo "Path to template: $VALUES_FILE"
         CERTS_DIR='${{ inputs.cert_dir }}'
         VMAUTH_ENABLED='${{ inputs.vmauth_enabled }}'
         STACK='${{ inputs.stack }}'
