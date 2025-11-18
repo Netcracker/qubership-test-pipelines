@@ -56,21 +56,18 @@ runs:
       run: |
         set -euo pipefail
         MATRIX='${{ inputs.matrix }}'
-        VALUES_FILE="${{ inputs.values_file }}"
+        VALUES_FILE="$GITHUB_WORKSPACE/qubership-test-pipelines/${{ inputs.values_file }}"
+        mkdir -p "$(dirname $VALUES_FILE)"
         echo "Path to template: $VALUES_FILE"
         CERTS_DIR='${{ inputs.cert_dir }}'
         VMAUTH_ENABLED='${{ inputs.vmauth_enabled }}'
         STACK='${{ inputs.stack }}'
-
-        echo "RAW MATRIX: $MATRIX"
-        echo "$MATRIX" | jq .
 
         if [[ -z "$MATRIX" ]]; then
           echo "❌ MATRIX is empty" | tee -a "$GITHUB_STEP_SUMMARY"
           exit 1
         fi
         INDENT=""
-        mkdir -p "$(dirname "$VALUES_FILE")"
         if [[ "$STACK" == "prometheus" ]]; then
           COMPONENTS=(prometheus alertmanager pushgateway)
           echo "victoriametrics:" >> $VALUES_FILE
@@ -97,6 +94,8 @@ runs:
           local local_values_file="$3"
           local local_cert_dir="$4"
           local local_indent="$5"
+          echo "Current directory: $(pwd)"
+          echo "values file: $local_values_file"
           echo "🔸 Generating values for component: $local_component"
           echo "$local_indent$local_component:" >> $local_values_file
           echo "$local_indent  install: true"  >> $local_values_file
@@ -159,7 +158,6 @@ runs:
           esac
         }
 
-        echo "" >> $VALUES_FILE
         for COMPONENT in "${COMPONENTS[@]}"; do
           generate_values "$MATRIX" "$COMPONENT" "$VALUES_FILE" "$CERTS_DIR" "$INDENT"
         done

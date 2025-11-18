@@ -102,6 +102,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        echo "$(pwd)"
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
 
     - name: Replace slash in service branch
