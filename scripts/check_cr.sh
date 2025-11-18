@@ -21,16 +21,45 @@ check_cr_conditions() {
             continue
         fi
 
-        echo "📄 JSON:"
-        echo "$cr_json"
+        conditions_json=$(echo "$cr_json" | jq '.status.conditions')
 
-        failed_conditions=$(echo "$conditions_json" | jq -r '.[] | select(.status == "False" or .reason == "Failed" or (.type | ascii_downcase | contains("failed"))) | .type' 2>/dev/null)
-        in_progress_conditions=$(echo "$conditions_json" | jq -r '.[] | select(.status == "Unknown" or .reason == "Progressing" or (.type | ascii_downcase | contains("progress"))) | .type' 2>/dev/null)
+        echo "📄 JSON:"
+        echo "$conditions_json"
+
+        if [ -z "$conditions_json" ] || [ "$conditions_json" = "null" ]; then
+            echo "::warning:: Conditions not found, considering as in progress"
+            all_success=false
+            any_in_progress=true
+            continue
+        fi
+
+        failed_conditions=$(echo "$conditions_json" | jq -r '.[] |
+        select(
+            (.status | ascii_downcase | contains("false")) or
+            (.type | ascii_downcase | contains("failed"))
+        ) | .type' 2>/dev/null)
+
+        in_progress_conditions=$(echo "$conditions_json" | jq -r '.[] |
+        select(
+            (.type | ascii_downcase | contains("progress"))
+        ) | .type' 2>/dev/null)
+
+        successful_conditions=$(echo "$conditions_json" | jq -r '.[] |
+        select(
+            (.type | ascii_downcase | contains("success"))
+        ) | .type' 2>/dev/null)
 
         if [ -n "$failed_conditions" ]; then
             all_success=false
+            any_in_progress=false
         elif [ -n "$in_progress_conditions" ]; then
+            all_success=false
             any_in_progress=true
+        elif [ -n "$successful_conditions" ]; then
+            all_success=true
+            any_in_progress=false
+        else
+            all_success=false
         fi
     done
 
