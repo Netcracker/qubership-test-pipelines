@@ -44,10 +44,9 @@ runs:
           const ingress_tls_source = pickRandom(tlsSources);
 
           result.push({
-            component,
-            ingress_host_source,
-            ingress_tls_source,
-            name: `${component}, ${ingress_host_source}, ${ingress_tls_source}`
+            "component": component,
+            "ingress_host_source": ingress_host_source,
+            "ingress_tls_source": ingress_tls_source
           });
         }
 
