@@ -69,9 +69,9 @@ runs:
           exit 1
         fi
         INDENT=""
+        mkdir -p "$(dirname "$VALUES_FILE")"
         if [[ "$STACK" == "prometheus" ]]; then
           COMPONENTS=(prometheus alertmanager pushgateway)
-          echo "# Auto-generated values for Prometheus stack" > $VALUES_FILE
           echo "victoriametrics:" >> $VALUES_FILE
           echo "  vmOperator:" >> $VALUES_FILE
           echo "    install: false" >> $VALUES_FILE
