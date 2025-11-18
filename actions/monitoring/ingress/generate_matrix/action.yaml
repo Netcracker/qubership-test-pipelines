@@ -57,6 +57,6 @@ runs:
         MATRIX_JSON=$(echo "$MATRIX_JSON" | jq -c '.')
         echo "$MATRIX_JSON"
         cat <<EOF >> "$GITHUB_OUTPUT"
-        matrix<<EOF
-        $MATRIX_JSON
-        EOF
+matrix<<EOF
+$MATRIX_JSON
+EOF
