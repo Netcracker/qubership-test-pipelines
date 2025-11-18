@@ -19,8 +19,39 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      certs_dir:
+        description: 'Path to certificates directory'
+        type: string
+        required: false
+        default: 'resources/monitoring/certs'
+      values_file:
+        description: 'Path to generated values file'
+        type: string
+        required: false
+        default: 'templates/monitoring/generated-ingress-values.yaml'
 
 jobs:
+  prepare-versions:
+    runs-on: ${{inputs.runner_type}}
+    outputs:
+      versions: ${{steps.process-versions.outputs.versions}}
+      previous_version: ${{steps.process-versions.outputs.previous_version}}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: '${{inputs.service_branch}}'
+          repository: 'Netcracker/qubership-monitoring-operator'
+          path: 'qubership-monitoring-operator'
+      - name: Process versions file
+        id: process-versions
+        # language=bash
+        run: |
+          versions_str=$(cat qubership-monitoring-operator/${{inputs.versions_file}})
+          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
+          echo "versions=$versions_json" >> $GITHUB_OUTPUT
+          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
+          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
   build-matrix:
     name: Generate Ingress Matrix
     runs-on: ${{ inputs.runner_type }}
@@ -40,8 +71,6 @@ jobs:
     runs-on: ${{ inputs.runner_type }}
     env:
       NAMESPACE: monitoring
-      CERT_DIR: qubership-test-pipelines/resources/monitoring/certs
-      VALUES_FILE: $GITHUB_WORKSPACE/templates/monitoring/generated-ingress-values.yaml
     strategy:
       matrix:
         scenario:
@@ -72,19 +101,19 @@ jobs:
         id: generate_values
         with:
           matrix: '${{ needs.build-matrix.outputs.matrix }}'
-          values_file: '${{ env.VALUES_FILE }}'
-          cert_dir: '${{ env.CERT_DIR }}'
+          values_file: '${{ inputs.values_file }}'
+          cert_dir: '${{ inputs.certs_dir }}'
           stack: ${{ matrix.scenario.stack }}
           vmauth_enabled: ${{ matrix.scenario.vmauth_enabled }}
       - name: Install stack
         uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
         with:
-          path_to_template: '${{ env.VALUES_FILE }}'
+          path_to_template: '${{ inputs.values_file }}'
           service_branch: '${{ inputs.service_branch }}'
       - name: Verify ingresses creation
         uses: ./qubership-test-pipelines/actions/monitoring/verify_ingress
         with:
           matrix: '${{ needs.build-matrix.outputs.matrix }}'
-          cert_dir: '${{ env.CERT_DIR }}'
+          cert_dir: '${{ inputs.certs_dir }}'
           stack: ${{ matrix.scenario.stack }}
           vmauth_enabled: ${{ matrix.scenario.vmauth_enabled }}
