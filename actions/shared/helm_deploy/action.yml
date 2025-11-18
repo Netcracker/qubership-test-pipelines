@@ -5,7 +5,7 @@ inputs:
     description: |
       Deployment mode:
       - 'install' for clean installation
-      - 'update' to upgrade an existing release
+      - 'upgrade' to upgrade an existing release
     required: true
     default: 'install'
 
@@ -89,6 +89,39 @@ runs:
           kubectl create -f "$file"
         done
 
+    - name: Replace CRDs
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Replace CRDs
+        cd "${{inputs.repository_name}}/${{inputs.path_to_chart}}"
+        if [ -d "./crds" ]; then
+          echo "CRDs directory exists"
+          for file in ./crds/*; do
+            if [ -f "$file" ]; then
+              echo "Processing file: $file"
+              CRD_NAME=$(yq e '.metadata.name' "$file" 2>/dev/null)
+
+              if [ -z "$CRD_NAME" ]; then
+                echo "::error::Could not extract CRD name from $file"
+                exit 1
+              fi
+
+              echo "Found CRD: $CRD_NAME"
+              if kubectl get crd "$CRD_NAME" > /dev/null 2>&1; then
+                  echo "CRD $CRD_NAME already exists. Updating..."
+                  kubectl replace -f $file
+              else
+                  echo "CRD $CRD_NAME doesn't exist. Creating..."
+                  kubectl create -f $file
+              fi
+            fi
+          done
+        else
+          echo "::error::Directory with CRDs not found!"
+          exit 1
+        fi
+
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
       uses: ./qubership-test-pipelines/actions/shared/create_restricted_resources
@@ -102,7 +135,6 @@ runs:
       shell: bash
       # language=bash
       run: |
-        echo "$(pwd)"
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
 
     - name: Replace slash in service branch
@@ -124,7 +156,7 @@ runs:
       uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@v1.0.5
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
-        config-file: .github/charts-values-update-config.yaml
+        config-file: ${{github.workspace}}/${{inputs.repository_name}}/.github/charts-values-update-config.yaml
         create-release-branch: "false"
         version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}
@@ -137,8 +169,6 @@ runs:
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
-        #cat ${{inputs.repository_name}}/${{inputs.path_to_chart}}/$template_name
-        cat ${{inputs.repository_name}}/charts/qubership-monitoring-operator/values.yaml
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ ${{inputs.restricted}} == 'false' ]]; then
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m

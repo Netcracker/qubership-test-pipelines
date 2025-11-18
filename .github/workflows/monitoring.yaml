@@ -111,7 +111,7 @@ jobs:
           path_to_template: '${{ inputs.values_file }}'
           service_branch: '${{ inputs.service_branch }}'
       - name: Verify ingresses creation
-        uses: ./qubership-test-pipelines/actions/monitoring/verify_ingress
+        uses: ./qubership-test-pipelines/actions/monitoring/ingress/verify_ingress
         with:
           matrix: '${{ needs.build-matrix.outputs.matrix }}'
           cert_dir: '${{ inputs.certs_dir }}'

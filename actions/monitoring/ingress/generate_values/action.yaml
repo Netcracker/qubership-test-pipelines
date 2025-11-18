@@ -164,9 +164,9 @@ runs:
         # Generate Grafana values separately or root level
         generate_values "$MATRIX" "grafana" "$VALUES_FILE" "$CERTS_DIR" ""
         echo "clusterIssuerName: dev-cluster-issuer" >> $VALUES_FILE
-
+        cat $VALUES_FILE
         echo "Stack: $STACK" >> "$GITHUB_STEP_SUMMARY"
         echo "Generated values:" >> "$GITHUB_STEP_SUMMARY"
         echo "```yaml" >> "$GITHUB_STEP_SUMMARY"
-        cat $VALUES_FILE | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "$(cat $VALUES_FILE)" >> "$GITHUB_STEP_SUMMARY"
         echo "```" >> "$GITHUB_STEP_SUMMARY"
