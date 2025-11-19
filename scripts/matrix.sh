@@ -16,7 +16,7 @@ path-exclude /usr/share/info/*
 EOF
 sudo apt install -y dos2unix
 echo "::group::Process versions file"
-versions_json=$(grep -v '^$' "$VERSIONS_FILE" | dos2unix | jq -R -s -c 'split("\n")')
+versions_json=$(cat "$VERSIONS_FILE" | dos2unix | grep -v '^$' | jq -R -s -c 'split("\n")')
 echo "versions=$versions_json" >> $GITHUB_OUTPUT
 echo "versions=$versions_json"
 export previous_version=$(echo "$versions_json" | jq -r '.[-1]')
