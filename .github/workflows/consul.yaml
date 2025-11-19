@@ -103,7 +103,7 @@ jobs:
       - name: "Print job parameters"
         run: |
           echo "======== Job parameters ======="
-          echo "${{ matrix.test }}"
+          echo "${{ toJson(matrix.test) }}"
 
       - name: Checkout pipeline
         uses: actions/checkout@v5
