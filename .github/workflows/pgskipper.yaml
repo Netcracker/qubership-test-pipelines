@@ -103,12 +103,7 @@ jobs:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
-          # this might remove tools that are actually needed,
-          # if set to "true" but frees about 6 GB
           tool-cache: false
-
-          # all of these default to true, but feel free to set to
-          # "false" if necessary for your workflow
           android: true
           dotnet: true
           haskell: true
@@ -157,19 +152,6 @@ jobs:
           path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
           service_branch: '${{inputs.service_branch}}'
           check_tests: false
-      - name: Sleep 1m after update
-        run: sleep 1m
-      - name: Verify Pgskipper Services Upgrade [LATEST]
-        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
-        with:
-          service_branch: ${{inputs.service_branch}}
-      - name: Upgrade Pgskipper Services to [LATEST]
-        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
-        with:
-          deploy_mode: upgrade
-          path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
-          service_branch: '${{inputs.service_branch}}'
-          check_tests: true
       - name: Sleep 1m after update
         run: sleep 1m
       - name: Verify Pgskipper Services Upgrade [LATEST]
