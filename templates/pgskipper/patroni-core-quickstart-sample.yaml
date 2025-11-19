@@ -44,7 +44,7 @@ patroni:
     storageClass: standard
 
 tests:
-  install: false
+  install: true
   runTestScenarios: "basic"
   testScenarios:
     patroniSimple:

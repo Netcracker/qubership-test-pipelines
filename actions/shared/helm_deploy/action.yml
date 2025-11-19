@@ -142,20 +142,21 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Check if version is release
         if [[ "${{inputs.service_branch}}" =~ v?[0-9]+\.[0-9]+\.[0-9]+ ]]; then
-          echo "IS RELEASE"
+          echo "${{inputs.service_branch}} is release version"
           echo "is_release=true" >> $GITHUB_OUTPUT
         else
-          echo "IS NOT RELEASE"
+          echo "${{inputs.service_branch}} is not release version"
           echo "is_release=false" >> $GITHUB_OUTPUT
         fi
 
     - name: Replace slash in service branch
       id: replace_slash
-      #if: ${{ steps.check-release.outputs.is_release == 'false' }}
       shell: bash
       # language=bash
       run: |
+        # ▶️ Replace slash in service branch
         service_branch="${{inputs.service_branch}}"
         if [[ "${service_branch}" == *"/"* ]]; then
           service_branch_updated=$(echo "${service_branch}" | tr '/' '_')
@@ -184,7 +185,6 @@ runs:
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
-        #cat ${{inputs.repository_name}}/${{inputs.path_to_chart}}/$template_name
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ ${{inputs.restricted}} == 'false' ]]; then
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m

@@ -1,4 +1,4 @@
-name: 'Verify Consul Installation Action'
+name: 'Verify PGSkipper Installation Action'
 description: 'A GitHub Action to verify tests, get logs from pods'
 inputs:
   namespace:
@@ -30,15 +30,11 @@ inputs:
     required: true
     default: 'patronicores.netcracker.com'
     #default: ''
-  cr_name:
-    description: 'See verify_installation.cr_name'
-    required: true
-    default: 'patroni-core'
   check_tests:
     description: 'See verify_installation.check_tests'
     required: false
     type: boolean
-    default: false
+    default: true
 
 runs:
   using: 'composite'

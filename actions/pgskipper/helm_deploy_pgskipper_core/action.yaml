@@ -1,5 +1,5 @@
-name: "Helm deploy Action for Zookeeper"
-description: "GitHub Action for install/upgrade Zookeeper using Helm"
+name: "Helm deploy Action for PGSkipper"
+description: "GitHub Action for install/upgrade PGSkipper using Helm"
 inputs:
   deploy_mode:
     description: 'See helm_deploy.deploy_mode'

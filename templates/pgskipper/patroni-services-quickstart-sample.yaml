@@ -85,7 +85,7 @@ backupDaemon:
 #    nodes:
 #      - db-backup-node1
 tests:
-  install: false
+  install: true
   # One of "full", "basic"or one from testScenarios
   runTestScenarios: "basic"
   testScenarios:
