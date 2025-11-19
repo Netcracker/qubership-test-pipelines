@@ -41,13 +41,10 @@ check_cr_conditions() {
     ) | .type' 2>/dev/null)
 
     if [ -n "$failed_conditions" ]; then
-        echo "Failed conditions: $failed_conditions"
         return 2
     elif [ -n "$in_progress_conditions" ]; then
-        echo "In progress conditions: $in_progress_conditions"
         return 1
     elif [ -n "$successful_conditions" ]; then
-        echo "Successful conditions: $successful_conditions"
         return 0
     else
         echo "::warning:: No matching conditions found, considering as in progress"
