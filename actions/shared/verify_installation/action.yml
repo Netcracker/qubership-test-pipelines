@@ -222,23 +222,6 @@ runs:
         file_name=artifacts/${{inputs.namespace}}_get_secret_yaml.txt
         kubectl get secret -n ${{inputs.namespace}} -o yaml > $file_name
 
-    # - name: Get logs from all containers in pods
-    #   shell: bash
-    #   # language=bash
-    #   run: |
-    #     # ▶️ Get logs from all containers in pods
-    #     file_name=artifacts/${{inputs.namespace}}_log_from_containers.txt
-    #     IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{inputs.namespace}} | tr $'\n' ' ')
-    #     echo "Logs from all containers in pods: " > $file_name
-    #     for pod in "${pods[@]}"; do
-    #         IFS=' ' read -ra containers <<< $(kubectl get pod "$pod" -n ${{inputs.namespace}} -o jsonpath="{.spec.containers[*].name}")
-    #         for container in "${containers[@]}"; do
-    #           echo $pod $container >> $file_name
-    #           kubectl logs "$pod" -n ${{inputs.namespace}} -c "$container" >> $file_name
-    #           echo '================================================================================' >> $file_name
-    #         done
-    #     done
-
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
@@ -268,7 +251,7 @@ runs:
         done
 
         # Waiting for pending with a general timeout
-        timeout=300  # 5 минут в секундах
+        timeout=300
         start_time=$(date +%s)
         while [ ${#pending[@]} -gt 0 ]; do
             current_time=$(date +%s)
