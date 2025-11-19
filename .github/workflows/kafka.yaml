@@ -276,7 +276,7 @@ jobs:
         if: matrix.tests.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: 'templates/kafka-service/kafka_upgrade_kraft_mode.yml'
+          path_to_template: ${{ matrix.tests.kafka_service_upgrade_template }}
           service_branch: '${{ inputs.service_branch }}'
           service_name: 'kafka-service'
           repository_name: ${{ inputs.repository_name }}
