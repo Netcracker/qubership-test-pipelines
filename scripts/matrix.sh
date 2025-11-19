@@ -9,6 +9,12 @@ export GITHUB_OUTPUT=${GITHUB_OUTPUT:-./github_output.txt}
 export VERSIONS_FILE=$1
 export WORKFLOW_CONFIG=$2
 export service_branch=$3
+sudo tee /etc/dpkg/dpkg.cfg.d/01_nodoc > /dev/null << 'EOF'
+path-exclude /usr/share/doc/*
+path-exclude /usr/share/man/*
+path-exclude /usr/share/info/*
+EOF
+sudo apt install -y dos2unix
 echo "::group::Process versions file"
 versions_json=$(grep -v '^$' "$VERSIONS_FILE" | dos2unix | jq -R -s -c 'split("\n")')
 echo "versions=$versions_json" >> $GITHUB_OUTPUT
