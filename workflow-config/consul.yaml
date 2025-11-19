@@ -1,4 +1,14 @@
 jobs:
+  ## A special configuration section for generating jobs for installing previous releases on the current version
+  - purpose: automation
+    name: "Clean [${release_version}], Upgrade to [${service_branch}]"
+    install_version: '${service_branch}'
+    template: "templates/consul-service/consul_clean_all_on_sc.yml"
+    upgrade_version: '${release_version}'
+    upgrade_template: "templates/consul-service/consul_clean_all_on_sc.yml"
+    sequence: upgrade
+    restricted: false
+  ## ===============================================================================
   - name: "Clean [${service_branch}] restricted"
     install_version: '${service_branch}'
     template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
@@ -9,12 +19,14 @@ jobs:
     template: "templates/consul-service/consul_clean_all_on_sc_full_at.yml"
     sequence: install
     restricted: false
+
   - name: Clean [${service_branch}] S3 TLS
     install_version: '${service_branch}'
     template: "templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml"
     sequence: install
     restricted: false
     backend: s3-tls
+
   - name: "Clean [${service_branch}]. Upgrade [${service_branch}] Diff Params"
     install_version: '${service_branch}'
     template: "templates/consul-service/consul_clean_all_on_sc.yml"
@@ -22,6 +34,7 @@ jobs:
     upgrade_template: "templates/consul-service/consul_clean_all_on_sc_updated.yml"
     sequence: upgrade
     restricted: false
+
   - name: "Clean [${service_branch}] W/O Components. Upgrade [${service_branch}] All Components S3"
     install_version: '${service_branch}'
     template: "templates/consul-service/consul_clean_on_sc_without_components.yml"
@@ -30,6 +43,7 @@ jobs:
     sequence: upgrade
     restricted: false
     backend: s3
+
   - name: "Clean [${previous_version}] Restricted. Upgrade To [${service_branch}] Restricted"
     install_version: '${previous_version}'
     template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"

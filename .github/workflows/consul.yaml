@@ -83,20 +83,14 @@ jobs:
           repository: '${{ github.repository_owner }}/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
 
-      - name: Process versions file
+      - name: Process versions file and matrix generation
         id: process-versions
+        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
-          versions_str=$(cat qubership-consul/${{inputs.versions_file}})
-          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
-          echo "versions=$versions_json" >> $GITHUB_OUTPUT
-          export previous_version=$(echo "$versions_json" | jq -r '.[-1]')
-          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
-          export service_branch="${{ inputs.service_branch }}"
-          matrix=$(yq -o=json "." ./qubership-test-pipelines/workflow-config/consul.yaml | envsubst | jq -c '.jobs')
-          echo "matrix=${matrix}" >> $GITHUB_OUTPUT
+          chmod +x ./scripts/matrix.sh
+          ./scripts/matrix.sh ${{ github.workspace }}/qubership-consul/${{ inputs.versions_file }} ./workflow-config/consul.yaml "${{ inputs.pipeline_branch }}"
 
-  # ---------- Current service branch ----------
-  matrix_tests:
+  Consul-Test-Cases:
     needs: prepare
     runs-on: ${{inputs.runner_type}}
     strategy:
@@ -215,64 +209,3 @@ jobs:
           service_branch: ${{ matrix.test.upgrade_version }}
           artifact_name: "${{ matrix.test.upgrade_version }}_upgrade_artifact"
       # == End ======= Specific steps for upgrade tests =======
-
-  #---------- Upgrade from old releases ----------
-  #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
-  #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
-  Clean-Previous-Update-To-Latest:
-    name: "Clean [${{ matrix.release }}], Upgrade to [${{ inputs.service_branch }}]"
-    needs: prepare
-    runs-on: ${{inputs.runner_type}}
-    strategy:
-      matrix:
-        release: ${{ fromJson(needs.prepare.outputs.versions) }}
-    steps:
-      - name: "Checkout pipeline"
-        uses: actions/checkout@v4
-        with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: "Create cluster"
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      #- name: Install monitoring
-        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: "Clean Install Consul [${{ matrix.release }}]"
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-        with:
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
-          service_branch: '${{ matrix.release }}'
-          service_name: 'consul'
-          repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'charts/helm/consul-service'
-          namespace: 'consul'
-      - name: Verify Consul installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
-        with:
-          service_branch: '${{ matrix.release }}'
-          namespace: consul
-          max_attempts: 50
-          timeout: 10s
-          max_attempts_for_provisioner: 50
-          timeout_for_provisioner: 10s
-      - name: "Upgrade Consul to [${{ inputs.service_branch }}]"
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-        with:
-          deploy_mode: upgrade
-          path_to_template: 'templates/consul-service/consul_clean_all_on_sc.yml'
-          service_branch: '${{ inputs.service_branch }}'
-          service_name: 'consul'
-          repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'charts/helm/consul-service'
-          namespace: 'consul'
-      - name: Sleep 90s after update
-        run: sleep 90s
-      - name: Verify installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
-        with:
-          service_branch: ${{ inputs.service_branch }}
-          namespace: consul
-          max_attempts: 50
-          timeout: 10s
-          max_attempts_for_provisioner: 50
-          timeout_for_provisioner: 10s
