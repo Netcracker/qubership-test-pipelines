@@ -100,15 +100,15 @@ jobs:
       kfk_timeout: '10s'
       kfk_max_attempts_for_provisioner: 100
       kfk_timeout_for_provisioner: '10s'
-      kfk_cr_kind: 'Kafka'
-      kfk_cr_name: 'kafka'
+      # kfk_cr_kind: 'Kafka'
+      kfk_cr_name: 'kafkas.netcracker.com'
       kfk_srvc_namespace: kafka
       kfk_srvc_max_attempts: 60
       kfk_srvc_timeout: '10s'
       kfk_srvc_max_attempts_for_provisioner: 100
       kfk_srvc_timeout_for_provisioner: '10s'
       # kfk_srvc_cr_kind: 'KafkaService'
-      kfk_srvc_cr_name: 'kafka'
+      kfk_srvc_cr_name: 'kafkaservices.netcracker.com'
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
@@ -175,8 +175,7 @@ jobs:
           service_ready_retry_interval: '10s'
           # cr_kind: 'ZooKeeperService'
           # cr_name: 'zookeeper'
-          crd_list: 'zookeeper'
-          artifact_name: ${{ matrix.test.artifact_name }}_ZK_install
+          # crd_list: 'zookeeper'
       # == End zookeeper installation tests =======
 
       # == Start update YAML secrets if needed =======
@@ -215,8 +214,6 @@ jobs:
           # cr_kind: ${{ env.kfk_cr_kind }}
           # cr_name: ${{ env.kfk_cr_name }}
           crd_list: ${{ env.kfk_cr_name }}
-
-          artifact_name: ${{ matrix.test.artifact_name }}_Kafka_install
       # == End kafka installation tests =======
 
       - name: Get Kafka secrets
@@ -246,7 +243,6 @@ jobs:
           # cr_kind: ${{ env.kfk_srvc_cr_kind }}
           # cr_name: ${{ env.kfk_srvc_cr_name }}
           crd_list: ${{ env.kfk_srvc_cr_name }}
-          artifact_name: ${{ matrix.test.artifact_name }}_Kafka_Service_install
       # == End kafka service installation tests =======
 
       # == Start kafka upgrade tests =======
@@ -276,7 +272,6 @@ jobs:
           # cr_kind: ${{ env.kfk_cr_kind }}
           # cr_name: ${{ env.kfk_cr_name }}
           crd_list: ${{ env.kfk_cr_name }}
-          artifact_name: ${{ matrix.test.artifact_name }}_Kafka_upgrade
       - name: Update Kafka Service to [LATEST] Version With Diff Params
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -303,5 +298,4 @@ jobs:
           # cr_kind: ${{ env.kfk_srvc_cr_kind }}
           # cr_name: ${{ env.kfk_srvc_cr_name }}
           crd_list: ${{ env.kfk_srvc_cr_name }}
-          artifact_name: ${{ matrix.test.artifact_name }}_Kafka_Service_upgrade
       # == End kafka upgrade tests =======

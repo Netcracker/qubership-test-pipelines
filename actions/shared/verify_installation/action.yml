@@ -195,12 +195,15 @@ runs:
         for pod in "${pods[@]}"; do
             IFS=' ' read -ra containers <<< $(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.spec.containers[*].name}")
             for container in "${containers[@]}"; do
+                echo "Trying to get logs from ${container"}
                 status=$(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null)
                 if [[ $status == *"running"* || $status == *"terminated"* ]]; then
                     echo "$pod $container" >> $file_name
                     kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" >> $file_name 2>> $file_name
                     echo '================================================================================' >> $file_name
+                    echo "✅ Container (${container}) logs successfully added into $file_name"
                 else
+                    echo "ℹ️ Container (${container}) is not ready yet. Send it to pending."
                     pending+=("$pod:$container")
                     echo "$pod $container - added to pending (initial status: $status)" >> $file_name
                 fi
@@ -208,6 +211,7 @@ runs:
         done
 
         # ▶️ Waiting for pending with a general timeout
+        echo "▶️ Waiting for pending with a general timeout"
         timeout=300
         start_time=$(date +%s)
         while [ ${#pending[@]} -gt 0 ]; do
@@ -215,8 +219,8 @@ runs:
             if (( current_time - start_time > timeout )); then
                 for item in "${pending[@]}"; do
                     IFS=':' read -r pod container <<< "$item"
-                    echo "$pod $container - skipped (timed out waiting for readiness)" >> $file_name
-                    echo '================================================================================' >> $file_name
+                    echo "$pod $container - skipped (timed out waiting for readiness)"
+                    echo '================================================================================'
                 done
                 break
             fi
@@ -231,8 +235,10 @@ runs:
                     echo "$pod $container" >> $file_name
                     kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" >> $file_name 2>> $file_name
                     echo '================================================================================' >> $file_name
+                    echo "✅ Container (${container}) logs successfully added into $file_name"
                 else
                     pending+=("$pod:$container")
+                    echo "ℹ️ Container (${container}) is not ready yet. Send it to pending."
                 fi
             done
 
