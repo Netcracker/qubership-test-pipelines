@@ -147,9 +147,9 @@ runs:
           fi
         }
         echo "Actual PlatformMonitoring CR:" >> "$GITHUB_STEP_SUMMARY"
-        echo "```json" >> "$GITHUB_STEP_SUMMARY"
+        echo '```json' >> "$GITHUB_STEP_SUMMARY"
         echo "$CR_JSON" | jq '.' | tee -a "$GITHUB_STEP_SUMMARY"
-        echo "```" >> "$GITHUB_STEP_SUMMARY"
+        echo '```' >> "$GITHUB_STEP_SUMMARY"
         for component in "${COMPONENTS[@]}"; do
           check_ingress "$MATRIX" "$component" "$CR_JSON" "$INGRESSES_JSON" "$STACK"
         done

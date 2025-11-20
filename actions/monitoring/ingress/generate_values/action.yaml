@@ -169,6 +169,6 @@ runs:
         cat $VALUES_FILE
         echo "Stack: $STACK" >> "$GITHUB_STEP_SUMMARY"
         echo "Generated values:" >> "$GITHUB_STEP_SUMMARY"
-        echo "```yaml" >> "$GITHUB_STEP_SUMMARY"
+        echo '```yaml' >> "$GITHUB_STEP_SUMMARY"
         echo "$(cat $VALUES_FILE)" >> "$GITHUB_STEP_SUMMARY"
-        echo "```" >> "$GITHUB_STEP_SUMMARY"
+        echo '```' >> "$GITHUB_STEP_SUMMARY"
