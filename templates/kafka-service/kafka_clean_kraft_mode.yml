@@ -55,7 +55,7 @@ monitoring:
 akhq:
   install: true
   ingress:
-    host: akhq-kafka-service.qa-kubernetes.openshift.sdntest.netcracker.com
+    host: akhq-kafka-service.qa-kubernetes.openshift.sdntest.qubership.com
 integrationTests:
   install: true
   waitForResult: true

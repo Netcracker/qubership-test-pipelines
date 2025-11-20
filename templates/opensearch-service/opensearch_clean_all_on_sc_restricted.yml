@@ -5,6 +5,7 @@ global:
     generateCerts:
       certProvider: cert-manager
       clusterIssuerName: dev-clusterissuer
+  restrictedEnvironment: true
 opensearch:
   tls:
     enabled: false
@@ -47,7 +48,7 @@ opensearch:
     ingress:
       enabled: true
       hosts:
-        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
 dbaasAdapter:
   enabled: false
   dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
@@ -70,7 +71,7 @@ dashboards:
   ingress:
     enabled: true
     hosts:
-      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
         paths:
           - path: /
 curator:

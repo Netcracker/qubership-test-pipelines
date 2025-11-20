@@ -40,13 +40,13 @@ opensearch:
     ingress:
       enabled: true
       hosts:
-        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
 dashboards:
   enabled: true
   ingress:
     enabled: false
     hosts:
-      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.netcracker.com
+      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
         paths:
           - path: /
 dbaasAdapter:
@@ -77,7 +77,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORopensearch_images
+  tags: smokeORopensearchORopensearch_images
 statusProvisioner:
   lifetimeAfterCompletion: 30
   integrationTestsTimeout: 900
