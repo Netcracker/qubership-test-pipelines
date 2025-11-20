@@ -76,23 +76,26 @@ runs:
           lower_component=$(echo "$local_component" | tr '[:upper:]' '[:lower:]')
 
           local ingress_path="ingress.host"
-          [[ "$host_type" == "rules" ]] && ingress_path="ingress.rules[].host"
+          [[ "$host_type" == "rules" ]] && ingress_path="ingress.rules[]?.host"
 
           local actual_cr_host
-          actual_cr_host=$(echo "$local_cr_json" | jq -r ".spec.${prefix}${local_component}.${ingress_path}")
+          actual_cr_host=$(echo "$local_cr_json" | jq -r ".spec.${prefix}${local_component}.${ingress_path} // empty")
+
           local actual_ingress_host
           actual_ingress_host=$(echo "$local_ingress_json" | jq -r --arg comp "$lower_component" '
-            .items[] | select(.metadata.labels["platform.monitoring.app"] == $comp) | .spec.rules[].host
+            .items[] 
+            | select(.metadata.labels["platform.monitoring.app"] == $comp) 
+            | (.spec.rules[]?.host // empty)
           ')
 
           case "$host_type" in
             "host" | "rules")
               [[ "$actual_cr_host" != "$expected_host" ]] && { echo "❌ $local_component host in CR expected $expected_host, got $actual_cr_host" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
-              [[ "$actual_ingress_host" != "$expected_host" ]] && { echo "❌ $local_component host in ingress expected $expected_host, got $actual_ingress_host | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+              [[ "$actual_ingress_host" != "$expected_host" ]] && { echo "❌ $local_component host in ingress expected $expected_host, got $actual_ingress_host" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
               ;;
             "empty")
-              [[ -n "$actual_cr_host" && "$actual_cr_host" != "null" ]] && { echo "❌ $local_component host in CR expected empty, got $actual_cr_host | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
-              [[ -n "$actual_ingress_host" && "$actual_ingress_host" != "null" ]] && { echo "❌ $local_component host in ingress expected empty, got $actual_ingress_host | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+              [[ -n "$actual_cr_host" && "$actual_cr_host" != "null" ]] && { echo "❌ $local_component host in CR expected empty, got $actual_cr_host" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
+              [[ -n "$actual_ingress_host" && "$actual_ingress_host" != "null" ]] && { echo "❌ $local_component host in ingress expected empty, got $actual_ingress_host" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
               ;;
           esac
 
@@ -108,14 +111,15 @@ runs:
               (.spec.${prefix}${local_component}.ingress.tls? != null) or
               (.spec.${prefix}${local_component}.tlsConfig != null)
             " <<< "$local_cr_json" >/dev/null && echo true || echo false)
-            [[ "$has_tls_cr" == "true" ]] && { echo "❌ $local_component TLS expected disabled in CR, but found config | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+            [[ "$has_tls_cr" == "true" ]] && { echo "❌ $local_component TLS expected disabled in CR, but found config" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
 
             local has_tls_ingress
-            has_tls_ingress=$(jq -e --arg comp "$lower_component" '
-              .items[] | select(.metadata.labels["platform.monitoring.app"] == $comp)
-              | has("spec") and (.spec | has("tls"))
-            ' <<< "$local_ingress_json" >/dev/null && echo true || echo false)
-            [[ "$has_tls_ingress" == "true" ]] && { echo "❌ $local_component TLS expected disabled in ingress, but found config | tee -a "$GITHUB_STEP_SUMMARY""; exit 1; }
+            has_tls_ingress=$(echo "$local_ingress_json" | jq -e --arg comp "$lower_component" '
+              .items[] 
+              | select(.metadata.labels["platform.monitoring.app"] == $comp)
+              | (.spec.tls? != null)
+            ' >/dev/null && echo true || echo false)
+            [[ "$has_tls_ingress" == "true" ]] && { echo "❌ $local_component TLS expected disabled in ingress, but found config" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
           else
             # Define desired TLS secret name
             local expected_tls_secret=""
@@ -137,15 +141,17 @@ runs:
             actual_cr_tls_secret=$(jq -r ".spec.${prefix}${local_component}.${tls_path} // empty" <<< "$local_cr_json")
 
             local actual_ingress_tls_secret
-            actual_ingress_tls_secret=$(jq -r --arg comp "$lower_component" '
-              .items[] | select(.metadata.labels["platform.monitoring.app"] == $comp)
-              | .spec.tls[].secretName // empty
-            ' <<< "$local_ingress_json")
+            actual_ingress_tls_secret=$(echo "$local_ingress_json" | jq -r --arg comp "$lower_component" '
+              .items[] 
+              | select(.metadata.labels["platform.monitoring.app"] == $comp) 
+              | (.spec.tls[]?.secretName // empty)
+            ')
 
             [[ "$actual_cr_tls_secret" != "$expected_tls_secret" ]] && { echo "❌ $local_component TLS secret in CR expected $expected_tls_secret, got $actual_cr_tls_secret" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
             [[ "$actual_ingress_tls_secret" != "$expected_tls_secret" ]] && { echo "❌ $local_component TLS secret in ingress expected $expected_tls_secret, got $actual_ingress_tls_secret" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
           fi
         }
+
         echo "Actual PlatformMonitoring CR:" >> "$GITHUB_STEP_SUMMARY"
         echo '```json' >> "$GITHUB_STEP_SUMMARY"
         echo "$CR_JSON" | jq '.' >> "$GITHUB_STEP_SUMMARY"
