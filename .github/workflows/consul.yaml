@@ -186,7 +186,7 @@ jobs:
       # == End ======= Specific steps for S3 =======
 
       # == Start ======= Specific steps for upgrade tests =======
-      - name: Upgrade to [${{ matrix.test.upgrade_version }}] Version With Diff Params
+      - name: Upgrade to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:

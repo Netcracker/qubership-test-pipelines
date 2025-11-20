@@ -2,9 +2,9 @@ jobs:
   ## A special configuration section for generating jobs for installing previous releases on the current version
   - purpose: automation
     name: "Clean [${release_version}], Upgrade to [${service_branch}]"
-    install_version: '${service_branch}'
+    install_version: '${release_version}'
     template: "templates/consul-service/consul_clean_all_on_sc.yml"
-    upgrade_version: '${release_version}'
+    upgrade_version: '${service_branch}'
     upgrade_template: "templates/consul-service/consul_clean_all_on_sc.yml"
     sequence: upgrade
     restricted: false
