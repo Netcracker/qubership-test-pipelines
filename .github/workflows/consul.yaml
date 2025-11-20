@@ -171,7 +171,7 @@ jobs:
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
           service_branch: ${{ matrix.test.install_version }}
-          artifact_name: "${{ matrix.test.install_version }}_installation_artifact"
+          check_tests: true
       # == 02 End ======= Common steps for all tests =======
 
       # == Start ======= Specific steps for S3 =======
@@ -212,5 +212,5 @@ jobs:
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
           service_branch: ${{ matrix.test.upgrade_version }}
-          artifact_name: "${{ matrix.test.upgrade_version }}_upgrade_artifact"
+          check_tests: true
       # == End ======= Specific steps for upgrade tests =======
