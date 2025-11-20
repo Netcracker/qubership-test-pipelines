@@ -144,7 +144,7 @@ jobs:
           kubectl get clusterissuer test-clusterissuer -o yaml
           echo "::endgroup::"
           echo "::group::Add secrets to template"
-          python qubership-test-pipelines/scripts/add_secrets_for_s3.py \
+          python qubership-test-pipelines/python/add_secrets_for_s3.py \
           --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
           --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
           --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
@@ -166,10 +166,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: consul
-          max_attempts: 50
-          timeout: 10s
-          max_attempts_for_provisioner: 50
-          timeout_for_provisioner: 10s
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
           service_branch: ${{ matrix.test.install_version }}
           artifact_name: "${{ matrix.test.install_version }}_installation_artifact"
       # == 02 End ======= Common steps for all tests =======
@@ -207,10 +207,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: consul
-          max_attempts: 50
-          timeout: 10s
-          max_attempts_for_provisioner: 50
-          timeout_for_provisioner: 10s
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
           service_branch: ${{ matrix.test.upgrade_version }}
           artifact_name: "${{ matrix.test.upgrade_version }}_upgrade_artifact"
       # == End ======= Specific steps for upgrade tests =======
