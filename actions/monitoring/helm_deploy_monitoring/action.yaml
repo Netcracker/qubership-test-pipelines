@@ -52,6 +52,7 @@ runs:
         repository_name: ${{inputs.repository_name}}
         path_to_chart: ${{inputs.path_to_chart}}
         namespace: ${{inputs.namespace}}
+        slash_replacement: '-'
 
     - name: get pods
       run: |

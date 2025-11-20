@@ -114,6 +114,5 @@ jobs:
         uses: ./qubership-test-pipelines/actions/monitoring/ingress/verify_ingress
         with:
           matrix: '${{ needs.build-matrix.outputs.matrix }}'
-          cert_dir: '${{ inputs.certs_dir }}'
           stack: ${{ matrix.scenario.stack }}
           vmauth_enabled: ${{ matrix.scenario.vmauth_enabled }}

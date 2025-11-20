@@ -28,7 +28,7 @@ runs:
       run: |
         set -euo pipefail
         NAMESPACE="${{ inputs.namespace }}"
-        MATRIX="${{ inputs.matrix }}"
+        MATRIX='${{ inputs.matrix }}'
         STACK="${{ inputs.stack }}"
         CR_NAME="${{ inputs.cr_name }}"
         VMAUTH_ENABLED="${{ inputs.vmauth_enabled }}"
