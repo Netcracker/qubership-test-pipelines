@@ -156,6 +156,6 @@ runs:
 
         echo "✅ Ingress verified" | tee -a "$GITHUB_STEP_SUMMARY"
         echo "details:" >> "$GITHUB_STEP_SUMMARY"
-        echo "```json" >> "$GITHUB_STEP_SUMMARY"
+        echo '```json' >> "$GITHUB_STEP_SUMMARY"
         echo "$INGRESSES_JSON" | tee -a "$GITHUB_STEP_SUMMARY"
-        echo "```" >> "$GITHUB_STEP_SUMMARY"
+        echo '```' >> "$GITHUB_STEP_SUMMARY"
