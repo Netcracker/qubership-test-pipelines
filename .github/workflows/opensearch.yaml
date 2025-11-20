@@ -173,11 +173,11 @@ jobs:
       - name: Update YAML secrets
         # language=bash
         run: |
-          python qubership-test-pipelines/python/update_yaml.py \
+          python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml' \
             --path='opensearch/snapshots/s3/keyId' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-          && python qubership-test-pipelines/python/update_yaml.py \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml' \
             --path='opensearch/snapshots/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'

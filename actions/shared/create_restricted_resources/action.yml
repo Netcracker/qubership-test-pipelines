@@ -98,7 +98,7 @@ runs:
       shell: bash
       # language=bash
       run: >-
-        python qubership-test-pipelines/python/replace_nc_in_template.py
+        python qubership-test-pipelines/scripts/replace_nc_in_template.py
         --path_to_file='qubership-test-pipelines/restricted/restricted-role.yml'
         --nc='${{inputs.namespace}}'
 
@@ -106,7 +106,7 @@ runs:
       shell: bash
       # language=bash
       run: >-
-        python qubership-test-pipelines/python/replace_nc_in_template.py
+        python qubership-test-pipelines/scripts/replace_nc_in_template.py
         --path_to_file='qubership-test-pipelines/restricted/restricted-rb.yml'
         --nc='${{inputs.namespace}}'
 
