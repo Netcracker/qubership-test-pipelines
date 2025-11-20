@@ -41,6 +41,7 @@ inputs:
       Enable test checks (true) or disable them (false)
     required: false
     type: boolean
+    default: true
 
 runs:
   using: "composite"
