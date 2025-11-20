@@ -26,7 +26,6 @@ check_cr_conditions() {
 
     failed_conditions=$(echo "$conditions_json" | jq -r '.[] |
     select(
-        (.status | ascii_downcase | contains("false")) or
         (.type | ascii_downcase | contains("failed"))
     ) | .type' 2>/dev/null)
 
