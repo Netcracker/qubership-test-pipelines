@@ -146,12 +146,16 @@ runs:
             [[ "$actual_ingress_tls_secret" != "$expected_tls_secret" ]] && { echo "❌ $local_component TLS secret in ingress expected $expected_tls_secret, got $actual_ingress_tls_secret" | tee -a "$GITHUB_STEP_SUMMARY"; exit 1; }
           fi
         }
+        echo "Actual PlatformMonitoring CR:" >> "$GITHUB_STEP_SUMMARY"
+        echo "```json" >> "$GITHUB_STEP_SUMMARY"
+        echo "$CR_JSON" | jq '.' | tee -a "$GITHUB_STEP_SUMMARY
+        echo "```" >> "$GITHUB_STEP_SUMMARY"
         for component in "${COMPONENTS[@]}"; do
           check_ingress "$MATRIX" "$component" "$CR_JSON" "$INGRESSES_JSON" "$STACK"
         done
 
         echo "✅ Ingress verified" | tee -a "$GITHUB_STEP_SUMMARY"
-        echo "details:" | tee -a "$GITHUB_STEP_SUMMARY"
-        echo "```json" | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "details:" >> "$GITHUB_STEP_SUMMARY"
+        echo "```json" >> "$GITHUB_STEP_SUMMARY"
         echo "$INGRESSES_JSON" | tee -a "$GITHUB_STEP_SUMMARY"
-        echo "```" | tee -a "$GITHUB_STEP_SUMMARY"
+        echo "```" >> "$GITHUB_STEP_SUMMARY"
