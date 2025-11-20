@@ -28,6 +28,13 @@ inputs:
       Branch in service repository
     required: true
 
+  slash_replacement:
+    description: |
+      Replacement for slash '/' in branch name
+      Example: 'feature/new-feature' becomes 'feature_new-feature' if '_' is provided
+    required: false
+    default: '_'
+
   service_name:
     description: |
       Helm release name
@@ -143,8 +150,9 @@ runs:
       # language=bash
       run: |
         service_branch="${{inputs.service_branch}}"
+        replacement="${{ inputs.slash_replacement }}"
         if [[ "${service_branch}" == *"/"* ]]; then
-          service_branch_updated=$(echo "${service_branch}" | tr '/' '_')
+          service_branch_updated=$(echo "${service_branch}" | tr '/' "$replacement")
         else
           service_branch_updated=${service_branch}
         fi
