@@ -172,6 +172,9 @@ jobs:
           service_ready_retry_interval: 10s
           service_branch: ${{ matrix.test.install_version }}
           check_tests: true
+      - name: Delete status-provisioner job
+        shell: bash
+        run: kubectl delete job consul-status-provisioner -n consul
       # == 02 End ======= Common steps for all tests =======
 
       # == Start ======= Specific steps for S3 =======
