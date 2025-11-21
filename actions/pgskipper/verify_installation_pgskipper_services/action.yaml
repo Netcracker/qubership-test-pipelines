@@ -1,0 +1,53 @@
+name: 'Verify PGSkipper Installation Action'
+description: 'A GitHub Action to verify tests, get logs from pods'
+inputs:
+  namespace:
+    description: 'See verify_installation.namespace'
+    required: true
+    default: pgskipper
+  service_ready_max_retries:
+    description: 'See verify_installation.max_attempts'
+    required: true
+    default: 100
+  service_ready_retry_interval:
+    description: 'See verify_installation.timeout'
+    required: true
+    default: '10s'
+  test_completion_max_retries:
+    description: 'See verify_installation.max_attempts'
+    required: true
+    default: 60
+  test_completion_retry_interval:
+    description: 'See verify_installation.timeout'
+    required: true
+    default: '10s'
+  service_branch:
+    description: 'See verify_installation.service_branch'
+    required: true
+    default: ''
+  crd_list:
+    description: 'See verify_installation.crd_list'
+    required: true
+    #default: 'patroniservices.netcracker.com'
+    default: ''
+  check_tests:
+    description: 'See verify_installation.check_tests'
+    required: false
+    type: boolean
+    default: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run verify_installation action for Pgskipper
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      with:
+        namespace: ${{inputs.namespace}}
+        test_completion_max_retries: ${{inputs.test_completion_max_retries}}
+        test_completion_retry_interval: ${{inputs.test_completion_retry_interval}}
+        service_ready_max_retries: ${{inputs.service_ready_max_retries}}
+        service_ready_retry_interval: ${{inputs.service_ready_retry_interval}}
+        service_branch: ${{inputs.service_branch}}
+        crd_list: ${{inputs.crd_list}}
+        check_tests: ${{inputs.check_tests}}
+

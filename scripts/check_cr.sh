@@ -1,54 +1,55 @@
 check_cr_conditions() {
     local crd_name="$1"
     local namespace="$2"
-    local all_success=true
-    local any_in_progress=false
 
-    echo "Start checking CR"
-
-    cr_list=$(kubectl get "$crd_name" -n "$namespace" --no-headers -o custom-columns=":metadata.name" 2>/dev/null)
-
-    for cr_name in $cr_list; do
-        echo "Checking CR: $cr_name"
-
-        if ! cr_json=$(kubectl get "$crd_name" "$cr_name" -n "$namespace" -o json 2>/dev/null); then
-            echo "::error:: CR '$cr_name' not found or inaccessible"
-            all_success=false
-            continue
-        fi
-
-        if [ -z "$cr_json" ]; then
-            echo "::error:: Empty response for CR '$cr_name'"
-            all_success=false
-            continue
-        fi
-
-        conditions_json=$(echo "$cr_json" | jq -r '.status.conditions // "[]"')
-        echo "Conditions for $cr_name:"
-        echo "$conditions_json"
-
-        failed_conditions=$(echo "$conditions_json" | jq -r '.[] | select(.status == "False" or .reason == "Failed" or (.type | ascii_downcase | contains("failed"))) | .type' 2>/dev/null)
-        in_progress_conditions=$(echo "$conditions_json" | jq -r '.[] | select(.status == "Unknown" or .reason == "Progressing" or (.type | ascii_downcase | contains("progress"))) | .type' 2>/dev/null)
-
-        if [ -n "$failed_conditions" ]; then
-            echo "Found failed conditions in $cr_name: $failed_conditions"
-            all_success=false
-        elif [ -n "$in_progress_conditions" ]; then
-            echo "Found conditions in progress for $cr_name: $in_progress_conditions"
-            any_in_progress=true
-        else
-            echo "CR '$cr_name' is healthy"
-        fi
-    done
-
-    if [ "$all_success" = false ]; then
-        return 2
-    elif [ "$any_in_progress" = true ]; then
-        return 1
-    else
+    if [ -z "$crd_name" ]; then
+        echo "CRD name not specified"
         return 0
+    fi
+
+    echo "Checking CR: $crd_name"
+
+    if ! cr_json=$(kubectl get "$crd_name" -n "$namespace" -o json 2>/dev/null); then
+        echo "::error:: ❌ CR '$crd_name' not found"
+        return 2
+    fi
+
+    conditions_json=$(echo "$cr_json" | jq '.items[0].status.conditions')
+
+    echo "📄 Conditions JSON:"
+    echo "$conditions_json"
+
+    if [ -z "$conditions_json" ] || [ "$conditions_json" = "null" ]; then
+        echo "::warning:: Conditions not found"
+        return 1
+    fi
+
+    failed_conditions=$(echo "$conditions_json" | jq -r '.[] |
+    select(
+        (.status | ascii_downcase | contains("false")) or
+        (.type | ascii_downcase | contains("failed"))
+    ) | .type' 2>/dev/null)
+
+    in_progress_conditions=$(echo "$conditions_json" | jq -r '.[] |
+    select(
+        (.type | ascii_downcase | contains("progress"))
+    ) | .type' 2>/dev/null)
+
+    successful_conditions=$(echo "$conditions_json" | jq -r '.[] |
+    select(
+        (.type | ascii_downcase | contains("success"))
+    ) | .type' 2>/dev/null)
+
+    if [ -n "$failed_conditions" ]; then
+        return 2
+    elif [ -n "$in_progress_conditions" ]; then
+        return 1
+    elif [ -n "$successful_conditions" ]; then
+        return 0
+    else
+        echo "::warning:: No matching conditions found, considering as in progress"
+        return 1
     fi
 }
 
 check_cr_conditions "$@"
-
