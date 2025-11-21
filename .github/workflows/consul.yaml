@@ -172,6 +172,7 @@ jobs:
           service_ready_retry_interval: 10s
           service_branch: ${{ matrix.test.install_version }}
           check_tests: true
+          artifact_name: Installation_${{ matrix.test.artifact_name }}
       - name: Delete status-provisioner job
         shell: bash
         run: kubectl delete job consul-status-provisioner -n consul
@@ -216,4 +217,5 @@ jobs:
           service_ready_retry_interval: 10s
           service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: true
+          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
       # == End ======= Specific steps for upgrade tests =======
