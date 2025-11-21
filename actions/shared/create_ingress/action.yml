@@ -64,7 +64,7 @@ runs:
 
       - name: Sleep
         shell: bash
-        run: sleep 5m
+        run: sleep 3m
 
       - name: Get pods
         shell: bash

@@ -5,7 +5,7 @@ jobs:
     template: "templates/monitoring/values.yml"
     upgrade_version: '${service_branch}'
     upgrade_template: "templates/monitoring/values_test.yml"
-    sequence: upgrade
-    requires_ingress: true
-    check_tests: true
+    sequence: 'upgrade'
+    check_tests: 'true'
+    restricted: 'false'
     artifact_name: "Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params"

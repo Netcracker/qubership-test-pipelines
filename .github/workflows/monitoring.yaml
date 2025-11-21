@@ -109,54 +109,83 @@ jobs:
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      # == 01 End ======= Common pre-steps for all tests =======
 
-      # == Start ======= Specific steps for ingress requirements =======
       - name: Install Ingress Controller
-        if: matrix.test.requires_ingress
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
-      # == End ======= Specific steps for ingress requirements =======
+      # == 01 End ======= Common pre-steps for all tests =======
 
       # == 02 Start ======= Installation steps =======
       - name: Install Monitoring [${{ matrix.test.install_version }}]
-        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: ${{ matrix.test.template }}
+          path_to_template: '${{ matrix.test.template }}'
           service_branch: '${{ matrix.test.install_version }}'
-          restricted: ${{ matrix.test.restricted }}
+          service_name: 'monitoring'
+          repository_name: '${{ inputs.repository_name }}'
+          path_to_chart: 'charts/qubership-monitoring-operator'
+          namespace: 'monitoring'
+          restricted: '${{ matrix.test.restricted }}'
+
+      - name: Sleep 2m
+        run: sleep 2m
 
       - name: Verify Monitoring installation
-        uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
-          check_tests: ${{ matrix.test.check_tests }}
-          artifact_name: Installation_${{ matrix.test.artifact_name }}
+          namespace: 'monitoring'
+          test_completion_max_retries: '50'
+          test_completion_retry_interval: '10s'
+          service_ready_max_retries: '50'
+          service_ready_retry_interval: '10s'
+          service_branch: '${{ matrix.test.install_version }}'
+          check_tests: 'true'
+          artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
       # == 02 End ======= Installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
       - name: Upgrade Monitoring to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          deploy_mode: upgrade
-          path_to_template: ${{ matrix.test.upgrade_template }}
+          path_to_template: '${{ matrix.test.upgrade_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
-          restricted: ${{ matrix.test.restricted }}
+          deploy_mode: 'upgrade'
+          service_name: 'monitoring'
+          repository_name: '${{ inputs.repository_name }}'
+          path_to_chart: 'charts/qubership-monitoring-operator'
+          namespace: 'monitoring'
+          restricted: '${{ matrix.test.restricted }}'
+
+      - name: Sleep 2m
+        run: sleep 2m
 
       - name: Verify Monitoring upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/monitoring/verify_installation_monitoring
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
-          check_tests: ${{ matrix.test.check_tests }}
-          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
+          namespace: 'monitoring'
+          test_completion_max_retries: '50'
+          test_completion_retry_interval: '10s'
+          service_ready_max_retries: '50'
+          service_ready_retry_interval: '10s'
+          service_branch: '${{ matrix.test.upgrade_version }}'
+          check_tests: 'true'
+          artifact_name: 'Upgrade_${{ matrix.test.artifact_name }}'
       # == End ======= Specific steps for upgrade tests =======
 
-      # == Start ======= Specific steps for ingress requirements =======
+      # == Start ======= Diagnostic and cleanup steps =======
+      - name: Get PlatformMonitoring resource
+        if: always()
+        run: |
+          echo "::group::PlatformMonitoring resource"
+          kubectl get PlatformMonitoring platformmonitoring -n monitoring -o yaml
+          echo "::endgroup::"
+
       - name: Get ingress information
-        if: always() && matrix.test.requires_ingress
+        if: always()
         run: |
           echo "::group::Ingress information"
           kubectl get ingress -n monitoring monitoring-grafana -o jsonpath='{.spec.rules[0].host}'
           echo "::endgroup::"
-      # == End ======= Specific steps for ingress requirements =======
+
+      # == End ======= Diagnostic and cleanup steps =======
