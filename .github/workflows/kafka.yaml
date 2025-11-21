@@ -100,14 +100,12 @@ jobs:
       kfk_timeout: '10s'
       kfk_max_attempts_for_provisioner: 100
       kfk_timeout_for_provisioner: '10s'
-      # kfk_cr_kind: 'Kafka'
       kfk_cr_name: 'kafkas.netcracker.com'
       kfk_srvc_namespace: kafka
       kfk_srvc_max_attempts: 60
       kfk_srvc_timeout: '10s'
       kfk_srvc_max_attempts_for_provisioner: 100
       kfk_srvc_timeout_for_provisioner: '10s'
-      # kfk_srvc_cr_kind: 'KafkaService'
       kfk_srvc_cr_name: 'kafkaservices.netcracker.com'
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
@@ -173,9 +171,7 @@ jobs:
           test_completion_retry_interval: '10s'
           service_ready_max_retries: 150
           service_ready_retry_interval: '10s'
-          # cr_kind: 'ZooKeeperService'
-          # cr_name: 'zookeeper'
-          # crd_list: 'zookeeper'
+          artifact_name: Install_Zookeeper_${{ matrix.test.artifact_name }}
       # == End zookeeper installation tests =======
 
       # == Start update YAML secrets if needed =======
@@ -211,9 +207,8 @@ jobs:
           test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
-          # cr_kind: ${{ env.kfk_cr_kind }}
-          # cr_name: ${{ env.kfk_cr_name }}
           crd_list: ${{ env.kfk_cr_name }}
+          artifact_name: Install_Kafka_${{ matrix.test.artifact_name }}
       # == End kafka installation tests =======
 
       - name: Get Kafka secrets
@@ -240,9 +235,8 @@ jobs:
           test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
-          # cr_kind: ${{ env.kfk_srvc_cr_kind }}
-          # cr_name: ${{ env.kfk_srvc_cr_name }}
           crd_list: ${{ env.kfk_srvc_cr_name }}
+          artifact_name: Install_Kafka_Service_${{ matrix.test.artifact_name }}
       # == End kafka service installation tests =======
 
       # == Start kafka upgrade tests =======
@@ -269,9 +263,8 @@ jobs:
           test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
-          # cr_kind: ${{ env.kfk_cr_kind }}
-          # cr_name: ${{ env.kfk_cr_name }}
           crd_list: ${{ env.kfk_cr_name }}
+          artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
       - name: Update Kafka Service to [LATEST] Version With Diff Params
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -295,7 +288,6 @@ jobs:
           test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
-          # cr_kind: ${{ env.kfk_srvc_cr_kind }}
-          # cr_name: ${{ env.kfk_srvc_cr_name }}
           crd_list: ${{ env.kfk_srvc_cr_name }}
+          artifact_name: Upgrade_Kafka_Service_${{ matrix.test.artifact_name }}
       # == End kafka upgrade tests =======
