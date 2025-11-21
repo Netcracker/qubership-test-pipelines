@@ -1,0 +1,11 @@
+jobs:
+  ## Upgrade from previous releases to current
+  - name: "Clean [${service_branch}], Upgrade [${service_branch}] Diff Params"
+    install_version: '${service_branch}'
+    template: "templates/monitoring/values.yml"
+    upgrade_version: '${service_branch}'
+    upgrade_template: "templates/monitoring/values_test.yml"
+    sequence: upgrade
+    requires_ingress: true
+    check_tests: true
+    artifact_name: "Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params"
