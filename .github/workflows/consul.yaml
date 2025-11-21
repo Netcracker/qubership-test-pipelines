@@ -173,6 +173,9 @@ jobs:
           service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           artifact_name: Installation_${{ matrix.test.artifact_name }}
+      - name: Delete status-provisioner job
+        shell: bash
+        run: kubectl delete job consul-status-provisioner -n consul
       # == 02 End ======= Common steps for all tests =======
 
       # == Start ======= Specific steps for S3 =======
