@@ -43,6 +43,12 @@ inputs:
     type: boolean
     default: true
 
+  artifact_name:
+    description: |
+      Name of the artifact to be uploaded
+    required: false
+    default: ""
+
 runs:
   using: "composite"
   steps:
@@ -320,7 +326,11 @@ runs:
           matrix_suffix="${{matrix.version}}_"
         fi
 
-        ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S")"
+        if [[ "${{inputs.artifact_name}}" != "" ]]; then
+          ARTIFACT_NAME=${{ inputs.artifact_name }}_$(date -u +'%Y%m%d%H%M%S')
+        else
+          ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S")"
+        fi
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
 
     - name: Upload artifact
