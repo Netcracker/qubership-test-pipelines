@@ -305,7 +305,7 @@ jobs:
   Clean-Latest-TLS-Secrets:
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
-    name: Clean Zookeeper [${{ inputs.service_branch }}] TLS Secrets
+    name: Clean [${{ inputs.service_branch }}] TLS Secrets
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
