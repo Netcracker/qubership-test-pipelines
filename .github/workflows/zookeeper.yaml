@@ -185,7 +185,7 @@ jobs:
       # == End Spetial TLS Upgrade step =============================
 
       # == 03 Start === Upgrade Zookeeper [LATEST] =====
-      - name: Update to [LATEST] Version
+      - name: Update to [${{ matrix.test.upgrade_version }}] Version
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -221,7 +221,7 @@ jobs:
   #15-Clean [LATEST] TLS
   Clean-Latest-TLS:
     runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST] TLS
+    name: Clean [${{ inputs.service_branch }}] TLS
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -256,7 +256,7 @@ jobs:
         run: |
           kubectl get clusterissuer
           kubectl get clusterissuer test-clusterissuer -o yaml
-      - name: Install Zookeeper [LATEST] TLS
+      - name: Install Zookeeper [${{ inputs.service_branch }}] TLS
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml'
@@ -305,7 +305,7 @@ jobs:
   Clean-Latest-TLS-Secrets:
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
-    name: Clean Zookeeper [LATEST] TLS Secrets
+    name: Clean Zookeeper [${{ inputs.service_branch }}] TLS Secrets
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -322,7 +322,7 @@ jobs:
           path: certs_artifacts
       - name: Update secrets
         uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_secrets
-      - name: Clean Install Zookeeper [LATEST] TLS Secrets
+      - name: Clean Install Zookeeper [${{ inputs.service_branch }}] TLS Secrets
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_secrets.yml'
@@ -348,7 +348,7 @@ jobs:
   Clean-Latest-TLS-Certificates:
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
-    name: Clean [LATEST] TLS Certificates
+    name: Clean [${{ inputs.service_branch }}] TLS Certificates
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -367,7 +367,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_template
       - name: Print template
         run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml
-      - name: Clean Zookeeper [LATEST] TLS Certificates
+      - name: Clean Zookeeper [${{ inputs.service_branch }}] TLS Certificates
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_certs.yml'
