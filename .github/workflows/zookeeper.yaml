@@ -139,6 +139,7 @@ jobs:
           service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
           service_branch: ${{ matrix.test.install_version }}
           crd_list: "${{ env.crd_list }}"
+          artifact_name: "Install_${{ matrix.test.artifact_name }}"
       # == 02 End ===== Install Zookeeper [LATEST] =====
 
       # == Start Spetial S3 Upgrade step =============================
@@ -210,6 +211,7 @@ jobs:
           service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
           service_branch: ${{ matrix.test.install_version }}
           crd_list: "${{ env.crd_list }}"
+          artifact_name: "Upgrade_${{ matrix.test.artifact_name }}"
       # == 03 End === Upgrade Zookeeper [LATEST] =====
 
 #############################################################################
