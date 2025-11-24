@@ -8,17 +8,21 @@ jobs:
     upgrade_template: "templates/consul-service/consul_clean_all_on_sc.yml"
     sequence: upgrade
     restricted: false
+    artifact_name: "Clean_${release_version}_Upgrade_${service_branch}"
   ## ===============================================================================
   - name: "Clean [${service_branch}] restricted"
     install_version: '${service_branch}'
     template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
     sequence: install
     restricted: true
+    artifact_name: "Clean_${service_branch}_Restricted"
+
   - name: "Clean [${service_branch}] Full-AT Ports-specifying Custom-labels"
     install_version: '${service_branch}'
     template: "templates/consul-service/consul_clean_all_on_sc_full_at.yml"
     sequence: install
     restricted: false
+    artifact_name: "Clean_${service_branch}_Full-AT"
 
   - name: Clean [${service_branch}] S3 TLS
     install_version: '${service_branch}'
@@ -26,6 +30,7 @@ jobs:
     sequence: install
     restricted: false
     backend: s3-tls
+    artifact_name: "Clean_${service_branch}_S3_TLS"
 
   - name: "Clean [${service_branch}]. Upgrade [${service_branch}] Diff Params"
     install_version: '${service_branch}'
@@ -34,6 +39,7 @@ jobs:
     upgrade_template: "templates/consul-service/consul_clean_all_on_sc_updated.yml"
     sequence: upgrade
     restricted: false
+    artifact_name: "Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params"
 
   - name: "Clean [${service_branch}] W/O Components. Upgrade [${service_branch}] All Components S3"
     install_version: '${service_branch}'
@@ -43,6 +49,7 @@ jobs:
     sequence: upgrade
     restricted: false
     backend: s3
+    artifact_name: "Clean_${service_branch}_WO_Components.Upgrade_${service_branch}_All_Components_S3"
 
   - name: "Clean [${previous_version}] Restricted. Upgrade To [${service_branch}] Restricted"
     install_version: '${previous_version}'
@@ -51,3 +58,4 @@ jobs:
     upgrade_template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
     sequence: upgrade
     restricted: true
+    artifact_name: "Clean_${previous_version}_Restricted.Upgrade_${service_branch}_Restricted"
