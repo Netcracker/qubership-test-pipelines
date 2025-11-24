@@ -321,7 +321,7 @@ jobs:
           name: zookeeper-certs
           path: certs_artifacts
       - name: Update secrets
-        uses: ./qubership-test-pipelines/actions/shared/add_certs_to_secrets
+        uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_secrets
       - name: Clean Install Zookeeper [LATEST] TLS Secrets
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -364,7 +364,7 @@ jobs:
           name: zookeeper-certs
           path: certs_artifacts
       - name: Update template
-        uses: ./qubership-test-pipelines/actions/shared/add_certs_to_template
+        uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_template
       - name: Print template
         run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml
       - name: Clean Zookeeper [LATEST] TLS Certificates
