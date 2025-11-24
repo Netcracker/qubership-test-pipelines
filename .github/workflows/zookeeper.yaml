@@ -77,7 +77,7 @@ jobs:
         with:
           ref: '${{ inputs.service_branch }}'
           repository: '${{ inputs.repository_name }}'
-          path: 'qubership-consul'
+          path: 'qubership-zookeeper'
 
       - name: Checkout pipeline
         uses: actions/checkout@v5
