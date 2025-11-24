@@ -35,8 +35,6 @@ global:
       adminPassword: admin
       clientUsername: client
       clientPassword: client
-      zookeeperClientUsername: zclient
-      zookeeperClientPassword: zclient
     akhq:
       defaultUsername: admin
       defaultPassword: admin
