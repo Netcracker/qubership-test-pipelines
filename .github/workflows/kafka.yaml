@@ -126,7 +126,7 @@ jobs:
       # == Start TLS certs addition if needed =======
       - name: TLS setup
         # language=bash
-        if: matrix.test.zookeeper == true && matrix.test.tls == true
+        if: matrix.test.tls == true
         run: |
           echo "::group::Install cert-manager"
           helm repo add jetstack https://charts.jetstack.io --force-update
@@ -176,7 +176,7 @@ jobs:
 
       # == Start update YAML secrets if needed =======
       - name: Update YAML secrets
-        if: matrix.test.zookeeper == true && matrix.test.storage == 's3'
+        if: matrix.test.storage == 's3'
         # language=bash
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
@@ -213,7 +213,7 @@ jobs:
       # == End kafka installation tests =======
 
       - name: Get Kafka secrets
-        if: matrix.test.zookeeper == true && matrix.test.tls == true
+        if: matrix.test.tls == true
         run: |
           kubectl get secrets -n kafka
           kubectl get secret kafka-tls-secret -n kafka -o yaml
