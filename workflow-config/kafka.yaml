@@ -24,6 +24,19 @@ jobs:
     zookeeper: false
     artifact_name: "Clean_Update_Diff_Params_Kraft_mode"
 
+  - name: Clean [${service_branch}] with Zookeeper in TLS. Migrate [${service_branch}] to scheme without Zookeeper in TLS
+    kafka_install_version: '${service_branch}'
+    kafka_template: "templates/kafka-service/kafka_clean_sc_zoo_tls.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_zoo_tls.yml"
+    kafka_upgrade_version: '${service_branch}'
+    kafka_upgrade_template: "templates/kafka-service/kafka_clean_sc_tls.yml"
+    kafka_service_upgrade_template: "templates/kafka-service/kafka_clean_sc_tls.yml"
+    sequence: upgrade
+    zookeeper: true
+    tls: true
+    zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
+    artifact_name: "Clean_Zookeeper_Migrate_Kraft_mode"
+
   - name: Clean [${service_branch}] in non-TLS
     kafka_install_version: '${service_branch}'
     kafka_template: "templates/kafka-service/kafka_clean_sc.yml"
@@ -42,16 +55,6 @@ jobs:
     tls: true
     zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
     artifact_name: "Clean_TLS"
-
-#  - name: Clean [${service_branch}] with Zookeeper in TLS
-#    kafka_install_version: '${service_branch}'
-#    kafka_template: "templates/kafka-service/kafka_clean_sc_zoo_tls.yml"
-#    kafka_service_template: "templates/kafka-service/kafka_clean_sc_zoo_tls.yml"
-#    sequence: install
-#    zookeeper: false
-#    tls: true
-#    zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
-#    artifact_name: "Clean_${service_branch}_Zookeeper_TLS"
 
   - name: Clean [${service_branch}] on S3 storage
     kafka_install_version: '${service_branch}'
