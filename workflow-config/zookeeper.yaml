@@ -2,55 +2,55 @@ jobs:
   ## A special configuration section for generating jobs for installing previous releases on the current version
   - purpose: automation
     name: "Clean [${release_version}], Upgrade to [${service_branch}]"
-    install_version: '${release_version}'
+    install_version: "${release_version}"
     template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
-    upgrade_version: '${service_branch}'
+    upgrade_version: "${service_branch}"
     upgrade_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
     sequence: upgrade
     restricted: false
-    artifact_name: "Clean_${release_version}_Upgrade_to_${service_branch}"
+    artifact_name: "Clean_${release_version}_Upgrade_to_CURRENT"
   ## ===============================================================================
   - name: "Clean [${service_branch}] Restricted"
-    install_version: '${service_branch}'
+    install_version: "${service_branch}"
     template: "templates/zookeeper-service/zookeeper_install_restricted_APP.yml"
     sequence: install
     restricted: true
-    artifact_name: "Clean_${service_branch}_Restricted"
+    artifact_name: "Clean_CURRENT_Restricted"
 
   - name: "Clean [${service_branch}], Upgrade to [${service_branch}] Diff Params"
-    install_version: '${service_branch}'
+    install_version: "${service_branch}"
     template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
-    upgrade_version: '${service_branch}'
+    upgrade_version: "${service_branch}"
     upgrade_template: "templates/zookeeper-service/zookeeper_update_APP_k8s.yml"
     sequence: upgrade
     restricted: false
-    artifact_name: "Clean_${service_branch}_Upgrade_to_${service_branch}_DiffParams"
+    artifact_name: "Clean_CURRENT_Upgrade_to_CURRENT_Diff_Params"
 
   - name: "Clean [${service_branch}] W/O Components, Upgrade [${service_branch}] All Components S3"
-    install_version: '${service_branch}'
+    install_version: "${service_branch}"
     template: "templates/zookeeper-service/zookeeper_install_minimal_APP_k8s.yml"
-    upgrade_version: '${service_branch}'
+    upgrade_version: "${service_branch}"
     upgrade_template: "templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml"
     sequence: upgrade
     restricted: false
     storage: s3
-    artifact_name: "Clean_${service_branch}_WO_Components_Upgrade_${service_branch}_All_Components_S3"
+    artifact_name: "Clean_CURRENT_WO_Components_Upgrade_CURRENT_All_Components_S3"
 
   - name: "Clean [${service_branch}], Upgrade [${service_branch}] TLS"
-    install_version: '${service_branch}'
+    install_version: "${service_branch}"
     template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
-    upgrade_version: '${service_branch}'
+    upgrade_version: "${service_branch}"
     upgrade_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
     sequence: upgrade
     restricted: false
     tls: true
-    artifact_name: "Clean_${service_branch}_Upgrade_${service_branch}_TLS"
+    artifact_name: "Clean_CURRENT_Upgrade_CURRENT_TLS"
 
   - name: "Clean [${previous_version}] Restricted, Upgrade To [${service_branch}] Restricted"
-    install_version: '${previous_version}'
+    install_version: "${previous_version}"
     template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
-    upgrade_version: '${service_branch}'
+    upgrade_version: "${service_branch}"
     upgrade_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
     sequence: upgrade
     restricted: true
-    artifact_name: "Clean_${previous_version}_Restricted_Upgrade_to_${service_branch}_Restricted"
+    artifact_name: "Clean_REVIOUS_Restricted_Upgrade_to_CURRENT_Restricted"
