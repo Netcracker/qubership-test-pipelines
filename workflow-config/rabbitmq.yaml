@@ -1,0 +1,43 @@
+jobs:
+  ## A special configuration section for generating jobs for installing previous releases on the current version
+  - purpose: automation
+    name: "Clean [${release_version}], Upgrade to [${service_branch}]"
+    install_version: '${release_version}'
+    template: "templates/rabbitmq-service/rabbitmq_clean_sc.yml"
+    upgrade_version: '${service_branch}'
+    upgrade_template: "templates/rabbitmq-service/rabbitmq_clean_sc.yml"
+    sequence: upgrade
+    artifact_name: "Clean_${release_version}_Upgrade_CURRENT"
+  ## ===============================================================================
+  - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params
+    install_version: '${service_branch}'
+    template: "templates/rabbitmq-service/rabbitmq_clean_sc.yml"
+    upgrade_version: '${service_branch}'
+    upgrade_template: "templates/rabbitmq-service/rabbitmq_update_sc.yml"
+    sequence: upgrade
+    artifact_name: "Clean_CURRENT_Update_CURRENT_Diff_Params"
+
+  - name: Clean [${service_branch}] in Restricted mode
+    install_version: '${service_branch}'
+    template: "templates/rabbitmq-service/rabbitmq_clean_sc_restricted.yml"
+    sequence: install
+    restricted: true
+
+  - name: Clean [${service_branch}] on S3 storage
+    install_version: '${service_branch}'
+    template: "templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml"
+    sequence: install
+    backend: s3
+
+  - name: Clean [${service_branch}] on S3 storage in disasterRecovery mode
+    install_version: '${service_branch}'
+    template: "templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd.yml"
+    sequence: install
+    backend: s3
+
+  - name: Clean [${service_branch}] on S3 storage in disasterRecovery mode and TLS
+    install_version: '${service_branch}'
+    template: "templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml"
+    sequence: install
+    backend: s3
+    tls: true
