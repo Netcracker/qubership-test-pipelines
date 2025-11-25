@@ -1,3 +1,4 @@
+loglevel: INFO
 name: rabbitmq-service
 rabbitmqPrometheusMonitoring: false
 global:

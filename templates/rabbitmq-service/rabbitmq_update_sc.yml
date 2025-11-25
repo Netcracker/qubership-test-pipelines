@@ -1,3 +1,4 @@
+loglevel: INFO
 global:
   cloudIntegrationEnabled: false
 name: rabbitmq-service
