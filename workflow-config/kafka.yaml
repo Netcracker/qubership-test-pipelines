@@ -11,7 +11,7 @@ jobs:
     sequence: upgrade
     zookeeper: false
     zookeeper_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
-    artifact_name: "Clean_${release_version}_Upgrade_${service_branch}"
+    artifact_name: "Clean_${release_version}_Upgrade"
   ## ===============================================================================
   - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft mode
     kafka_install_version: '${service_branch}'
@@ -22,7 +22,7 @@ jobs:
     kafka_service_upgrade_template: "templates/kafka-service/kafka_update_kraft_mode.yml"
     sequence: upgrade
     zookeeper: false
-    artifact_name: "Clean_${service_branch}_Update_${service_branch}_Diff_Params_Kraft_mode"
+    artifact_name: "Clean_Update_Diff_Params_Kraft_mode"
 
   - name: Clean [${service_branch}] in non-TLS
     kafka_install_version: '${service_branch}'
@@ -31,7 +31,7 @@ jobs:
     sequence: install
     zookeeper: false
     zookeeper_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
-    artifact_name: "Clean_${service_branch}_non-TLS"
+    artifact_name: "Clean_non-TLS"
 
   - name: Clean [${service_branch}] in TLS
     kafka_install_version: '${service_branch}'
@@ -41,7 +41,7 @@ jobs:
     zookeeper: false
     tls: true
     zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
-    artifact_name: "Clean_${service_branch}_TLS"
+    artifact_name: "Clean_TLS"
 
 #  - name: Clean [${service_branch}] with Zookeeper in TLS
 #    kafka_install_version: '${service_branch}'
@@ -61,4 +61,4 @@ jobs:
     zookeeper: false
     zookeeper_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
     storage: s3
-    artifact_name: "Clean_${service_branch}_S3"
+    artifact_name: "Clean_S3"

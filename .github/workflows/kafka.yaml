@@ -209,6 +209,7 @@ jobs:
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ env.kfk_cr_name }}
           artifact_name: Install_Kafka_${{ matrix.test.artifact_name }}
+          check_tests: true
       # == End kafka installation tests =======
 
       - name: Get Kafka secrets
@@ -237,6 +238,7 @@ jobs:
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ env.kfk_srvc_cr_name }}
           artifact_name: Install_Kafka_Service_${{ matrix.test.artifact_name }}
+          check_tests: true
       # == End kafka service installation tests =======
 
       # == Start kafka upgrade tests =======
@@ -265,6 +267,7 @@ jobs:
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ env.kfk_cr_name }}
           artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
+          check_tests: true
       - name: Update Kafka Service to [LATEST] Version With Diff Params
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -290,4 +293,5 @@ jobs:
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ env.kfk_srvc_cr_name }}
           artifact_name: Upgrade_Kafka_Service_${{ matrix.test.artifact_name }}
+          check_tests: true
       # == End kafka upgrade tests =======
