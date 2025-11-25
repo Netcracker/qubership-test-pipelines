@@ -171,7 +171,7 @@ jobs:
           restricted: ${{ matrix.test.restricted || false }}
           service_name: 'rabbitmq'
           repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'operator/charts/helm/rabbitmq-service'
+          path_to_chart: 'operator/charts/helm/rabbitmq'
           namespace: 'rabbitmq'
 
       - name: Verify RabbitMQ installation
@@ -201,7 +201,7 @@ jobs:
           restricted: ${{ matrix.test.restricted || false }}
           service_name: 'rabbitmq'
           repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'operator/charts/helm/rabbitmq-service'
+          path_to_chart: 'operator/charts/helm/rabbitmq'
           namespace: 'rabbitmq'
       - name: Sleep 1m after update
         if: ${{ matrix.test.sequence == 'update' }}
