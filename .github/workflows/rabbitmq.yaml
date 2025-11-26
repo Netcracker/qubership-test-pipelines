@@ -88,7 +88,7 @@ jobs:
 
   #----------- Current service branch ----------
   #[V] Clean [LATEST], Update [LATEST] Diff Params
-  Clean-Latest-Update-Diff-Params:
+  RabbitMQ-Test-Cases:
     runs-on: ${{inputs.runner_type}}
     needs: prepare
     strategy:
