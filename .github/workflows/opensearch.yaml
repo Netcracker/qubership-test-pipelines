@@ -1,4 +1,4 @@
-name: Opensearch Tests
+name: Reusable Opensearch Tests
 
 on:
   workflow_dispatch:
