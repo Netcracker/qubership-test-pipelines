@@ -22,21 +22,21 @@ jobs:
     template: "templates/rabbitmq-service/rabbitmq_clean_sc_restricted.yml"
     sequence: install
     restricted: true
-    artifact_name: "Clean_${service_branch}_Restricted"
+    artifact_name: "Clean_CURRENT_Restricted"
 
   - name: Clean [${service_branch}] on S3 storage
     install_version: '${service_branch}'
     template: "templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml"
     sequence: install
     backend: s3
-    artifact_name: "Clean_${service_branch}_S3"
+    artifact_name: "Clean_CURRENT_S3"
 
   - name: Clean [${service_branch}] on S3 storage in disasterRecovery mode
     install_version: '${service_branch}'
     template: "templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd.yml"
     sequence: install
     backend: s3
-    artifact_name: "Clean_${service_branch}_S3_DRD"
+    artifact_name: "Clean_CURRENT_S3_DRD"
 
   - name: Clean [${service_branch}] on S3 storage in disasterRecovery mode and TLS
     install_version: '${service_branch}'
@@ -44,4 +44,4 @@ jobs:
     sequence: install
     backend: s3
     tls: true
-    artifact_name: "Clean_${service_branch}_S3_DRD_TLS"
+    artifact_name: "Clean_CURRENT_S3_DRD_TLS"
