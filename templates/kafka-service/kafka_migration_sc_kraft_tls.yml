@@ -1,0 +1,66 @@
+global:
+  name: kafka
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: admin
+      clientUsername: client
+      clientPassword: client
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: admin
+  tls:
+    enabled: true
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      clusterIssuerName: test-clusterissuer
+kafka:
+  install: true
+  kraft:
+    enabled: true
+    migration: true
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: component
+                operator: In
+                values:
+                  - kafka
+          topologyKey: kubernetes.io/hostname
+  replicas: 3
+  storage:
+    size: 1Gi
+    className:
+      - standard
+  zookeeperConnect: zookeeper.zookeeper:2181
+  zookeeperEnableSsl: true
+  tls:
+    enabled: true
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+monitoring:
+  install: false
+  securityContext:
+    runAsUser: 1000
+akhq:
+  install: true
+  ingress:
+    host: akhq-kafka-service.qubership.com
+backupDaemon:
+  install: true
+  storage: 1Gi
+  storageClass: standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+integrationTests:
+  install: true
+  waitForResult: true
+  tags: kafka_crudORkafka_images
