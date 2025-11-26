@@ -316,9 +316,7 @@ runs:
       run: |
         # ▶️ Generate artifact name
         service_branch=$(echo "${{inputs.service_branch}}" | tr -d '[:space:]')
-        if [[ -n "$release_name" ]]; then
-          service_branch="_${service_branch//\//_}"
-        fi
+        service_branch="${service_branch//\//_}"
         echo matrix_version ${{matrix.version}}
         matrix_suffix=""
         if [[ -n "${{ matrix.version }}" ]]; then
