@@ -160,7 +160,7 @@ jobs:
             --path='opensearch/snapshots/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
 
-      - name: Install Opensearch
+      - name: Install Opensearch [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: '${{ matrix.test.template }}'
@@ -171,7 +171,7 @@ jobs:
           path_to_chart: 'operator/charts/helm/opensearch-service'
           namespace: 'opensearch'
 
-      - name: Verify Opensearch installation
+      - name: Verify Opensearch installation [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: 'opensearch'
@@ -195,7 +195,7 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
 
-      - name: Update to [LATEST]
+      - name: Update to [${{ matrix.test.upgrade_version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -208,7 +208,7 @@ jobs:
           path_to_chart: 'operator/charts/helm/opensearch-service'
           namespace: 'opensearch'
 
-      - name: Verify Opensearch update
+      - name: Verify Opensearch update [${{ matrix.test.upgrade_version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
