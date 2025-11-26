@@ -20,6 +20,8 @@ global:
       clusterIssuerName: test-clusterissuer
 kafka:
   install: true
+  kraft:
+    enabled: true
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:

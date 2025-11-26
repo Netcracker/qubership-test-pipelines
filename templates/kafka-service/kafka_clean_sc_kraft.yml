@@ -1,3 +1,17 @@
+global:
+  name: kafka
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: admin
+      clientUsername: client
+      clientPassword: client
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: admin
 kafka:
   install: true
   kraft:
@@ -20,20 +34,6 @@ kafka:
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
-global:
-  name: kafka
-  secrets:
-    kafka:
-      adminUsername: admin
-      adminPassword: admin
-      clientUsername: client
-      clientPassword: client
-    akhq:
-      defaultUsername: admin
-      defaultPassword: admin
-    backupDaemon:
-      username: admin
-      password: admin
 backupDaemon:
   install: true
   storage: 1Gi

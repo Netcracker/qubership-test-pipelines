@@ -17,6 +17,8 @@ global:
         keySecret: ''
 kafka:
   install: true
+  kraft:
+    enabled: true
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:

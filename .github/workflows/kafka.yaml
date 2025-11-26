@@ -151,7 +151,7 @@ jobs:
           echo "::endgroup::"
       # == End TLS certs addition if needed =======
 
-      # == Start zookeeper installation tests =======
+      # == Start Zookeeper installation tests =======
       - name: Clean Install Zookeeper [LATEST]
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -172,7 +172,7 @@ jobs:
           service_ready_max_retries: 150
           service_ready_retry_interval: '10s'
           artifact_name: Install_Zookeeper_${{ matrix.test.artifact_name }}
-      # == End zookeeper installation tests =======
+      # == End Zookeeper installation tests =======
 
       # == Start update YAML secrets if needed =======
       - name: Update YAML secrets
