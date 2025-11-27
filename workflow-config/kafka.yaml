@@ -9,7 +9,7 @@ jobs:
     kafka_upgrade_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
     kafka_service_upgrade_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
     sequence: upgrade
-    artifact_name: "Clean_${release_version}_Kraft_Upgrade_Kraft"
+    artifact_name: "Clean_${release_version}_Kraft_Upgrade_CURRENT_Kraft"
   ## ===============================================================================
   - purpose: automation
     name: "Clean [${release_version}] with Zookeeper in TLS. Migrate to [${release_version}] without Zookeeper in TLS"
@@ -23,7 +23,7 @@ jobs:
     tls: true
     zookeeper: true
     zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
-    artifact_name: "Clean_${release_version}_Zookeeper_Migrate_Kraft_Upgrade_Kraft"
+    artifact_name: "Clean_${release_version}_Zookeeper_Migrate_${release_version}_Kraft"
 
 #  - name: "Clean [${release_version}] with Zookeeper in TLS. Migrate to [${release_version}] without Zookeeper in TLS. Upgrade to [${service_branch}] in TLS"
 #    kafka_install_version: '${release_version}'
@@ -39,9 +39,9 @@ jobs:
 #    tls: true
 #    zookeeper: true
 #    zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
-#    artifact_name: "Clean_${release_version}_Zookeeper_Migrate_Kraft_Upgrade_Kraft"
+#    artifact_name: "Clean_${release_version}_Zookeeper_Migrate_${release_version}_Kraft_Upgrade_CURRENT_Kraft"
 
-  - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft
+  - name: "Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft"
     kafka_install_version: '${service_branch}'
     kafka_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
     kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
@@ -49,27 +49,27 @@ jobs:
     kafka_upgrade_template: "templates/kafka-service/kafka_update_sc_kraft.yml"
     kafka_service_upgrade_template: "templates/kafka-service/kafka_update_sc_kraft.yml"
     sequence: upgrade
-    artifact_name: "Clean_Update_Diff_Params_Kraft"
+    artifact_name: "Clean_CURRENT_Update_CURRENT_Diff_Params_Kraft"
 
-  - name: Clean [${service_branch}] in non-TLS
+  - name: "Clean [${service_branch}] in non-TLS"
     kafka_install_version: '${service_branch}'
     kafka_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
     kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
     sequence: install
-    artifact_name: "Clean_non-TLS"
+    artifact_name: "Clean_CURRENT_non-TLS"
 
-  - name: Clean [${service_branch}] in TLS
+  - name: "Clean [${service_branch}] in TLS"
     kafka_install_version: '${service_branch}'
     kafka_template: "templates/kafka-service/kafka_clean_sc_kraft_tls.yml"
     kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft_tls.yml"
     sequence: install
     tls: true
-    artifact_name: "Clean_TLS"
+    artifact_name: "Clean_CURRENT_TLS"
 
-  - name: Clean [${service_branch}] on S3 storage
+  - name: "Clean [${service_branch}] on S3 storage"
     kafka_install_version: '${service_branch}'
     kafka_template: "templates/kafka-service/kafka_clean_sc_kraft_s3.yml"
     kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft_s3.yml"
     sequence: install
     storage: s3
-    artifact_name: "Clean_S3"
+    artifact_name: "Clean_CURRENT_S3"

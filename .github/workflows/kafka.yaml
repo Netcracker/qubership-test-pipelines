@@ -242,7 +242,7 @@ jobs:
       # == End kafka service installation tests =======
 
       # == Start kafka upgrade tests =======
-      - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}] Version
+      - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -268,7 +268,7 @@ jobs:
           crd_list: ${{ env.kfk_cr_name }}
           artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
           check_tests: true
-      - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}] Version
+      - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -349,7 +349,7 @@ jobs:
 #          crd_list: ${{ env.kfk_cr_name }}
 #          artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
 #          check_tests: true
-#      - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}] Version
+#      - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}]
 #        if: matrix.test.sequence == 'migrate'
 #        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
 #        with:

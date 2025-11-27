@@ -1,0 +1,33 @@
+name: Get CRD names
+inputs:
+  crd_location:
+    description: |
+      Location of CRDs
+      # Example:
+      # from https://github.com/Netcracker/qubership-kafka
+      # if checked out to qubership-kafka directory, then
+      # 'qubership-kafka/operator/charts/helm/kafka-service/crds'
+    required: true
+outputs:
+  crd_names: ${{ steps.get_crds.outputs.crd_names }}
+runs:
+  using: "composite"
+  steps:
+    - name: Get CRDs
+      id: get_crds
+      shell: bash
+      run: |
+        # ▶️ Get CRDs
+        yamls=$(find ${{inputs.crd_location}} -type f -name "*.yaml" -or -name "*.yml")
+        CDRS=''
+        for yaml in ${yamls}; do
+          yml_kind=$(yq e '.kind' $yaml)
+          if [ "$yml_kind" == "CustomResourceDefinition" ]; then
+            crd_name=$(yq e '.metadata.name' $yaml)
+            CDRS="$CDRS $crd_name"
+          fi
+        done
+        CRDS=$(echo $CDRS | xargs)
+        echo "ℹ️ CRDs: $CRDS"
+        echo "crd_names=$CDRS" >> $GITHUB_OUTPUT
+      continue-on-error: true

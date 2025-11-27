@@ -1,8 +1,40 @@
-name: RabbitMQ Tests
+name: Reusable RabbitMQ Tests
 
 on:
+  workflow_dispatch:
+    inputs:
+      repository_name:
+        description: 'Repository with RabbitMQ service'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-rabbitmq'
+      service_branch:
+        description: 'Branch of qubership-rabbitmq repository'
+        required: false
+        type: string
+        default: 'main'
+      versions_file:
+        description: 'Path to file with version list'
+        type: string
+        required: true
+        default: '.github/versions.yaml'
+      pipeline_branch:
+        description: 'Branch of qubership-test-pipelines repository'
+        type: string
+        required: true
+        default: 'main'
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
   workflow_call:
     inputs:
+      repository_name:
+        description: 'Repository with RabbitMQ service'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-rabbitmq'
       service_branch:
         required: false
         type: string
@@ -26,260 +58,164 @@ on:
         required: true
 
 jobs:
-  prepare-versions:
-    runs-on: ${{inputs.runner_type}}
+  prepare:
+    runs-on: ${{ inputs.runner_type }}
     outputs:
-      versions: ${{steps.process-versions.outputs.versions}}
-      previous_version: ${{steps.process-versions.outputs.previous_version}}
+      versions: ${{ steps.process-versions.outputs.versions }}
+      previous_version: ${{ steps.process-versions.outputs.previous_version }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.service_branch}}'
-          repository: 'Netcracker/qubership-rabbitmq'
+          ref: '${{ inputs.service_branch }}'
+          repository: '${{ inputs.repository_name }}'
           path: 'qubership-rabbitmq'
-      - name: Process versions file
+
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+
+      - name: Process versions file and matrix generation
         id: process-versions
-        # language=bash
+        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
-          versions_str=$(cat qubership-rabbitmq/${{inputs.versions_file}})
-          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
-          echo "versions=$versions_json" >> $GITHUB_OUTPUT
-          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
-          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
+          chmod +x ./scripts/matrix.sh
+          ./scripts/matrix.sh ${{ github.workspace }}/qubership-rabbitmq/${{ inputs.versions_file }} ./workflow-config/rabbitmq.yaml "${{ inputs.service_branch }}"
 
   #----------- Current service branch ----------
   #[V] Clean [LATEST], Update [LATEST] Diff Params
-  Clean-Latest-Update-Diff-Params:
+  RabbitMQ-Test-Cases:
     runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST], Update [LATEST] Diff Params
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    env:
+      test_completion_max_retries: 60
+      test_completion_retry_interval: 10s
+      service_ready_max_retries: 100
+      service_ready_retry_interval: 10s
+    name: ${{ matrix.test.name }}
     steps:
+      # == Start Common steps ==
+      - name: "Print job parameters"
+        run: |
+          echo "======== Job parameters ======="
+          echo "${{ toJson(matrix.test) }}"
+
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       #- name: Install Monitoring
         #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc.yml
-      - name: Clean Install RabbitMQ [LATEST]
-        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-        with:
-          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify RabbitMQ installation
-        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
-      - name: Print updated deployment parameters
-        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_update_sc.yml
-      - name: Update RabbitMQ to [LATEST] Version With Diff Params
-        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-        with:
-          path_to_template: 'templates/rabbitmq-service/rabbitmq_update_sc.yml'
-          service_branch: '${{inputs.service_branch}}'
-          deploy_mode: upgrade
-      - name: Sleep 1m after update
-        run: sleep 1m
-      - name: Verify RabbitMQ update
-        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
+      # == End Common steps ==
 
-  #[V] Clean [LATEST] Restricted
-  Clean-Latest-Restricted:
-    name: Clean [LATEST] in Restricted mode
-    runs-on: ${{inputs.runner_type}}
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_restricted.yml
-      - name: Install RabbitMQ [LATEST] in Restricted mode
-        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-        with:
-          restricted: true
-          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_restricted.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify RabbitMQ installation
-        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
-
-  #[V] Clean [LATEST] on S3
-  Clean-Latest-S3:
-    runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST] on S3 storage
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Update YAML secrets
-        # language=bash
-        run: |
-          python qubership-test-pipelines/python/update_yaml.py \
-            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml' \
-            --path='backupDaemon/s3/keyId' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-          && python qubership-test-pipelines/python/update_yaml.py \
-            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml' \
-            --path='backupDaemon/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-      - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml
-      - name: Clean Install RabbitMQ [LATEST] on S3
-        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-        with:
-          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_s3.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify RabbitMQ installation
-        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
-
-  #[V] Clean [LATEST] on S3 in disasterRecovery
-  Clean-Latest-S3-drd:
-    runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST] on S3 storage in disasterRecovery mode
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Update YAML secrets
-        # language=bash
-        run: |
-          python qubership-test-pipelines/python/update_yaml.py \
-            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd.yml' \
-            --path='backupDaemon/s3/keyId' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-          && python qubership-test-pipelines/python/update_yaml.py \
-            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd.yml' \
-            --path='backupDaemon/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-      - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd.yml
-      - name: Clean Install RabbitMQ [LATEST] on S3 in disasterRecovery mode
-        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-        with:
-          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify RabbitMQ installation
-        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
-
-  #V Clean [LATEST] on S3 in disasterRecovery with TLS
-  Clean-Latest-S3-drd-TLS:
-    runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST] on S3 storage in disasterRecovery mode using cert-manager
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-        #- name: Install Monitoring
-        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      # == Start Install steps ==
+      # TLS setup
       - name: Install cert-manager
-        # language=bash
+        if: matrix.test.tls == true
         run: |
+          echo "::group::Install cert-manager"
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-      - name: Create cert-manager entities
-        # language=bash
-        run: |
+          echo "::endgroup::"
+          echo "::group::Create cert-manager entities"
           kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
           sleep 10s
           kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
           sleep 10s
           kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-      - name: Get cert-manager resources
-        # language=bash
-        run: |
+          echo "::endgroup::"
+          echo "::group::Get cert-manager resources"
           kubectl get pods -n cert-manager
           kubectl get secrets -n cert-manager
           kubectl get certificates -A
-      - name: Get clusterissuer
-        # language=bash
-        run: |
+          echo "::endgroup::"
+          echo "::group::Get clusterissuer"
           kubectl get clusterissuer
           kubectl get clusterissuer test-clusterissuer -o yaml
+          echo "::endgroup::"
+
+      # S3 secrets setup
       - name: Update YAML secrets
-        # language=bash
+        if: matrix.test.backend == 's3'
         run: |
-          python qubership-test-pipelines/python/update_yaml.py \
-            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml' \
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='backupDaemon/s3/keyId' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-          && python qubership-test-pipelines/python/update_yaml.py \
-            --file='qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='backupDaemon/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-      - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml
-      - name: Clean Install RabbitMQ [LATEST] on S3 in drd with TLS
-        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-        with:
-          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc_s3_drd_tls.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify RabbitMQ installation
-        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
 
-  #---------- Upgrade from old releases ----------
-  #Clean [N1_RELEASE], Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
-  #Clean [N2_RELEASE], Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
-  Clean-Previous-Upgrade-To-Latest:
-    name: Clean [PREVIOUS], Upgrade to [LATEST]
-    needs: prepare-versions
-    runs-on: ${{inputs.runner_type}}
-    strategy:
-      matrix:
-        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
+      - name: Print install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template}}
+
+      - name: Clean Install RabbitMQ
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      #- name: Install monitoring
-        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/templates/rabbitmq-service/rabbitmq_clean_sc.yml
-      - name: Clean Install RabbitMQ [PREVIOUS]
-        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
-        with:
-          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc.yml'
-          service_branch: '${{matrix.release}}'
+          path_to_template: '${{ matrix.test.template }}'
+          service_branch: '${{ matrix.test.install_version }}'
+          restricted: ${{ matrix.test.restricted || false }}
+          service_name: 'rabbitmq'
+          repository_name: '${{ inputs.repository_name }}'
+          path_to_chart: 'operator/charts/helm/rabbitmq'
+          namespace: 'rabbitmq'
+
       - name: Verify RabbitMQ installation
-        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{matrix.release}}'
-      - name: Upgrade RabbitMQ to [LATEST]
-        uses: ./qubership-test-pipelines/actions/rabbitmq/helm_deploy_rabbitmq
+          namespace: 'rabbitmq'
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          service_branch: ${{ matrix.test.install_version }}
+          check_tests: true
+          artifact_name: Installation_${{ matrix.test.artifact_name }}
+      # == End Install steps ==
+
+      # == Start Update steps ==
+      - name: Print updated deployment parameters
+        if: ${{ matrix.test.sequence == 'update' }}
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template}}
+      - name: Update RabbitMQ With Diff Params
+        if: ${{ matrix.test.sequence == 'update' }}
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
+          path_to_template: '${{ matrix.test.upgrade_template }}'
+          service_branch: '${{ matrix.test.upgrade_version }}'
           deploy_mode: upgrade
-          path_to_template: 'templates/rabbitmq-service/rabbitmq_clean_sc.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Sleep 1m after upgrade
+          restricted: ${{ matrix.test.restricted || false }}
+          service_name: 'rabbitmq'
+          repository_name: '${{ inputs.repository_name }}'
+          path_to_chart: 'operator/charts/helm/rabbitmq'
+          namespace: 'rabbitmq'
+      - name: Sleep 1m after update
+        if: ${{ matrix.test.sequence == 'update' }}
         run: sleep 1m
-      - name: Verify RabbitMQ installation
-        uses: ./qubership-test-pipelines/actions/rabbitmq/verify_installation_rabbitmq
+      - name: Verify RabbitMQ update
+        if: ${{ matrix.test.sequence == 'update' }}
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{inputs.service_branch}}'
+          namespace: 'rabbitmq'
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          service_branch: ${{ matrix.test.install_version }}
+          check_tests: true
+          artifact_name: Installation_${{ matrix.test.artifact_name }}
+      # == End Update steps ==
