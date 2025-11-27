@@ -1,0 +1,64 @@
+jobs:
+  ## A special configuration section for generating jobs for installing previous releases on the current version
+  - purpose: automation
+    name: "Clean [${release_version}], Upgrade to [${service_branch}]"
+    kafka_install_version: "${release_version}"
+    kafka_template: "templates/kafka-service/kafka_clean_sc_zoo.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_zoo.yml"
+    kafka_upgrade_version: "${service_branch}"
+    kafka_upgrade_template: "templates/kafka-service/kafka_clean_sc_zoo.yml"
+    kafka_service_upgrade_template: "templates/kafka-service/kafka_clean_sc_zoo.yml"
+    sequence: upgrade
+    zookeeper: true
+    zookeeper_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
+    artifact_name: "Clean_${release_version}_Upgrade_CURRENT"
+  ## ===============================================================================
+  - name: "Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft mode"
+    kafka_install_version: "${service_branch}"
+    kafka_template: "templates/kafka-service/kafka_clean_kraft_mode.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_kraft_mode.yml"
+    kafka_upgrade_version: "${service_branch}"
+    kafka_upgrade_template: "templates/kafka-service/kafka_update_kraft_mode.yml"
+    kafka_service_upgrade_template: "templates/kafka-service/kafka_update_kraft_mode.yml"
+    sequence: upgrade
+    zookeeper: false
+    artifact_name: "Clean_CURRENT_Update_CURRENT_Diff_Params_in_Kraft_mode"
+
+  - name: "Clean [${service_branch}] with Zookeeper in non-TLS"
+    kafka_install_version: "${service_branch}"
+    kafka_template: "templates/kafka-service/kafka_clean_sc_zoo.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_zoo.yml"
+    sequence: install
+    zookeeper: true
+    zookeeper_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
+    artifact_name: "Clean_CURRENT_with_Zookeeper_in_non-TLS"
+
+  - name: "Clean [${service_branch}] with Zookeeper in TLS"
+    kafka_install_version: "${service_branch}"
+    kafka_template: "templates/kafka-service/kafka_clean_sc_zoo_tls.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_zoo_tls.yml"
+    sequence: install
+    zookeeper: true
+    tls: true
+    zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
+    artifact_name: "Clean_CURRENT_with_Zookeeper_in_TLS"
+
+  - name: "Clean [${service_branch}] with Zookeeper when both in TLS"
+    kafka_install_version: "${service_branch}"
+    kafka_template: "templates/kafka-service/kafka_clean_sc_zoo_tls.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_zoo_tls.yml"
+    sequence: install
+    zookeeper: true
+    tls: true
+    zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
+    artifact_name: "Clean_CURRENT_with_Zookeeper_when_both_in_TLS"
+
+  - name: "Clean [${service_branch}] with Zookeeper on S3 storage"
+    kafka_install_version: "${service_branch}"
+    kafka_template: "templates/kafka-service/kafka_clean_sc_zoo_s3.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_zoo_s3.yml"
+    sequence: install
+    zookeeper: true
+    zookeeper_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
+    storage: s3
+    artifact_name: "Clean_CURRENT_with_Zookeeper_on_S3_storage"

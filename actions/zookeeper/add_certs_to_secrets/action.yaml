@@ -6,7 +6,7 @@ runs:
     - name: Add Zookeeper CA CRT to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/resources/zookeeper/zookeeper_tls_secret.yml'
         --path='data/ca.crt'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_ca_crt.txt)"
@@ -14,7 +14,7 @@ runs:
     - name: Add Zookeeper TLS CRT to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/resources/zookeeper/zookeeper_tls_secret.yml'
         --path='data/tls.crt'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_tls_crt.txt)"
@@ -22,7 +22,7 @@ runs:
     - name: Add Zookeeper TLS KEY to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/resources/zookeeper/zookeeper_tls_secret.yml'
         --path='data/tls.key'
         --value="$(cat certs_artifacts/zookeeper-tls-secret_tls_key.txt)"
@@ -30,7 +30,7 @@ runs:
     - name: Add Backup Daemon CA CRT to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/resources/zookeeper/zookeeper_backup_daemon_tls_secret.yml'
         --path='data/ca.crt'
         --value="$(cat certs_artifacts/zookeeper-backup-daemon-tls-secret_ca_crt.txt)"
@@ -38,7 +38,7 @@ runs:
     - name: Add Backup Daemon TLS CRT to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/resources/zookeeper/zookeeper_backup_daemon_tls_secret.yml'
         --path='data/tls.crt'
         --value="$(cat certs_artifacts/zookeeper-backup-daemon-tls-secret_tls_crt.txt)"
@@ -46,7 +46,7 @@ runs:
     - name: Add Backup Daemon TLS KEY to template
       shell: bash
       run: >-
-        python qubership-test-pipelines/python/update_yaml.py
+        python qubership-test-pipelines/scripts/update_yaml.py
         --file='qubership-test-pipelines/resources/zookeeper/zookeeper_backup_daemon_tls_secret.yml'
         --path='data/tls.key'
         --value="$(cat certs_artifacts/zookeeper-backup-daemon-tls-secret_tls_key.txt)"
