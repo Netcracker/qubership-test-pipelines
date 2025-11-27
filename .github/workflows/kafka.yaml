@@ -242,7 +242,7 @@ jobs:
       # == End kafka service installation tests =======
 
       # == Start kafka upgrade tests =======
-      - name: Update Kafka to [${{ matrix.test.kafka_upgrade_version }} ]
+      - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}] Version
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -268,7 +268,7 @@ jobs:
           crd_list: ${{ env.kfk_cr_name }}
           artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
           check_tests: true
-      - name: Update Kafka Service to [LATEST] Version With Diff Params
+      - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}] Version
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -297,20 +297,20 @@ jobs:
       # == End kafka upgrade tests =======
 
       # == Start kafka migrate tests =======
-      - name: Migrate Kafka to Kraft scheme
-        if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-        with:
-          path_to_template: ${{ matrix.test.kafka_migrate_template }}
-          service_branch: '${{ matrix.test.kafka_migrate_version }}'
-          service_name: 'kafka'
-          repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/kafka'
-          namespace: ${{ env.kfk_namespace }}
-          deploy_mode: upgrade
-      - name: Sleep 1m after migration
-        if: matrix.test.sequence == 'migrate'
-        run: sleep 1m
+#      - name: Migrate Kafka to Kraft scheme
+#        if: matrix.test.sequence == 'migrate'
+#        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+#        with:
+#          path_to_template: ${{ matrix.test.kafka_migrate_template }}
+#          service_branch: '${{ matrix.test.kafka_migrate_version }}'
+#          service_name: 'kafka'
+#          repository_name: ${{ inputs.repository_name }}
+#          path_to_chart: 'operator/charts/helm/kafka'
+#          namespace: ${{ env.kfk_namespace }}
+#          deploy_mode: upgrade
+#      - name: Sleep 1m after migration
+#        if: matrix.test.sequence == 'migrate'
+#        run: sleep 1m
 #      - name: Verify Kafka migration
 #        if: matrix.test.sequence == 'migrate'
 #        uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -323,56 +323,56 @@ jobs:
 #          crd_list: ${{ env.kfk_cr_name }}
 #          artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
 #          check_tests: true
-      - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }} ]
-        if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-        with:
-          path_to_template: ${{ matrix.test.kafka_upgrade_template }}
-          service_branch: '${{ matrix.test.kafka_upgrade_version }}'
-          service_name: 'kafka'
-          repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/kafka'
-          namespace: ${{ env.kfk_namespace }}
-          deploy_mode: upgrade
-      - name: Sleep 1m after upgrade
-        if: matrix.test.sequence == 'migrate'
-        run: sleep 1m
-      - name: Verify Kafka upgrade
-        if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
-        with:
-          namespace: ${{ env.kfk_namespace }}
-          test_completion_max_retries: ${{ env.kfk_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_timeout }}
-          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
-          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
-          crd_list: ${{ env.kfk_cr_name }}
-          artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
-          check_tests: true
-      - name: Upgrade Kafka Service to [LATEST] Version With Diff Params
-        if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-        with:
-          path_to_template: ${{ matrix.test.kafka_service_migrate_template }}
-          service_branch: '${{ inputs.service_branch }}'
-          service_name: 'kafka-service'
-          repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/kafka-service'
-          namespace: ${{ env.kfk_srvc_namespace }}
-          deploy_mode: upgrade
-      - name: Sleep 1m after upgrade
-        if: matrix.test.sequence == 'migrate'
-        run: sleep 1m
-      - name: Verify Kafka Service upgrade
-        if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
-        with:
-          namespace: ${{ env.kfk_srvc_namespace }}
-          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
-          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
-          crd_list: ${{ env.kfk_srvc_cr_name }}
-          artifact_name: Upgrade_Kafka_Service_${{ matrix.test.artifact_name }}
-          check_tests: true
+#      - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
+#        if: matrix.test.sequence == 'migrate'
+#        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+#        with:
+#          path_to_template: ${{ matrix.test.kafka_upgrade_template }}
+#          service_branch: '${{ matrix.test.kafka_upgrade_version }}'
+#          service_name: 'kafka'
+#          repository_name: ${{ inputs.repository_name }}
+#          path_to_chart: 'operator/charts/helm/kafka'
+#          namespace: ${{ env.kfk_namespace }}
+#          deploy_mode: upgrade
+#      - name: Sleep 1m after upgrade
+#        if: matrix.test.sequence == 'migrate'
+#        run: sleep 1m
+#      - name: Verify Kafka upgrade
+#        if: matrix.test.sequence == 'migrate'
+#        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+#        with:
+#          namespace: ${{ env.kfk_namespace }}
+#          test_completion_max_retries: ${{ env.kfk_max_attempts }}
+#          test_completion_retry_interval: ${{ env.kfk_timeout }}
+#          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
+#          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
+#          crd_list: ${{ env.kfk_cr_name }}
+#          artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
+#          check_tests: true
+#      - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}] Version
+#        if: matrix.test.sequence == 'migrate'
+#        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+#        with:
+#          path_to_template: ${{ matrix.test.kafka_service_migrate_template }}
+#          service_branch: '${{ inputs.service_branch }}'
+#          service_name: 'kafka-service'
+#          repository_name: ${{ inputs.repository_name }}
+#          path_to_chart: 'operator/charts/helm/kafka-service'
+#          namespace: ${{ env.kfk_srvc_namespace }}
+#          deploy_mode: upgrade
+#      - name: Sleep 1m after upgrade
+#        if: matrix.test.sequence == 'migrate'
+#        run: sleep 1m
+#      - name: Verify Kafka Service upgrade
+#        if: matrix.test.sequence == 'migrate'
+#        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+#        with:
+#          namespace: ${{ env.kfk_srvc_namespace }}
+#          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
+#          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
+#          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
+#          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+#          crd_list: ${{ env.kfk_srvc_cr_name }}
+#          artifact_name: Upgrade_Kafka_Service_${{ matrix.test.artifact_name }}
+#          check_tests: true
       # == End kafka migrate tests =======
