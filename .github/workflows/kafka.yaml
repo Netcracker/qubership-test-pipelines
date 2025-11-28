@@ -195,6 +195,7 @@ jobs:
         with:
           path_to_template: ${{ matrix.test.kafka_template }}
           service_branch: '${{ matrix.test.kafka_install_version }}'
+          restricted: ${{ matrix.test.restricted }}
           service_name: 'kafka'
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: 'operator/charts/helm/kafka'
@@ -224,6 +225,7 @@ jobs:
         with:
           path_to_template: ${{ matrix.test.kafka_service_template }}
           service_branch: '${{ matrix.test.kafka_install_version }}'
+          restricted: ${{ matrix.test.restricted }}
           service_name: 'kafka-service'
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: 'operator/charts/helm/kafka-service'

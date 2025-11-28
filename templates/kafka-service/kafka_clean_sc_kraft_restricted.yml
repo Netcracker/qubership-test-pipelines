@@ -1,0 +1,55 @@
+global:
+  name: kafka
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: admin
+      clientUsername: client
+      clientPassword: client
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: admin
+kafka:
+  install: true
+  kraft:
+    enabled: true
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: component
+                operator: In
+                values:
+                  - kafka
+          topologyKey: kubernetes.io/hostname
+  replicas: 3
+  storage:
+    size: 1Gi
+    className:
+      - standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+monitoring:
+  install: false
+  securityContext:
+    runAsUser: 1000
+akhq:
+  install: false
+  ingress:
+    host: akhq-kafka-service.qubership.com
+backupDaemon:
+  install: true
+  storage: 1Gi
+  storageClass: standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+integrationTests:
+  install: true
+  waitForResult: true
+  tags: kafka_crudORkafka_images
