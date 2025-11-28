@@ -40,13 +40,13 @@ opensearch:
     ingress:
       enabled: true
       hosts:
-        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
+        - opensearch-opensearch-service.qubership.com
 dashboards:
   enabled: true
   ingress:
     enabled: false
     hosts:
-      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
+      - host: dashboards-opensearch-service.qubership.com
         paths:
           - path: /
 dbaasAdapter:

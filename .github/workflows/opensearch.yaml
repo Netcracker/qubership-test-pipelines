@@ -106,17 +106,6 @@ jobs:
           ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
-#      - name: Set up Python
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.13'
-#      - name: Check Python version
-#        run: python --version
-#      - name: Install dependencies
-#        # language=bash
-#        run: |
-#          python -m pip install --upgrade pip
-#          pip install pyyaml
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
@@ -152,18 +141,6 @@ jobs:
           ref: '${{inputs.pipeline_branch}}'
           repository: 'Netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
-#      - name: Set up Python
-#        uses: actions/setup-python@v5
-#        with:
-#          python-version: '3.13'
-#      - name: Check Python version
-#        run: python --version
-#      - name: Install dependencies
-#        # language=bash
-#        run: |
-#          python -m pip install --upgrade pip
-#          pip install pyyaml
-#          pip install packaging
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@main
         with:
