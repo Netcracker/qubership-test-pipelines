@@ -30,21 +30,27 @@ echo "===================================================="
 echo "matrix_json=$matrix_json"
 echo "===================================================="
 # Extract automation part separately if exists
-auto_matrix_json=$(yq -o=json "." "${WORKFLOW_CONFIG}" | jq -c '.jobs[] | select(.purpose == "automation")')
+auto_matrix_json=$(yq -o=json "." "${WORKFLOW_CONFIG}" | jq -c '.auto_jobs = [.jobs[] | select(.purpose == "automation")]' )
 echo "===================================================="
 echo "auto_matrix_json=$auto_matrix_json"
 echo "===================================================="
 # If automation part exists, generate section for each version from versions and append it to the main matrix
 if [ -n "$auto_matrix_json" ]; then
-    for version in $(echo "$versions_json" | jq -c -r '.[]'); do
-        echo "Processing version: $version"
-        export release_version=$version
-        echo "===================================================="
-        auto_part=$(echo "${auto_matrix_json}" | envsubst)
-        echo "auto_part=${auto_part}"
-        echo "===================================================="
-        matrix_json=$(echo "$matrix_json" | jq -c --argjson new_job "$auto_part" '.jobs += [ $new_job ]')
-    done
+    echo "Automation part exists"
+    while IFS= read -r job; do
+        echo "#######################################################################"
+        echo "Automation job: $job"
+        echo "#######################################################################"
+        for version in $(echo "$versions_json" | jq -c -r '.[]'); do
+            echo "Processing version: $version"
+            export release_version=$version
+            echo "===================================================="
+            auto_part=$(echo "${job}" | envsubst)
+            echo "auto_part=${auto_part}"
+            echo "===================================================="
+            matrix_json=$(echo "$matrix_json" | jq -c --argjson new_job "$auto_part" '.jobs += [ $new_job ]')
+        done
+    done < <(echo "$auto_matrix_json" | jq -c '.auto_jobs[]')
 fi
 matrix=$(echo ${matrix_json} | jq -c '.jobs')
 echo "matrix=$matrix" >> $GITHUB_OUTPUT

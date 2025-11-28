@@ -1,3 +1,17 @@
+global:
+  name: kafka
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: admin
+      clientUsername: client
+      clientPassword: client
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: admin
 kafka:
   install: true
   kraft:
@@ -20,22 +34,14 @@ kafka:
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
-global:
-  name: kafka
-  secrets:
-    kafka:
-      adminUsername: admin
-      adminPassword: admin
-      clientUsername: client
-      clientPassword: client
-      zookeeperClientUsername: zclient
-      zookeeperClientPassword: zclient
-    akhq:
-      defaultUsername: admin
-      defaultPassword: admin
-    backupDaemon:
-      username: admin
-      password: admin
+monitoring:
+  install: false
+  securityContext:
+    runAsUser: 1000
+akhq:
+  install: false
+  ingress:
+    host: akhq-kafka-service.qubership.com
 backupDaemon:
   install: true
   storage: 1Gi
@@ -43,19 +49,6 @@ backupDaemon:
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
-operator:
-  kmmConfiguratorEnabled: false
-  akhqConfigurator:
-    enabled: true
-    watchNamespace: kafka-service
-monitoring:
-  install: false
-  securityContext:
-    runAsUser: 1000
-akhq:
-  install: true
-  ingress:
-    host: akhq-kafka-service.qa-kubernetes.openshift.sdntest.qubership.com
 integrationTests:
   install: true
   waitForResult: true
