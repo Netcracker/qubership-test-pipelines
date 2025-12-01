@@ -169,7 +169,7 @@ runs:
     - name: Update versions in values
       id: update-versions
       if: ${{ steps.check-release.outputs.is_release == 'false' }}
-      uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@v1.0.5
+      uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@39-add-the-ability-to-run-a-test-workflow-when-creating-a-pull-request-from-fork
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
         config-file: .github/charts-values-update-config.yaml
