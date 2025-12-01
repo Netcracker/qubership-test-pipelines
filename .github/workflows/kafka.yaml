@@ -248,6 +248,7 @@ jobs:
 
       # == Start kafka upgrade tests =======
       - name: Print upgrade deployment parameters
+        if: matrix.test.sequence == 'upgrade'
         run: cat qubership-test-pipelines/${{ matrix.test.kafka_upgrade_version }}
       - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
