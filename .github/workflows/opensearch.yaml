@@ -220,6 +220,10 @@ jobs:
           path_to_chart: 'operator/charts/helm/opensearch-service'
           namespace: 'opensearch'
 
+      - name: Sleep 1m after upgrade
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        run: sleep 1m
+
       - name: Verify Opensearch upgrade to [${{ matrix.test.upgrade_version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation

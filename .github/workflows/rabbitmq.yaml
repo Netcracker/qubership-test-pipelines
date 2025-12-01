@@ -189,6 +189,7 @@ jobs:
       - name: Print upgrade deployment parameters
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
+
       - name: Upgrade RabbitMQ to [${{ matrix.test.upgrade_version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -201,9 +202,11 @@ jobs:
           repository_name: '${{ inputs.repository_name }}'
           path_to_chart: 'operator/charts/helm/rabbitmq'
           namespace: 'rabbitmq'
+
       - name: Sleep 1m after upgrade
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: sleep 1m
+
       - name: Verify RabbitMQ upgrade
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
