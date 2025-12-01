@@ -154,6 +154,7 @@ jobs:
       # == Start Zookeeper installation tests =======
       - name: Print install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.zookeeper_template }}
+        if: matrix.test.zookeeper == true
       - name: Clean Install Zookeeper [LATEST]
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -248,6 +249,7 @@ jobs:
       # == Start kafka upgrade tests =======
       - name: Print upgrade deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.kafka_upgrade_version }}
+        if: matrix.test.sequence == 'upgrade'
       - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
