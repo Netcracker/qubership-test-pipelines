@@ -36,7 +36,7 @@ runs:
           echo "::warning::Files with clusterRoles not found. Resources not created."
         else
           echo "Applying ClusterRoles..."
-          kubectl replace -f $restricted_folder/clusterRoles
+          kubectl create -f $restricted_folder/clusterRoles
         fi
 
     - name: Create ClusterRoleBindings
@@ -48,7 +48,7 @@ runs:
           echo "::warning::Files with clusterRoleBindings not found. Resources not created."
         else
           echo "Applying clusterRoleBindings..."
-          kubectl replace -f $restricted_folder/clusterRoleBindings
+          kubectl create -f $restricted_folder/clusterRoleBindings
         fi
 
 #Create Certificate
@@ -113,12 +113,12 @@ runs:
     - name: Create Role
       shell: bash
       # language=bash
-      run: kubectl replace -f qubership-test-pipelines/restricted/restricted-role.yml
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-role.yml
 
     - name: Create RoleBindings
       shell: bash
       # language=bash
-      run: kubectl replace -f qubership-test-pipelines/restricted/restricted-rb.yml
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml
 
 #Add user to kubeconfig
     - name: Add user configuration
