@@ -152,11 +152,14 @@ jobs:
       # == End TLS certs addition if needed =======
 
       # == Start Zookeeper installation tests =======
+      - name: Print install deployment parameters
+        if: matrix.test.zookeeper == true
+        run: cat qubership-test-pipelines/${{ matrix.test.zookeeper_template }}
       - name: Clean Install Zookeeper [LATEST]
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: ${{ matrix.test.zookeeper_template }}
+          path_to_template: '${{ matrix.test.zookeeper_template }}'
           service_branch: 'main'
           service_name: 'zookeeper-service'
           repository_name: 'Netcracker/qubership-zookeeper'
@@ -190,10 +193,12 @@ jobs:
       # == End update YAML secrets if needed =======
 
       # == Start kafka installation tests =======
+      - name: Print install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.kafka_template }}
       - name: Clean Install Kafka [${{ matrix.test.kafka_install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: ${{ matrix.test.kafka_template }}
+          path_to_template: '${{ matrix.test.kafka_template }}'
           service_branch: '${{ matrix.test.kafka_install_version }}'
           service_name: 'kafka'
           repository_name: ${{ inputs.repository_name }}
@@ -222,7 +227,7 @@ jobs:
       - name: Clean Install Kafka Service [${{ matrix.test.kafka_install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: ${{ matrix.test.kafka_service_template }}
+          path_to_template: '${{ matrix.test.kafka_service_template }}'
           service_branch: '${{ matrix.test.kafka_install_version }}'
           service_name: 'kafka-service'
           repository_name: ${{ inputs.repository_name }}
@@ -242,11 +247,13 @@ jobs:
       # == End kafka service installation tests =======
 
       # == Start kafka upgrade tests =======
+      - name: Print upgrade deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.kafka_upgrade_version }}
       - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: ${{ matrix.test.kafka_upgrade_template }}
+          path_to_template: '${{ matrix.test.kafka_upgrade_template }}'
           service_branch: '${{ matrix.test.kafka_upgrade_version }}'
           service_name: 'kafka'
           repository_name: ${{ inputs.repository_name }}
@@ -272,7 +279,7 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: ${{ matrix.test.kafka_service_upgrade_template }}
+          path_to_template: '${{ matrix.test.kafka_service_upgrade_template }}'
           service_branch: '${{ inputs.service_branch }}'
           service_name: 'kafka-service'
           repository_name: ${{ inputs.repository_name }}
@@ -301,7 +308,7 @@ jobs:
 #        if: matrix.test.sequence == 'migrate'
 #        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
 #        with:
-#          path_to_template: ${{ matrix.test.kafka_migrate_template }}
+#          path_to_template: '${{ matrix.test.kafka_migrate_template }}'
 #          service_branch: '${{ matrix.test.kafka_migrate_version }}'
 #          service_name: 'kafka'
 #          repository_name: ${{ inputs.repository_name }}
@@ -327,7 +334,7 @@ jobs:
 #        if: matrix.test.sequence == 'migrate'
 #        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
 #        with:
-#          path_to_template: ${{ matrix.test.kafka_upgrade_template }}
+#          path_to_template: '${{ matrix.test.kafka_upgrade_template }}'
 #          service_branch: '${{ matrix.test.kafka_upgrade_version }}'
 #          service_name: 'kafka'
 #          repository_name: ${{ inputs.repository_name }}
@@ -353,7 +360,7 @@ jobs:
 #        if: matrix.test.sequence == 'migrate'
 #        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
 #        with:
-#          path_to_template: ${{ matrix.test.kafka_service_migrate_template }}
+#          path_to_template: '${{ matrix.test.kafka_service_migrate_template }}'
 #          service_branch: '${{ inputs.service_branch }}'
 #          service_name: 'kafka-service'
 #          repository_name: ${{ inputs.repository_name }}
