@@ -249,7 +249,7 @@ jobs:
       # == Start kafka upgrade tests =======
       - name: Print upgrade deployment parameters
         if: matrix.test.sequence == 'upgrade'
-        run: cat qubership-test-pipelines/${{ matrix.test.kafka_upgrade_version }}
+        run: cat qubership-test-pipelines/${{ matrix.test.kafka_upgrade_template }}
       - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
