@@ -100,13 +100,13 @@ jobs:
       kfk_timeout: '10s'
       kfk_max_attempts_for_provisioner: 100
       kfk_timeout_for_provisioner: '10s'
-      kfk_cr_name: 'kafkas.netcracker.com'
+      kfk_path_to_chart: 'operator/charts/helm/kafka'
       kfk_srvc_namespace: kafka
       kfk_srvc_max_attempts: 60
       kfk_srvc_timeout: '10s'
       kfk_srvc_max_attempts_for_provisioner: 100
       kfk_srvc_timeout_for_provisioner: '10s'
-      kfk_srvc_cr_name: 'kafkaservices.netcracker.com'
+      kfk_srvc_path_to_chart: 'operator/charts/helm/kafka-service'
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
@@ -204,8 +204,14 @@ jobs:
           service_branch: '${{ matrix.test.kafka_install_version }}'
           service_name: 'kafka'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/kafka'
+          path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
+
+      - name: Get Installed Kafka CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_kafka_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.kfk_path_to_chart}}/crds'
 
       - name: Verify Kafka installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -215,7 +221,7 @@ jobs:
           test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
-          crd_list: ${{ env.kfk_cr_name }}
+          crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
           artifact_name: Install_Kafka_${{ matrix.test.artifact_name }}
           check_tests: true
       # == End kafka installation tests =======
@@ -234,8 +240,15 @@ jobs:
           service_branch: '${{ matrix.test.kafka_install_version }}'
           service_name: 'kafka-service'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/kafka-service'
+          path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
           namespace: ${{ env.kfk_srvc_namespace }}
+
+      - name: Get Installed Kafka-Service CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_kafka_service_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.kfk_srvc_path_to_chart}}/crds'
+
 
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -245,7 +258,7 @@ jobs:
           test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
-          crd_list: ${{ env.kfk_srvc_cr_name }}
+          crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
           artifact_name: Install_Kafka_Service_${{ matrix.test.artifact_name }}
           check_tests: true
       # == End kafka service installation tests =======
@@ -263,9 +276,16 @@ jobs:
           service_branch: '${{ matrix.test.kafka_upgrade_version }}'
           service_name: 'kafka'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/kafka'
+          path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
           deploy_mode: upgrade
+
+      - name: Get Upgraded Kafka CRD name
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: upgrade_kafka_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.kfk_path_to_chart}}/crds'
 
       - name: Sleep 1m after upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -280,7 +300,7 @@ jobs:
           test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
-          crd_list: ${{ env.kfk_cr_name }}
+          crd_list: ${{ steps.upgrade_kafka_get_crds.outputs.crd_names }}
           artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
           check_tests: true
 
@@ -292,9 +312,16 @@ jobs:
           service_branch: '${{ inputs.service_branch }}'
           service_name: 'kafka-service'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/kafka-service'
+          path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
           namespace: ${{ env.kfk_srvc_namespace }}
           deploy_mode: upgrade
+
+      - name: Get Upgraded Kafka CRD name
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: upgrade_kafka_service_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.kfk_srvc_path_to_chart}}/crds'
 
       - name: Sleep 1m after upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -309,7 +336,7 @@ jobs:
           test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
-          crd_list: ${{ env.kfk_srvc_cr_name }}
+          crd_list: ${{ steps.upgrade_kafka_service_get_crds.outputs.crd_names }}
           artifact_name: Upgrade_Kafka_Service_${{ matrix.test.artifact_name }}
           check_tests: true
       # == End kafka upgrade tests =======
