@@ -155,7 +155,6 @@ jobs:
       - name: Print install deployment parameters
         if: matrix.test.zookeeper == true
         run: cat qubership-test-pipelines/${{ matrix.test.zookeeper_template }}
-        if: matrix.test.zookeeper == true
       - name: Clean Install Zookeeper [LATEST]
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
