@@ -25,7 +25,7 @@ runs:
           yml_kind=$(yq e '.kind' $yaml)
           if [ "$yml_kind" == "CustomResourceDefinition" ]; then
             crd_name=$(yq e '.metadata.name' $yaml)
-            CDRS="$CDRS $crd_name"
+            CDRS="$crd_name $CDRS"
           fi
         done
         CRDS=$(echo $CDRS | xargs)
