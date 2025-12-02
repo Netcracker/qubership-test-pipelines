@@ -165,6 +165,7 @@ jobs:
           repository_name: 'Netcracker/qubership-zookeeper'
           path_to_chart: 'operator/charts/helm/zookeeper-service'
           namespace: 'zookeeper'
+
       - name: Verify Zookeeper installation
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -195,6 +196,7 @@ jobs:
       # == Start kafka installation tests =======
       - name: Print install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.kafka_template }}
+
       - name: Clean Install Kafka [${{ matrix.test.kafka_install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
@@ -204,6 +206,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: 'operator/charts/helm/kafka'
           namespace: ${{ env.kfk_namespace }}
+
       - name: Verify Kafka installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
@@ -233,6 +236,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: 'operator/charts/helm/kafka-service'
           namespace: ${{ env.kfk_srvc_namespace }}
+
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
@@ -248,8 +252,8 @@ jobs:
 
       # == Start kafka upgrade tests =======
       - name: Print upgrade deployment parameters
-        if: matrix.test.sequence == 'upgrade'
         run: cat qubership-test-pipelines/${{ matrix.test.kafka_upgrade_template }}
+        if: matrix.test.sequence == 'upgrade'
 
       - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
@@ -262,9 +266,11 @@ jobs:
           path_to_chart: 'operator/charts/helm/kafka'
           namespace: ${{ env.kfk_namespace }}
           deploy_mode: upgrade
+
       - name: Sleep 1m after upgrade
         if: matrix.test.sequence == 'upgrade'
         run: sleep 1m
+
       - name: Verify Kafka upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -277,6 +283,7 @@ jobs:
           crd_list: ${{ env.kfk_cr_name }}
           artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
           check_tests: true
+
       - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -288,9 +295,11 @@ jobs:
           path_to_chart: 'operator/charts/helm/kafka-service'
           namespace: ${{ env.kfk_srvc_namespace }}
           deploy_mode: upgrade
+
       - name: Sleep 1m after upgrade
         if: matrix.test.sequence == 'upgrade'
         run: sleep 1m
+
       - name: Verify Kafka Service upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
