@@ -86,8 +86,6 @@ jobs:
           chmod +x ./scripts/matrix.sh
           ./scripts/matrix.sh ${{ github.workspace }}/qubership-rabbitmq/${{ inputs.versions_file }} ./workflow-config/rabbitmq.yaml "${{ inputs.service_branch }}"
 
-  #----------- Current service branch ----------
-  #[V] Clean [LATEST], Update [LATEST] Diff Params
   RabbitMQ-Test-Cases:
     runs-on: ${{inputs.runner_type}}
     needs: prepare
@@ -161,9 +159,9 @@ jobs:
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
 
       - name: Print install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template}}
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
-      - name: Clean Install RabbitMQ
+      - name: Clean Install RabbitMQ [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: '${{ matrix.test.template }}'
@@ -187,12 +185,12 @@ jobs:
           artifact_name: Installation_${{ matrix.test.artifact_name }}
       # == End Install steps ==
 
-      # == Start Update steps ==
-      - name: Print updated deployment parameters
-        if: ${{ matrix.test.sequence == 'update' }}
-        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template}}
-      - name: Update RabbitMQ With Diff Params
-        if: ${{ matrix.test.sequence == 'update' }}
+      # == Start Upgrade steps ==
+      - name: Print upgrade deployment parameters
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
+      - name: Upgrade RabbitMQ to [${{ matrix.test.upgrade_version }}]
+        if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: '${{ matrix.test.upgrade_template }}'
@@ -203,11 +201,11 @@ jobs:
           repository_name: '${{ inputs.repository_name }}'
           path_to_chart: 'operator/charts/helm/rabbitmq'
           namespace: 'rabbitmq'
-      - name: Sleep 1m after update
-        if: ${{ matrix.test.sequence == 'update' }}
+      - name: Sleep 1m after upgrade
+        if: ${{ matrix.test.sequence == 'upgrade' }}
         run: sleep 1m
-      - name: Verify RabbitMQ update
-        if: ${{ matrix.test.sequence == 'update' }}
+      - name: Verify RabbitMQ upgrade
+        if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: 'rabbitmq'
@@ -217,5 +215,5 @@ jobs:
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           service_branch: ${{ matrix.test.install_version }}
           check_tests: true
-          artifact_name: Installation_${{ matrix.test.artifact_name }}
+          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
       # == End Update steps ==
