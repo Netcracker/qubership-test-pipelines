@@ -9,7 +9,8 @@ inputs:
       # 'qubership-kafka/operator/charts/helm/kafka-service/crds'
     required: true
 outputs:
-  crd_names: ${{ steps.get_crds.outputs.crd_names }}
+  crd_names:
+    value: ${{ steps.get_crds.outputs.crd_names }}
 runs:
   using: "composite"
   steps:
