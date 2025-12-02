@@ -28,7 +28,7 @@ runs:
             CDRS="$crd_name $CDRS"
           fi
         done
-        CRDS=$(echo $CDRS | xargs)
+        CRDS=$(echo $CDRS |  sed "s/^[ ]*//;s/[ ]*$//")
         echo "ℹ️ CRDs: $CRDS"
         echo "crd_names=$CDRS" >> $GITHUB_OUTPUT
       continue-on-error: true
