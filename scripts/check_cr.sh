@@ -1,6 +1,6 @@
 check_cr_conditions() {
-    local crd_name="$1"
-    local namespace="$2"
+    local crd_name="$(echo $1 | xargs)"
+    local namespace="$(echo $2 | xargs)"
 
     if [ -z "$crd_name" ]; then
         echo "CRD name not specified"
