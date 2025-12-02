@@ -76,7 +76,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
 
       - name: Process versions file and matrix generation
@@ -117,7 +117,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -153,9 +153,8 @@ jobs:
 
       # == Start Zookeeper installation tests =======
       - name: Print install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.zookeeper_template }}
         if: matrix.test.zookeeper == true
-
+        run: cat qubership-test-pipelines/${{ matrix.test.zookeeper_template }}
       - name: Clean Install Zookeeper [LATEST]
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
