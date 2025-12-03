@@ -93,4 +93,6 @@ secret:
     password: ""
     registrationToken: ""
 statusProvisioner:
-  lifetimeAfterCompletion: 120
+  lifetimeAfterCompletion: 30
+  integrationTestsTimeout: 900
+  podReadinessTimeout: 900
