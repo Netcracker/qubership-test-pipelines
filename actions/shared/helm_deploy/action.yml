@@ -177,6 +177,7 @@ runs:
         version-replace-method: 'parse'
         working-directory: ${{inputs.repository_name}}
         chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
+        default-tag: 'main'
 
     - name: Install/update service with helm
       shell: bash
