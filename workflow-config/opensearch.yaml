@@ -1,36 +1,36 @@
 jobs:
   ## A special configuration section for generating jobs for installing previous releases on the current version
   - purpose: automation
-    name: "Clean [${release_version}], Upgrade to [${service_branch}]"
+    name: "Clean [${release_version}]. Upgrade to [${service_branch}]"
     install_version: "${release_version}"
     template: "templates/opensearch-service/opensearch_clean_all_on_sc.yml"
     upgrade_version: "${service_branch}"
     upgrade_template: "templates/opensearch-service/opensearch_clean_all_on_sc.yml"
     sequence: upgrade
     restricted: false
-    artifact_name: "Clean_${release_version}_Upgrade_${service_branch}"
+    artifact_name: "Clean_${release_version}_Upgrade_CURRENT"
   ## ===============================================================================
-  - name: "Clean [${service_branch}] restricted"
-    install_version: "${service_branch}"
-    template: "templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml"
-    sequence: install
-    restricted: true
-    artifact_name: "Clean_${service_branch}_Restricted"
-
-  - name: "Clean [${service_branch}] Update with diff params"
+  - name: "Clean [${service_branch}]. Update with diff params"
     install_version: "${service_branch}"
     template: "templates/opensearch-service/opensearch_clean_all_on_sc.yml"
     upgrade_version: "${service_branch}"
     upgrade_template: "templates/opensearch-service/opensearch_update_all_on_sc.yml"
     sequence: upgrade
     restricted: false
-    artifact_name: "Clean_${service_branch}_Upgrade_With_Diff_Params"
+    artifact_name: "Clean_CURRENT_Update_Diff_Params"
 
-  - name: "Clean [${service_branch}] S3 TLS"
+  - name: "Clean [${service_branch}] in Restricted mode"
+    install_version: "${service_branch}"
+    template: "templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml"
+    sequence: install
+    restricted: true
+    artifact_name: "Clean_CURRENT_Restricted"
+
+  - name: "Clean [${service_branch}] on S3 storage in TLS"
     install_version: "${service_branch}"
     template: "templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml"
     sequence: install
     restricted: false
     tls: true
     backend: "s3"
-    artifact_name: "Clean_${service_branch}_S3_TLS"
+    artifact_name: "Clean_CURRENT_S3_TLS"

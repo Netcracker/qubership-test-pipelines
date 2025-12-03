@@ -213,6 +213,10 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
 
+      - name: Sleep 1m before upgrade
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        run: sleep 1m
+
       - name: Upgrade Opensearch to [${{ matrix.test.upgrade_version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
