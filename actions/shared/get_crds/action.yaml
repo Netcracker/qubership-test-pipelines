@@ -9,7 +9,8 @@ inputs:
       # 'qubership-kafka/operator/charts/helm/kafka-service/crds'
     required: true
 outputs:
-  crd_names: ${{ steps.get_crds.outputs.crd_names }}
+  crd_names:
+    value: ${{ steps.get_crds.outputs.crd_names }}
 runs:
   using: "composite"
   steps:
@@ -19,15 +20,15 @@ runs:
       run: |
         # ▶️ Get CRDs
         yamls=$(find ${{inputs.crd_location}} -type f -name "*.yaml" -or -name "*.yml")
-        CDRS=''
+        CRDS_ARRAY=()
         for yaml in ${yamls}; do
           yml_kind=$(yq e '.kind' $yaml)
           if [ "$yml_kind" == "CustomResourceDefinition" ]; then
             crd_name=$(yq e '.metadata.name' $yaml)
-            CDRS="$CDRS $crd_name"
+            CRDS_ARRAY+=$crd_name
           fi
         done
-        CRDS=$(echo $CDRS | xargs)
-        echo "ℹ️ CRDs: $CRDS"
-        echo "crd_names=$CDRS" >> $GITHUB_OUTPUT
+        CRDS=${CRDS_ARRAY[*]}
+        echo "ℹ️ CRDs: '$CRDS'"
+        echo "crd_names=${CRDS}" >> $GITHUB_OUTPUT
       continue-on-error: true
