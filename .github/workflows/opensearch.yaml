@@ -96,9 +96,9 @@ jobs:
     name: ${{ matrix.test.name }}
     env:
       namespace: 'opensearch'
-      test_completion_max_retries: 40
+      test_completion_max_retries: 50
       test_completion_retry_interval: '10s'
-      service_ready_max_retries: 50
+      service_ready_max_retries: 100
       service_ready_retry_interval: '10s'
       service_branch: ''
       path_to_chart: 'operator/charts/helm/opensearch-service'

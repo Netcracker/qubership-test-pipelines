@@ -86,7 +86,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORopensearch_images
+  tags: smokeORhaORopensearch_images
 secret:
   idp:
     username: ""
