@@ -26,7 +26,7 @@ opensearch:
         cpu: 2
         memory: 4Gi
   snapshots:
-    enabled: true
+    enabled: false
     size: 1Gi
     s3:
       enabled: false
