@@ -32,7 +32,7 @@ opensearch:
       enabled: true
       pathStyleAccess: true
       url: https://s3.amazonaws.com/
-      bucket: test-pipelines-storage
+      bucket: test-pipelines-storage-opensearch
       region: us-east-1
       keyId: ''
       keySecret: ''
