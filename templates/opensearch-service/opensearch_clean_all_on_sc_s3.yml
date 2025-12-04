@@ -1,0 +1,84 @@
+global:
+  cloudIntegrationEnabled: false
+  tls:
+    enabled: false
+    generateCerts:
+      certProvider: cert-manager
+      clusterIssuerName: test-clusterissuer
+opensearch:
+  securityConfig:
+    authc:
+      basic:
+        username: admin
+        password: Root1234#
+  securityContextCustom:
+    runAsUser: 1000
+    fsGroup: 1000
+  master:
+    persistence:
+      storageClass: standard
+      size: 10Gi
+    resources:
+      requests:
+        cpu: 900m
+        memory: 4Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
+  snapshots:
+    enabled: true
+    size: 1Gi
+    s3:
+      enabled: true
+      pathStyleAccess: true
+      url: https://s3.amazonaws.com/
+      bucket: test-pipelines-storage-opensearch
+      region: us-east-1
+      keyId: ''
+      keySecret: ''
+  client:
+    ingress:
+      enabled: true
+      hosts:
+        - opensearch-opensearch-service.qubership.com
+dashboards:
+  enabled: true
+  ingress:
+    enabled: false
+    hosts:
+      - host: dashboards-opensearch-service.qubership.com
+        paths:
+          - path: /
+dbaasAdapter:
+  enabled: false
+  dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
+  opensearchRepo: snapshots
+  opensearchRepoRoot: /usr/share/opensearch/
+  dbaasUsername: dbaas-adapter
+  dbaasPassword: dbaas-adapter
+  registrationAuthUsername: test
+  registrationAuthPassword: test
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+monitoring:
+  enabled: false
+  includeIndices: true
+  slowQueries:
+    enabled: true
+curator:
+  enabled: true
+  backupSchedule: 0 * * * *
+  evictionPolicy: 0/1d,7d/delete
+  username: backup
+  password: backup
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+integrationTests:
+  enabled: true
+  tags: smokeORopensearchORopensearch_images
+statusProvisioner:
+  lifetimeAfterCompletion: 30
+  integrationTestsTimeout: 900
+  podReadinessTimeout: 900

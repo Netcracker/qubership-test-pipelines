@@ -26,11 +26,18 @@ jobs:
     restricted: true
     artifact_name: "Clean_CURRENT_Restricted"
 
-  - name: "Clean [${service_branch}] on S3 storage in TLS"
+  - name: "Clean [${service_branch}] on S3 storage"
     install_version: "${service_branch}"
-    template: "templates/opensearch-service/opensearch_clean_all_on_sc_tls_s3.yml"
+    template: "templates/opensearch-service/opensearch_clean_all_on_sc_s3.yml"
+    sequence: install
+    restricted: false
+    backend: "s3"
+    artifact_name: "Clean_CURRENT_S3"
+
+  - name: "Clean [${service_branch}] in TLS mode"
+    install_version: "${service_branch}"
+    template: "templates/opensearch-service/opensearch_clean_all_on_sc_tls.yml"
     sequence: install
     restricted: false
     tls: true
-    backend: "s3"
-    artifact_name: "Clean_CURRENT_S3_TLS"
+    artifact_name: "Clean_CURRENT_TLS"
