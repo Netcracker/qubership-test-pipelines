@@ -72,7 +72,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORopensearchORopensearch_images
+  tags: smokeORopensearch_images
 statusProvisioner:
   lifetimeAfterCompletion: 30
   integrationTestsTimeout: 900
