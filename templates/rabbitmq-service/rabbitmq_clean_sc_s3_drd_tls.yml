@@ -25,7 +25,7 @@ rabbitmq:
   auto_reboot: true
   ingress:
     enabled: true
-    host: rabbitmq.qa-kubernetes.openshift.sdntest.qubership.com
+    host: rabbitmq.qubership.com
   custom_params:
     rabbitmq_vm_memory_high_watermark: 90%
     rabbitmq_default_user: admin

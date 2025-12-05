@@ -171,9 +171,9 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: zookeeper
-          test_completion_max_retries: 60
+          test_completion_max_retries: 40
           test_completion_retry_interval: '10s'
-          service_ready_max_retries: 150
+          service_ready_max_retries: 80
           service_ready_retry_interval: '10s'
           artifact_name: Install_Zookeeper_${{ matrix.test.artifact_name }}
       # == End Zookeeper installation tests =======
