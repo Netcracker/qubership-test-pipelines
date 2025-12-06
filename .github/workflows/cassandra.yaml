@@ -1,0 +1,181 @@
+name: Reusable Cassandra Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository_name:
+        description: 'Repository with Cassandra service'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra-operator'
+      service_branch:
+        description: 'Branch of qubership-cassandra-operator repository'
+        required: false
+        type: string
+        default: 'main'
+      versions_file:
+        description: 'Path to file with version list'
+        type: string
+        required: true
+        default: '.github/versions.yaml'
+      pipeline_branch:
+        description: 'Branch of qubership-test-pipelines repository'
+        type: string
+        required: true
+        default: 'main'
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+  workflow_call:
+    inputs:
+      repository_name:
+        description: 'Repository with Cassandra service'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra-operator'
+      service_branch:
+        description: 'Branch of qubership-cassandra-operator repository'
+        required: false
+        type: string
+        default: 'main'
+      versions_file:
+        description: 'Path to file with version list'
+        type: string
+        required: true
+        default: '.github/versions.yaml'
+      pipeline_branch:
+        description: 'Branch of qubership-test-pipelines repository'
+        type: string
+        required: true
+        default: 'main'
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+
+jobs:
+  prepare:
+    runs-on: ${{ inputs.runner_type }}
+    outputs:
+      versions: ${{ steps.process-versions.outputs.versions }}
+      previous_version: ${{ steps.process-versions.outputs.previous_version }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          ref: '${{ inputs.service_branch }}'
+          repository: '${{ inputs.repository_name }}'
+          path: 'qubership-cassandra-operator'
+
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+
+      - name: Process versions file and matrix generation
+        id: process-versions
+        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
+        run: |
+          chmod +x ./scripts/matrix.sh
+          ./scripts/matrix.sh ${{ github.workspace }}/qubership-cassandra-operator/${{ inputs.versions_file }} ./workflow-config/cassandra.yaml "${{ inputs.service_branch }}"
+
+  Cassandra-Test-Cases:
+    needs: prepare
+    runs-on: ${{ inputs.runner_type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.test.name }}
+    steps:
+      # == 01 Start ======= Common pre-steps for all tests =======
+      - name: "Print job parameters"
+        run: |
+          echo "======== Job parameters ======="
+          echo "${{ toJson(matrix.test) }}"
+
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      # == 01 End ======= Common pre-steps for all tests =======
+
+      # == 02 Start ======= Installation steps =======
+      - name: Install Cassandra [${{ matrix.test.install_version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: '${{ matrix.test.template }}'
+          service_branch: '${{ matrix.test.install_version }}'
+          service_name: 'cassandra'
+          repository_name: '${{ inputs.repository_name }}'
+          path_to_chart: 'charts/qubership-cassandra-operator'
+          namespace: 'cassandra'
+          restricted: '${{ matrix.test.restricted }}'
+
+      - name: Sleep 2m
+        run: sleep 2m
+
+      - name: Verify Cassandra installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: 'cassandra'
+          test_completion_max_retries: '50'
+          test_completion_retry_interval: '10s'
+          service_ready_max_retries: '50'
+          service_ready_retry_interval: '10s'
+          service_branch: '${{ matrix.test.install_version }}'
+          check_tests: 'true'
+          artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
+      # == 02 End ======= Installation steps =======
+
+      # == Start ======= Specific steps for upgrade tests =======
+      - name: Upgrade Cassandra to [${{ matrix.test.upgrade_version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: '${{ matrix.test.upgrade_template }}'
+          service_branch: '${{ matrix.test.upgrade_version }}'
+          deploy_mode: 'upgrade'
+          service_name: 'cassandra'
+          repository_name: '${{ inputs.repository_name }}'
+          path_to_chart: 'charts/qubership-cassandra-operator'
+          namespace: 'cassandra'
+          restricted: '${{ matrix.test.restricted }}'
+
+      - name: Sleep 2m
+        run: sleep 2m
+
+      - name: Verify Cassandra upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: 'cassandra'
+          test_completion_max_retries: '50'
+          test_completion_retry_interval: '10s'
+          service_ready_max_retries: '50'
+          service_ready_retry_interval: '10s'
+          service_branch: '${{ matrix.test.upgrade_version }}'
+          check_tests: 'true'
+          artifact_name: 'Upgrade_${{ matrix.test.artifact_name }}'
+      # == End ======= Specific steps for upgrade tests =======
+
+      # == Start ======= Diagnostic and cleanup steps =======
+      # - name: Get PlatformMonitoring resource
+      #   if: always()
+      #   run: |
+      #     echo "::group::PlatformMonitoring resource"
+      #     kubectl get PlatformMonitoring platformmonitoring -n monitoring -o yaml
+      #     echo "::endgroup::"
+
+      # == End ======= Diagnostic and cleanup steps =======
