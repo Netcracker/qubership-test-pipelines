@@ -119,7 +119,7 @@ jobs:
           service_branch: '${{ matrix.test.install_version }}'
           service_name: 'cassandra'
           repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'charts/qubership-cassandra-operator'
+          path_to_chart: 'charts/helm/cassandra-operator'
           namespace: 'cassandra'
           restricted: '${{ matrix.test.restricted }}'
 
@@ -149,7 +149,7 @@ jobs:
           deploy_mode: 'upgrade'
           service_name: 'cassandra'
           repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'charts/qubership-cassandra-operator'
+          path_to_chart: 'charts/helm/cassandra-operator'
           namespace: 'cassandra'
           restricted: '${{ matrix.test.restricted }}'
 
