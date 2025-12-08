@@ -2,9 +2,9 @@ jobs:
   ## Upgrade from previous releases to current
   - name: "Clean [${service_branch}], Upgrade [${service_branch}] Diff Params"
     install_version: '${service_branch}'
-    template: "templates/cassandra/clean_deploy.yml"
+    template: "templates/cassandra-service/clean_deploy.yml"
     upgrade_version: '${service_branch}'
-    upgrade_template: "templates/cassandra/values_test.yml"
+    upgrade_template: "templates/cassandra-service/values_test.yml"
     sequence: 'upgrade'
     check_tests: 'true'
     restricted: 'false'
