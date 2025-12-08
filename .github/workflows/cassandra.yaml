@@ -82,6 +82,8 @@ jobs:
         id: process-versions
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
+          ls -l
+          ls -l /scripts
           chmod +x ./scripts/matrix.sh
           ./scripts/matrix.sh ${{ github.workspace }}/qubership-cassandra-operator/${{ inputs.versions_file }} ./workflow-config/cassandra.yaml "${{ inputs.service_branch }}"
 
