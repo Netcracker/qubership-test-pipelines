@@ -193,6 +193,13 @@ runs:
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --skip-crds --debug
         fi
 
+    - name: Get Events
+      if: always()
+      shell: bash
+      # language=bash
+      run: |
+        kubectl get events -n ${{inputs.namespace}}
+
     - name: Get docker images
       shell: bash
       # language=bash
