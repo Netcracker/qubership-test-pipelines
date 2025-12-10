@@ -1,5 +1,6 @@
 cassandra:
     install: true
+    dockerImage: ghcr.io/netcracker/cassandra_4.1:main
     deploymentSchema:
       dataCenters:
         - name: dc1
@@ -9,15 +10,20 @@ cassandra:
             size: 4Gi
             storageClasses:
               - standard
+operator:
+    image: ghcr.io/netcracker/qubership-cassandra-operator:main
+    initImage: ghcr.io/netcracker/qubership-credential-manager:main
 backupDaemon:
     install: true
+    dockerImage: ghcr.io/netcracker/qubership-cassandra-backup-daemon:main
     storage:
       size: 4Gi     
       storageClasses:
         - standard
 dbaas:
-    install: true
+    install: false
 monitoringAgent:
-    install: true
+    install: false
 robotTests:
     install: true
+    dockerImage: ghcr.io/netcracker/qubership-cassandra-tests:main
