@@ -20,7 +20,9 @@ opensearch:
         username: "admin"
         password: "admin"
   tls:
-    enabled: false
+    enabled: falsec
+  config:
+    cluster.routing.allocation.disk.threshold_enabled: false
 monitoring:
   enabled: false
 dbaasAdapter:
