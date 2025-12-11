@@ -352,3 +352,10 @@ runs:
         else
           echo "✅ Service installation completed successfully"
         fi
+
+    - name: Get Events
+      if: always()
+      shell: bash
+      # language=bash
+      run: |
+        kubectl get events -n ${{inputs.namespace}}
