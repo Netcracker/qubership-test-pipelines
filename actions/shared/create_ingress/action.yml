@@ -64,7 +64,9 @@ runs:
 
       - name: Sleep
         shell: bash
-        run: sleep 3m
+        run: |
+          kubectl wait --namespace kube-system --for=condition=Ready pods \
+            --selector=k8s-app=kube-dns --timeout=180s
 
       - name: Get pods
         shell: bash
