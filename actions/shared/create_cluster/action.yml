@@ -1,7 +1,7 @@
 name: 'Create Kubernetes cluster Action'
 description: 'A GitHub Action that creates Kubernetes cluster using Kind'
 inputs:
-  kind_layout:
+  kind-layout:
     description: |
       Kind cluster layout (single-node or multi-node)
     required: false
