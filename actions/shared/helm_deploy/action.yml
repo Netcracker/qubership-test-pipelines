@@ -159,7 +159,7 @@ runs:
       run: |
         # ▶️ Replace slash in service branch
         service_branch="${{ inputs.service_branch }}"
-        if [[ "${service_branch}" =~ ^[0-9][a-f]{7,40}$ ]]; then
+        if [[ "${service_branch}" =~ ^[0-9a-f]{7,40}$ ]]; then
           echo "Using commit SHA as image tag"
           service_branch_updated="${service_branch:0:11}"
         else
