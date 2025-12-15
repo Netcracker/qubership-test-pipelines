@@ -120,7 +120,7 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
         with:
-          kind_layout: '${{ inputs.kind-layout }}'
+          kind-layout: '${{ inputs.kind-layout }}'
 
       - name: Install Ingress Controller
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
