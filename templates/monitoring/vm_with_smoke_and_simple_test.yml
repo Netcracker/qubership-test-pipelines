@@ -1,0 +1,32 @@
+grafana:
+  ingress:
+    host: grafana-monitoring.testdomain.local
+    install: true
+integrationTests:
+  install: true
+  #tags: grafanaORsmoke
+  tags: smoke
+  timeoutBeforeStart: 20
+  customResourcePath: monitoring.qubership.org/v1alpha1/monitoring/platformmonitorings/platformmonitoring
+kubernetesMonitors:
+  kubeSchedulerServiceMonitor:
+    install: true
+  kubeControllerManagerServiceMonitor:
+    install: true
+victoriametrics:
+  vmAuth:
+    ingress:
+      install: true
+      host: vmauth-monitoring.testdomain.local
+  vmAlert:
+    ingress:
+      install: true
+      host: vmalert-monitoring.testdomain.local
+  vmSingle:
+    ingress:
+      install: true
+      host: vmsingle-monitoring.testdomain.local
+  vmAlertManager:
+    ingress:
+      install: true
+      host: vmagent-monitoring.testdomain.local
