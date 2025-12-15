@@ -6,7 +6,6 @@ integrationTests:
   install: true
   #tags: grafanaORsmoke
   tags: smoke
-  timeoutBeforeStart: 60
   customResourcePath: monitoring.qubership.org/v1alpha1/monitoring/platformmonitorings/platformmonitoring
 kubernetesMonitors:
   kubeSchedulerServiceMonitor:
