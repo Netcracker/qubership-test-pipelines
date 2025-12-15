@@ -122,7 +122,6 @@ runs:
           exit 1
         fi
 
-
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
       uses: ./qubership-test-pipelines/actions/shared/create_restricted_resources
