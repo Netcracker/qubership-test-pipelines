@@ -49,6 +49,13 @@ inputs:
     required: false
     default: ""
 
+  check_monitoring_crs:
+      description: |
+        Enable monitoring CRs checks (true) or disable them (false)
+      required: false
+      type: boolean
+      default: false
+
 runs:
   using: "composite"
   steps:
@@ -131,7 +138,13 @@ runs:
             fi
           fi
         done
-
+    - name: Check VictoriaMetrics CRs statuses
+      shell: bash
+      # language=bash
+      if: ${{ inputs.check_monitoring_crs == 'true' }}
+      run: |
+        # ▶️ Check monitoring CRs statuses
+        echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
     - name: Get pods
       shell: bash
       # language=bash

@@ -170,6 +170,8 @@ jobs:
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           check_tests: 'true'
           artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
+          check_monitoring_crs: 'true'
+
       # == 02 End ======= Installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
