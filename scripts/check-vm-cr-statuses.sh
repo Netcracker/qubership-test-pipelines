@@ -42,48 +42,25 @@ while [ $attempt -le "$MAX_ATTEMPTS" ]; do
     name=$(echo "$cr" | jq -r '.name')
     component=$(echo "$cr" | jq -r '.component')
 
-    # Check if cr has "conditionsMatch" (PlatformMonitoring) or common updateStatus
+    # Check type of check
     check_type=$(echo "$cr" | jq -r 'if has("check") then .check else "updateStatus" end')
 
     if [ "$check_type" = "conditionsMatch" ]; then
-      expected_type=$(echo "$cr" | jq -r '.expectedConditions.type')
-      expected_status=$(echo "$cr" | jq -r '.expectedConditions.status')
       expected_reason=$(echo "$cr" | jq -r '.expectedConditions.reason')
+      expected_status=$(echo "$cr" | jq -r '.expectedConditions.status')
 
+      # Получаем фактический статус по reason
       actual=$(kubectl get "$kind" "$name" -n "$NAMESPACE" -o json | jq -r '
-        .status.conditions[]? | select(.type=="'"$expected_type"'") | "\(.status)|\(.reason)"'
-      )
+        .status.conditions[]? | select(.reason=="'"$expected_reason"'") | .status
+      ')
 
-      if [ "$actual" != "${expected_status}|${expected_reason}" ]; then
-        echo "  $component: NOT OK (expected $expected_status/$expected_reason, got $actual)"
+      if [ "$actual" != "$expected_status" ]; then
+        echo "  $component: NOT OK (expected $expected_status/$expected_reason, got ${actual:-null})"
         all_ok=false
       else
         echo "  $component: OK"
       fi
+
     else
-      json_path=$(echo "$cr" | jq -r '.jsonPath')
-      expected_value=$(echo "$cr" | jq -r '.expected')
-
-      actual=$(kubectl get "$kind" "$name" -n "$NAMESPACE" -o json | jq -r "$json_path")
-
-      if [ "$actual" != "$expected_value" ]; then
-        echo "  $component: NOT OK (expected $expected_value, got $actual)"
-        all_ok=false
-      else
-        echo "  $component: OK"
-      fi
-    fi
-  done
-
-  if [ "$all_ok" = true ]; then
-    echo "All CRs have expected statuses ✅"
-    exit 0
-  fi
-
-  attempt=$((attempt + 1))
-  echo "Some CRs not ready, sleeping $SLEEP_SEC sec..."
-  sleep "$SLEEP_SEC"
-done
-
-echo "Max attempts reached, some CRs are not in expected status ❌"
-exit 1
+      # обычная проверка updateStatus
+      json_path=$(echo "$cr" | jq -r '.jsonPath'_
