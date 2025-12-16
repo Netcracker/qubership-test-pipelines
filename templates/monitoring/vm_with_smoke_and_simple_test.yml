@@ -5,8 +5,6 @@ grafana:
 integrationTests:
   install: true
   tags: smoke
-  statusWriting:
-    customResourcePath: monitoring.qubership.org/v1alpha1/monitoring/platformmonitorings/platformmonitoring
 kubernetesMonitors:
   kubeSchedulerServiceMonitor:
     install: true

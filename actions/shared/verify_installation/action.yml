@@ -151,6 +151,7 @@ runs:
     - name: Get pods
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get pods
         file_name="artifacts/${{inputs.namespace}}_get_pods.txt"
@@ -160,6 +161,7 @@ runs:
     - name: Get yaml from pods
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get yaml from pods
         file_name="artifacts/${{inputs.namespace}}_get_pods_yaml.txt"
@@ -173,6 +175,7 @@ runs:
     - name: Get events from namespace
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get events from namespace
         file_name="artifacts/${{inputs.namespace}}_get_events.txt"
@@ -181,6 +184,7 @@ runs:
     - name: Get yaml from PVC
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get yaml from PVC
         file_name="artifacts/${{inputs.namespace}}_get_pvc_yaml.txt"
@@ -190,6 +194,7 @@ runs:
     - name: Get PV from namespace
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get PV from namespace
         file_name="artifacts/${{inputs.namespace}}_get_pv.txt"
@@ -204,6 +209,7 @@ runs:
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get logs from all containers in pods
         file_name="artifacts/${{inputs.namespace}}_log_from_containers.txt"
@@ -221,11 +227,13 @@ runs:
     - name: Get All
       shell: bash
       # language=bash
+      if: always()
       run: kubectl get all -n "${{inputs.namespace}}"
 
     - name: Get Secrets
       shell: bash
       # language=bash
+      if: always()
       run: kubectl get secrets -n "${{inputs.namespace}}"
 
     - name: Get logs from test pod
