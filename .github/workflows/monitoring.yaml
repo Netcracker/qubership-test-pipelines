@@ -149,18 +149,6 @@ jobs:
         run: |
           kubectl apply -f https://github.com/VictoriaMetrics/operator/releases/download/v0.63.0/crd.yaml
 
-      - name: Check VictoriaMetrics CRs statuses
-        run: |
-          install_map=$(kubectl get platformmonitorings.monitoring.qubership.org platformmonitoring -n "$NAMESPACE" -o json | jq '{
-            grafana:        (.spec.grafana.install // false),
-            vmAgent:        (.spec.victoriametrics.vmAgent.install // false),
-            vmAlert:        (.spec.victoriametrics.vmAlert.install // false),
-            vmAlertManager: (.spec.victoriametrics.vmAlertManager.install // false),
-            vmAuth:         (.spec.victoriametrics.vmAuth.install // false),
-            vmSingle:       (.spec.victoriametrics.vmSingle.install // false),
-            vmUser:         (.spec.victoriametrics.vmUser.install // false)
-          }')
-
 
       - name: Get Installed Monitoring CR name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
