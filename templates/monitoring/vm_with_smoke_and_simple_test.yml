@@ -5,6 +5,8 @@ grafana:
 integrationTests:
   install: true
   tags: smoke
+  statusWriting:
+    enabled: false
 kubernetesMonitors:
   kubeSchedulerServiceMonitor:
     install: true

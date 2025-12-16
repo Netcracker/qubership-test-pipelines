@@ -13,7 +13,6 @@ echo "Expected JSON: $EXPECTED_JSON"
 # --- 1. Get install_map from PlatformMonitoring ---
 install_map=$(kubectl get platformmonitorings.monitoring.qubership.org platformmonitoring \
   -n "$NAMESPACE" -o json | jq '{
-  platformmonitoring: true,
   grafana:        (.spec.grafana.install // false),
   vmAgent:        (.spec.victoriametrics.vmAgent.install // false),
   vmAlert:        (.spec.victoriametrics.vmAlert.install // false),
