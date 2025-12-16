@@ -4,7 +4,6 @@ grafana:
     install: true
 integrationTests:
   install: true
-  #tags: grafanaORsmoke
   tags: smoke
   customResourcePath: monitoring.qubership.org/v1alpha1/monitoring/platformmonitorings/platformmonitoring
 kubernetesMonitors:
