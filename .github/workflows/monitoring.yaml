@@ -153,7 +153,7 @@ jobs:
         run: sleep 2m
 
       - name: Get Installed Monitoring CR name
-        uses: ./qubership-test-pipelines/actions/shared/get_cr_name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
           crd_location: '${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds'
