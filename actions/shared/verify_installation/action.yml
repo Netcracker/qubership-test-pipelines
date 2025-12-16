@@ -145,6 +145,9 @@ runs:
       run: |
         # ▶️ Check monitoring CRs statuses
         echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
+        chmod +x ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh
+        ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} .github/expected-vm-cr-statuses.json
+
     - name: Get pods
       shell: bash
       # language=bash
