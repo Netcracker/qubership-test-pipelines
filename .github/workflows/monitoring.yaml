@@ -159,7 +159,7 @@ jobs:
           crd_location: '${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds'
 
       - name: Verify Monitoring installation
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: 'monitoring'
           service_branch: '${{ matrix.test.install_version }}'
