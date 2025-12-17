@@ -49,7 +49,7 @@ inputs:
     required: false
     default: ""
 
-  check_monitoring_crs:
+  monitoring_tests:
       description: |
         Enable monitoring CRs checks (true) or disable them (false)
       required: false
@@ -103,6 +103,13 @@ runs:
             esac
           fi
 
+          if [[ "${{ inputs.monitoring_tests }}" == "true" ]]; then
+            # ▶️ Check monitoring CRs statuses
+            echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
+            chmod +x ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh
+            ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ./qubership-test-pipelines/actions/monitoring/expected-vm-cr-statuses.json
+          fi
+
           if [ "$resources_success" = "false" ]; then
             set +e
             ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
@@ -138,16 +145,53 @@ runs:
             fi
           fi
         done
-    - name: Check VictoriaMetrics CRs statuses
+
+    - name: Get logs from test pod
+      if: ${{ inputs.check_tests == 'true' }}
       shell: bash
       # language=bash
-      if: ${{ inputs.check_monitoring_crs == 'true' }}
       run: |
-        # ▶️ Check monitoring CRs statuses
-        echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
-        chmod +x ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh
-        ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ./qubership-test-pipelines/actions/monitoring/expected-vm-cr-statuses.json
+        # ▶️ Set TIMEOUT-BEFORE-START and restart tests pod
+        if [[ "${{inputs.monitoring_tests}}" == "true" ]]; then        
+        # debug info
+        kubectl get pods -n kube-system -l component=etcd -o jsonpath='{.items[*].status.podIP}'
+         kubectl exec -n monitoring $(kubectl get pods -l name=grafana -n monitoring -o jsonpath='{.items[0].metadata.name}')  -- curl -s 'http://vmagent-k8s:8429/api/v1/targets?job=etcd' > targets.json
+        kubectl get secret kube-etcd-client-certs -n monitoring -o jsonpath='{.data.etcd-client\.crt}' | base64 -d | openssl x509 -text -noout
+        kubectl set env deployment/monitoring-tests -n "${{inputs.namespace}}" TIMEOUT-BEFORE-START="20"
+        fi
+        # ▶️ Get logs from test pod
+        chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
+        ls -la ./qubership-test-pipelines/scripts/check_tests.sh
 
+        for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
+          echo "Test check attempt $i/${{inputs.test_completion_max_retries}}"
+          set +e
+          ./qubership-test-pipelines/scripts/check_tests.sh "${{inputs.namespace}}"
+          tests_exit_code=$?
+          set -e
+
+          case $tests_exit_code in
+            0)
+              echo "✅ Tests passed successfully"
+              break
+              ;;
+            1)
+              echo "⏳ Tests still in progress"
+              ;;
+            2)
+              echo "::error:: ❌ Tests failed"
+              echo "ERROR_FLAG=true" >> $GITHUB_ENV
+              break
+              ;;
+          esac
+
+          if [ $i -eq ${{inputs.test_completion_max_retries}} ]; then
+            echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
+            echo "ERROR_FLAG=true" >> $GITHUB_ENV
+          else
+            sleep ${{inputs.service_ready_retry_interval}}
+          fi
+        done
     - name: Get pods
       shell: bash
       # language=bash
@@ -235,51 +279,6 @@ runs:
       # language=bash
       if: always()
       run: kubectl get secrets -n "${{inputs.namespace}}"
-
-    - name: Get logs from test pod
-      shell: bash
-      # language=bash
-      run: |
-        # ▶️ Get logs from test pod
-        chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
-        ls -la ./qubership-test-pipelines/scripts/check_tests.sh
-
-        if [[ "${{inputs.check_tests}}" == "true" ]]; then
-          for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
-            echo "Test check attempt $i/${{inputs.test_completion_max_retries}}"
-            set +e
-            ./qubership-test-pipelines/scripts/check_tests.sh "${{inputs.namespace}}"
-            tests_exit_code=$?
-            set -e
-
-            case $tests_exit_code in
-              0)
-                echo "✅ Tests passed successfully"
-                break
-                ;;
-              1)
-                echo "⏳ Tests still in progress"
-                ;;
-              2)
-                echo "::error:: ❌ Tests failed"
-                echo "ERROR_FLAG=true" >> $GITHUB_ENV
-                break
-                ;;
-            esac
-
-            if [ $i -eq ${{inputs.test_completion_max_retries}} ]; then
-              echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
-              echo "ERROR_FLAG=true" >> $GITHUB_ENV
-            else
-              sleep ${{inputs.service_ready_retry_interval}}
-            fi
-          done
-        elif [[ "${{inputs.check_tests}}" == "false" ]]; then
-          echo "ℹ️ Test checking disabled"
-        else
-          echo "::error:: ❌ Incorrect inputs.check_tests value: '${{inputs.check_tests}}'"
-          echo "ERROR_FLAG=true" >> $GITHUB_ENV
-        fi
 
     - name: Generate artifact name
       if: always()

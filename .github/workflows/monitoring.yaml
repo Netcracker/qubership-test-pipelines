@@ -168,7 +168,7 @@ jobs:
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           check_tests: 'true'
           artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
-          check_monitoring_crs: 'true'
+          monitoring_tests: 'true'
 
       # == 02 End ======= Installation steps =======
 
