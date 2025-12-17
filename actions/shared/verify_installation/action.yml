@@ -156,17 +156,17 @@ runs:
       # language=bash
       run: |
         # ▶️ Set TIMEOUT-BEFORE-START and restart tests pod
-        if [[ "${{inputs.monitoring_tests}}" == "true" ]]; then        
-        # debug info
-        echo "etcd pod IP: $(kubectl get pods -n kube-system -l component=etcd -o jsonpath='{.items[*].status.podIP})'"
-        echo "Saving vmagent targets to artifacts/targets.json"
-        kubectl exec -n monitoring $(kubectl get pods -l name=grafana -n monitoring -o jsonpath='{.items[0].metadata.name}')  -- curl -s 'http://vmagent-k8s:8429/api/v1/targets?job=etcd' > artifacts/targets.json
-        echo "etcd client cert:"
-        kubectl get secret kube-etcd-client-certs -n monitoring -o jsonpath='{.data.etcd-client\.crt}' | base64 -d | openssl x509 -text -noout
-        echo "Patching tests deployment to set TIMEOUT-BEFORE-START to 20 seconds and restart pod"
-        kubectl set env deployment/monitoring-tests -n "${{inputs.namespace}}" TIMEOUT-BEFORE-START="20"
-        echo "Waiting 20 seconds before checking test results..."
-        sleep 20
+        if [[ "${{inputs.monitoring_tests}}" == "true" ]]; then
+          # debug info
+          echo "etcd pod IP: $(kubectl get pods -n kube-system -l component=etcd -o jsonpath='{.items[*].status.podIP}')"
+          echo "Saving vmagent targets to artifacts/targets.json"
+          kubectl exec -n monitoring $(kubectl get pods -l name=grafana -n monitoring -o jsonpath='{.items[0].metadata.name}')  -- curl -s 'http://vmagent-k8s:8429/api/v1/targets?job=etcd' > artifacts/targets.json
+          echo "etcd client cert:"
+          kubectl get secret kube-etcd-client-certs -n monitoring -o jsonpath='{.data.etcd-client\.crt}' | base64 -d | openssl x509 -text -noout
+          echo "Patching tests deployment to set TIMEOUT-BEFORE-START to 20 seconds and restart pod"
+          kubectl set env deployment/monitoring-tests -n "${{inputs.namespace}}" TIMEOUT-BEFORE-START="20"
+          echo "Waiting 20 seconds before checking test results..."
+          sleep 20
         fi
         # ▶️ Get logs from test pod
         chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
