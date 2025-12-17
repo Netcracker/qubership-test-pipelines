@@ -228,6 +228,20 @@ runs:
             sleep ${{inputs.service_ready_retry_interval}}
           fi
         done
+
+    - name: Get monitoring specific resources
+      if: ${{ inputs.monitoring_tests == 'true' }}
+      shell: bash
+      # language=bash
+      run: |
+        echo "Getting VictoriaMetrics specific resources..."
+        kubectl get vmalertmanagers -n "${{inputs.namespace}}" -o yaml > artifacts/vmalertmanagers.yaml
+        kubectl get vmalerts -n "${{inputs.namespace}}" -o yaml > artifacts/vmalerts.yaml
+        kubectl get vmagent -n "${{inputs.namespace}}" -o yaml > artifacts/vmagent.yaml
+        kubectl get vmsingles -n "${{inputs.namespace}}" -o yaml > artifacts/vmsingles.yaml
+        kubectl get vmauths -n "${{inputs.namespace}}" -o yaml > artifacts/vmauths.yaml
+        kubectl get PlatformMonitoring platformmonitoring -n ${{inputs.namespace}} -o yaml > artifacts/PlatformMonitoring.yaml
+
     - name: Get pods
       shell: bash
       # language=bash
