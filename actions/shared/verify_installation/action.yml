@@ -159,7 +159,7 @@ runs:
         if [[ "${{inputs.monitoring_tests}}" == "true" ]]; then        
         # debug info
         kubectl get pods -n kube-system -l component=etcd -o jsonpath='{.items[*].status.podIP}'
-         kubectl exec -n monitoring $(kubectl get pods -l name=grafana -n monitoring -o jsonpath='{.items[0].metadata.name}')  -- curl -s 'http://vmagent-k8s:8429/api/v1/targets?job=etcd' > targets.json
+        kubectl exec -n monitoring $(kubectl get pods -l name=grafana -n monitoring -o jsonpath='{.items[0].metadata.name}')  -- curl -s 'http://vmagent-k8s:8429/api/v1/targets?job=etcd' > artifacts/targets.json
         kubectl get secret kube-etcd-client-certs -n monitoring -o jsonpath='{.data.etcd-client\.crt}' | base64 -d | openssl x509 -text -noout
         kubectl set env deployment/monitoring-tests -n "${{inputs.namespace}}" TIMEOUT-BEFORE-START="20"
         fi
