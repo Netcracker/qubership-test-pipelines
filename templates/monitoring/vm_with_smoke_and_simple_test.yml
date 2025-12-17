@@ -5,6 +5,7 @@ grafana:
 integrationTests:
   install: true
   tags: smoke
+  timeoutBeforeStart: 60
   statusWriting:
     enabled: false
 kubernetesMonitors:
