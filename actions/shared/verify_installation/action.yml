@@ -49,12 +49,18 @@ inputs:
     required: false
     default: ""
 
-  monitoring_tests:
+  monitoring_pipeline:
       description: |
         Enable monitoring CRs checks (true) or disable them (false)
       required: false
       type: boolean
       default: false
+
+  repository_name:
+    description: |
+      Name of the repository where the action is being executed
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -109,11 +115,14 @@ runs:
             esac
           fi
           done
-          if [[ "${{ inputs.monitoring_tests }}" == "true" ]]; then
+          if [[ "${{ inputs.monitoring_pipeline }}" == "true" ]]; then
                 # ▶️ Check monitoring CRs statuses
                 echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
                 chmod +x ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh
-                ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ./qubership-test-pipelines/actions/monitoring/expected-vm-cr-statuses.json
+                echo $(pwd)
+                echo "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
+                cat "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
+                ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json
           fi
           for i in {1..${{inputs.service_ready_max_retries}}}; do
             echo "Attempt $i/${{inputs.service_ready_max_retries}}"
@@ -150,7 +159,7 @@ runs:
             exit 1
           fi
     - name: Check if servicemonitors installed and restart VmAgent pods
-      if: ${{ inputs.monitoring_tests == 'true' }}
+      if: ${{ inputs.monitoring_pipeline == 'true' }}
       shell: bash
       # language=bash
       run: |
@@ -230,7 +239,7 @@ runs:
         done
 
     - name: Get monitoring specific resources
-      if: ${{ inputs.monitoring_tests == 'true' }}
+      if: ${{ inputs.monitoring_pipeline == 'true' }}
       shell: bash
       # language=bash
       run: |
