@@ -327,7 +327,8 @@ runs:
         fi
 
         if [[ "${{inputs.artifact_name}}" != "" ]]; then
-          ARTIFACT_NAME=${{ inputs.artifact_name }}_$(date -u +'%Y%m%d%H%M%S')
+          artifact_name=${{inputs.artifact_name}}
+          ARTIFACT_NAME=${artifact_name//\//_}_$(date -u +'%Y%m%d%H%M%S')
         else
           ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S")"
         fi

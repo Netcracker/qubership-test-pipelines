@@ -62,7 +62,7 @@ env:
   test_completion_retry_interval: '10s'
   service_ready_max_retries: 150
   service_ready_retry_interval: '10s'
-  crd_list: 'zookeeperservices.netcracker.com'
+  path_to_chart: 'operator/charts/helm/zookeeper-service'
 
 jobs:
   prepare:
@@ -83,7 +83,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
 
       - name: Process versions file and matrix generation
@@ -93,7 +93,7 @@ jobs:
           chmod +x ./scripts/matrix.sh
           ./scripts/matrix.sh ${{ github.workspace }}/qubership-zookeeper/${{ inputs.versions_file }} ./workflow-config/zookeeper.yaml "${{ inputs.service_branch }}"
 
-  Kafka-Test-Cases:
+  Zookeeper-Test-Cases:
     runs-on: ${{ inputs.runner_type }}
     needs: prepare
     strategy:
@@ -111,7 +111,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -126,8 +126,14 @@ jobs:
           deploy_mode: install
           service_name: 'zookeeper-service'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/zookeeper-service'
+          path_to_chart: '${{ env.path_to_chart }}'
           namespace: 'zookeeper'
+
+      - name: Get Installed Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
 
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -138,7 +144,7 @@ jobs:
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
           service_branch: ${{ matrix.test.install_version }}
-          crd_list: "${{ env.crd_list }}"
+          crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
           artifact_name: "Install_${{ matrix.test.artifact_name }}"
       # == 02 End ===== Install Zookeeper [LATEST] =====
 
@@ -195,8 +201,15 @@ jobs:
           deploy_mode: upgrade
           service_name: 'zookeeper-service'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/zookeeper-service'
+          path_to_chart: '${{ env.path_to_chart }}'
           namespace: 'zookeeper'
+
+      - name: Get Upgraded Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: upgrade_zoo_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
       - name: Sleep 1m
         if: matrix.test.sequence == 'upgrade'
         run: sleep 1m
@@ -210,7 +223,7 @@ jobs:
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
           service_branch: ${{ matrix.test.install_version }}
-          crd_list: "${{ env.crd_list }}"
+          crd_list: "${{ steps.upgrade_zoo_get_crds.outputs.crd_names }}"
           artifact_name: "Upgrade_${{ matrix.test.artifact_name }}"
       # == 03 End === Upgrade Zookeeper [LATEST] =====
 
@@ -227,7 +240,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: '${{inputs.pipeline_branch}}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -264,8 +277,15 @@ jobs:
           deploy_mode: install
           service_name: 'zookeeper-service'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/zookeeper-service'
+          path_to_chart: '${{ env.path_to_chart }}'
           namespace: 'zookeeper'
+
+      - name: Get Installed Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
       - name: Verify installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
@@ -274,7 +294,7 @@ jobs:
           test_completion_retry_interval: "${{ env.test_completion_retry_interval }}"
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
-          crd_list: "${{ env.crd_list }}"
+          crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
           service_branch: ${{inputs.service_branch}}
       - name: Get Zookeeper Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
@@ -311,7 +331,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -331,8 +351,15 @@ jobs:
           deploy_mode: install
           service_name: 'zookeeper-service'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/zookeeper-service'
+          path_to_chart: '${{ env.path_to_chart }}'
           namespace: 'zookeeper'
+
+      - name: Get Installed Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
@@ -342,7 +369,7 @@ jobs:
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
           service_branch: ${{ inputs.service_branch }}
-          crd_list: "${{ env.crd_list }}"
+          crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
 
   #17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
   Clean-Latest-TLS-Certificates:
@@ -354,7 +381,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -375,8 +402,15 @@ jobs:
           deploy_mode: install
           service_name: 'zookeeper-service'
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: 'operator/charts/helm/zookeeper-service'
+          path_to_chart: '${{ env.path_to_chart }}'
           namespace: 'zookeeper'
+
+      - name: Get Installed Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
       - name: Verify installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
@@ -386,5 +420,5 @@ jobs:
           test_completion_retry_interval: "${{ env.test_completion_retry_interval }}"
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
-          crd_list: "${{ env.crd_list }}"
+          crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
 
