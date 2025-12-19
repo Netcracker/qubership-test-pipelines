@@ -316,9 +316,7 @@ runs:
       run: |
         # ▶️ Generate artifact name
         service_branch=$(echo "${{inputs.service_branch}}" | tr -d '[:space:]')
-        if [[ -n "$release_name" ]]; then
-          service_branch="_${service_branch//\//_}"
-        fi
+        service_branch="${service_branch//\//_}"
         echo matrix_version ${{matrix.version}}
         matrix_suffix=""
         if [[ -n "${{ matrix.version }}" ]]; then
@@ -330,7 +328,7 @@ runs:
           artifact_name=${{inputs.artifact_name}}
           ARTIFACT_NAME=${artifact_name//\//_}_$(date -u +'%Y%m%d%H%M%S')
         else
-          ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S")"
+          ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}_${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S")"
         fi
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
 
