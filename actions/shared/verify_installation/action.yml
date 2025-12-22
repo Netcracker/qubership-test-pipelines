@@ -158,47 +158,7 @@ runs:
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
             exit 1
           fi
-    # - name: Check if servicemonitors installed and restart VmAgent pods
-    #   if: ${{ inputs.monitoring_pipeline == 'true' }}
-    #   shell: bash
-    #   # language=bash
-    #   run: |
-    #     NAMESPACE=${{inputs.namespace}}
-    #     SERVICE_MONITORS=(
-    #       monitoring-kube-state-metrics
-    #       monitoring-etcd-service-monitor
-    #       monitoring-kubelet-service-monitor
-    #       monitoring-kube-apiserver-service-monitor
-    #     )
-    #     echo "Checking if required service monitors installed..."
-    #     for sm in "${SERVICE_MONITORS[@]}"; do
-    #       attempt=1
-    #       max_attempts=15
-    #       while [[ $attempt -le $max_attempts ]]; do
-    #         if kubectl get servicemonitor "$sm" -n "$NAMESPACE" >/dev/null 2>&1; then
-    #           echo "ServiceMonitor $sm exists."
-    #           break
-    #         else
-    #           sleep 5s
-    #           ((attempt++))
-    #         fi
-    #       done
-    #       if [[ $attempt -gt $max_attempts ]]; then
-    #         echo "Max attempts reached. ServiceMonitor $sm is not found."
-    #         exit 1
-    #       fi
-    #     done
-    #     echo "Service monitors are installed. Now restarting vmagent..."
-    #     VMAGENT_PODS=$(kubectl get pods -n $NAMESPACE -l app.kubernetes.io/name=vmagent -o jsonpath='{.items[*].metadata.name}')
-    #     for vmagent in $VMAGENT_PODS; do
-    #       kubectl delete pod "$vmagent" -n $NAMESPACE
-    #       kubectl wait --for=delete "pod/$vmagent" -n $NAMESPACE --timeout=30s
-    #     done
-    #     TEST_POD=$(kubectl get pods -n "${{inputs.namespace}}" -l name=monitoring-tests -o jsonpath='{.items[*].metadata.name}')
-    #     echo "Waiting for test pod restart..."
-    #     kubectl delete pod $TEST_POD  -n "${{inputs.namespace}}"
-    #     kubectl wait --for=delete pod/$TEST_POD -n "${{inputs.namespace}}" --timeout=120s && echo "Test pod restarted."
-
+  
     - name: Get logs from test pod
       if: ${{ inputs.check_tests == 'true' }}
       shell: bash
