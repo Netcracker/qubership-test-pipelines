@@ -4,8 +4,12 @@ set -euo pipefail
 NAMESPACE=${1:-monitoring}
 MAX_ATTEMPTS=${2:-10}
 SLEEP_SEC=${3:-10}
-EXPECTED_JSON=${4:-expected-cr-statuses.json}
+EXPECTED_JSON=${4:-}
 
+if [ -z "$EXPECTED_JSON" ] || [ ! -f "$EXPECTED_JSON" ]; then
+  echo "Expected JSON file not provided or does not exist."
+  exit 1
+fi
 echo "Namespace: $NAMESPACE"
 echo "Max attempts: $MAX_ATTEMPTS, sleep: $SLEEP_SEC sec"
 echo "Expected JSON: $EXPECTED_JSON"
