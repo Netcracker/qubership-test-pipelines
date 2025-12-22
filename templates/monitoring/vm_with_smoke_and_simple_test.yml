@@ -1,0 +1,39 @@
+grafana:
+  ingress:
+    host: grafana-monitoring.testdomain.local
+    install: true
+integrationTests:
+  install: true
+  tags: smoke
+  timeoutBeforeStart: 60
+  statusWriting:
+    enabled: false
+kubernetesMonitors:
+  kubeSchedulerServiceMonitor:
+    install: true
+  kubeControllerManagerServiceMonitor:
+    install: true
+victoriametrics:
+  vmAuth:
+    ingress:
+      install: true
+      host: vmauth-monitoring.testdomain.local
+  vmAlert:
+    ingress:
+      install: true
+      host: vmalert-monitoring.testdomain.local
+  vmSingle:
+    ingress:
+      install: true
+      host: vmsingle-monitoring.testdomain.local
+    resources:
+      requests:
+        memory: "768Mi"
+        cpu: "100m"
+      limits:
+        memory: "2Gi"
+        cpu: "1500m"
+  vmAlertManager:
+    ingress:
+      install: true
+      host: vmagent-monitoring.testdomain.local

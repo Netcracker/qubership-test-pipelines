@@ -28,6 +28,11 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      kind-layout:
+        description: 'Kind cluster layout (single-node or multi-node)'
+        type: string
+        required: false
+        default: 'multi-node'
   workflow_call:
     inputs:
       repository_name:
@@ -55,6 +60,11 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      kind-layout:
+        description: 'Kind cluster layout (single-node or multi-node)'
+        type: string
+        required: false
+        default: 'multi-node'
 
 jobs:
   prepare:
@@ -93,6 +103,12 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
+    env:
+      path_to_chart: 'charts/qubership-monitoring-operator'
+      test_completion_max_retries: 50
+      test_completion_retry_interval: '10s'
+      service_ready_max_retries: 50
+      service_ready_retry_interval: '10s'
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
@@ -109,6 +125,8 @@ jobs:
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        with:
+          kind-layout: '${{ inputs.kind-layout }}'
 
       - name: Install Ingress Controller
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
@@ -126,20 +144,33 @@ jobs:
           namespace: 'monitoring'
           restricted: '${{ matrix.test.restricted }}'
 
-      - name: Sleep 2m
-        run: sleep 2m
+      # Temporary step until #217 is resolved
+      - name: Update CRDs (temporary step)
+        run: |
+          kubectl apply -f https://github.com/VictoriaMetrics/operator/releases/download/v0.63.0/crd.yaml
+
+
+      - name: Get Installed Monitoring CR name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_monitoring_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds'
 
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: 'monitoring'
-          test_completion_max_retries: '50'
-          test_completion_retry_interval: '10s'
-          service_ready_max_retries: '50'
-          service_ready_retry_interval: '10s'
           service_branch: '${{ matrix.test.install_version }}'
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           check_tests: 'true'
           artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
+          monitoring_pipeline: 'true'
+          repository_name: '${{ inputs.repository_name }}'
+
       # == 02 End ======= Installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
@@ -157,6 +188,7 @@ jobs:
           restricted: '${{ matrix.test.restricted }}'
 
       - name: Sleep 2m
+        if: matrix.test.sequence == 'upgrade'
         run: sleep 2m
 
       - name: Verify Monitoring upgrade
@@ -172,20 +204,3 @@ jobs:
           check_tests: 'true'
           artifact_name: 'Upgrade_${{ matrix.test.artifact_name }}'
       # == End ======= Specific steps for upgrade tests =======
-
-      # == Start ======= Diagnostic and cleanup steps =======
-      - name: Get PlatformMonitoring resource
-        if: always()
-        run: |
-          echo "::group::PlatformMonitoring resource"
-          kubectl get PlatformMonitoring platformmonitoring -n monitoring -o yaml
-          echo "::endgroup::"
-
-      - name: Get ingress information
-        if: always()
-        run: |
-          echo "::group::Ingress information"
-          kubectl get ingress -n monitoring monitoring-grafana -o jsonpath='{.spec.rules[0].host}'
-          echo "::endgroup::"
-
-      # == End ======= Diagnostic and cleanup steps =======

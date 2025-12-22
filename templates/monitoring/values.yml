@@ -420,7 +420,6 @@ pushgateway:
 integrationTests:
   name: monitoring-tests
   install: false
-  image: ghcr.io/netcracker/qubership-monitoring-int-tests:add-test-workflow
   #resources: {}
   #securityContext: {}
   #labels: {}
@@ -435,7 +434,7 @@ integrationTests:
     enabled: true
     isShortStatusMessage: true
     onlyIntegrationTests: true
-    customResourcePath: "monitoring.qubership.org/v1alpha1/prometheus-operator/platformmonitorings/platformmonitoring"
+    customResourcePath: "monitoring.qubership.org/v1alpha1/monitoring/platformmonitorings/platformmonitoring"
 commonDashboards:
   install: true
 prometheusAdapter:

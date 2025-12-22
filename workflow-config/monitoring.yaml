@@ -2,10 +2,10 @@ jobs:
   ## Upgrade from previous releases to current
   - name: "Clean [${service_branch}], Upgrade [${service_branch}] Diff Params"
     install_version: '${service_branch}'
-    template: "templates/monitoring/values.yml"
+    template: "templates/monitoring/vm_with_smoke_and_simple_test.yml"
     upgrade_version: '${service_branch}'
     upgrade_template: "templates/monitoring/values_test.yml"
-    sequence: 'upgrade'
+    sequence: 'clean'
     check_tests: 'true'
     restricted: 'false'
     artifact_name: "Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params"

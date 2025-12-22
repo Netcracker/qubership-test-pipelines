@@ -49,6 +49,19 @@ inputs:
     required: false
     default: ""
 
+  monitoring_pipeline:
+      description: |
+        Enable monitoring CRs checks (true) or disable them (false)
+      required: false
+      type: boolean
+      default: false
+
+  repository_name:
+    description: |
+      Name of the repository where the action is being executed
+    required: false
+    default: ""
+
 runs:
   using: "composite"
   steps:
@@ -131,10 +144,69 @@ runs:
             fi
           fi
         done
+        if [[ "${{ inputs.monitoring_pipeline }}" == "true" ]]; then
+              # ▶️ Check monitoring CRs statuses
+              echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
+              chmod +x ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh
+              ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json
+        fi
+  
+    - name: Get logs from test pod
+      if: ${{ inputs.check_tests == 'true' }}
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Get logs from test pod
+        chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
+        ls -la ./qubership-test-pipelines/scripts/check_tests.sh
+
+        for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
+          echo "Test check attempt $i/${{inputs.test_completion_max_retries}}"
+          set +e
+          ./qubership-test-pipelines/scripts/check_tests.sh "${{inputs.namespace}}"
+          tests_exit_code=$?
+          set -e
+
+          case $tests_exit_code in
+            0)
+              echo "✅ Tests passed successfully"
+              break
+              ;;
+            1)
+              echo "⏳ Tests still in progress"
+              ;;
+            2)
+              echo "::error:: ❌ Tests failed"
+              echo "ERROR_FLAG=true" >> $GITHUB_ENV
+              break
+              ;;
+          esac
+
+          if [ $i -eq ${{inputs.test_completion_max_retries}} ]; then
+            echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
+            echo "ERROR_FLAG=true" >> $GITHUB_ENV
+          else
+            sleep ${{inputs.service_ready_retry_interval}}
+          fi
+        done
+
+    - name: Get monitoring specific resources
+      if: ${{ inputs.monitoring_pipeline == 'true' }}
+      shell: bash
+      # language=bash
+      run: |
+        echo "Getting VictoriaMetrics specific resources..."
+        kubectl get vmalertmanagers -n "${{inputs.namespace}}" -o yaml > artifacts/vmalertmanagers.yaml
+        kubectl get vmalerts -n "${{inputs.namespace}}" -o yaml > artifacts/vmalerts.yaml
+        kubectl get vmagent -n "${{inputs.namespace}}" -o yaml > artifacts/vmagent.yaml
+        kubectl get vmsingles -n "${{inputs.namespace}}" -o yaml > artifacts/vmsingles.yaml
+        kubectl get vmauths -n "${{inputs.namespace}}" -o yaml > artifacts/vmauths.yaml
+        kubectl get PlatformMonitoring platformmonitoring -n ${{inputs.namespace}} -o yaml > artifacts/PlatformMonitoring.yaml
 
     - name: Get pods
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get pods
         file_name="artifacts/${{inputs.namespace}}_get_pods.txt"
@@ -144,6 +216,7 @@ runs:
     - name: Get yaml from pods
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get yaml from pods
         file_name="artifacts/${{inputs.namespace}}_get_pods_yaml.txt"
@@ -157,6 +230,7 @@ runs:
     - name: Get events from namespace
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get events from namespace
         file_name="artifacts/${{inputs.namespace}}_get_events.txt"
@@ -165,6 +239,7 @@ runs:
     - name: Get yaml from PVC
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get yaml from PVC
         file_name="artifacts/${{inputs.namespace}}_get_pvc_yaml.txt"
@@ -174,6 +249,7 @@ runs:
     - name: Get PV from namespace
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get PV from namespace
         file_name="artifacts/${{inputs.namespace}}_get_pv.txt"
@@ -188,6 +264,7 @@ runs:
     - name: Get logs from all containers in pods
       shell: bash
       # language=bash
+      if: always()
       run: |
         # ▶️ Get logs from all containers in pods
         file_name="artifacts/${{inputs.namespace}}_log_from_containers.txt"
@@ -199,63 +276,21 @@ runs:
               echo "$pod $container" >> "$file_name"
               kubectl logs "$pod" -n "${{inputs.namespace}}" -c "$container" >> "$file_name"
               echo "================================================================================" >> "$file_name"
+              kubectl logs "$pod" -n "${{inputs.namespace}}" -c "$container" --previous >> "${file_name}_previous.txt" || echo "No previous logs for $pod $container" >> "{file_name}_previous.txt"
             done
         done
 
     - name: Get All
       shell: bash
       # language=bash
+      if: always()
       run: kubectl get all -n "${{inputs.namespace}}"
 
     - name: Get Secrets
       shell: bash
       # language=bash
+      if: always()
       run: kubectl get secrets -n "${{inputs.namespace}}"
-
-    - name: Get logs from test pod
-      shell: bash
-      # language=bash
-      run: |
-        # ▶️ Get logs from test pod
-        chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
-        ls -la ./qubership-test-pipelines/scripts/check_tests.sh
-
-        if [[ "${{inputs.check_tests}}" == "true" ]]; then
-          for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
-            echo "Test check attempt $i/${{inputs.test_completion_max_retries}}"
-            set +e
-            ./qubership-test-pipelines/scripts/check_tests.sh "${{inputs.namespace}}"
-            tests_exit_code=$?
-            set -e
-
-            case $tests_exit_code in
-              0)
-                echo "✅ Tests passed successfully"
-                break
-                ;;
-              1)
-                echo "⏳ Tests still in progress"
-                ;;
-              2)
-                echo "::error:: ❌ Tests failed"
-                echo "ERROR_FLAG=true" >> $GITHUB_ENV
-                break
-                ;;
-            esac
-
-            if [ $i -eq ${{inputs.test_completion_max_retries}} ]; then
-              echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
-              echo "ERROR_FLAG=true" >> $GITHUB_ENV
-            else
-              sleep ${{inputs.service_ready_retry_interval}}
-            fi
-          done
-        elif [[ "${{inputs.check_tests}}" == "false" ]]; then
-          echo "ℹ️ Test checking disabled"
-        else
-          echo "::error:: ❌ Incorrect inputs.check_tests value: '${{inputs.check_tests}}'"
-          echo "ERROR_FLAG=true" >> $GITHUB_ENV
-        fi
 
     - name: Generate artifact name
       if: always()

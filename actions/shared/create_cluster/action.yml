@@ -1,5 +1,11 @@
 name: 'Create Kubernetes cluster Action'
 description: 'A GitHub Action that creates Kubernetes cluster using Kind'
+inputs:
+  kind-layout:
+    description: |
+      Kind cluster layout (single-node or multi-node)
+    required: false
+    default: 'multi-node'
 runs:
   using: 'composite'
   steps:
@@ -39,6 +45,6 @@ runs:
         run: >-
           ./kind create cluster
           --image kindest/node:v1.32.2
-          --config qubership-test-pipelines/kind-configs/kind-multi-node.yaml
+          --config qubership-test-pipelines/kind-configs/kind-${{ inputs.kind-layout }}.yaml
           --wait 5m
         #! check kubernetes version is actual
