@@ -276,6 +276,7 @@ runs:
               echo "$pod $container" >> "$file_name"
               kubectl logs "$pod" -n "${{inputs.namespace}}" -c "$container" >> "$file_name"
               echo "================================================================================" >> "$file_name"
+              kubectl logs "$pod" -n "${{inputs.namespace}}" -c "$container" --previous >> "${file_name}_previous.txt" || echo "No previous logs for $pod $container" >> "{file_name}_previous.txt"
             done
         done
 
