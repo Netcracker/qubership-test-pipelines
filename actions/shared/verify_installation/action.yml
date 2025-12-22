@@ -99,21 +99,16 @@ runs:
             case $cr_exit_code in
               0)
                 echo "✅ CR check successful"
-                cr_success=true
-                break
-                ;;
+                cr_success=true ;;
               1)
-                echo "⏳ CR check in progress"
-                echo -e "Retrying in ${{inputs.service_ready_retry_interval}} seconds...\n"
-                sleep ${{inputs.service_ready_retry_interval}}
-                ;;
+                echo "⏳ CR check in progress" ;;
               2)
                 echo "::error:: ❌ CR check failed"
                 echo "ERROR_FLAG=true" >> $GITHUB_ENV
-                break
-                ;;
+                break ;;
             esac
           fi
+
           if [ "$resources_success" = "false" ]; then
             set +e
             ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
