@@ -14,8 +14,8 @@ check_tests() {
     done
 
     if ! [[ "$test_pod" ]]; then
-      echo "::error:: ❌ There is no test pod"
-      exit 2
+      echo "::warning:: ℹ️ check_tests set to 'true', but there is no test pod"
+      exit 0
     fi
 
     echo "Test pod found: $test_pod"

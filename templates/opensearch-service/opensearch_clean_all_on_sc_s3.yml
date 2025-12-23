@@ -4,8 +4,7 @@ global:
     enabled: false
     generateCerts:
       certProvider: cert-manager
-      clusterIssuerName: dev-clusterissuer
-  restrictedEnvironment: true
+      clusterIssuerName: test-clusterissuer
 opensearch:
   tls:
     enabled: false
@@ -16,14 +15,11 @@ opensearch:
         password: Root1234#
   securityContextCustom:
     runAsUser: 1000
-    runAsGroup: 1000
     fsGroup: 1000
-  fixMount:
-    enabled: true
-    securityContext:
-      runAsUser: 0
   master:
-    replicas: 3
+    persistence:
+      storageClass: standard
+      size: 10Gi
     resources:
       requests:
         cpu: 900m
@@ -31,24 +27,30 @@ opensearch:
       limits:
         cpu: 2
         memory: 4Gi
-    javaOpts: -Xms1024m -Xmx1024m
-    persistence:
-      storageClass: standard
-      size: 10Gi
   snapshots:
-    enabled: false
-    persistentVolume: ""
-    storageClass: standard
-    size: 2Gi
-    s3:
-      enabled: false
-      pathStyleAccess: true
-  client:
     enabled: true
+    size: 1Gi
+    s3:
+      enabled: true
+      pathStyleAccess: true
+      url: https://s3.amazonaws.com/
+      bucket: test-pipelines-storage-opensearch
+      region: us-east-1
+      keyId: ''
+      keySecret: ''
+  client:
     ingress:
       enabled: true
       hosts:
         - opensearch-opensearch-service.qubership.com
+dashboards:
+  enabled: true
+  ingress:
+    enabled: false
+    hosts:
+      - host: dashboards-opensearch-service.qubership.com
+        paths:
+          - path: /
 dbaasAdapter:
   enabled: false
   dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
@@ -66,32 +68,18 @@ monitoring:
   includeIndices: true
   slowQueries:
     enabled: true
-dashboards:
-  enabled: true
-  ingress:
-    enabled: true
-    hosts:
-      - host: dashboards-opensearch-service.qubership.com
-        paths:
-          - path: /
 curator:
-  enabled: false
+  enabled: true
   backupSchedule: 0 * * * *
   evictionPolicy: 0/1d,7d/delete
   username: backup
   password: backup
   securityContext:
     runAsUser: 1000
-    runAsGroup: 1000
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORhaORopensearch_images
-secret:
-  idp:
-    username: ""
-    password: ""
-    registrationToken: ""
+  tags: smokeORopensearchORopensearch_images
 statusProvisioner:
   lifetimeAfterCompletion: 30
   integrationTestsTimeout: 900

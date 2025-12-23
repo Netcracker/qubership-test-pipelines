@@ -20,11 +20,11 @@ opensearch:
       size: 10Gi
     resources:
       requests:
-        cpu: 600m
-        memory: 2Gi
-      limits:
         cpu: 900m
-        memory: 2Gi
+        memory: 4Gi
+      limits:
+        cpu: 2
+        memory: 4Gi
   snapshots:
     enabled: true
     size: 1Gi
@@ -32,7 +32,7 @@ opensearch:
       enabled: true
       pathStyleAccess: true
       url: https://s3.amazonaws.com/
-      bucket: test-pipelines-storage
+      bucket: test-pipelines-storage-opensearch
       region: us-east-1
       keyId: ''
       keySecret: ''
@@ -40,13 +40,13 @@ opensearch:
     ingress:
       enabled: true
       hosts:
-        - opensearch-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
+        - opensearch-opensearch-service.qubership.com
 dashboards:
   enabled: true
   ingress:
     enabled: false
     hosts:
-      - host: dashboards-opensearch-service.qa-kubernetes.openshift.sdntest.qubership.com
+      - host: dashboards-opensearch-service.qubership.com
         paths:
           - path: /
 dbaasAdapter:
