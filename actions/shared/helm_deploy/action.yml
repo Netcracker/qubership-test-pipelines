@@ -187,7 +187,6 @@ runs:
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
-        #cat ${{inputs.repository_name}}/${{inputs.path_to_chart}}/$template_name
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ "${{inputs.restricted}}" == "false" ]]; then
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
