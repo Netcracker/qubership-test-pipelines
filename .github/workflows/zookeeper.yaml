@@ -1,8 +1,39 @@
 name: Zookeeper Tests
 
 on:
+  workflow_dispatch:
+    inputs:
+      repository_name:
+        description: 'Zookeeper repository name'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-zookeeper'
+      service_branch:
+        required: false
+        type: string
+        default: 'main'
+      versions_file:
+        description: 'Path to versions list file'
+        type: string
+        required: true
+        default: '.github/versions.yaml'
+      pipeline_branch:
+        description: 'Test pipeline branch name'
+        type: string
+        required: true
+        default: 'main'
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
   workflow_call:
     inputs:
+      repository_name:
+        description: 'Zookeeper repository name'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-zookeeper'
       service_branch:
         required: false
         type: string
@@ -25,86 +56,101 @@ on:
       AWS_S3_ACCESS_KEY_SECRET:
         required: true
 
+env:
+  namespace: zookeeper
+  test_completion_max_retries: 60
+  test_completion_retry_interval: '10s'
+  service_ready_max_retries: 150
+  service_ready_retry_interval: '10s'
+  path_to_chart: 'operator/charts/helm/zookeeper-service'
+
 jobs:
-  prepare-versions:
-    runs-on: ${{inputs.runner_type}}
+  prepare:
+    runs-on: ${{ inputs.runner_type }}
     outputs:
-      versions: ${{steps.process-versions.outputs.versions}}
-      previous_version: ${{steps.process-versions.outputs.previous_version}}
+      versions: ${{ steps.process-versions.outputs.versions }}
+      previous_version: ${{ steps.process-versions.outputs.previous_version }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.service_branch}}'
-          repository: 'Netcracker/qubership-zookeeper'
+          ref: '${{ inputs.service_branch }}'
+          repository: '${{ inputs.repository_name }}'
           path: 'qubership-zookeeper'
-      - name: Process versions file
-        id: process-versions
-        # language=bash
-        run: |
-          versions_str=$(cat qubership-zookeeper/${{inputs.versions_file}})
-          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
-          echo "versions=$versions_json" >> $GITHUB_OUTPUT
-          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
-          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
-  # ---------- Current service branch ----------
-  #3-Clean [LATEST], 4-Upgrade [LATEST] Diff Params
-  Clean-Latest-Upgrade-Diff-Params:
-    runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST], Upgrade [LATEST] Diff Params
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+
+      - name: Process versions file and matrix generation
+        id: process-versions
+        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
+        run: |
+          chmod +x ./scripts/matrix.sh
+          ./scripts/matrix.sh ${{ github.workspace }}/qubership-zookeeper/${{ inputs.versions_file }} ./workflow-config/zookeeper.yaml "${{ inputs.service_branch }}"
+
+  Zookeeper-Test-Cases:
+    runs-on: ${{ inputs.runner_type }}
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.test.name }}
     steps:
+      # == 01 Start ======= Common pre-steps for all tests =======
+      - name: "Print job parameters"
+        run: |
+          echo "======== Job parameters ======="
+          echo "${{ toJson(matrix.test) }}"
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      #- name: Install Monitoring
-        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Clean Install Zookeeper [LATEST]
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
+      # == 01 End ======= Common pre-steps for all tests =======
+
+      # == 02 Start ===== Install Zookeeper [LATEST] =====
+      - name: "Clean Install Zookeeper ${{ matrix.test.install_version }}"
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify Zookeeper installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-      - name: Update to [LATEST] Version With Diff Params
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          #combined 2 cases: update params + rollingupdate
-          path_to_template: 'templates/zookeeper-service/zookeeper_update_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
-          deploy_mode: upgrade
-      - name: Sleep 1m
-        run: sleep 1m
-      - name: Verify Zookeeper upgrade
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+          service_branch: '${{ matrix.test.install_version }}'
+          deploy_mode: install
+          service_name: 'zookeeper-service'
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: '${{ env.path_to_chart }}'
+          namespace: 'zookeeper'
 
-  #11-Clean [LATEST] W/O Components -> 12-Upgrade [LATEST] All Components S3
-  Clean-WO-Components-Upgrade-All-Components-S3:
-    runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST] W/O Components, Upgrade [LATEST] All Components S3
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
+      - name: Get Installed Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Clean Install Zookeeper [LATEST] W/O Components
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_minimal_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
       - name: Verify Zookeeper installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: "${{ env.namespace }}"
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: "${{ env.test_completion_retry_interval }}"
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
+          service_branch: ${{ matrix.test.install_version }}
+          crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
+          artifact_name: "Install_${{ matrix.test.artifact_name }}"
+      # == 02 End ===== Install Zookeeper [LATEST] =====
+
+      # == Start Spetial S3 Upgrade step =============================
       - name: Update YAML secrets
-        # language=bash
+        if: matrix.test.sequence == 'upgrade' && matrix.test.storage == 's3'
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml' \
@@ -114,83 +160,87 @@ jobs:
             --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml' \
             --path='backupDaemon/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-      - name: Update Zookeeper [LATEST] All Components S3
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          deploy_mode: upgrade
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify Zookeeper installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+      # == End Spetial S3 step =============================
 
-  #13-Clean [LATEST] non-TLS, 14-Upgrade [LATEST] TLS
-  Clean-Latest-non-TLS-Upgrade-Latest-TLS:
-    runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST], Upgrade [LATEST] TLS
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Clean Install Zookeeper [LATEST]
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify Zookeeper installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+      # == Start Spetial TLS Upgrade step =============================
       - name: Install cert-manager
-        # language=bash
+        if: matrix.test.sequence == 'upgrade' && matrix.test.tls == true
         run: |
+          # Install cert-manager
+          echo "::group::Install cert-manager"
           helm repo add jetstack https://charts.jetstack.io --force-update
           helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
             --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-      - name: Create cert-manager entities
-        # language=bash
-        run: |
+          echo "::endgroup::"
+          echo "::group::Create cert-manager entities"
           kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
           sleep 10s
           kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
           sleep 10s
           kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-      - name: Get cert-manager resources
-        # language=bash
-        run: |
+          echo "::endgroup::"
+          echo "::group::Get cert-manager resources"
           kubectl get pods -n cert-manager
           kubectl get secrets -n cert-manager
           kubectl get certificates -A
-      - name: Get clusterissuer
-        # language=bash
-        run: |
+          echo "::endgroup::"
+          echo "::group:: Get clusterissuer"
           kubectl get clusterissuer
           kubectl get clusterissuer test-clusterissuer -o yaml
-      - name: Update Zookeeper to [LATEST] TLS
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
+          echo "::endgroup::"
+      # == End Spetial TLS Upgrade step =============================
+
+      # == 03 Start === Upgrade Zookeeper [LATEST] =====
+      - name: Update to [${{ matrix.test.upgrade_version }}] Version
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
+          #combined 2 cases: update params + rollingupdate
+          path_to_template: 'templates/zookeeper-service/zookeeper_update_APP_k8s.yml'
+          service_branch: '${{ matrix.test.upgrade_version }}'
           deploy_mode: upgrade
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Sleep 1m
-        run: sleep 1m
-      - name: Verify installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+          service_name: 'zookeeper-service'
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: '${{ env.path_to_chart }}'
+          namespace: 'zookeeper'
+
+      - name: Get Upgraded Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: upgrade_zoo_get_crds
         with:
-          service_branch: ${{inputs.service_branch}}
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
+      - name: Sleep 1m
+        if: matrix.test.sequence == 'upgrade'
+        run: sleep 1m
+      - name: Verify Zookeeper upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: "${{ env.namespace }}"
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: "${{ env.test_completion_retry_interval }}"
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
+          service_branch: ${{ matrix.test.install_version }}
+          crd_list: "${{ steps.upgrade_zoo_get_crds.outputs.crd_names }}"
+          artifact_name: "Upgrade_${{ matrix.test.artifact_name }}"
+      # == 03 End === Upgrade Zookeeper [LATEST] =====
+
+#############################################################################
+#                                                                           #
+#############################################################################
 
   #15-Clean [LATEST] TLS
   Clean-Latest-TLS:
     runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST] TLS
+    name: Clean [${{ inputs.service_branch }}] TLS
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
           ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -219,14 +269,32 @@ jobs:
         run: |
           kubectl get clusterissuer
           kubectl get clusterissuer test-clusterissuer -o yaml
-      - name: Install Zookeeper [LATEST] TLS
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
+      - name: Install Zookeeper [${{ inputs.service_branch }}] TLS
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+          service_branch: '${{ inputs.service_branch }}'
+          deploy_mode: install
+          service_name: 'zookeeper-service'
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: '${{ env.path_to_chart }}'
+          namespace: 'zookeeper'
+
+      - name: Get Installed Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
         with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
+      - name: Verify installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: "${{ env.namespace }}"
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: "${{ env.test_completion_retry_interval }}"
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
+          crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
           service_branch: ${{inputs.service_branch}}
       - name: Get Zookeeper Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
@@ -255,15 +323,15 @@ jobs:
 
   #16-Clean [LATEST] TLS Secrets
   Clean-Latest-TLS-Secrets:
-    runs-on: ${{inputs.runner_type}}
+    runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
-    name: Clean Zookeeper [LATEST] TLS Secrets
+    name: Clean [${{ inputs.service_branch }}] TLS Secrets
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -274,26 +342,46 @@ jobs:
           path: certs_artifacts
       - name: Update secrets
         uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_secrets
-      - name: Clean Install Zookeeper [LATEST] TLS Secrets
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
+      - name: Clean Install Zookeeper [${{ inputs.service_branch }}] TLS Secrets
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_secrets.yml'
-          service_branch: '${{inputs.service_branch}}'
+          service_branch: '${{ inputs.service_branch }}'
           resource_folder: 'resources/zookeeper'
+          deploy_mode: install
+          service_name: 'zookeeper-service'
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: '${{ env.path_to_chart }}'
+          namespace: 'zookeeper'
+
+      - name: Get Installed Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
       - name: Verify Zookeeper installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: "${{ env.namespace }}"
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: "${{ env.test_completion_retry_interval }}"
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
+          service_branch: ${{ inputs.service_branch }}
+          crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
 
   #17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
   Clean-Latest-TLS-Certificates:
-    runs-on: ${{inputs.runner_type}}
+    runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
-    name: Clean [LATEST] TLS Certificates
+    name: Clean [${{ inputs.service_branch }}] TLS Certificates
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -306,118 +394,31 @@ jobs:
         uses: ./qubership-test-pipelines/actions/zookeeper/add_certs_to_template
       - name: Print template
         run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_tls_certs.yml
-      - name: Clean Zookeeper [LATEST] TLS Certificates
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
+      - name: Clean Zookeeper [${{ inputs.service_branch }}] TLS Certificates
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: 'templates/zookeeper-service/zookeeper_install_tls_certs.yml'
-          service_branch: '${{inputs.service_branch}}'
+          service_branch: '${{ inputs.service_branch }}'
+          deploy_mode: install
+          service_name: 'zookeeper-service'
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: '${{ env.path_to_chart }}'
+          namespace: 'zookeeper'
+
+      - name: Get Installed Zookeeper CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
+        with:
+          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+
       - name: Verify installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           service_branch: ${{inputs.service_branch}}
+          namespace: "${{ env.namespace }}"
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: "${{ env.test_completion_retry_interval }}"
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
+          crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
 
-  #21-Clean [LATEST] Restricted
-  Clean-Latest-Restricted:
-    name: Clean [LATEST] Restricted
-    runs-on: ${{inputs.runner_type}}
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Clean Install Zookeeper [LATEST] in Restricted mode
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          restricted: true
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_restricted_APP.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Verify Zookeeper installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-
-  #---------- Update from old releases ----------
-  #6-Clean [N1_RELEASE], 7-Upgrade From [N1_RELEASE] To [LATEST_SPRINT]
-  #8-Clean [N2_RELEASE], 9-Upgrade From [N2_RELEASE] To [LATEST_SPRINT]
-  Clean-Previous-Update-To-Latest:
-    name: Clean [PREVIOUS], Update to [LATEST]
-    needs: prepare-versions
-    runs-on: ${{inputs.runner_type}}
-    strategy:
-      matrix:
-        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      #- name: Install monitoring
-        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
-      - name: Clean Install Zookeeper [PREVIOUS]
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-          service_branch: '${{matrix.release}}'
-      - name: Verify Zookeeper installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-        with:
-          service_branch: '${{matrix.release}}'
-      - name: Update Zookeeper to [LATEST]
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          deploy_mode: upgrade
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Sleep 1m
-        run: sleep 1m
-      - name: Verify installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-        with:
-          service_branch: ${{inputs.service_branch}}
-
-  # ---------- Upgrade from previous versions ----------
-  #19-Clean [PREVIOUS] Restricted, 20-Upgrade From [PREVIOUS] To [LATEST] Restricted
-  Clean-Previous-Upgrade-To-Latest-Restricted:
-    name: Clean [PREVIOUS] Restricted, Upgrade To [LATEST] Restricted
-    needs: prepare-versions
-    runs-on: ${{inputs.runner_type}}
-    steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@v4
-        with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
-      - name: Get version
-        run: echo ${{needs.prepare-versions.outputs.previous_version}}
-      - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Clean Install Zookeeper [PREVIOUS] in Restricted mode
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          restricted: true
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-          service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
-      - name: Verify Zookeeper installation
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-        with:
-          service_branch: '${{needs.prepare-versions.outputs.previous_version}}'
-      - name: Update Zookeeper to [LATEST] in Restricted mode
-        uses: ./qubership-test-pipelines/actions/zookeeper/helm_deploy_zookeeper
-        with:
-          restricted: true
-          deploy_mode: upgrade
-          path_to_template: 'templates/zookeeper-service/zookeeper_install_APP_k8s.yml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Sleep 1m
-        run: sleep 1m
-      - name: Verify Zookeeper upgrade
-        uses: ./qubership-test-pipelines/actions/zookeeper/verify_installation_zookeeper
-        with:
-          service_branch: ${{inputs.service_branch}}

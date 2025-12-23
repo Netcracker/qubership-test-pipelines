@@ -6,20 +6,12 @@ global:
       adminPassword: admin
       clientUsername: client
       clientPassword: client
-      zookeeperClientUsername: zclient
-      zookeeperClientPassword: zclient
     akhq:
       defaultUsername: admin
       defaultPassword: admin
     backupDaemon:
       username: admin
       password: admin
-  tls:
-    enabled: true
-    generateCerts:
-      enabled: true
-      certProvider: cert-manager
-      clusterIssuerName: test-clusterissuer
 kafka:
   install: true
   affinity:
@@ -37,10 +29,6 @@ kafka:
     size: 1Gi
     className:
       - standard
-  zookeeperConnect: zookeeper.zookeeper:2181
-  zookeeperEnableSsl: false
-  tls:
-    enabled: true
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
@@ -51,7 +39,7 @@ monitoring:
 akhq:
   install: true
   ingress:
-    host: akhq-kafka-service.qa-kubernetes.openshift.sdntest.qubership.com
+    host: akhq-kafka-service.qubership.com
 backupDaemon:
   install: true
   storage: 1Gi
@@ -63,4 +51,3 @@ integrationTests:
   install: true
   waitForResult: true
   tags: kafka_crudORkafka_images
-  zookeeperOsProject: "zookeeper"
