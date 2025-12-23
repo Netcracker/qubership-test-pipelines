@@ -16,6 +16,7 @@ nodes:
           - "localhost"
           - "kind-control-plane"
           - "127.0.0.1"
+          - "172.18.0.3"
           - "172.19.0.2"
           - "172.19.0.3"
         peerCertSANs:
