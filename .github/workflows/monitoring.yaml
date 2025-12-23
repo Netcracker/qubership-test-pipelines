@@ -144,12 +144,6 @@ jobs:
           namespace: 'monitoring'
           restricted: '${{ matrix.test.restricted }}'
 
-      # Temporary step until #217 is resolved
-      - name: Update CRDs (temporary step)
-        run: |
-          kubectl apply -f https://github.com/VictoriaMetrics/operator/releases/download/v0.63.0/crd.yaml
-
-
       - name: Get Installed Monitoring CR name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
