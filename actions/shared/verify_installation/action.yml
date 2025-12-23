@@ -50,15 +50,15 @@ inputs:
     default: ""
 
   monitoring_pipeline:
-      description: |
-        Enable monitoring CRs checks (true) or disable them (false)
-      required: false
-      type: boolean
-      default: false
+    description: |
+      Only for Monitoring. Enable monitoring CRs checks (true) or disable them (false)
+    required: false
+    type: boolean
+    default: false
 
   repository_name:
     description: |
-      Name of the repository where the action is being executed
+      Name of the repository where the action is being executed. Used for monitoring specific checks.
     required: false
     default: ""
 
@@ -147,8 +147,8 @@ runs:
         if [[ "${{ inputs.monitoring_pipeline }}" == "true" ]]; then
               # ▶️ Check monitoring CRs statuses
               echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
-              chmod +x ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh
-              ./qubership-test-pipelines/scripts/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json
+              chmod +x ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh
+              ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json
         fi
   
     - name: Get logs from test pod

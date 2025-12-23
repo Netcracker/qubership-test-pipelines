@@ -197,4 +197,6 @@ jobs:
           service_branch: '${{ matrix.test.upgrade_version }}'
           check_tests: 'true'
           artifact_name: 'Upgrade_${{ matrix.test.artifact_name }}'
+          monitoring_pipeline: 'true'
+          repository_name: '${{ inputs.repository_name }}'
       # == End ======= Specific steps for upgrade tests =======
