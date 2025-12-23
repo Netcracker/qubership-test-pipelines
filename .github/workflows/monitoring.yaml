@@ -105,10 +105,10 @@ jobs:
     name: ${{ matrix.test.name }}
     env:
       path_to_chart: 'charts/qubership-monitoring-operator'
-      test_completion_max_retries: 50
-      test_completion_retry_interval: '10s'
-      service_ready_max_retries: 50
-      service_ready_retry_interval: '10s'
+      test_completion_max_retries: 100
+      test_completion_retry_interval: '5s'
+      service_ready_max_retries: 100
+      service_ready_retry_interval: '5s'
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
@@ -190,10 +190,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: 'monitoring'
-          test_completion_max_retries: '50'
-          test_completion_retry_interval: '10s'
-          service_ready_max_retries: '50'
-          service_ready_retry_interval: '10s'
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_branch: '${{ matrix.test.upgrade_version }}'
           check_tests: 'true'
           artifact_name: 'Upgrade_${{ matrix.test.artifact_name }}'
