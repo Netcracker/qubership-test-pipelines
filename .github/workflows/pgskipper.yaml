@@ -1,19 +1,55 @@
 name: Pgskipper Tests
 
 on:
-  workflow_call:
+  workflow_dispatch:
     inputs:
-      service_branch:
+      repository_name:
+        description: 'Repository with Pgskipper service'
         required: false
         type: string
+        default: 'Netcracker/pgskipper-operator'
+      service_branch:
+        description: 'Branch of pgskipper-operator repository'
+        required: false
+        type: string
+        default: 'main'
       versions_file:
-        description: 'Path to versions list file'
+        description: 'Path to file with version list'
         type: string
         required: true
+        default: '.github/versions.yaml'
       pipeline_branch:
-        description: 'Test pipeline branch name'
+        description: 'Branch of qubership-test-pipelines repository'
         type: string
         required: true
+        default: 'main'
+      runner_type:
+        description: 'Runner type (self-hosted or ubuntu-latest)'
+        type: string
+        required: false
+        default: 'ubuntu-latest'
+  workflow_call:
+    inputs:
+      repository_name:
+        description: 'Repository with Pgskipper service'
+        required: false
+        type: string
+        default: 'Netcracker/pgskipper-operator'
+      service_branch:
+        description: 'Branch of pgskipper-operator repository'
+        required: false
+        type: string
+        default: 'main'
+      versions_file:
+        description: 'Path to file with version list'
+        type: string
+        required: true
+        default: '.github/versions.yaml'
+      pipeline_branch:
+        description: 'Branch of qubership-test-pipelines repository'
+        type: string
+        required: true
+        default: 'main'
       runner_type:
         description: 'Runner type (self-hosted or ubuntu-latest)'
         type: string
@@ -26,81 +62,58 @@ on:
         required: true
 
 jobs:
-  prepare-versions:
-    runs-on: ${{inputs.runner_type}}
+  prepare:
+    runs-on: ${{ inputs.runner_type }}
     outputs:
-      versions: ${{steps.process-versions.outputs.versions}}
-      previous_version: ${{steps.process-versions.outputs.previous_version}}
+      versions: ${{ steps.process-versions.outputs.versions }}
+      previous_version: ${{ steps.process-versions.outputs.previous_version }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: '${{inputs.service_branch}}'
-          repository: 'Netcracker/pgskipper-operator'
+          ref: '${{ inputs.service_branch }}'
+          repository: '${{ inputs.repository_name }}'
           path: 'pgskipper-operator'
-      - name: Process versions file
-        id: process-versions
-        run: |
-          versions_str=$(cat pgskipper-operator/${{inputs.versions_file}})
-          versions_json=$(echo $versions_str | jq -R -s -c 'split(" ")')
-          echo "versions=$versions_json" >> $GITHUB_OUTPUT
-          previous_version=$(echo "$versions_json" | jq -r '.[-1]')
-          echo "previous_version=$previous_version" >> $GITHUB_OUTPUT
 
-  # ---------- Current service branch ----------
-  #4-Clean [LATEST_SPRINT], 5-Upgrade [LATEST_SPRINT] Diff Params
-#  Clean-Latest:
-#    runs-on: ${{inputs.runner_type}}
-#    name: Clean [LATEST]
-#    steps:
-#      - name: Checkout pipeline
-#        uses: actions/checkout@v4
-#        with:
-#          ref: '${{inputs.pipeline_branch}}'
-#          repository: 'Netcracker/qubership-test-pipelines'
-#          path: 'qubership-test-pipelines'
-#      - name: Create cluster
-#        uses: ./qubership-test-pipelines/actions/shared/create_cluster
-#      - name: Clean Install Pgskipper Core [LATEST]
-#        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
-#        with:
-#          path_to_template: 'templates/pgskipper/clean.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Verify Pgskipper Core installation
-#        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
-#      - name: Describe nodes
-#        run: kubectl describe nodes
-#      - name: Clean Install Pgskipper Services [LATEST]
-#        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
-#        with:
-#          path_to_template: 'templates/pgskipper/clean.yml'
-#          service_branch: '${{inputs.service_branch}}'
-#      - name: Get logs
-#        run: |
-#          kubectl get events --sort-by=.metadata.creationTimestamp -n pgskipper
-#      - name: Describe nodes
-#        run: kubectl describe nodes
-#      - name: Verify Pgskipper Services installation
-#        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
-#        with:
-#          check_tests: true
-
-  #Clean [N1_RELEASE], Upgrade From [N1_RELEASE] To [LATEST]
-  Clean-Latest:
-    name: Clean [PREVIOUS], Update to [LATEST]
-    needs: prepare-versions
-    runs-on: ${{inputs.runner_type}}
-    strategy:
-      matrix:
-        release: ${{fromJson(needs.prepare-versions.outputs.versions)}}
-    steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
+
+      - name: Process versions file and matrix generation
+        id: process-versions
+        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
+        run: |
+          chmod +x ./scripts/matrix.sh
+          ./scripts/matrix.sh ${{ github.workspace }}/pgskipper-operator/${{ inputs.versions_file }} ./workflow-config/pgskipper.yaml "${{ inputs.service_branch }}"
+
+  Pgskipper-Test-Cases:
+    needs: prepare
+    runs-on: ${{ inputs.runner_type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.test.name }}
+    steps:
+      # == 01 Start ======= Common pre-steps for all tests =======
+      - name: "Print job parameters"
+        run: |
+          echo "======== Job parameters ======="
+          echo "${{ toJson(matrix.test) }}"
+
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+
       - name: Free Disk Space (Ubuntu)
+        if: inputs.runner_type == 'ubuntu-latest'
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
@@ -110,51 +123,98 @@ jobs:
           large-packages: true
           docker-images: false
           swap-storage: true
+
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      - name: Clean Install Pgskipper Core [PREVIOUS]
+      # == 01 End ======= Common pre-steps for all tests =======
+
+      # == 02 Start ======= Core installation steps =======
+      - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
         with:
-          path_to_template: 'templates/pgskipper/patroni-core-quickstart-sample.yaml'
-          service_branch: '${{matrix.release}}'
-      - name: Verify Pgskipper Core installation [PREVIOUS]
+          path_to_template: ${{ matrix.test.core_template }}
+          service_branch: '${{ matrix.test.install_version }}'
+          deploy_mode: install
+
+      - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
         with:
-          service_branch: '${{matrix.release}}'
-      - name: Clean Install Pgskipper Services [PREVIOUS]
+          service_branch: ${{ matrix.test.install_version }}
+          check_tests: ${{ matrix.test.check_core_tests }}
+      # == 02 End ======= Core installation steps =======
+
+      # == 03 Start ======= Services installation steps =======
+      - name: Install Pgskipper Services [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
         with:
-          path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
-          service_branch: '${{matrix.release}}'
-          check_tests: false
-      - name: Sleep 2m after update
-        run: sleep 2m
-      - name: Verify Pgskipper Services installation [PREVIOUS]
+          path_to_template: ${{ matrix.test.services_template }}
+          service_branch: '${{ matrix.test.install_version }}'
+          check_tests: ${{ matrix.test.check_services_tests }}
+
+      - name: Sleep after services installation
+        run: sleep 120s
+
+      - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
         with:
-          service_branch: '${{matrix.release}}'
-      - name: Upgrade Pgskipper Core to [LATEST]
+          service_branch: ${{ matrix.test.install_version }}
+          check_tests: ${{ matrix.test.check_services_tests }}
+          artifact_name: Installation_${{ matrix.test.artifact_name }}
+      # == 03 End ======= Services installation steps =======
+
+      # == Start ======= Specific steps for upgrade tests =======
+      - name: Upgrade Pgskipper Core to [${{ matrix.test.upgrade_version }}]
+        if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
         with:
           deploy_mode: upgrade
-          path_to_template: 'templates/pgskipper/patroni-core-quickstart-sample.yaml'
-          service_branch: '${{inputs.service_branch}}'
-      - name: Sleep 1m after update
-        run: sleep 1m
-      - name: Verify Pgskipper Core Upgrade [LATEST]
+          path_to_template: ${{ matrix.test.upgrade_core_template }}
+          service_branch: '${{ matrix.test.upgrade_version }}'
+
+      - name: Sleep after core upgrade
+        if: matrix.test.sequence == 'upgrade'
+        run: sleep 60s
+
+      - name: Verify Pgskipper Core upgrade
+        if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
         with:
-          service_branch: ${{inputs.service_branch}}
-      - name: Upgrade Pgskipper Services to [LATEST]
+          service_branch: ${{ matrix.test.upgrade_version }}
+          check_tests: ${{ matrix.test.check_core_tests }}
+
+      - name: Upgrade Pgskipper Services to [${{ matrix.test.upgrade_version }}]
+        if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
         with:
           deploy_mode: upgrade
-          path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
-          service_branch: '${{inputs.service_branch}}'
-          check_tests: false
-      - name: Sleep 2m after update
-        run: sleep 2m
-      - name: Verify Pgskipper Services Upgrade [LATEST]
+          path_to_template: ${{ matrix.test.upgrade_services_template }}
+          service_branch: '${{ matrix.test.upgrade_version }}'
+          check_tests: ${{ matrix.test.check_services_tests }}
+
+      - name: Sleep after services upgrade
+        if: matrix.test.sequence == 'upgrade'
+        run: sleep 120s
+
+      - name: Verify Pgskipper Services upgrade
+        if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
         with:
-          service_branch: ${{inputs.service_branch}}
+          service_branch: ${{ matrix.test.upgrade_version }}
+          check_tests: ${{ matrix.test.check_services_tests }}
+          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
+      # == End ======= Specific steps for upgrade tests =======
+
+      # == Start ======= Diagnostic steps =======
+      - name: Collect diagnostic information
+        if: always()
+        run: |
+          echo "::group::Describe nodes"
+          kubectl describe nodes
+          echo "::endgroup::"
+          echo "::group::Get events"
+          kubectl get events --sort-by=.metadata.creationTimestamp -n pgskipper
+          echo "::endgroup::"
+          echo "::group::Get pods"
+          kubectl get pods -n pgskipper -o wide
+          echo "::endgroup::"
+      # == End ======= Diagnostic steps =======

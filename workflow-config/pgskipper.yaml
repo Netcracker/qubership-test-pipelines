@@ -1,0 +1,13 @@
+jobs:
+  - purpose: automation
+    name: "Clean [${release_version}], Upgrade to [${service_branch}]"
+    install_version: '${release_version}'
+    core_template: "templates/pgskipper/patroni-core-quickstart-sample.yaml"
+    services_template: "templates/pgskipper/patroni-services-quickstart-sample.yaml"
+    upgrade_version: '${service_branch}'
+    upgrade_core_template: "templates/pgskipper/patroni-core-quickstart-sample.yaml"
+    upgrade_services_template: "templates/pgskipper/patroni-services-quickstart-sample.yaml"
+    sequence: upgrade
+    check_core_tests: true
+    check_services_tests: true
+    artifact_name: "Clean_${release_version}_Upgrade_${service_branch}"
