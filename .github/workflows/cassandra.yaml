@@ -3,11 +3,21 @@ name: Reusable Cassandra Tests
 on:
   workflow_dispatch:
     inputs:
-      repository_name:
-        description: 'Repository with Cassandra service'
+      repository_cassandra:
+        description: 'Repository with Cassandra chart'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra'
+      repository_cassandra_operator:
+        description: 'Repository with Cassandra operator'
         required: false
         type: string
         default: 'Netcracker/qubership-cassandra-operator'
+      repository_cassandra_services:
+        description: 'Repository with Cassandra services'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra-supplementary'
       service_branch:
         description: 'Branch of qubership-cassandra-operator repository'
         required: false
@@ -93,6 +103,11 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
+    env:
+      cassandra_namespace: cassandra
+      cassandra_path_to_chart: 'deployments/charts/cassandra_5.0.4'
+      cassandra_oper_path_to_chart: 'charts/helm/cassandra-operator'
+      cassandra_srvc_path_to_chart: 'charts/helm/cassandra-services'
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
@@ -112,24 +127,58 @@ jobs:
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == 02 Start ======= Installation steps =======
-      - name: Install Cassandra [${{ matrix.test.install_version }}]
+      - name: Install Cassandra Chart [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: '${{ matrix.test.template }}'
           service_branch: '${{ matrix.test.install_version }}'
           service_name: 'cassandra'
-          repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'charts/helm/cassandra-operator'
-          namespace: 'cassandra'
+          repository_name: '${{ inputs.repository_cassandra }}'
+          path_to_chart: ${{ env.cassandra_path_to_chart }}
+          namespace: ${{ env.cassandra_namespace }}
           restricted: '${{ matrix.test.restricted }}'
 
-      - name: Sleep 2m
-        run: sleep 2m
+      - name: Install Cassandra Operator [${{ matrix.test.install_version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: '${{ matrix.test.template }}'
+          service_branch: '${{ matrix.test.install_version }}'
+          service_name: 'cassandra-operator'
+          repository_name: '${{ inputs.repository_cassandra_operator }}'
+          path_to_chart: ${{ env.cassandra_oper_path_to_chart }}
+          namespace: '${{ env.cassandra_namespace }}'
+          restricted: '${{ matrix.test.restricted }}'
+
+      - name: Sleep 20m
+        run: sleep 20m
 
       - name: Verify Cassandra installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: 'cassandra'
+          namespace: ${{ env.cassandra_namespace }}
+          test_completion_max_retries: '50'
+          test_completion_retry_interval: '10s'
+          service_ready_max_retries: '50'
+          service_ready_retry_interval: '10s'
+          service_branch: '${{ matrix.test.install_version }}'
+          check_tests: 'false'
+          artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
+
+      - name: Install Cassandra Services [${{ matrix.test.install_version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: '${{ matrix.test.template }}'
+          service_branch: '${{ matrix.test.install_version }}'
+          service_name: 'cassandra-services'
+          repository_name: '${{ inputs.repository_cassandra_services }}'
+          path_to_chart: ${{ env.cassandra_srvc_path_to_chart }}
+          namespace: ${{ env.cassandra_namespace }}
+          restricted: '${{ matrix.test.restricted }}'
+
+      - name: Verify Cassandra installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.cassandra_namespace }}
           test_completion_max_retries: '50'
           test_completion_retry_interval: '10s'
           service_ready_max_retries: '50'
@@ -150,7 +199,7 @@ jobs:
           service_name: 'cassandra'
           repository_name: '${{ inputs.repository_name }}'
           path_to_chart: 'charts/helm/cassandra-operator'
-          namespace: 'cassandra'
+          namespace: ${{ env.cassandra_namespace }}
           restricted: '${{ matrix.test.restricted }}'
 
       - name: Sleep 2m

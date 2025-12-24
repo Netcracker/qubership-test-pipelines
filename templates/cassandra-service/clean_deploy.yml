@@ -1,6 +1,6 @@
 cassandra:
     install: true
-    dockerImage: ghcr.io/netcracker/cassandra_4.1:main
+    dockerImage: ghcr.io/netcracker/cassandra_5.0:qa-pipeline
     deploymentSchema:
       dataCenters:
         - name: dc1
