@@ -160,7 +160,7 @@ runs:
         service_branch="${{ inputs.service_branch }}"
         # if branch is a commit hash (contains from 7 up to 40 characters: digits or letters from a to f), trim to 11 characters
         if echo "$service_branch" | grep -Eq '^[0-9a-f]{7,40}$'; then
-          service_branch_updated="${service_branch:0:11}"
+          service_branch_updated="git-${service_branch:0:7}"
         else
           service_branch_updated="${service_branch//\//_}"
         fi
