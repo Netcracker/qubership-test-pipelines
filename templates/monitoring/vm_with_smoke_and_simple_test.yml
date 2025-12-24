@@ -4,7 +4,7 @@ grafana:
     install: true
 integrationTests:
   install: true
-  tags: smoke
+  tags: grafanaORsmoke
   timeoutBeforeStart: 60
   statusWriting:
     enabled: false
