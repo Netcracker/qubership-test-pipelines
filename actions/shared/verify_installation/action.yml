@@ -118,7 +118,7 @@ runs:
         if [[ "${{ inputs.monitoring_pipeline }}" == "true" ]]; then
           # ▶️ Check monitoring CRs statuses
           echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
-          chmod +x ./qubership-test-pipelines/monitoring/scripts/check-vm-cr-statuses.sh
+          chmod +x ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh
           echo $(pwd)
           echo "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
           cat "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
