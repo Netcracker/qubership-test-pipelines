@@ -140,6 +140,7 @@ runs:
               echo "⏳ Some resources are not ready"
               echo "PODS:"
               kubectl get pods -n "${{inputs.namespace}}"
+              sleep ${{inputs.service_ready_retry_interval}}
             fi
           fi
         done
@@ -194,7 +195,7 @@ runs:
             echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           else
-            sleep ${{inputs.service_ready_retry_interval}}
+            sleep ${{inputs.test_completion_retry_interval}}
           fi
         done
 
