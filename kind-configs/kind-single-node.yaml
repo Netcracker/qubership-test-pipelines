@@ -1,0 +1,28 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  - |
+    kind: ClusterConfiguration
+    etcd:
+      local:
+        serverCertSANs:
+          - "localhost"
+          - "kind-control-plane"
+          - "127.0.0.1"
+          - "172.18.0.3"
+          - "172.19.0.2"
+          - "172.19.0.3"
+        peerCertSANs:
+          - "localhost"
+          - "kind-control-plane"
+          - "127.0.0.1"
+          - "172.18.0.3"
+          - "172.19.0.2"
+          - "172.19.0.3"
