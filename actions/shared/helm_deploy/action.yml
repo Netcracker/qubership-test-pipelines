@@ -206,3 +206,9 @@ runs:
       shell: bash
       # language=bash
       run: kubectl config use-context kind-kind
+
+    - name: Get resources after deploy
+      if: always()
+      shell: bash
+      # language=bash
+      run: kubectl get all -n ${{inputs.namespace}}
