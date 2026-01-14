@@ -40,11 +40,21 @@ on:
         default: 'ubuntu-latest'
   workflow_call:
     inputs:
-      repository_name:
-        description: 'Repository with Cassandra service'
+      repository_cassandra:
+        description: 'Repository with Cassandra chart'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra'
+      repository_cassandra_operator:
+        description: 'Repository with Cassandra operator'
         required: false
         type: string
         default: 'Netcracker/qubership-cassandra-operator'
+      repository_cassandra_services:
+        description: 'Repository with Cassandra services'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra-supplementary'
       service_branch:
         description: 'Branch of qubership-cassandra-operator repository'
         required: false
