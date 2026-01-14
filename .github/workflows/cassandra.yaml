@@ -87,7 +87,7 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: '${{ inputs.service_branch }}'
+          ref: 'pipe_test'
           repository: '${{ inputs.repository_cassandra_operator }}'
           path: 'qubership-cassandra-operator'
 
@@ -143,7 +143,7 @@ jobs:
           path_to_template: '${{ matrix.test.template }}'
           service_branch: 'main'
           service_name: 'cassandra'
-          repository_name: '${{ inputs.repository_cassandra }}'
+          repository_name: 'Netcracker/qubership-cassandra'
           path_to_chart: ${{ env.cassandra_path_to_chart }}
           namespace: ${{ env.cassandra_namespace }}
           restricted: '${{ matrix.test.restricted }}'
