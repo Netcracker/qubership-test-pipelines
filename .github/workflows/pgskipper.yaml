@@ -167,9 +167,6 @@ jobs:
           path_to_chart: 'charts/patroni-services'
           namespace: 'pgskipper'
 
-      - name: Sleep after services installation
-        run: sleep 120s
-
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
@@ -201,7 +198,7 @@ jobs:
 
       - name: Sleep after core upgrade
         if: matrix.test.sequence == 'upgrade'
-        run: sleep 60s
+        run: sleep 30s
 
       - name: Verify Pgskipper Core upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -231,7 +228,7 @@ jobs:
 
       - name: Sleep after services upgrade
         if: matrix.test.sequence == 'upgrade'
-        run: sleep 120s
+        run: sleep 30s
 
       - name: Verify Pgskipper Services upgrade
         if: matrix.test.sequence == 'upgrade'
