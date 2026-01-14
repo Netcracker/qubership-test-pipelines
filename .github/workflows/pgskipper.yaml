@@ -130,46 +130,74 @@ jobs:
 
       # == 02 Start ======= Core installation steps =======
       - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
-        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: ${{ matrix.test.core_template }}
+          path_to_template: '${{ matrix.test.core_template }}'
           service_branch: '${{ matrix.test.install_version }}'
-          deploy_mode: install
+          deploy_mode: 'install'
+          restricted: false
+          service_name: 'pgskipper'
+          repository_name: 'Netcracker/pgskipper-operator'
+          path_to_chart: 'charts/patroni-core'
+          namespace: 'pgskipper'
+          resource_folder: ''
 
       - name: Verify Pgskipper Core installation
-        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
-          check_tests: ${{ matrix.test.check_core_tests }}
+          service_branch: '${{ matrix.test.install_version }}'
+          check_tests: '${{ matrix.test.check_core_tests }}'
+          artifact_name: 'Core_Installation_${{ matrix.test.artifact_name }}'
+          namespace: 'pgskipper'
+          service_ready_max_retries: 60
+          service_ready_retry_interval: '10s'
+          test_completion_max_retries: 60
+          test_completion_retry_interval: '10s'
+          crd_list: 'patronicores.netcracker.com'
       # == 02 End ======= Core installation steps =======
 
       # == 03 Start ======= Services installation steps =======
       - name: Install Pgskipper Services [${{ matrix.test.install_version }}]
-        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: ${{ matrix.test.services_template }}
+          path_to_template: '${{ matrix.test.services_template }}'
           service_branch: '${{ matrix.test.install_version }}'
-          check_tests: ${{ matrix.test.check_services_tests }}
+          service_name: 'pgskipper-services'
+          repository_name: 'Netcracker/pgskipper-operator'
+          path_to_chart: 'charts/patroni-services'
+          namespace: 'pgskipper'
 
       - name: Sleep after services installation
         run: sleep 120s
 
       - name: Verify Pgskipper Services installation
-        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
-          check_tests: ${{ matrix.test.check_services_tests }}
-          artifact_name: Installation_${{ matrix.test.artifact_name }}
+          service_branch: '${{ matrix.test.install_version }}'
+          check_tests: '${{ matrix.test.check_services_tests }}'
+          artifact_name: 'Services_Installation_${{ matrix.test.artifact_name }}'
+          namespace: 'pgskipper'
+          service_ready_max_retries: 60
+          service_ready_retry_interval: '10s'
+          test_completion_max_retries: 60
+          test_completion_retry_interval: '10s'
+          crd_list: 'patronicores.netcracker.com'
       # == 03 End ======= Services installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
       - name: Upgrade Pgskipper Core to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_core
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          deploy_mode: upgrade
-          path_to_template: ${{ matrix.test.upgrade_core_template }}
+          deploy_mode: 'upgrade'
+          path_to_template: '${{ matrix.test.upgrade_core_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
+          restricted: false
+          service_name: 'pgskipper'
+          repository_name: 'Netcracker/pgskipper-operator'
+          path_to_chart: 'charts/patroni-core'
+          namespace: 'pgskipper'
+          resource_folder: ''
 
       - name: Sleep after core upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -177,19 +205,29 @@ jobs:
 
       - name: Verify Pgskipper Core upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_core
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
+          artifact_name: 'Core_Upgrade_${{ matrix.test.artifact_name }}'
+          namespace: 'pgskipper'
+          service_ready_max_retries: 60
+          service_ready_retry_interval: '10s'
+          test_completion_max_retries: 60
+          test_completion_retry_interval: '10s'
+          crd_list: 'patronicores.netcracker.com'
 
       - name: Upgrade Pgskipper Services to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/pgskipper/helm_deploy_pgskipper_services
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           deploy_mode: upgrade
-          path_to_template: ${{ matrix.test.upgrade_services_template }}
+          path_to_template: '${{ matrix.test.upgrade_services_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
-          check_tests: ${{ matrix.test.check_services_tests }}
+          service_name: 'pgskipper-services'
+          repository_name: 'Netcracker/pgskipper-operator'
+          path_to_chart: 'charts/patroni-services'
+          namespace: 'pgskipper'
 
       - name: Sleep after services upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -197,11 +235,17 @@ jobs:
 
       - name: Verify Pgskipper Services upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/pgskipper/verify_installation_pgskipper_services
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
-          check_tests: ${{ matrix.test.check_services_tests }}
-          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
+          service_branch: '${{ matrix.test.upgrade_version }}'
+          check_tests: '${{ matrix.test.check_services_tests }}'
+          artifact_name: 'Services_Upgrade_$_${{ matrix.test.artifact_name }}'
+          namespace: 'pgskipper'
+          service_ready_max_retries: 60
+          service_ready_retry_interval: '10s'
+          test_completion_max_retries: 60
+          test_completion_retry_interval: '10s'
+          crd_list: 'patronicores.netcracker.com'
       # == End ======= Specific steps for upgrade tests =======
 
       # == Start ======= Diagnostic steps =======
