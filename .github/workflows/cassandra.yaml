@@ -3,21 +3,11 @@ name: Reusable Cassandra Tests
 on:
   workflow_dispatch:
     inputs:
-      repository_cassandra:
-        description: 'Repository with Cassandra chart'
-        required: false
-        type: string
-        default: 'Netcracker/qubership-cassandra'
-      repository_cassandra_operator:
-        description: 'Repository with Cassandra operator'
+      repository_name:
+        description: 'Repository with Cassandra service'
         required: false
         type: string
         default: 'Netcracker/qubership-cassandra-operator'
-      repository_cassandra_services:
-        description: 'Repository with Cassandra services'
-        required: false
-        type: string
-        default: 'Netcracker/qubership-cassandra-supplementary'
       service_branch:
         description: 'Branch of qubership-cassandra-operator repository'
         required: false
@@ -40,21 +30,11 @@ on:
         default: 'ubuntu-latest'
   workflow_call:
     inputs:
-      repository_cassandra:
-        description: 'Repository with Cassandra chart'
-        required: false
-        type: string
-        default: 'Netcracker/qubership-cassandra'
-      repository_cassandra_operator:
-        description: 'Repository with Cassandra operator'
+      repository_name:
+        description: 'Repository with Cassandra service'
         required: false
         type: string
         default: 'Netcracker/qubership-cassandra-operator'
-      repository_cassandra_services:
-        description: 'Repository with Cassandra services'
-        required: false
-        type: string
-        default: 'Netcracker/qubership-cassandra-supplementary'
       service_branch:
         description: 'Branch of qubership-cassandra-operator repository'
         required: false
@@ -143,8 +123,8 @@ jobs:
           path_to_template: '${{ matrix.test.template }}'
           service_branch: '${{ matrix.test.install_version }}'
           service_name: 'cassandra'
-          repository_name: '${{ inputs.repository_cassandra }}'
-          path_to_chart: ${{ env.cassandra_path_to_chart }}
+          repository_name: 'Netcracker/qubership-cassandra'
+          path_to_chart: 'deployments/charts/cassandra_5.0.6'
           namespace: ${{ env.cassandra_namespace }}
           restricted: '${{ matrix.test.restricted }}'
 
