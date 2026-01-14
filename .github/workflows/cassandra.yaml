@@ -137,16 +137,16 @@ jobs:
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == 02 Start ======= Installation steps =======
-      # - name: Install Cassandra Chart [${{ matrix.test.install_version }}]
-      #   uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-      #   with:
-      #     path_to_template: '${{ matrix.test.template }}'
-      #     service_branch: '${{ matrix.test.install_version }}'
-      #     service_name: 'cassandra'
-      #     repository_name: '${{ inputs.repository_cassandra }}'
-      #     path_to_chart: ${{ env.cassandra_path_to_chart }}
-      #     namespace: ${{ env.cassandra_namespace }}
-      #     restricted: '${{ matrix.test.restricted }}'
+      - name: Install Cassandra Chart [${{ matrix.test.install_version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: '${{ matrix.test.template }}'
+          service_branch: 'main'
+          service_name: 'cassandra'
+          repository_name: '${{ inputs.repository_cassandra }}'
+          path_to_chart: ${{ env.cassandra_path_to_chart }}
+          namespace: ${{ env.cassandra_namespace }}
+          restricted: '${{ matrix.test.restricted }}'
 
       - name: Install Cassandra Operator [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -159,8 +159,8 @@ jobs:
           namespace: '${{ env.cassandra_namespace }}'
           restricted: '${{ matrix.test.restricted }}'
 
-      - name: Sleep 20m
-        run: sleep 20m
+      - name: Sleep 2m
+        run: sleep 2m
 
       - name: Verify Cassandra installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
