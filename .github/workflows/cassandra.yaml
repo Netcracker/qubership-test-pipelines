@@ -3,11 +3,21 @@ name: Reusable Cassandra Tests
 on:
   workflow_dispatch:
     inputs:
-      repository_name:
-        description: 'Repository with Cassandra service'
+      repository_cassandra:
+        description: 'Repository with Cassandra chart'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra'
+      repository_cassandra_operator:
+        description: 'Repository with Cassandra operator'
         required: false
         type: string
         default: 'Netcracker/qubership-cassandra-operator'
+      repository_cassandra_services:
+        description: 'Repository with Cassandra services'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra-supplementary'
       service_branch:
         description: 'Branch of qubership-cassandra-operator repository'
         required: false
@@ -30,11 +40,21 @@ on:
         default: 'ubuntu-latest'
   workflow_call:
     inputs:
-      repository_name:
-        description: 'Repository with Cassandra service'
+      repository_cassandra:
+        description: 'Repository with Cassandra chart'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra'
+      repository_cassandra_operator:
+        description: 'Repository with Cassandra operator'
         required: false
         type: string
         default: 'Netcracker/qubership-cassandra-operator'
+      repository_cassandra_services:
+        description: 'Repository with Cassandra services'
+        required: false
+        type: string
+        default: 'Netcracker/qubership-cassandra-supplementary'
       service_branch:
         description: 'Branch of qubership-cassandra-operator repository'
         required: false
@@ -68,7 +88,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: '${{ inputs.service_branch }}'
-          repository: '${{ inputs.repository_name }}'
+          repository: '${{ inputs.repository_cassandra_operator }}'
           path: 'qubership-cassandra-operator'
 
       - name: Checkout pipeline
@@ -117,16 +137,16 @@ jobs:
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == 02 Start ======= Installation steps =======
-      - name: Install Cassandra Chart [${{ matrix.test.install_version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-        with:
-          path_to_template: '${{ matrix.test.template }}'
-          service_branch: '${{ matrix.test.install_version }}'
-          service_name: 'cassandra'
-          repository_name: 'Netcracker/qubership-cassandra'
-          path_to_chart: 'deployments/charts/cassandra_5.0.6'
-          namespace: ${{ env.cassandra_namespace }}
-          restricted: '${{ matrix.test.restricted }}'
+      # - name: Install Cassandra Chart [${{ matrix.test.install_version }}]
+      #   uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      #   with:
+      #     path_to_template: '${{ matrix.test.template }}'
+      #     service_branch: '${{ matrix.test.install_version }}'
+      #     service_name: 'cassandra'
+      #     repository_name: '${{ inputs.repository_cassandra }}'
+      #     path_to_chart: ${{ env.cassandra_path_to_chart }}
+      #     namespace: ${{ env.cassandra_namespace }}
+      #     restricted: '${{ matrix.test.restricted }}'
 
       - name: Install Cassandra Operator [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
