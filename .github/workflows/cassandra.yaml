@@ -105,7 +105,7 @@ jobs:
     name: ${{ matrix.test.name }}
     env:
       cassandra_namespace: cassandra
-      cassandra_path_to_chart: 'deployments/charts/cassandra_5.0.4'
+      cassandra_path_to_chart: 'deployments/charts/cassandra_5.0.6'
       cassandra_oper_path_to_chart: 'charts/helm/cassandra-operator'
       cassandra_srvc_path_to_chart: 'charts/helm/cassandra-services'
     steps:
