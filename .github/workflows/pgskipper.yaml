@@ -138,7 +138,7 @@ jobs:
           restricted: false
           service_name: 'pgskipper'
           repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'charts/patroni-core'
+          path_to_chart: 'operator/charts/patroni-core'
           namespace: 'pgskipper'
           resource_folder: ''
 
@@ -164,7 +164,7 @@ jobs:
           service_branch: '${{ matrix.test.install_version }}'
           service_name: 'pgskipper-services'
           repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'charts/patroni-services'
+          path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
 
       - name: Verify Pgskipper Services installation
@@ -192,11 +192,11 @@ jobs:
           restricted: false
           service_name: 'pgskipper'
           repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'charts/patroni-core'
+          path_to_chart: 'operator/charts/patroni-core'
           namespace: 'pgskipper'
           resource_folder: ''
 
-      - name: Sleep after core upgrade
+      - name: Sleep after core upgrade 
         if: matrix.test.sequence == 'upgrade'
         run: sleep 30s
 
@@ -223,7 +223,7 @@ jobs:
           service_branch: '${{ matrix.test.upgrade_version }}'
           service_name: 'pgskipper-services'
           repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'charts/patroni-services'
+          path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
 
       - name: Sleep after services upgrade
