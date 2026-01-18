@@ -29,3 +29,9 @@ patroni:
 tests:
   install: true
   runTestScenarios: "basic"
+tls:
+  enabled: true
+  generateCerts:
+    enabled: true
+    clusterIssuerName: qa-issuer-self
+INTERNAL_TLS_ENABLED: true
