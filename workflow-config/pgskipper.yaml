@@ -12,6 +12,7 @@ jobs:
     check_core_tests: true
     check_services_tests: true
     restricted: false
+    tls: false
     artifact_name: "Clean_${release_version}_Upgrade_${service_branch}"
   ## ===========================================================================================================
   - name: "Clean [${service_branch}] TLS"
@@ -20,6 +21,7 @@ jobs:
     services_template: "templates/pgskipper/patroni-services-tls.yaml"
     sequence: install
     restricted: false
+    tls: true
     artifact_name: "Clean_CURRENT_TLS"
 
   - name: "Clean [${service_branch}]. Upgrade [${service_branch}] Diff Params"
@@ -33,6 +35,7 @@ jobs:
     restricted: false
     check_core_tests: true
     check_services_tests: true
+    tls: false
     artifact_name: "Clean_CURRENT_Upgrade_CURRENT_Diff_Params"
 
   - name: "Clean [${service_branch}] Full-AT"
@@ -43,6 +46,7 @@ jobs:
     restricted: false
     check_core_tests: true
     check_services_tests: true
+    tls: false
     artifact_name: "Clean_CURRENT_Full-AT"
   
   - name: "Clean [${release_version}] Restricted, Upgrade From [${release_version}] To [${service_branch}] Restricted"
@@ -51,9 +55,10 @@ jobs:
     services_template: "templates/pgskipper/patroni-services-fullat.yaml"
     upgrade_version: "${service_branch}"
     upgrade_core_template: "templates/pgskipper/patroni-core-diffparams.yaml"
-    supgrade_services_template: "templates/pgskipper/patroni-services-diffparams.yaml"
+    upgrade_services_template: "templates/pgskipper/patroni-services-diffparams.yaml"
     sequence: upgrade
     restricted: true
     check_core_tests: true
     check_services_tests: true
+    tls: false
     artifact_name: "Clean_${release_version}_Restricted_Upgrade_From_${release_version}_To_${service_branch}_Restricted"

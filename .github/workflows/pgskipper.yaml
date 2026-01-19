@@ -128,6 +128,34 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
+      # == Start TLS certs addition if needed =======
+      - name: TLS setup
+        # language=bash
+        if: matrix.test.tls == true
+        run: |
+          echo "::group::Install cert-manager"
+          helm repo add jetstack https://charts.jetstack.io --force-update
+          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
+          echo "::endgroup::"
+          echo "::group::Create cert-manager entities"
+          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+          echo "::endgroup::"
+          echo "::group::Get cert-manager resources"
+          kubectl get pods -n cert-manager
+          kubectl get secrets -n cert-manager
+          kubectl get certificates -A
+          echo "::endgroup::"
+          echo "::group:: Get clusterissuer"
+          kubectl get clusterissuer
+          kubectl get clusterissuer test-clusterissuer -o yaml
+          echo "::endgroup::"
+      # == End TLS certs addition if needed =======
+
       # == 02 Start ======= Core installation steps =======
       - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
