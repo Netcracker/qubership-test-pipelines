@@ -45,7 +45,7 @@ jobs:
     check_services_tests: true
     artifact_name: "Clean_CURRENT_Full-AT"
   
-  - name: "Clean [PG16_PREVIOUS_SPRINT] Restricted, Upgrade From [PG16_PREVIOUS_SPRINT] To [PG16_LATEST_SPRINT] Restricted"
+  - name: "Clean [${release_version}] Restricted, Upgrade From [${release_version}] To [${service_branch}] Restricted"
     install_version: '${release_version}'
     core_template: "templates/pgskipper/patroni-core-fullat.yaml"
     services_template: "templates/pgskipper/patroni-services-fullat.yaml"
@@ -56,4 +56,4 @@ jobs:
     restricted: true
     check_core_tests: true
     check_services_tests: true
-    artifact_name: "Clean [PG16_PREVIOUS_SPRINT] Restricted, Upgrade From [PG16_PREVIOUS_SPRINT] To [PG16_LATEST_SPRINT] Restricted"
+    artifact_name: "Clean_${release_version}_Restricted_Upgrade_From_${release_version}_To_${service_branch}_Restricted"
