@@ -135,7 +135,7 @@ jobs:
           path_to_template: '${{ matrix.test.core_template }}'
           service_branch: '${{ matrix.test.install_version }}'
           deploy_mode: 'install'
-          restricted: false
+          restricted: ${{ matrix.test.restricted }}
           service_name: 'pgskipper'
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-core'
@@ -163,6 +163,7 @@ jobs:
           path_to_template: '${{ matrix.test.services_template }}'
           service_branch: '${{ matrix.test.install_version }}'
           service_name: 'pgskipper-services'
+          restricted: ${{ matrix.test.restricted }}
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
@@ -189,7 +190,7 @@ jobs:
           deploy_mode: 'upgrade'
           path_to_template: '${{ matrix.test.upgrade_core_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
-          restricted: false
+          restricted: ${{ matrix.test.restricted }}
           service_name: 'pgskipper'
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-core'
@@ -222,6 +223,7 @@ jobs:
           path_to_template: '${{ matrix.test.upgrade_services_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
           service_name: 'pgskipper-services'
+          restricted: ${{ matrix.test.restricted }}
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'

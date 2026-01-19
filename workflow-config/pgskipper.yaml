@@ -11,6 +11,7 @@ jobs:
     sequence: upgrade
     check_core_tests: true
     check_services_tests: true
+    restricted: false
     artifact_name: "Clean_${release_version}_Upgrade_${service_branch}"
   ## ===========================================================================================================
   - name: "Clean [${service_branch}] TLS"
@@ -43,3 +44,16 @@ jobs:
     check_core_tests: true
     check_services_tests: true
     artifact_name: "Clean_CURRENT_Full-AT"
+  
+  - name: "Clean [PG16_PREVIOUS_SPRINT] Restricted, Upgrade From [PG16_PREVIOUS_SPRINT] To [PG16_LATEST_SPRINT] Restricted"
+    install_version: '${release_version}'
+    core_template: "templates/pgskipper/patroni-core-fullat.yaml"
+    services_template: "templates/pgskipper/patroni-services-fullat.yaml"
+    upgrade_version: "${service_branch}"
+    upgrade_core_template: "templates/pgskipper/patroni-core-diffparams.yaml"
+    supgrade_services_template: "templates/pgskipper/patroni-services-diffparams.yaml"
+    sequence: upgrade
+    restricted: true
+    check_core_tests: true
+    check_services_tests: true
+    artifact_name: "Clean [PG16_PREVIOUS_SPRINT] Restricted, Upgrade From [PG16_PREVIOUS_SPRINT] To [PG16_LATEST_SPRINT] Restricted"
