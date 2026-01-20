@@ -49,5 +49,5 @@ tls:
   enabled: true
   generateCerts:
     enabled: true
-    clusterIssuerName: qa-issuer-self
+    clusterIssuerName: test-clusterissuer
 INTERNAL_TLS_ENABLED: true
