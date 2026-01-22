@@ -171,6 +171,7 @@ jobs:
           namespace: 'pgskipper'
           resource_folder: ''
           image_replacement: ${{ matrix.service_version_image }}
+          image_block_name: "patroni"
 
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -198,6 +199,7 @@ jobs:
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
           image_replacement: ${{ matrix.service_version_image }}
+          image_block_name: "patroni"
 
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -228,6 +230,7 @@ jobs:
           namespace: 'pgskipper'
           resource_folder: ''
           image_replacement: ${{ matrix.service_version_image }}
+          image_block_name: "patroni"
 
       - name: Sleep after core upgrade 
         if: matrix.test.sequence == 'upgrade'
@@ -260,6 +263,7 @@ jobs:
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
           image_replacement: ${{ matrix.service_version_image }}
+          image_block_name: "patroni"
 
       - name: Sleep after services upgrade
         if: matrix.test.sequence == 'upgrade'

@@ -55,6 +55,16 @@ inputs:
       Folder with resources for creating before installation
     required: true
 
+  image_replacement:
+    description: "New image name (e.g., pgskipper-patroni-17)"
+    required: false
+    default: ''
+
+  image_block_name:
+    description: "Name of the block in values.yaml (e.g., patroni, kafka)"
+    required: false
+    default: ''
+
 runs:
   using: 'composite'
   steps:
@@ -151,31 +161,48 @@ runs:
           echo "is_release=false" >> $GITHUB_OUTPUT
         fi
 
-    - name: Replace slash in service branch
-      id: replace_slash
+    - name: Override image in values.yaml
+      if: inputs.image_replacement != '' && inputs.image_block_name != ''
       shell: bash
       # language=bash
       run: |
-        # ▶️ Replace slash in service branch
-        service_branch="${{ inputs.service_branch }}"
-        # if branch is a commit hash (contains from 7 up to 40 characters: digits or letters from a to f), trim to 11 characters
-        if echo "$service_branch" | grep -Eq '^[0-9a-f]{7,40}$'; then
-          service_branch_updated="git-${service_branch:0:7}"
-        else
-          service_branch_updated="${service_branch//\//_}"
+        target_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
+        echo "=== [DEBUG] File: $target_file | Block: ${{ inputs.image_block_name }} | Image: ${{ inputs.image_replacement }} ==="
+        if [ ! -f "$target_file" ]; then
+          echo "::error::File not found"
+          exit 1
         fi
-        echo "The image tag: ${service_branch_updated}"
-        echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
+        echo "--- BEFORE ---"
+        grep -A 5 "${{ inputs.image_block_name }}:" "$target_file"  true
+        sed -i "/${{ inputs.image_block_name }}:/,/dockerImage:/ s|\(dockerImage: .*/\)[^:]*\(:\)|\1${{ inputs.image_replacement }}\2|" "$target_file"
+        echo "--- AFTER ---"
+        grep -A 5 "${{ inputs.image_block_name }}:" "$target_file"  true
+        echo "=== [DEBUG] Done ==="
 
-    - name: Override image in template
+    - name: Override version
       if: inputs.image_replacement != ''
       shell: bash
+      # language=bash
       run: |
-        FILE_NAME=$(basename "${{inputs.path_to_template}}")
-        cd "${{inputs.repository_name}}/${{inputs.path_to_chart}}"  
-        echo "Updating patroni.dockerImage in $FILE_NAME to: ${{ inputs.image_replacement }}"
-        sed -i "s|\(dockerImage: .*/\)[^:]*\(:\)|\1${{ inputs.image_replacement }}\2|g" "$FILE_NAME"
-        grep "dockerImage" "$FILE_NAME" || echo "Warning: dockerImage not found"
+        target_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
+        echo "=== [DEBUG] Starting image replacement ==="
+        echo "File: $target_file"
+        echo "New image name: ${{ inputs.image_replacement }}"
+        if [ ! -f "$target_file" ]; then
+          echo "::error::Target file $target_file not found!"
+          exit 1
+        fi
+        echo "--- [DEBUG] Content BEFORE change (patroni block) ---"
+        grep -A 5 "patroni:" "$target_file" || echo "patroni block not found"
+        sed -i '/patroni:/,/dockerImage:/ s|\(dockerImage: .*/\)[^:]*\(:\)|\1${{ inputs.image_replacement }}\2|' "$target_file"
+        echo "--- [DEBUG] Content AFTER change (patroni block) ---"
+        if grep -A 5 "patroni:" "$target_file" | grep -q "${{ inputs.image_replacement }}"; then
+          grep -A 5 "patroni:" "$target_file"
+          echo "=== [DEBUG] Success: Image replaced successfully ==="
+        else
+          echo "::warning::Image replacement might have failed. Check the pattern."
+          grep -A 5 "patroni:" "$target_file"
+        fi
   
     - name: Update versions in values
       id: update-versions
