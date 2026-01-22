@@ -97,6 +97,7 @@ jobs:
       fail-fast: false
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.test.name }}
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
