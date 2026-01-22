@@ -172,11 +172,16 @@ runs:
       shell: bash
       run: |
         template_name=$(basename "${{inputs.path_to_template}}")
-        cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-        echo "Updating image to: ${{ inputs.image_replacement }}"
-        sed -i "s|\(.*/\)[^:]*\(:\)|\1${{ inputs.image_replacement }}\2|g" "$template_name"
-        echo "Check replacement result:"
-        grep "dockerImage" "$template_name"
+        target_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/$template_name"
+        echo "Searching for patroni image in $target_file"
+        if grep -q "dockerImage:.*pgskipper-patroni" "$target_file"; then
+          echo "Found patroni image. Replacing with: ${{ inputs.image_replacement }}"
+          sed -i "s|\(dockerImage: .*/\)[^:]*\(:\)|\1${{ inputs.image_replacement }}\2|g" "$target_file"
+          echo "New line content:"
+          grep "dockerImage" "$target_file"
+        else
+          echo "::warning::Line 'dockerImage' with patroni pattern not found in $target_file. Skipping replacement."
+        fi
   
     - name: Update versions in values
       id: update-versions
