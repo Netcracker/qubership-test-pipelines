@@ -62,3 +62,15 @@ jobs:
     check_services_tests: true
     tls: false
     artifact_name: "Clean_${release_version}_Restricted_Upgrade_From_${release_version}_To_${service_branch}_Restricted"
+
+  - name: "Clean [${service_branch}] non-TLS, Upgrade [${service_branch}] with TLS"
+    install_version: "${service_branch}"
+    core_template: "templates/pgskipper/patroni-core-quickstart-sample.yaml"
+    services_template: "templates/pgskipper/patroni-services-quickstart-sample.yaml"
+    upgrade_version: "${service_branch}"
+    upgrade_core_template: "templates/pgskipper/patroni-core-tls.yaml"
+    upgrade_services_template: "templates/pgskipper/patroni-services-tls.yaml"
+    sequence: upgrade
+    restricted: false
+    tls: true
+    artifact_name: "Clean_CURRENT_Upgrade_CURRENT_TLS"
