@@ -197,7 +197,6 @@ jobs:
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
-          image_replacement: ${{ matrix.service_version_image }}
 
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -259,7 +258,6 @@ jobs:
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
-          image_replacement: ${{ matrix.service_version_image }}
 
       - name: Sleep after services upgrade
         if: matrix.test.sequence == 'upgrade'

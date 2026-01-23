@@ -180,11 +180,15 @@ runs:
             print('File not found'); sys.exit(1)
         with open('$target_file', 'r') as f: lines = f.readlines()
         res, found = [], False
+        print(f'::group::Updating {search}')
         for l in lines:
             if 'dockerImage:' in l and search in l:
                 found = True
-                l = re.sub(r'(dockerImage:.*?/)([^:/]+)(:)', r'\1' + new + r'\3', l)
+                nl = re.sub(r'(dockerImage:.*?/)([^:/]+)(:)', r'\1' + new + r'\3', l)
+                print(f'Changing: {l.strip()} -> {nl.strip()}') if nl != l else print(f'Already set: {new}')
+                l = nl
             res.append(l)
+        print('::endgroup::')
         if found:
             with open('$target_file', 'w') as f: f.writelines(res)
             print(f'Done: {new}')
