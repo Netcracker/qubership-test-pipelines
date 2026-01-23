@@ -118,7 +118,7 @@ runs:
     - name: Create RoleBindings
       shell: bash
       # language=bash
-      run: kubectl get rolebinding restricted-rb -n ${{inputs.namespace}} > /dev/null 2>&1 || kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml
+      run: kubectl get rolebinding restricted-role-binding -n ${{inputs.namespace}} > /dev/null 2>&1 || kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml
 
 #Add user to kubeconfig
     - name: Add user configuration
