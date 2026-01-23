@@ -174,24 +174,22 @@ runs:
         target_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
         python3 -c "
         import os, sys, re
-        new_image = '${{ inputs.image_replacement }}'
-        base_name = new_image.rsplit('-', 1)[0] if '-' in new_image else new_image
+        new = '${{ inputs.image_replacement }}'.strip()
+        search = new.rsplit('-', 1)[0] if '-' in new else new
         if not os.path.exists('$target_file'):
-            print(f'::error::File not found'); sys.exit(1)
+            print('File not found'); sys.exit(1)
         with open('$target_file', 'r') as f: lines = f.readlines()
-        updated, replaced = [], False
-        for line in lines:
-            if 'dockerImage:' in line and base_name in line:
-                new_line = re.sub(r'(dockerImage:\s+\S+/)([^:]+)(:)', r'\1' + new_image + r'\3', line)
-                if new_line != line:
-                    print(f'Updating: {line.strip()} -> {new_line.strip()}')
-                    line, replaced = new_line, True
-            updated.append(line)
-        if replaced:
-            with open('$target_file', 'w') as f: f.writelines(updated)
-            print(f'Updated {base_name} to {new_image}')
+        res, found = [], False
+        for l in lines:
+            if 'dockerImage:' in l and search in l:
+                found = True
+                l = re.sub(r'(dockerImage:.*?/)([^:/]+)(:)', r'\1' + new + r'\3', l)
+            res.append(l)
+        if found:
+            with open('$target_file', 'w') as f: f.writelines(res)
+            print(f'Done: {new}')
         else:
-            print(f'::error::Pattern {base_name} not found'); sys.exit(1)
+            print(f'Pattern {search} not found'); sys.exit(1)
         "
 
     - name: Update versions in values
