@@ -97,7 +97,8 @@ jobs:
       fail-fast: false
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    name: ${{ matrix.test.name }}
+        service_version_image: ['pgskipper-patroni-16', 'pgskipper-patroni-17']
+    name: "${{ matrix.service_version_image }} | ${{ matrix.test.name }}"
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
@@ -169,6 +170,7 @@ jobs:
           path_to_chart: 'operator/charts/patroni-core'
           namespace: 'pgskipper'
           resource_folder: ''
+          image_replacement: ${{ matrix.matrix.service_version_image }}
 
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -195,6 +197,7 @@ jobs:
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
+          image_replacement: ${{ matrix.matrix.service_version_image }}
 
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -224,6 +227,7 @@ jobs:
           path_to_chart: 'operator/charts/patroni-core'
           namespace: 'pgskipper'
           resource_folder: ''
+          image_replacement: ${{ matrix.matrix.service_version_image }}
 
       - name: Sleep after core upgrade 
         if: matrix.test.sequence == 'upgrade'
@@ -255,6 +259,7 @@ jobs:
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
+          image_replacement: ${{ matrix.matrix.service_version_image }}
 
       - name: Sleep after services upgrade
         if: matrix.test.sequence == 'upgrade'
