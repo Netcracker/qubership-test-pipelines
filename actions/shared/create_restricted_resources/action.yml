@@ -113,12 +113,12 @@ runs:
     - name: Create Role
       shell: bash
       # language=bash
-      run: kubectl get role restricted-role -n ${{inputs.namespace}} > /dev/null 2>&1 || kubectl create -f qubership-test-pipelines/restricted/restricted-role.yml
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-role.yml 2>&1 | grep -v "AlreadyExists" || true
 
     - name: Create RoleBindings
       shell: bash
       # language=bash
-      run: kubectl get rolebinding restricted-role-binding -n ${{inputs.namespace}} > /dev/null 2>&1 || kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml
+      run: kubectl create -f qubership-test-pipelines/restricted/restricted-rb.yml 2>&1 | grep -v "AlreadyExists" || true
 
 #Add user to kubeconfig
     - name: Add user configuration
