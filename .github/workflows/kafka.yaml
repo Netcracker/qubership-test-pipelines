@@ -93,7 +93,8 @@ jobs:
       fail-fast: false
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    name: ${{ matrix.test.name }}
+        service_version_image: ['qubership-docker-kafka-4', 'qubership-docker-kafka-3']
+    name: "${{ matrix.service_version_image }} | ${{ matrix.test.name }}"
     env:
       kfk_namespace: kafka
       kfk_max_attempts: 60
@@ -206,6 +207,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
+          image_replacement: ${{ matrix.service_version_image }}
 
       - name: Get Installed Kafka CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
@@ -279,6 +281,7 @@ jobs:
           path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
           deploy_mode: upgrade
+          image_replacement: ${{ matrix.service_version_image }}
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
