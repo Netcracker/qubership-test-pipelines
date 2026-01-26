@@ -231,8 +231,8 @@ runs:
         # ▶️ Get docker images
         kubectl get pods -n ${{inputs.namespace}} -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
 
-    # - name: Use default context
-    #   if: inputs.restricted == 'true'
-    #   shell: bash
-    #   # language=bash
-    #   run: kubectl config use-context kind-kind
+    - name: Use default context
+      if: inputs.restricted == 'true'
+      shell: bash
+      # language=bash
+      run: kubectl config use-context kind-kind
