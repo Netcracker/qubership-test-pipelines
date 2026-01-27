@@ -79,6 +79,13 @@ jobs:
           repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
 
+      - name: Get latest tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(gh api repos/Netcracker/qubership-kafka/releases/latest --jq '.tag_name')
+          echo $LATEST_TAG
+
       - name: Process versions file and matrix generation
         id: process-versions
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
