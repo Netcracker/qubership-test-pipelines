@@ -43,6 +43,11 @@ on:
         type: string
         required: false
         default: ''
+      image_replacement:
+        description: 'Value for change version in chart'
+        type: string
+        required: false
+        default: ''
   workflow_call:
     inputs:
       repository_name:
@@ -82,6 +87,11 @@ on:
         default: 'pgskipper-patroni-17'
       pg_18_image:
         description: 'Image for Postgres 18 (second migration, should be empty if you have only 2 pg versions)'
+        type: string
+        required: false
+        default: ''
+      image_replacement:
+        description: 'Value for change version in chart'
         type: string
         required: false
         default: ''
