@@ -453,35 +453,22 @@ jobs:
           crd_list: 'patronicores.netcracker.com'
       # == 04 End ======= Migration steps =======
       # == 05 Start ======= Collect Artifacts =======
-      - name: Extract Upgrade Logs
+      - name: Fetch Upgrade Logs
         if: always()
         run: |
           mkdir -p upgrade_logs_dump
-          POD=$(kubectl get pods -n pgskipper --sort-by=.metadata.creationTimestamp -o name | grep "major" | tail -n 1)
-          if [ -z "$POD" ]; then echo "Major pod not found"; exit 0; fi
-          PVC=$(kubectl get $POD -n pgskipper -o jsonpath='{.spec.volumes[?(@.persistentVolumeClaim)].persistentVolumeClaim.claimName}')
-          if [ -z "$PVC" ]; then echo "No PVC found"; exit 0; fi
-          cat <<EOF | kubectl apply -f -
-          apiVersion: v1
-          kind: Pod
-          metadata: {name: log-rescuer, namespace: pgskipper}
-          spec:
-            restartPolicy: Never
-            containers:
-            - name: rescuer
-              image: alpine
-              command: ["/bin/sh", "-c", "find /data -name pg_upgrade_server.log -exec cat {} +"]
-              volumeMounts: [{mountPath: /data, name: v}]
-            volumes: [{name: v, persistentVolumeClaim: {claimName: $PVC}}]
-          EOF
-          kubectl wait --for=condition=Ready pod/log-rescuer -n pgskipper --timeout=120s
-          kubectl logs -f log-rescuer -n pgskipper > upgrade_logs_dump/pg_upgrade_server.log
-          kubectl delete pod log-rescuer -n pgskipper --force --grace-period=0
+          PATRONI_POD=$(kubectl get pods -n pgskipper --field-selector=status.phase=Running -o name | grep "pgskipper" | grep -v "major" | head -n 1)
+          if [ -z "$PATRONI_POD" ]; then 
+            echo "::warning:: ⚠️ No running Patroni pods found to grab logs from."
+            exit 0
+          fi
+          echo "📥 Extracting logs from $PATRONI_POD..."
+          kubectl exec -n pgskipper $PATRONI_POD -- bash -c "find /var/lib/pgsql/data/tmp/pg/pg_upgrade_output.d -name pg_upgrade_server.log -exec cat {} +" > upgrade_logs_dump/pg_upgrade_server.log || echo "Log file not found inside pod"
       - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: upgrade-fail-log
+          name: upgrade-logs
           path: upgrade_logs_dump/
           retention-days: 5
       # == 05 End ======= Collect Artifacts =======
