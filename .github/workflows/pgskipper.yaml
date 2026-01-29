@@ -470,7 +470,7 @@ jobs:
             containers:
             - name: rescuer
               image: alpine
-              command: ["/bin/sh", "-c", "find /data -name pg_upgrade_server.log -exec echo '--- START LOG ---' \; -exec cat {} \;"]
+              command: ["/bin/sh", "-c", "find /data -name pg_upgrade_server.log -exec cat {} +"]
               volumeMounts: [{mountPath: /data, name: v}]
             volumes: [{name: v, persistentVolumeClaim: {claimName: $PVC}}]
           EOF
