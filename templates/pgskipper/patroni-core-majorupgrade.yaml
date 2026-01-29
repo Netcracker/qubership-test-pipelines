@@ -32,3 +32,15 @@ patroni:
 tests:
   install: true
   runTestScenarios: "basic"
+command:
+  - /bin/bash
+  - -c
+  - |
+    echo "🚀 Starting Upgrade Wrapper..."
+    /scripts/run_upgrade.sh || {
+      echo "❌ UPGRADE FAILED! DUMPING LOGS TO STDOUT:"
+      echo "---------------------------------------------------"
+      find /var/lib/pgsql/data/tmp/pg/pg_upgrade_output.d -name "pg_upgrade_server.log" -exec cat {} +
+      echo "---------------------------------------------------"
+      exit 1
+    }
