@@ -44,7 +44,12 @@ runs:
         # language=bash
         run: >-
           ./kind create cluster
-          --image kindest/node:v1.32.2
           --config qubership-test-pipelines/kind-configs/kind-${{ inputs.kind-layout }}.yaml
           --wait 5m
         #! check kubernetes version is actual
+      - name: Get Kubernetes version
+        shell: bash
+        # language=bash
+        run: |
+          echo "Kubernetes cluster version:"
+          kubectl version
