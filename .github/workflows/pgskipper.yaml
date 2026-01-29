@@ -443,6 +443,21 @@ jobs:
           crd_list: 'patronicores.netcracker.com'
       # == 04 End ======= Migration steps =======
 
+      # == Start ======= Diagnostic steps =======
+      - name: Collect diagnostic information
+        if: always()
+        run: |
+          echo "::group::Describe nodes"
+          kubectl describe nodes
+          echo "::endgroup::"
+          echo "::group::Get events"
+          kubectl get events --sort-by=.metadata.creationTimestamp -n pgskipper
+          echo "::endgroup::"
+          echo "::group::Get pods"
+          kubectl get pods -n pgskipper -o wide
+          echo "::endgroup::"
+      # == End ======= Diagnostic steps =======
+
 
   Migration-17-to-18:
     runs-on: ${{ inputs.runner_type }}
@@ -559,3 +574,18 @@ jobs:
           test_completion_retry_interval: '10s'
           crd_list: 'patronicores.netcracker.com'
       # == 04 End ======= Migration steps =======
+
+      # == Start ======= Diagnostic steps =======
+      - name: Collect diagnostic information
+        if: always()
+        run: |
+          echo "::group::Describe nodes"
+          kubectl describe nodes
+          echo "::endgroup::"
+          echo "::group::Get events"
+          kubectl get events --sort-by=.metadata.creationTimestamp -n pgskipper
+          echo "::endgroup::"
+          echo "::group::Get pods"
+          kubectl get pods -n pgskipper -o wide
+          echo "::endgroup::"
+      # == End ======= Diagnostic steps =======
