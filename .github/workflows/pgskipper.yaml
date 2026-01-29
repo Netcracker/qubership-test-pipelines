@@ -28,6 +28,21 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      pg_16_image:
+        description: 'Image for Postgres 16'
+        type: string
+        required: true
+        default: 'pgskipper-patroni-16'
+      pg_17_image:
+        description: 'Image for Postgres 17'
+        type: string
+        required: true
+        default: 'pgskipper-patroni-17'
+      pg_18_image:
+        description: 'Image for Postgres 18 (second migration, should be empty if you have only 2 pg versions)'
+        type: string
+        required: false
+        default: ''
   workflow_call:
     inputs:
       repository_name:
@@ -55,6 +70,21 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      pg_16_image:
+        description: 'Image for Postgres 16'
+        type: string
+        required: true
+        default: 'pgskipper-patroni-16'
+      pg_17_image:
+        description: 'Image for Postgres 17'
+        type: string
+        required: false
+        default: 'pgskipper-patroni-17'
+      pg_18_image:
+        description: 'Image for Postgres 18 (second migration, should be empty if you have only 2 pg versions)'
+        type: string
+        required: false
+        default: ''
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -97,7 +127,7 @@ jobs:
       fail-fast: false
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
-        service_version_image: ['pgskipper-patroni-16', 'pgskipper-patroni-17']
+        service_version_image: [ "${{ inputs.pg_16_image }}", "${{ inputs.pg_17_image }}" ]
     name: "${{ matrix.service_version_image }} | ${{ matrix.test.name }}"
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
@@ -292,3 +322,244 @@ jobs:
           kubectl get pods -n pgskipper -o wide
           echo "::endgroup::"
       # == End ======= Diagnostic steps =======
+
+
+# =============================================================================
+# MIGRATION CASES
+# =============================================================================
+
+Migration-16-to-17:
+  runs-on: ${{ inputs.runner_type }}
+  name: "Migration ${{ inputs.pg_16_image }} to ${{ inputs.pg_17_image }}"
+  steps:
+    # == 01 Start ======= Common pre-steps for all tests =======
+    - name: Checkout pipeline
+      uses: actions/checkout@v5
+      with:
+        ref: '${{ inputs.pipeline_branch }}'
+        repository: 'netcracker/qubership-test-pipelines'
+        path: 'qubership-test-pipelines'
+
+    - name: Free Disk Space (Ubuntu)
+      if: inputs.runner_type == 'ubuntu-latest'
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: false
+        swap-storage: true
+
+    - name: Create cluster
+      uses: ./qubership-test-pipelines/actions/shared/create_cluster
+    # == 01 End ======= Common pre-steps for all tests =======
+
+    # == 02 Start ======= Core installation steps =======
+    - name: Install Pgskipper Core ${{ inputs.pg_16_image }}
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        path_to_template: 'templates/pgskipper/patroni-core-quickstart-sample.yaml'
+        service_branch: "${service_branch}"
+        deploy_mode: 'install'
+        restricted: false
+        service_name: 'pgskipper'
+        repository_name: 'Netcracker/pgskipper-operator'
+        path_to_chart: 'operator/charts/patroni-core'
+        namespace: 'pgskipper'
+        resource_folder: ''
+        image_replacement: ${{ inputs.pg_16_image }}
+
+    - name: Verify Pgskipper Core installation
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      with:
+        service_branch: "${service_branch}"
+        check_tests: true
+        artifact_name: 'Core_Installation_Migr_16'
+        namespace: 'pgskipper'
+        service_ready_max_retries: 60
+        service_ready_retry_interval: '10s'
+        test_completion_max_retries: 60
+        test_completion_retry_interval: '10s'
+        crd_list: 'patronicores.netcracker.com'
+    # == 02 End ======= Core installation steps =======
+
+    # == 03 Start ======= Services installation steps =======
+    - name: Install Pgskipper Services "${service_branch}"
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
+        service_branch: "${service_branch}"
+        service_name: 'pgskipper-services'
+        restricted: false
+        repository_name: 'Netcracker/pgskipper-operator'
+        path_to_chart: 'operator/charts/patroni-services'
+        namespace: 'pgskipper'
+
+    - name: Verify Pgskipper Services installation
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      with:
+        service_branch: "${service_branch}"
+        check_tests: true
+        artifact_name: 'Services_Installation_Migr_16'
+        namespace: 'pgskipper'
+        service_ready_max_retries: 60
+        service_ready_retry_interval: '10s'
+        test_completion_max_retries: 60
+        test_completion_retry_interval: '10s'
+        crd_list: 'patronicores.netcracker.com'
+    # == 03 End ======= Services installation steps =======
+
+    # == 04 Start ======= Migration steps =======
+    - name: Major Upgrade Pgskipper Core to ${{ inputs.pg_17_image }}"
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        deploy_mode: 'upgrade'
+        path_to_template: 'templates/pgskipper/patroni-core-majorupgrade.yaml'
+        service_branch: "${service_branch}"
+        restricted: false
+        service_name: 'pgskipper'
+        repository_name: 'Netcracker/pgskipper-operator'
+        path_to_chart: 'operator/charts/patroni-core'
+        namespace: 'pgskipper'
+        resource_folder: ''
+        image_replacement: ${{ inputs.pg_17_image }}
+
+    - name: Sleep after core upgrade 
+      if: matrix.test.sequence == 'upgrade'
+      run: sleep 30s
+
+    - name: Verify Pgskipper Core upgrade
+      if: matrix.test.sequence == 'upgrade'
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      with:
+        service_branch: "${service_branch}"
+        check_tests: true
+        artifact_name: 'Core_Upgrade_Migr_to_17'
+        namespace: 'pgskipper'
+        service_ready_max_retries: 60
+        service_ready_retry_interval: '10s'
+        test_completion_max_retries: 60
+        test_completion_retry_interval: '10s'
+        crd_list: 'patronicores.netcracker.com'
+    # == 04 End ======= Migration steps =======
+
+
+Migration-17-to-18:
+  runs-on: ${{ inputs.runner_type }}
+  name: "Migration ${{ inputs.pg_17_image }} to ${{ inputs.pg_18_image }}"
+  if: inputs.pg_18_image != ''
+  steps:
+    # == 01 Start ======= Common pre-steps for all tests =======
+    - name: Checkout pipeline
+      uses: actions/checkout@v5
+      with:
+        ref: '${{ inputs.pipeline_branch }}'
+        repository: 'netcracker/qubership-test-pipelines'
+        path: 'qubership-test-pipelines'
+
+    - name: Free Disk Space (Ubuntu)
+      if: inputs.runner_type == 'ubuntu-latest'
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: true
+        large-packages: true
+        docker-images: false
+        swap-storage: true
+
+    - name: Create cluster
+      uses: ./qubership-test-pipelines/actions/shared/create_cluster
+    # == 01 End ======= Common pre-steps for all tests =======
+
+    # == 02 Start ======= Core installation steps =======
+    - name: Install Pgskipper Core ${{ inputs.pg_17_image }}
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        path_to_template: 'templates/pgskipper/patroni-core-quickstart-sample.yaml'
+        service_branch: "${service_branch}"
+        deploy_mode: 'install'
+        restricted: false
+        service_name: 'pgskipper'
+        repository_name: 'Netcracker/pgskipper-operator'
+        path_to_chart: 'operator/charts/patroni-core'
+        namespace: 'pgskipper'
+        resource_folder: ''
+        image_replacement: ${{ inputs.pg_17_image }}
+
+    - name: Verify Pgskipper Core installation
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      with:
+        service_branch: "${service_branch}"
+        check_tests: true
+        artifact_name: 'Core_Installation_Migr_17'
+        namespace: 'pgskipper'
+        service_ready_max_retries: 60
+        service_ready_retry_interval: '10s'
+        test_completion_max_retries: 60
+        test_completion_retry_interval: '10s'
+        crd_list: 'patronicores.netcracker.com'
+    # == 02 End ======= Core installation steps =======
+
+    # == 03 Start ======= Services installation steps =======
+    - name: Install Pgskipper Services "${service_branch}"
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        path_to_template: 'templates/pgskipper/patroni-services-quickstart-sample.yaml'
+        service_branch: "${service_branch}"
+        service_name: 'pgskipper-services'
+        restricted: false
+        repository_name: 'Netcracker/pgskipper-operator'
+        path_to_chart: 'operator/charts/patroni-services'
+        namespace: 'pgskipper'
+
+    - name: Verify Pgskipper Services installation
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      with:
+        service_branch: "${service_branch}"
+        check_tests: true
+        artifact_name: 'Services_Installation_Migr_17'
+        namespace: 'pgskipper'
+        service_ready_max_retries: 60
+        service_ready_retry_interval: '10s'
+        test_completion_max_retries: 60
+        test_completion_retry_interval: '10s'
+        crd_list: 'patronicores.netcracker.com'
+    # == 03 End ======= Services installation steps =======
+
+    # == 04 Start ======= Migration steps =======
+    - name: Major Upgrade Pgskipper Core to ${{ inputs.pg_18_image }}"
+      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      with:
+        deploy_mode: 'upgrade'
+        path_to_template: 'templates/pgskipper/patroni-core-majorupgrade.yaml'
+        service_branch: "${service_branch}"
+        restricted: false
+        service_name: 'pgskipper'
+        repository_name: 'Netcracker/pgskipper-operator'
+        path_to_chart: 'operator/charts/patroni-core'
+        namespace: 'pgskipper'
+        resource_folder: ''
+        image_replacement: ${{ inputs.pg_18_image }}
+
+    - name: Sleep after core upgrade 
+      if: matrix.test.sequence == 'upgrade'
+      run: sleep 30s
+
+    - name: Verify Pgskipper Core upgrade
+      if: matrix.test.sequence == 'upgrade'
+      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      with:
+        service_branch: "${service_branch}"
+        check_tests: true
+        artifact_name: 'Core_Upgrade_Migr_to_18'
+        namespace: 'pgskipper'
+        service_ready_max_retries: 60
+        service_ready_retry_interval: '10s'
+        test_completion_max_retries: 60
+        test_completion_retry_interval: '10s'
+        crd_list: 'patronicores.netcracker.com'
+    # == 04 End ======= Migration steps =======
