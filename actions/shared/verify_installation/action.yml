@@ -131,7 +131,7 @@ runs:
             ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
             resources_exit_code=$?
             set -e
-  
+
             if [ $resources_exit_code -eq 0 ]; then
               echo "✅ Resources checks successful"
               resources_success=true
@@ -351,6 +351,12 @@ runs:
       # language=bash
       if: always()
       run: kubectl get secrets -n "${{inputs.namespace}}"
+
+    - name: Export kind logs
+      shell: bash
+      # language=bash
+      if: always()
+      run: kind export logs
 
     - name: Generate artifact name
       if: always()
