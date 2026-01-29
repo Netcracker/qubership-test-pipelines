@@ -457,14 +457,15 @@ jobs:
         if: always()
         run: |
           mkdir -p upgrade_logs_dump
-          PATRONI_POD=$(kubectl get pods -n pgskipper --field-selector=status.phase=Running -o name | grep "pgskipper" | grep -v "major" | head -n 1)
-          if [ -z "$PATRONI_POD" ]; then 
-            echo "::warning:: ⚠️ No running Patroni pods found to grab logs from."
+          PODS=$(kubectl get pods -n pgskipper --field-selector=status.phase=Running --no-headers -o custom-columns=":metadata.name" | grep "patroni" | grep -v "major")
+          if [ -z "$PODS" ]; then 
+            echo "::warning:: ⚠️ No running Patroni pods found."
             exit 0
           fi
-          echo "📥 Extracting logs from $PATRONI_POD..."
-          kubectl exec -n pgskipper $PATRONI_POD -- bash -c "find /var/lib/pgsql/data/tmp/pg/pg_upgrade_output.d -name pg_upgrade_server.log -exec cat {} +" > upgrade_logs_dump/pg_upgrade_server.log || echo "Log file not found inside pod"
-      - name: Upload Artifact
+          for POD in $PODS; do
+            echo "📥 Checking pod: $POD..."
+            kubectl exec -n pgskipper $POD -- bash -c "find /var/lib/pgsql/data/tmp/pg/pg_upgrade_output.d -name pg_upgrade_server.log -exec cat {} +" > "upgrade_logs_dump/${POD}.log" || echo "⚠️ Log not found inside $POD"
+          done      - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
