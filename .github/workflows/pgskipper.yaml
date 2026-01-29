@@ -318,6 +318,29 @@ jobs:
           crd_list: 'patronicores.netcracker.com'
       # == End ======= Specific steps for upgrade tests =======
 
+      # == 05 Start ======= Collect Artifacts =======
+      - name: Dump Upgrade Logs
+        if: always(
+        run: |
+          mkdir -p upgrade_logs_dump
+          POD=$(kubectl get pods -n pgskipper --no-headers -o custom-columns=":metadata.name" | grep "major" | head -n 1 | tr -d '\r')
+          if [ -z "$POD" ]; then
+            echo "::warning:: ⚠️ Could not find any pod with 'major' in name. Skipping log dump."
+            exit 0
+          fi
+          echo "📥 Dumping logs from upgrade pod: $POD..."
+          kubectl cp pgskipper/$POD:/var/lib/pgsql/data/tmp/pg/pg_upgrade_output.d ./upgrade_logs_dump/ || echo "⚠️ No upgrade logs found inside pod (or path is incorrect)"
+
+      - name: Upload Upgrade Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          # Уникальное имя артефакта, чтобы не путаться между миграциями
+          name: upgrade-logs-${{ inputs.pg_16_image }}-to-${{ inputs.pg_17_image }}
+          path: upgrade_logs_dump/
+          retention-days: 5
+      # == 05 End ======= Collect Artifacts =======
+
       # == Start ======= Diagnostic steps =======
       - name: Collect diagnostic information
         if: always()
