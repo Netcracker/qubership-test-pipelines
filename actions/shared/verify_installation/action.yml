@@ -356,7 +356,16 @@ runs:
       shell: bash
       # language=bash
       if: always()
-      run: kind export logs
+      run: |
+        kind export logs
+        mkdir -p artifacts
+        for dir in /tmp/*/; do
+          if [[ "$dir" =~ /tmp/[0-9]+/ ]]; then
+            mkdir -p artifacts/kind-logs
+            cp -r "$dir"* artifacts/kind-logs/ 2>/dev/null || true
+            break
+          fi
+        done
 
     - name: Generate artifact name
       if: always()
