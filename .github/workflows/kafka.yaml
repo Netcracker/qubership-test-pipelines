@@ -12,11 +12,6 @@ on:
         required: false
         type: string
         default: 'main'
-#      versions_file:
-#        description: 'Path to versions list file'
-#        type: string
-#        required: true
-#        default: '.github/versions.yaml'
       pipeline_branch:
         description: 'Test pipeline branch name'
         type: string
@@ -38,10 +33,6 @@ on:
       service_branch:
         required: false
         type: string
-#      versions_file:
-#        description: 'Path to versions list file'
-#        type: string
-#        required: true
       pipeline_branch:
         description: 'Test pipeline branch name'
         type: string
@@ -84,7 +75,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          LATEST_TAG=$(gh api repos/Netcracker/qubership-kafka/releases/latest --jq '.tag_name')
+          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
