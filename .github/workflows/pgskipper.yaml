@@ -465,7 +465,8 @@ jobs:
           for POD in $PODS; do
             echo "📥 Checking pod: $POD..."
             kubectl exec -n pgskipper $POD -- bash -c "find /var/lib/pgsql/data/tmp/pg/pg_upgrade_output.d -name pg_upgrade_server.log -exec cat {} +" > "upgrade_logs_dump/${POD}.log" || echo "⚠️ Log not found inside $POD"
-          done      - name: Upload Artifact
+          done      
+      - name: Upload Artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
