@@ -46,8 +46,9 @@ jobs:
     tls: true
     artifact_name: "Clean_CURRENT_Upgrade_CURRENT_TLS"
 
-  - name: "Clean [${previous_version}] Restricted, Upgrade To [${service_branch}] Restricted"
-    install_version: "${previous_version}"
+  - purpose: automation
+    name: "Clean [${release_version}] Restricted, Upgrade To [${service_branch}] Restricted"
+    install_version: "${release_version}"
     template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
     upgrade_version: "${service_branch}"
     upgrade_template: "templates/zookeeper-service/zookeeper_install_APP_k8s.yml"
