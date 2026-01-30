@@ -51,8 +51,9 @@ jobs:
     backend: s3
     artifact_name: "Clean_CURRENT_WO_Components.Upgrade_CURRENT_All_Components_S3"
 
-  - name: "Clean [${previous_version}] Restricted. Upgrade To [${service_branch}] Restricted"
-    install_version: "${previous_version}"
+  - purpose: automation
+    name: "Clean [${release_version}] Restricted. Upgrade To [${service_branch}] Restricted"
+    install_version: "${release_version}"
     template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
     upgrade_version: "${service_branch}"
     upgrade_template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
