@@ -13,7 +13,6 @@ patroni:
   install: true
   majorUpgrade:
     enabled: true
-    dockerUpgradeImage: ghcr.io/netcracker/pgskipper-docker-upgrade:main
   replicas: 2
   securityContext:
     fsGroup: 26
