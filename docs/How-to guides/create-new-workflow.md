@@ -32,7 +32,6 @@ jobs:
     uses: Netcracker/qubership-test-pipelines/.github/workflows/<service>.yaml@main
     with:
       service_branch: '${{ github.head_ref || github.ref_name }}'
-      versions_file: '.github/versions.yaml'
       pipeline_branch: 'main' #this value must match the value after '@' in 'uses'
 ```
 4. Add service-specific actions to this repository  
@@ -74,10 +73,6 @@ on:
       service_branch:
         required: false
         type: string
-      versions_file:
-        description: 'Path to versions list file'
-        type: string
-        required: true
       pipeline_branch:
         description: 'Test pipeline branch name'
         type: string
