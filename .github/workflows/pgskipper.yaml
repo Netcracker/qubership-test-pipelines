@@ -34,9 +34,9 @@ on:
         required: false
         default: |
           [
-            "pgskipper-patroni-16",
-            "pgskipper-patroni-17",
-            "pgskipper-patroni-18"
+            "pgskipper-docker-patroni-16",
+            "pgskipper-docker-patroni-17",
+            "pgskipper-docker-patroni-18"
           ]
       image_replacement:
         description: 'Value for change version in chart'
