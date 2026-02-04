@@ -12,12 +12,7 @@ charts:
       - ghcr.io/netcracker/<component2_name>:${release}
       ...
 ```
-2. Add '.github/versions.yaml' (file with old releases) to service.
-```yaml
-release-2025.1-0.11.1
-release-2025.1-0.11.2
-```
-3. Add '.github/workflows/run_tests.yaml' workflow to service.
+2. Add '.github/workflows/run_tests.yaml' workflow to service.
 Example:
 ```yaml
 name: Run Consul Pipeline
@@ -34,7 +29,7 @@ jobs:
       service_branch: '${{ github.head_ref || github.ref_name }}'
       pipeline_branch: 'main' #this value must match the value after '@' in 'uses'
 ```
-4. Add service-specific actions to this repository  
+3. Add service-specific actions to this repository  
 Location: 'qubership-test-pipelines/actions/<service>'  
 **Example of <service> action**:
 ```yaml
@@ -61,8 +56,8 @@ runs:
         param1: ${{inputs.param1}}
         param2: ${{inputs.param2}}
 ```
-5. Add files with values to 'qubership-test-pipelines/templates/<service>'
-6. Add workflow with pipeline to this repository   
+4. Add files with values to 'qubership-test-pipelines/templates/<service>'
+5. Add workflow with pipeline to this repository   
 Location: 'qubership-test-pipelines/.github/workflows/<service>.yaml'
 ```yaml
 name: <Service> Tests
@@ -78,7 +73,7 @@ on:
         type: string
         required: true
 ```
-7. Add jobs with test deploys to workflow  
+6. Add jobs with test deploys to workflow  
 If you want to check upgrade of some service, you need to add steps with clean deploy and upgrade to one job.   
 **Job Structure Overview**:  
   Step 1: Cluster Creation  
