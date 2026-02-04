@@ -71,6 +71,7 @@ jobs:
           ref: '${{ inputs.pipeline_branch }}'
           repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
+
       - name: Get latest tag
         id: get-latest-tag
         env:
