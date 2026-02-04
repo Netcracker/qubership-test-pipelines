@@ -423,3 +423,19 @@ jobs:
 #          artifact_name: Upgrade_Kafka_Service_${{ matrix.test.artifact_name }}
 #          check_tests: true
       # == End kafka migrate tests =======
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Kafka-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Kafka-Test-Cases.result }}

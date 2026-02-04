@@ -198,3 +198,19 @@ jobs:
           monitoring_pipeline: 'true'
           repository_name: '${{ inputs.repository_name }}'
       # == End ======= Specific steps for upgrade tests =======
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Monitoring-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Monitoring-Test-Cases.result }}
