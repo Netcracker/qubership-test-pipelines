@@ -167,35 +167,61 @@ runs:
         echo "The image tag: ${service_branch_updated}"
         echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
 
-    - name: Override image in values.yaml
+    # - name: Override image in values.yaml
+    #   if: inputs.image_replacement != ''
+    #   shell: bash
+    #   run: |
+    #     # ▶️ Replace version of service
+    #     target_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
+    #     python3 -c "
+    #     import os, sys, re
+    #     new = '${{ inputs.image_replacement }}'.strip()
+    #     search = new.rsplit('-', 1)[0] if '-' in new else new
+    #     if not os.path.exists('$target_file'):
+    #         print('File not found'); sys.exit(1)
+    #     with open('$target_file', 'r') as f: lines = f.readlines()
+    #     res, found = [], False
+    #     print(f'::group::Updating {search}')
+    #     for l in lines:
+    #         if 'dockerImage:' in l and search in l:
+    #             found = True
+    #             nl = re.sub(r'(dockerImage:.*?/)([^:/]+)(:)', r'\1' + new + r'\3', l)
+    #             print(f'Changing: {l.strip()} -> {nl.strip()}') if nl != l else print(f'Already set: {new}')
+    #             l = nl
+    #         res.append(l)
+    #     print('::endgroup::')
+    #     if found:
+    #         with open('$target_file', 'w') as f: f.writelines(res)
+    #         print(f'Done: {new}')
+    #     else:
+    #         print(f'Pattern {search} not found'); sys.exit(1)
+    #     "
+
+    - name: Update Image Version
       if: inputs.image_replacement != ''
       shell: bash
       run: |
         # ▶️ Replace version of service
-        target_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
-        python3 -c "
-        import os, sys, re
-        new = '${{ inputs.image_replacement }}'.strip()
-        search = new.rsplit('-', 1)[0] if '-' in new else new
-        if not os.path.exists('$target_file'):
-            print('File not found'); sys.exit(1)
-        with open('$target_file', 'r') as f: lines = f.readlines()
-        res, found = [], False
-        print(f'::group::Updating {search}')
-        for l in lines:
-            if 'dockerImage:' in l and search in l:
-                found = True
-                nl = re.sub(r'(dockerImage:.*?/)([^:/]+)(:)', r'\1' + new + r'\3', l)
-                print(f'Changing: {l.strip()} -> {nl.strip()}') if nl != l else print(f'Already set: {new}')
-                l = nl
-            res.append(l)
-        print('::endgroup::')
-        if found:
-            with open('$target_file', 'w') as f: f.writelines(res)
-            print(f'Done: {new}')
-        else:
-            print(f'Pattern {search} not found'); sys.exit(1)
-        "
+        file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
+        new="${{ inputs.image_replacement }}"
+        base="${new%-*}"
+        if [ ! -f "$file" ]; then echo "::error::File not found: $file"; exit 1; fi
+        base_esc=$(echo "$base" | sed 's/\./\\./g')
+        current=$(grep -oE "${base_esc}-[^:\"' ]+" "$file" | head -n 1)
+        if [ -z "$current" ]; then
+          echo "::error::Target pattern '${base}-...' not found in $file"; exit 1
+        fi
+        if [ "$current" == "$new" ]; then
+          echo "ℹ️  Value is already set to: $current. No changes needed."
+        else
+          echo "🔄 Updating: $current -> $new"
+          sed -i -E "s|${base_esc}-[^:\"' ]+|${new}|g" "$file"
+          if grep -Fq "$new" "$file"; then
+             echo "✅ Success: Replaced $current with $new"
+          else
+             echo "::error::Sed executed but verification failed."; exit 1
+          fi
+        fi
 
     - name: Update versions in values
       id: update-versions
