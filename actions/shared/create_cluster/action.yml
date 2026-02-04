@@ -20,6 +20,10 @@ runs:
           lsblk
           echo '================================================================================'
           sysctl vm.max_map_count
+      - name: Get info
+        shell: bash
+        # language=bash
+        run: top -b -n 1
       - name: Install kind
         shell: bash
         # language=bash
