@@ -202,22 +202,22 @@ runs:
       shell: bash
       run: |
         # ▶️ Replace version of service
-        file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
-        new="${{ inputs.image_replacement }}"
-        base="${new%-*}"
-        if [ ! -f "$file" ]; then echo "::error::File not found: $file"; exit 1; fi
+        path_to_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
+        new_image="${{ inputs.image_replacement }}"
+        base="${new_image%-*}"
+        if [ ! -f "$path_to_file" ]; then echo "::error::File not found: $path_to_file"; exit 1; fi
         base_esc=$(echo "$base" | sed 's/\./\\./g')
-        current=$(grep -oE "${base_esc}-[^:\"' ]+" "$file" | head -n 1)
-        if [ -z "$current" ]; then
-          echo "::error::Target pattern '${base}-...' not found in $file"; exit 1
+        current_image=$(grep -oE "${base_esc}-[^:\"' ]+" "$path_to_file" | head -n 1)
+        if [ -z "$current_image" ]; then
+          echo "::error::Target pattern '${base}-...' not found in $path_to_file"; exit 1
         fi
-        if [ "$current" == "$new" ]; then
-          echo "ℹ️  Value is already set to: $current. No changes needed."
+        if [ "$current_image" == "$new_image" ]; then
+          echo "ℹ️  Value is already set to: $current_image. No changes needed."
         else
-          echo "🔄 Updating: $current -> $new"
-          sed -i -E "s|${base_esc}-[^:\"' ]+|${new}|g" "$file"
-          if grep -Fq "$new" "$file"; then
-             echo "✅ Success: Replaced $current with $new"
+          echo "🔄 Updating: $current_image -> $new_image"
+          sed -i -E "s|${base_esc}-[^:\"' ]+|${new_image}|g" "$path_to_file"
+          if grep -Fq "$new_image" "$path_to_file"; then
+             echo "✅ Success: Replaced $current_image with $new_image"
           else
              echo "::error::Sed executed but verification failed."; exit 1
           fi
