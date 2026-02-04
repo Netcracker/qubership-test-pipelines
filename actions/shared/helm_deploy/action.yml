@@ -211,4 +211,6 @@ runs:
       if: always()
       shell: bash
       # language=bash
-      run: kubectl get all -n ${{inputs.namespace}}
+      run: |
+        # ▶️ Get resources after deploy
+        kubectl get all -n ${{inputs.namespace}}
