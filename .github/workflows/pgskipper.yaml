@@ -38,11 +38,11 @@ on:
             "pgskipper-docker-patroni-17",
             "pgskipper-docker-patroni-18"
           ]
-      image_replacement:
-        description: 'Value for change version in chart'
-        type: string
-        required: false
-        default: ''
+      # image_replacement:
+      #   description: 'Value for change version in chart'
+      #   type: string
+      #   required: false
+      #   default: ''
   workflow_call:
     inputs:
       repository_name:
@@ -80,11 +80,11 @@ on:
             "pgskipper-docker-patroni-17",
             "pgskipper-docker-patroni-18"
           ]
-      image_replacement:
-        description: 'Value for change version in chart'
-        type: string
-        required: false
-        default: ''
+      # image_replacement:
+      #   description: 'Value for change version in chart'
+      #   type: string
+      #   required: false
+      #   default: ''
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
