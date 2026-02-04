@@ -13,7 +13,7 @@ jobs:
     check_services_tests: true
     restricted: false
     tls: false
-    artifact_name: "${image_replacement} Clean_${previous_version}_Upgrade_${service_branch}"
+    artifact_name: "${image_replacement}_Clean_${previous_version}_Upgrade_${service_branch}"
   ## ===========================================================================================================
   - name: "Clean [${service_branch}] TLS"
     install_version: "${service_branch}"
@@ -22,7 +22,7 @@ jobs:
     sequence: install
     restricted: false
     tls: true
-    artifact_name: "${image_replacement} Clean_CURRENT_TLS"
+    artifact_name: "${image_replacement}_Clean_CURRENT_TLS"
 
   - name: "Clean [${service_branch}]. Upgrade [${service_branch}] Diff Params"
     install_version: "${service_branch}"
@@ -36,7 +36,7 @@ jobs:
     check_core_tests: true
     check_services_tests: true
     tls: false
-    artifact_name: "${image_replacement} Clean_CURRENT_Upgrade_CURRENT_Diff_Params"
+    artifact_name: "${image_replacement}_Clean_CURRENT_Upgrade_CURRENT_Diff_Params"
 
   - name: "Clean [${service_branch}] Full-AT"
     install_version: "${service_branch}"
@@ -47,7 +47,7 @@ jobs:
     check_core_tests: true
     check_services_tests: true
     tls: false
-    artifact_name: "${image_replacement} Clean_CURRENT_Full-AT"
+    artifact_name: "${image_replacement}_Clean_CURRENT_Full-AT"
   
   - name: "Clean [${release_version}] Restricted, Upgrade From [${release_version}] To [${service_branch}] Restricted"
     install_version: "${previous_version}"
@@ -61,7 +61,7 @@ jobs:
     check_core_tests: true
     check_services_tests: true
     tls: false
-    artifact_name: "${image_replacement} Clean_${release_version}_Restricted_Upgrade_From_${release_version}_To_${service_branch}_Restricted"
+    artifact_name: "${image_replacement}_Clean_${release_version}_Restricted_Upgrade_From_${release_version}_To_${service_branch}_Restricted"
 
   - name: "Clean [${service_branch}] non-TLS, Upgrade [${service_branch}] with TLS"
     install_version: "${service_branch}"
@@ -73,4 +73,4 @@ jobs:
     sequence: upgrade
     restricted: false
     tls: true
-    artifact_name: "${image_replacement} Clean_CURRENT_Upgrade_CURRENT_TLS"
+    artifact_name: "${image_replacement}_Clean_CURRENT_Upgrade_CURRENT_TLS"

@@ -136,7 +136,7 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
         service_version_image: ${{ fromJson(needs.prepare.outputs.pg_images) }}
-    name: "${{ matrix.test.name }}"
+    name: "${{ matrix.service_version_image }} | ${{ matrix.test.name }}"
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
