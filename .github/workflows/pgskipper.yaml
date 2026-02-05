@@ -34,15 +34,11 @@ on:
         required: false
         default: |
           [
-            "pgskipper-docker-patroni1.2-16",
-            "pgskipper-docker-17",
+            "pgskipper-docker-patroni-16",
+            "pgskipper-docker-patroni-17",
             "pgskipper-docker-patroni-18"
           ]
-      # image_replacement:
-      #   description: 'Value for change version in chart'
-      #   type: string
-      #   required: false
-      #   default: ''
+  
   workflow_call:
     inputs:
       repository_name:
@@ -76,15 +72,10 @@ on:
         required: false
         default: |
           [
-            "pgskipper-docker-patroni1.2-16",
-            "pgskipper-docker-17",
+            "pgskipper-docker-patroni-16",
+            "pgskipper-docker-patroni-17",
             "pgskipper-docker-patroni-18"
           ]
-      # image_replacement:
-      #   description: 'Value for change version in chart'
-      #   type: string
-      #   required: false
-      #   default: ''
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
