@@ -205,10 +205,10 @@ runs:
         path_to_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
         new_image="${{ inputs.image_replacement }}"
         base="${new_image%-*}"
-        echo base
+        echo $base
         if [ ! -f "$path_to_file" ]; then echo "::error::File not found: $path_to_file"; exit 1; fi
         base_esc=$(echo "$base" | sed 's/\./\\./g')
-        echo base_esc
+        echo $base_esc
         current_image=$(grep -oE "${base_esc}-[^:\"' ]+" "$path_to_file" | head -n 1)
         if [ -z "$current_image" ]; then
           echo "::error::Target pattern '${base}-...' not found in $path_to_file"; exit 1
