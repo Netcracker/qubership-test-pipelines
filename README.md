@@ -5,25 +5,35 @@ It implements a complete CI/CD lifecycle from infrastructure provisioning to pos
 
 ## Repository Structure
 ```
-.github/
-├── workflows/                              # Service-specific test workflows
-├── actions/                                # Custom GitHub Actions
-    ├── shared/                             # Shared actions for all services
-        ├── create_cluster
-        ├── create_restricted_resources
-        ├── helm_deploy
-        └── verify_installation
-    └── [service]/
-        └── helm_deploy_[service]/           # Reuse of shared actions with service specifics   
-├── kind-configs/                            # Kind cluster configurations
-├── scripts/                                  # Helper scripts
-├── restricted/                              # Resources for restricted installation
-└── templates/                               # Service configuration templates
-    └── [service]/
-        └── [config].yml
+qubership-test-pipelines/
+├── .github/                         # GitHub configurations and automation
+│   ├── workflows/                   # Service-specific test workflows
+│   └── actions/                     # Custom GitHub Actions
+│       ├── shared/                  # Shared actions for all services
+│       │   ├── create_cluster
+│       │   ├── create_ingress
+│       │   ├── create_restricted_resources
+│       │   ├── get_certs
+│       │   ├── get_crds
+│       │   ├── helm_deploy
+│       │   └── verify_installation
+│       └── [service-name]/          # Service-specific actions
+├── docs/                            # Project documentation
+├── kind-configs/                    # Kind cluster configurations
+├── resources/                       # Additional resources
+├── restricted/                      # Resources for restricted installation
+├── scripts/                         # Helper scripts
+├── templates/                       # Service configuration templates
+│   └── [service-name]/
+│       └── [config-name].yml
+└── workflow-config/                 # Workflow configurations
 ```
 ## Workflows list
 Added workflow for the following services:
-- [Consul](https://github.com/Netcracker/qubership-test-pipelines/blob/main/.github/workflows/consul.yaml)
-- [Zookeeper](https://github.com/Netcracker/qubership-test-pipelines/blob/main/.github/workflows/zookeeper.yaml)
-- [Opensearch](https://github.com/Netcracker/qubership-test-pipelines/blob/main/.github/workflows/opensearch.yaml)
+- [Qubership Consul](https://github.com/Netcracker/qubership-consul)
+- [Qubership ZooKeeper Service](https://github.com/Netcracker/qubership-zookeeper)
+- [Qubership OpenSearch](https://github.com/Netcracker/qubership-opensearch)
+- [Qubership Kafka Service](https://github.com/Netcracker/qubership-kafka)
+- [Qubership RabbitMQ Service](https://github.com/Netcracker/qubership-rabbitmq)
+- [Qubership PGgskipper Operator](https://github.com/Netcracker/pgskipper-operator)
+- [Qubership Monitoring Operator](https://github.com/Netcracker/qubership-monitoring-operator)

@@ -1,0 +1,22 @@
+name: "Get Certs Action"
+description: "GitHub Action to get certs from secret"
+inputs:
+  job_result:
+    description: |
+      Result of job for which we check the status
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Check job status
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Check job status
+        echo Job status: ${{inputs.job_result}}
+        if [[ ${{inputs.job_result}} == "success" || ${{inputs.job_result}} == "skipped" ]]; then
+          exit 0
+        else
+          exit 1
+        fi

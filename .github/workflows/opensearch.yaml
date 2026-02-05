@@ -255,3 +255,19 @@ jobs:
           check_tests: true
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
       # == End ===== Upgrade steps ============
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Opensearch-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Opensearch-Test-Cases.result }}

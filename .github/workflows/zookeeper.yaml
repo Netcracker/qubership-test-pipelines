@@ -422,3 +422,26 @@ jobs:
           service_ready_retry_interval: "${{ env.service_ready_retry_interval }}"
           crd_list: "${{ steps.install_zoo_get_crds.outputs.crd_list }}"
 
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Zookeeper-Test-Cases, Clean-Latest-TLS-Certificates, Clean-Latest-TLS-Secrets]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Check Zookeeper-Test-Cases job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Zookeeper-Test-Cases.result }}
+      - name: Check Clean-Latest-TLS-Certificates job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Clean-Latest-TLS-Certificates.result }}
+      - name: Check Clean-Latest-TLS-Secrets job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Clean-Latest-TLS-Secrets.result }}
