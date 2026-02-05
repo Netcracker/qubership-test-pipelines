@@ -55,6 +55,11 @@ inputs:
       Folder with resources for creating before installation
     required: true
 
+  test_tag:
+    description: |
+      Test tag
+    required: true
+
 runs:
   using: 'composite'
   steps:
@@ -189,7 +194,7 @@ runs:
         echo $template_name
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ "${{inputs.restricted}}" == "false" ]]; then
-          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
+          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --set integrationTests.tags=${{inputs.test_tag}}
         else
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --skip-crds
         fi

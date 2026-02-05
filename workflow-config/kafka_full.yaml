@@ -1,0 +1,14 @@
+jobs:
+  ## A special configuration section for generating jobs for installing previous releases on the current version
+  - purpose: automation
+    name: "Clean [${release_version}]. Upgrade to [${service_branch}]"
+    kafka_install_version: '${release_version}'
+    kafka_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
+    kafka_upgrade_version: '${service_branch}'
+    kafka_upgrade_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
+    kafka_service_upgrade_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
+    sequence: upgrade
+    artifact_name: "Clean_${release_version}_Kraft_Upgrade_CURRENT_Kraft"
+    test_tag: kafka
+  ## ===============================================================================
