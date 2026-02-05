@@ -1,7 +1,8 @@
 # How to create a test workflow for new service
 
-1. Add '.github/helm-charts-release-config.yaml' (file with images) to service. 
-If it is not possible to add file to service project, then add it to 'qubership-test-pipelines/release_configs/<service>/helm-charts-release-config.yaml'
+1. Add `.github/helm-charts-release-config.yaml` (file with images) to service
+    
+If it is not possible to add file to service project, then add it to `qubership-test-pipelines/release_configs/<service>/helm-charts-release-config.yaml`
 ```yaml
 charts:
   - name: <repository_name>
@@ -12,7 +13,8 @@ charts:
       - ghcr.io/netcracker/<component2_name>:${release}
       ...
 ```
-2. Add '.github/workflows/run_tests.yaml' workflow to service.
+2. Add `.github/workflows/run_tests.yaml` workflow to service.
+
 Example:
 ```yaml
 name: Run Consul Pipeline
@@ -29,9 +31,11 @@ jobs:
       service_branch: '${{ github.head_ref || github.ref_name }}'
       pipeline_branch: 'main' #this value must match the value after '@' in 'uses'
 ```
-3. Add service-specific actions to this repository  
-Location: 'qubership-test-pipelines/actions/<service>'  
-**Example of <service> action**:
+3. Add service-specific actions to this repository
+
+  Location: `qubership-test-pipelines/actions/<service>`  
+
+Example of <service> action:
 ```yaml
 name: "<Shared action> for <service>"
 description: "<description>"
@@ -56,9 +60,10 @@ runs:
         param1: ${{inputs.param1}}
         param2: ${{inputs.param2}}
 ```
-4. Add files with values to 'qubership-test-pipelines/templates/<service>'
+4. Add files with values to `qubership-test-pipelines/templates/<service>`
 5. Add workflow with pipeline to this repository   
-Location: 'qubership-test-pipelines/.github/workflows/<service>.yaml'
+
+  Location: `qubership-test-pipelines/.github/workflows/<service>.yaml`
 ```yaml
 name: <Service> Tests
 
@@ -74,7 +79,9 @@ on:
         required: true
 ```
 6. Add jobs with test deploys to workflow  
-If you want to check upgrade of some service, you need to add steps with clean deploy and upgrade to one job.   
+
+  If you want to check upgrade of some service, you need to add steps with clean deploy and upgrade to one job.   
+
 **Job Structure Overview**:  
   Step 1: Cluster Creation  
   Step 2: Monitoring Installation (for alert tests)  
@@ -82,7 +89,8 @@ If you want to check upgrade of some service, you need to add steps with clean d
   Step 4: Validation (logs, events, tests)  
   Step 5: Service upgrade  
   Step 6: Validation
-**Example**:
+
+Example:
 ```yaml
 jobs:
   Clean-Latest-Upgrade-Diff-Params:
