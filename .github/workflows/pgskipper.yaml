@@ -28,8 +28,8 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
-      postgres_versions:
-        description: 'PostgreSQL versions as JSON'
+      service_versions_json:
+        description: 'PostgreSQL image versions as JSON'
         type: string
         required: false
         default: |
@@ -66,8 +66,8 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
-      postgres_versions:
-        description: 'PostgreSQL versions as JSON'
+      service_versions_json:
+        description: 'PostgreSQL image versions as JSON'
         type: string
         required: false
         default: |
@@ -89,7 +89,7 @@ jobs:
       versions: ${{ steps.process-versions.outputs.versions }}
       previous_version: ${{ steps.process-versions.outputs.previous_version }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
-      pg_images: ${{ steps.parse-matrix.outputs.images }}
+      service_images: ${{ steps.parse-matrix.outputs.service_images }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -115,9 +115,9 @@ jobs:
       - name: Parse JSON into matrix
         id: parse-matrix
         run: |
-          IMAGES=$(echo '${{ inputs.postgres_versions }}' | jq -c '.')
-          echo images $IMAGES
-          echo "images=$IMAGES" >> $GITHUB_OUTPUT
+          IMAGES=$(echo '${{ inputs.service_versions_json }}' | jq -c '.')
+          echo "PG Images: $IMAGES"
+          echo "service_images=$IMAGES" >> $GITHUB_OUTPUT
 
   Pgskipper-Test-Cases:
     needs: prepare
@@ -126,8 +126,8 @@ jobs:
       fail-fast: false
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
-        service_version_image: ${{ fromJson(needs.prepare.outputs.pg_images) }}
-    name: "${{ matrix.service_version_image }} | ${{ matrix.test.name }}"
+        service_image: ${{ fromJson(needs.prepare.outputs.service_images) }}
+    name: "${{ matrix.service_image }} | ${{ matrix.test.name }}"
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
@@ -199,7 +199,7 @@ jobs:
           path_to_chart: 'operator/charts/patroni-core'
           namespace: 'pgskipper'
           resource_folder: ''
-          image_replacement: ${{ matrix.service_version_image }}
+          image_replacement: ${{ matrix.service_image }}
 
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -255,7 +255,7 @@ jobs:
           path_to_chart: 'operator/charts/patroni-core'
           namespace: 'pgskipper'
           resource_folder: ''
-          image_replacement: ${{ matrix.service_version_image }}
+          image_replacement: ${{ matrix.service_image }}
 
       - name: Sleep after core upgrade 
         if: matrix.test.sequence == 'upgrade'
