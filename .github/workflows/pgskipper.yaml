@@ -34,8 +34,8 @@ on:
         required: false
         default: |
           [
-            "pgskipper-docker-patroni-16",
-            "pgskipper-docker-patroni-17",
+            "pgskipper-docker-patroni1.2-16",
+            "pgskipper-docker-17",
             "pgskipper-docker-patroni-18"
           ]
       # image_replacement:
