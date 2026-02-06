@@ -323,7 +323,7 @@ jobs:
       # == End ======= Diagnostic steps =======
     
 # Test
-    final-status-check:
+  final-status-check:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs: [Pgskipper-Test-Cases]
