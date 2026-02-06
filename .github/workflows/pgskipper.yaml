@@ -321,3 +321,20 @@ jobs:
           kubectl get pods -n pgskipper -o wide
           echo "::endgroup::"
       # == End ======= Diagnostic steps =======
+    
+# Test
+    final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Pgskipper-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Pgskipper-Test-Cases.result }}
