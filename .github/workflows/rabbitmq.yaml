@@ -13,11 +13,6 @@ on:
         required: false
         type: string
         default: 'main'
-      versions_file:
-        description: 'Path to file with version list'
-        type: string
-        required: true
-        default: '.github/versions.yaml'
       pipeline_branch:
         description: 'Branch of qubership-test-pipelines repository'
         type: string
@@ -38,10 +33,6 @@ on:
       service_branch:
         required: false
         type: string
-      versions_file:
-        description: 'Path to versions list file'
-        type: string
-        required: true
       pipeline_branch:
         description: 'Test pipeline branch name'
         type: string
@@ -62,7 +53,6 @@ jobs:
     runs-on: ${{ inputs.runner_type }}
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
-      previous_version: ${{ steps.process-versions.outputs.previous_version }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
@@ -79,12 +69,21 @@ jobs:
           repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
 
+      - name: Get latest tag
+        id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
       - name: Process versions file and matrix generation
         id: process-versions
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh ${{ github.workspace }}/qubership-rabbitmq/${{ inputs.versions_file }} ./workflow-config/rabbitmq.yaml "${{ inputs.service_branch }}"
+          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/rabbitmq.yaml "${{ inputs.service_branch }}"
 
   RabbitMQ-Test-Cases:
     runs-on: ${{inputs.runner_type}}
