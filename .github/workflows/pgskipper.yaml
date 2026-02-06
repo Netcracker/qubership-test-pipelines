@@ -28,6 +28,17 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      service_versions_json:
+        description: 'PostgreSQL image versions as JSON'
+        type: string
+        required: false
+        default: |
+          [
+            "pgskipper-docker-patroni-16",
+            "pgskipper-docker-patroni-17",
+            "pgskipper-docker-patroni-18"
+          ]
+  
   workflow_call:
     inputs:
       repository_name:
@@ -55,6 +66,16 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      service_versions_json:
+        description: 'PostgreSQL image versions as JSON'
+        type: string
+        required: false
+        default: |
+          [
+            "pgskipper-docker-patroni-16",
+            "pgskipper-docker-patroni-17",
+            "pgskipper-docker-patroni-18"
+          ]
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -68,6 +89,7 @@ jobs:
       versions: ${{ steps.process-versions.outputs.versions }}
       previous_version: ${{ steps.process-versions.outputs.previous_version }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_images: ${{ steps.parse-matrix.outputs.service_images }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -89,6 +111,13 @@ jobs:
         run: |
           chmod +x ./scripts/matrix.sh
           ./scripts/matrix.sh ${{ github.workspace }}/pgskipper-operator/${{ inputs.versions_file }} ./workflow-config/pgskipper.yaml "${{ inputs.service_branch }}"
+        
+      - name: Parse JSON into matrix
+        id: parse-matrix
+        run: |
+          IMAGES=$(echo '${{ inputs.service_versions_json }}' | jq -c '.')
+          echo "PG Images: $IMAGES"
+          echo "service_images=$IMAGES" >> $GITHUB_OUTPUT
 
   Pgskipper-Test-Cases:
     needs: prepare
@@ -97,7 +126,8 @@ jobs:
       fail-fast: false
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    name: ${{ matrix.test.name }}
+        service_image: ${{ fromJson(needs.prepare.outputs.service_images) }}
+    name: "${{ matrix.service_image }} | ${{ matrix.test.name }}"
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: "Print job parameters"
@@ -128,6 +158,34 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
+      # == Start TLS certs addition if needed =======
+      - name: TLS setup
+        # language=bash
+        if: matrix.test.tls == true
+        run: |
+          echo "::group::Install cert-manager"
+          helm repo add jetstack https://charts.jetstack.io --force-update
+          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
+            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
+          echo "::endgroup::"
+          echo "::group::Create cert-manager entities"
+          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
+          sleep 10s
+          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
+          echo "::endgroup::"
+          echo "::group::Get cert-manager resources"
+          kubectl get pods -n cert-manager
+          kubectl get secrets -n cert-manager
+          kubectl get certificates -A
+          echo "::endgroup::"
+          echo "::group:: Get clusterissuer"
+          kubectl get clusterissuer
+          kubectl get clusterissuer test-clusterissuer -o yaml
+          echo "::endgroup::"
+      # == End TLS certs addition if needed =======
+
       # == 02 Start ======= Core installation steps =======
       - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -135,12 +193,13 @@ jobs:
           path_to_template: '${{ matrix.test.core_template }}'
           service_branch: '${{ matrix.test.install_version }}'
           deploy_mode: 'install'
-          restricted: false
+          restricted: ${{ matrix.test.restricted }}
           service_name: 'pgskipper'
           repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'charts/patroni-core'
+          path_to_chart: 'operator/charts/patroni-core'
           namespace: 'pgskipper'
           resource_folder: ''
+          image_replacement: ${{ matrix.service_image }}
 
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -163,8 +222,9 @@ jobs:
           path_to_template: '${{ matrix.test.services_template }}'
           service_branch: '${{ matrix.test.install_version }}'
           service_name: 'pgskipper-services'
+          restricted: ${{ matrix.test.restricted }}
           repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'charts/patroni-services'
+          path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
 
       - name: Verify Pgskipper Services installation
@@ -189,14 +249,15 @@ jobs:
           deploy_mode: 'upgrade'
           path_to_template: '${{ matrix.test.upgrade_core_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
-          restricted: false
+          restricted: ${{ matrix.test.restricted }}
           service_name: 'pgskipper'
           repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'charts/patroni-core'
+          path_to_chart: 'operator/charts/patroni-core'
           namespace: 'pgskipper'
           resource_folder: ''
+          image_replacement: ${{ matrix.service_image }}
 
-      - name: Sleep after core upgrade
+      - name: Sleep after core upgrade 
         if: matrix.test.sequence == 'upgrade'
         run: sleep 30s
 
@@ -222,8 +283,9 @@ jobs:
           path_to_template: '${{ matrix.test.upgrade_services_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
           service_name: 'pgskipper-services'
+          restricted: ${{ matrix.test.restricted }}
           repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'charts/patroni-services'
+          path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
 
       - name: Sleep after services upgrade
@@ -259,3 +321,19 @@ jobs:
           kubectl get pods -n pgskipper -o wide
           echo "::endgroup::"
       # == End ======= Diagnostic steps =======
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Pgskipper-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@v5
+        with:
+          ref: '${{ inputs.pipeline_branch }}'
+          repository: 'netcracker/qubership-test-pipelines'
+          path: 'qubership-test-pipelines'
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Pgskipper-Test-Cases.result }}
