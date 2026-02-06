@@ -321,8 +321,7 @@ jobs:
           kubectl get pods -n pgskipper -o wide
           echo "::endgroup::"
       # == End ======= Diagnostic steps =======
-    
-# Test
+
   final-status-check:
     if: ${{ always() }}
     runs-on: ubuntu-latest
