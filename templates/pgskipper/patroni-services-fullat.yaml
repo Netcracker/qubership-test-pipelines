@@ -44,4 +44,4 @@ backupDaemon:
     storageClass: standard
 tests:
   install: true
-  runTestScenarios: "basic"
+  runTestScenarios: "full"
