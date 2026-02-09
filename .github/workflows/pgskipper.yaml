@@ -13,11 +13,6 @@ on:
         required: false
         type: string
         default: 'main'
-      versions_file:
-        description: 'Path to file with version list'
-        type: string
-        required: true
-        default: '.github/versions.yaml'
       pipeline_branch:
         description: 'Branch of qubership-test-pipelines repository'
         type: string
@@ -38,7 +33,7 @@ on:
             "pgskipper-docker-patroni-17",
             "pgskipper-docker-patroni-18"
           ]
-  
+
   workflow_call:
     inputs:
       repository_name:
@@ -51,11 +46,6 @@ on:
         required: false
         type: string
         default: 'main'
-      versions_file:
-        description: 'Path to file with version list'
-        type: string
-        required: true
-        default: '.github/versions.yaml'
       pipeline_branch:
         description: 'Branch of qubership-test-pipelines repository'
         type: string
@@ -105,13 +95,22 @@ jobs:
           repository: '${{ github.repository_owner }}/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
 
+      - name: Get latest tag
+        id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
       - name: Process versions file and matrix generation
         id: process-versions
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh ${{ github.workspace }}/pgskipper-operator/${{ inputs.versions_file }} ./workflow-config/pgskipper.yaml "${{ inputs.service_branch }}"
-        
+          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/pgskipper.yaml "${{ inputs.service_branch }}"
+
       - name: Parse JSON into matrix
         id: parse-matrix
         run: |
@@ -206,7 +205,7 @@ jobs:
         with:
           service_branch: '${{ matrix.test.install_version }}'
           check_tests: '${{ matrix.test.check_core_tests }}'
-          artifact_name: 'Core_Installation_${{ matrix.test.artifact_name }}'
+          artifact_name: 'Core_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           namespace: 'pgskipper'
           service_ready_max_retries: 60
           service_ready_retry_interval: '10s'
@@ -232,7 +231,7 @@ jobs:
         with:
           service_branch: '${{ matrix.test.install_version }}'
           check_tests: '${{ matrix.test.check_services_tests }}'
-          artifact_name: 'Services_Installation_${{ matrix.test.artifact_name }}'
+          artifact_name: 'Services_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           namespace: 'pgskipper'
           service_ready_max_retries: 60
           service_ready_retry_interval: '10s'
@@ -257,7 +256,7 @@ jobs:
           resource_folder: ''
           image_replacement: ${{ matrix.service_image }}
 
-      - name: Sleep after core upgrade 
+      - name: Sleep after core upgrade
         if: matrix.test.sequence == 'upgrade'
         run: sleep 30s
 
@@ -267,7 +266,7 @@ jobs:
         with:
           service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
-          artifact_name: 'Core_Upgrade_${{ matrix.test.artifact_name }}'
+          artifact_name: 'Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           namespace: 'pgskipper'
           service_ready_max_retries: 60
           service_ready_retry_interval: '10s'
@@ -298,7 +297,7 @@ jobs:
         with:
           service_branch: '${{ matrix.test.upgrade_version }}'
           check_tests: '${{ matrix.test.check_services_tests }}'
-          artifact_name: 'Services_Upgrade_$_${{ matrix.test.artifact_name }}'
+          artifact_name: 'Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           namespace: 'pgskipper'
           service_ready_max_retries: 60
           service_ready_retry_interval: '10s'

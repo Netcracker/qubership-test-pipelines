@@ -8,7 +8,6 @@ Workflow performs testing of the [Qubership-zookeeper service](https://github.co
 | Parameter       | Type   | Required | Description                                                      | Default        |
 |-----------------|--------|----------|------------------------------------------------------------------|----------------|
 | service_branch  | string | No       | Branch of qubership-zookeeper repository                         | -              |
-| versions_file   | string | Yes      | Path to file with version list in qubership-zookeeper repository | -              |
 | pipeline_branch | string | Yes      | Branch of qubership-test-pipelines repository                    | -              |
 | runner_type     | string | No       | Runner type (self-hosted or ubuntu-latest)                       | ubuntu-latest  |
 <!-- markdownlint-enable line-length -->
