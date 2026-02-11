@@ -73,6 +73,7 @@ jobs:
       versions: ${{ steps.process-versions.outputs.versions }}
       previous_version: ${{ steps.process-versions.outputs.previous_version }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_images: ${{ steps.parse-matrix.outputs.service_images }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@v5
@@ -110,7 +111,7 @@ jobs:
         id: parse-matrix
         run: |
           IMAGES=$(echo '${{ inputs.service_versions_json }}' | jq -c '.')
-          echo "PG Images: $IMAGES"
+          echo "Kafka Images: $IMAGES"
           echo "service_images=$IMAGES" >> $GITHUB_OUTPUT
 
   Kafka-Test-Cases:
