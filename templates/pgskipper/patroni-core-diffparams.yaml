@@ -4,11 +4,11 @@ replicatorPassword: "replicator"
 operator:
   resources:
     limits:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 60m
+      memory: 60Mi
     requests:
-      cpu: 50m
-      memory: 50Mi
+      cpu: 60m
+      memory: 60Mi
 patroni:
   install: true
   replicas: 2
@@ -17,11 +17,11 @@ patroni:
     runAsUser: 26
   resources:
     requests:
-      cpu: 125m
-      memory: 250Mi
+      cpu: 150m
+      memory: 300Mi
     limits:
-      cpu: 250m
-      memory: 500Mi
+      cpu: 270m
+      memory: 520Mi
   storage:
     type: provisioned
     size: 1Gi

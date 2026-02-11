@@ -3,11 +3,11 @@ postgresPassword: "p@ssWOrD1"
 operator:
   resources:
     limits:
-      cpu: 256m
-      memory: 256Mi
+      cpu: 276m
+      memory: 276Mi
     requests:
-      cpu: 256m
-      memory: 256Mi
+      cpu: 276m
+      memory: 276Mi
 metricCollector:
   install: false
   prometheusRules:
@@ -17,9 +17,9 @@ metricCollector:
     maxLastBackupAge: 86400
     locksThreshold: 500
     queryMaxTimeThreshold: 3600
-  collectionInterval: 60
-  telegrafPluginTimeout: 60
-  ocExecTimeout: 10
+  collectionInterval: 70
+  telegrafPluginTimeout: 70
+  ocExecTimeout: 11
   metricsProfile: prod
   prometheusMonitoring: false
   applyGrafanaDashboard: false
@@ -33,11 +33,11 @@ backupDaemon:
     fsGroup: 1000
   resources:
     limits:
-      cpu: 250m
-      memory: 512Mi
+      cpu: 270m
+      memory: 532Mi
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 120m
+      memory: 276Mi
   storage:
     type: provisioned
     size: 1Gi

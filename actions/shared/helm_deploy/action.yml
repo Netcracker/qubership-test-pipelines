@@ -55,6 +55,13 @@ inputs:
       Folder with resources for creating before installation
     required: true
 
+  image_replacement:
+    description: |
+      Value for change version of service in chart(example - pgskipper-docker-patroni-18)
+    required: false
+    type: string
+    default: ''
+
   test_tag:
     description: |
       Test tag
@@ -171,6 +178,31 @@ runs:
         fi
         echo "The image tag: ${service_branch_updated}"
         echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
+
+    - name: Update Image Version
+      if: inputs.image_replacement != ''
+      shell: bash
+      run: |
+        # ▶️ Replace version of service
+        path_to_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
+        new_image="${{ inputs.image_replacement }}"
+        base="${new_image%-*}"
+        if [ ! -f "$path_to_file" ]; then echo "::error::File not found: $path_to_file"; exit 1; fi
+        current_image=$(grep -oE "${base}-[^:\"' ]+" "$path_to_file" | head -n 1)
+        if [ -z "$current_image" ]; then
+          echo "::error::Target pattern '${base}-...' not found in $path_to_file"; exit 1
+        fi
+        if [ "$current_image" == "$new_image" ]; then
+          echo "ℹ️  Value is already set to: $current_image. No changes needed."
+        else
+          echo "🔄 Updating: $current_image -> $new_image"
+          sed -i -E "s|${base}-[^:\"' ]+|${new_image}|g" "$path_to_file"
+          if grep -Fq "$new_image" "$path_to_file"; then
+             echo "✅ Success: Replaced $current_image with $new_image"
+          else
+             echo "::error::Sed executed but verification failed."; exit 1
+          fi
+        fi
 
     - name: Update versions in values
       id: update-versions
