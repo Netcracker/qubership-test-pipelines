@@ -122,7 +122,7 @@ runs:
           echo $(pwd)
           echo "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
           cat "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
-          ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json
+          ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json ${{inputs.crd_list}}
         fi
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"

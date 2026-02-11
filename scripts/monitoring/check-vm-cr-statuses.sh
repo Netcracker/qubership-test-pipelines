@@ -5,6 +5,7 @@ NAMESPACE=${1:-monitoring}
 MAX_ATTEMPTS=${2:-10}
 SLEEP_SEC=${3:-10}
 EXPECTED_JSON=${4:-}
+CRD_LIST=${5:-}
 
 if [ -z "$EXPECTED_JSON" ] || [ ! -f "$EXPECTED_JSON" ]; then
   echo "Expected JSON file not provided or does not exist."
@@ -15,7 +16,7 @@ echo "Max attempts: $MAX_ATTEMPTS, sleep: $SLEEP_SEC sec"
 echo "Expected JSON: $EXPECTED_JSON"
 
 # --- 1. Get install_map from PlatformMonitoring ---
-install_map=$(kubectl get platformmonitorings.monitoring.qubership.org platformmonitoring \
+install_map=$(kubectl get $CRD_LIST platformmonitoring \
   -n "$NAMESPACE" -o json | jq '{
   grafana:        (.spec.grafana.install // false),
   vmAgent:        (.spec.victoriametrics.vmAgent.install // false),
