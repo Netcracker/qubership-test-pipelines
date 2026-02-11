@@ -66,6 +66,8 @@ inputs:
     description: |
       Test tag
     required: true
+    default: ''
+
 
 runs:
   using: 'composite'
@@ -225,11 +227,25 @@ runs:
         template_name=$(basename "${{inputs.path_to_template}}")
         echo $template_name
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-        if [[ "${{inputs.restricted}}" == "false" ]]; then
-          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --set integrationTests.tags=${{inputs.test_tag}}
-        else
-          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --skip-crds
+        helm_args=(
+          "${{ inputs.deploy_mode }}"
+          "${{ inputs.service_name }}"
+          "."
+          "-f" "$template_name"
+          "-n" "${{ inputs.namespace }}"
+          "--timeout" "10m"
+        )
+
+        if [[ -n "${{ inputs.test_tag }}" ]]; then
+          echo "tags=${{ inputs.test_tag }}"
+          helm_args+=(--set "integrationTests.tags=${{ inputs.test_tag }}")
         fi
+
+        if [[ "${{ inputs.restricted }}" != "false" ]]; then
+          helm_args+=(--skip-crds)
+        fi
+
+        helm "${helm_args[@]}"
 
     - name: Get docker images
       shell: bash
