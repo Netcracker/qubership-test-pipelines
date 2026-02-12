@@ -228,12 +228,10 @@ runs:
       if: always()
       run: |
         # ▶️ Get yaml from pods
-        file_name="artifacts/${{inputs.namespace}}_get_pods_yaml.txt"
+        mkdir -p artifacts/pod_yamls
         IFS=" " read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n "${{inputs.namespace}}" | tr "\n" " ")"
-        echo "Yaml files from pods:" > "$file_name"
         for pod in "${pods[@]}"; do
-            echo "$pod" >> "$file_name"
-            kubectl get pod "$pod" -n "${{inputs.namespace}}" -o yaml >> "$file_name"
+            kubectl get pod "$pod" -n "${{inputs.namespace}}" -o yaml > "artifacts/pod_yamls/${pod}.yaml"
         done
 
     - name: Get events from namespace
@@ -251,7 +249,7 @@ runs:
       if: always()
       run: |
         # ▶️ Get yaml from PVC
-        file_name="artifacts/${{inputs.namespace}}_get_pvc_yaml.txt"
+        file_name="artifacts/${{inputs.namespace}}_get_pvc_yaml.yaml"
         kubectl get pvc -n "${{inputs.namespace}}"
         kubectl get pvc -n "${{inputs.namespace}}" -o yaml > "$file_name"
 
@@ -320,7 +318,7 @@ runs:
                 IFS=':' read -r pod container <<< "$item"
                 status=$(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null)
                 if [[ $status == *"running"* || $status == *"terminated"* ]]; then
-                    log_file="artifacts/logs/${pod}__${container}.log"
+                    log_file="artifacts/logs/${pod}_${container}.log"
                     kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" > "$log_file" 2>&1
                     echo "✅ Container (${container}) logs successfully saved to $log_file"
                 else
