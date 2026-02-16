@@ -149,6 +149,20 @@ jobs:
           echo "::endgroup::"
       # == End ======= Specific steps for S3-TLS =======
 
+      # == Start ======= Specific steps for ATP =======
+      - name: ATP specific step
+        if: matrix.test.template == 'templates/consul-service/consul_clean_all_on_sc_full_at.yml'
+        run: |
+          python qubership-test-pipelines/scripts/update_yaml.py \
+          --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_full_at.yml' \
+          --path='integrationTests/atpStorage/username' \
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+          --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_full_at.yml' \
+          --path='integrationTests/atpStorage/password' \
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for ATP =======
+
       # == 02 Start ======= Common steps for all tests =======
       - name: Install Consul [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy

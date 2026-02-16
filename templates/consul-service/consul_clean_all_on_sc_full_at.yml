@@ -71,6 +71,20 @@ integrationTests:
     prometheus:
       user: admin
       password: ''
+  atpStorage:
+    # S3 provider type: aws (for real AWS S3), minio, s3 (for S3-compatible with custom endpoint)
+    provider: "aws"
+    # S3 API server URL (e.g., https://s3.amazonaws.com or https://minio.example.com)
+    serverUrl: "https://s3.amazonaws.com"
+    # S3 UI URL for browsing results (e.g., https://minio.example.com)
+    serverUiUrl: "https://console.test.com"
+    # S3 bucket name. If empty - S3 integration is disabled and results stay local
+    bucket: "test-pipelines-storage"
+    # S3 region (required for AWS S3)
+    region: "us-east-1"
+    # S3 credentials (will be stored in secret)
+    username: ""
+    password: ""
 statusProvisioner:
   lifetimeAfterCompletion: 120
   integrationTestsTimeout: 1800
