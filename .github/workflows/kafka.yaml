@@ -106,7 +106,7 @@ jobs:
         run: |
           chmod +x ./scripts/matrix.sh
           ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/kafka.yaml "${{ inputs.service_branch }}"
-        
+
       - name: Parse JSON into matrix
         id: parse-matrix
         run: |
@@ -204,7 +204,7 @@ jobs:
           test_completion_retry_interval: '10s'
           service_ready_max_retries: 80
           service_ready_retry_interval: '10s'
-          artifact_name: Install_Zookeeper_${{ matrix.test.artifact_name }}
+          artifact_name: Install_Zookeeper_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
       # == End Zookeeper installation tests =======
 
       # == Start update YAML secrets if needed =======
@@ -252,7 +252,7 @@ jobs:
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
-          artifact_name: Install_Kafka_${{ matrix.test.artifact_name }}
+          artifact_name: Install_Kafka_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           check_tests: true
       # == End kafka installation tests =======
 
@@ -289,7 +289,7 @@ jobs:
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
-          artifact_name: Install_Kafka_Service_${{ matrix.test.artifact_name }}
+          artifact_name: Install_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           check_tests: true
       # == End kafka service installation tests =======
 
@@ -332,7 +332,7 @@ jobs:
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.upgrade_kafka_get_crds.outputs.crd_names }}
-          artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
+          artifact_name: Upgrade_Kafka_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           check_tests: true
 
       - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}]
@@ -368,7 +368,7 @@ jobs:
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.upgrade_kafka_service_get_crds.outputs.crd_names }}
-          artifact_name: Upgrade_Kafka_Service_${{ matrix.test.artifact_name }}
+          artifact_name: Upgrade_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           check_tests: true
       # == End kafka upgrade tests =======
 
@@ -397,7 +397,7 @@ jobs:
 #          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
 #          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
 #          crd_list: ${{ env.kfk_cr_name }}
-#          artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
+#          artifact_name: Upgrade_Kafka_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
 #          check_tests: true
 #      - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
 #        if: matrix.test.sequence == 'migrate'
@@ -423,7 +423,7 @@ jobs:
 #          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
 #          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
 #          crd_list: ${{ env.kfk_cr_name }}
-#          artifact_name: Upgrade_Kafka_${{ matrix.test.artifact_name }}
+#          artifact_name: Upgrade_Kafka_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
 #          check_tests: true
 #      - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}]
 #        if: matrix.test.sequence == 'migrate'
@@ -449,7 +449,7 @@ jobs:
 #          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
 #          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
 #          crd_list: ${{ env.kfk_srvc_cr_name }}
-#          artifact_name: Upgrade_Kafka_Service_${{ matrix.test.artifact_name }}
+#          artifact_name: Upgrade_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
 #          check_tests: true
       # == End kafka migrate tests =======
 
