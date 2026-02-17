@@ -131,7 +131,7 @@ runs:
             ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
             resources_exit_code=$?
             set -e
-  
+
             if [ $resources_exit_code -eq 0 ]; then
               echo "✅ Resources checks successful"
               resources_success=true
@@ -276,7 +276,7 @@ runs:
         # ▶️ Get logs from all containers in pods
         mkdir -p artifacts/logs
         IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{ inputs.namespace }} | tr $'\n' ' ')
-        
+
         # Array for pending containers "pod:container"
         declare -a pending=()
 
@@ -362,9 +362,9 @@ runs:
 
         if [[ "${{inputs.artifact_name}}" != "" ]]; then
           artifact_name=${{inputs.artifact_name}}
-          ARTIFACT_NAME=${artifact_name//\//_}_$(date -u +'%Y%m%d%H%M%S')
+          ARTIFACT_NAME=${artifact_name//\//_}_$(date -u +'%Y%m%d%H%M%S%3N')
         else
-          ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}_${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S")"
+          ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}_${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S%3N")"
         fi
         echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
 
