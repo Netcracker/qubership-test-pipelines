@@ -206,7 +206,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
-          test_tag: 'kafka'
+          test_tags: 'kafka'
 
       - name: Get Installed Kafka CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds

@@ -10,5 +10,5 @@ jobs:
     kafka_service_upgrade_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
     sequence: upgrade
     artifact_name: "Clean_${release_version}_Kraft_Upgrade_CURRENT_Kraft"
-    test_tag: kafka
+    test_tags: kafka
   ## ===============================================================================
