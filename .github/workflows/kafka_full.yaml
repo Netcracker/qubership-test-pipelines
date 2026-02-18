@@ -70,12 +70,23 @@ jobs:
           repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
 
-      - name: Process versions file and matrix generation
+      - name: Get latest tag
+        id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Process latest tag and matrix generation
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: process-versions
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh ${{ github.workspace }}/qubership-kafka/${{ inputs.versions_file }} ./workflow-config/kafka_full.yaml "${{ inputs.service_branch }}"
+          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/kafka_full.yaml "${{ inputs.service_branch }}"
 
   Kafka-Test-Cases:
     runs-on: ${{ inputs.runner_type }}
@@ -197,7 +208,6 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
-          test_tags: 'kafka'
 
       - name: Get Installed Kafka CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
@@ -307,6 +317,7 @@ jobs:
           path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
           namespace: ${{ env.kfk_srvc_namespace }}
           deploy_mode: upgrade
+          test_tags: kafka
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
