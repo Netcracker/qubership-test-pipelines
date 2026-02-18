@@ -317,7 +317,7 @@ jobs:
           path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
           namespace: ${{ env.kfk_srvc_namespace }}
           deploy_mode: upgrade
-          test_tags: kafka
+          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
