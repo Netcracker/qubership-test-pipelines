@@ -205,13 +205,21 @@ jobs:
         with:
           service_branch: '${{ matrix.test.install_version }}'
           check_tests: '${{ matrix.test.check_core_tests }}'
-          artifact_name: 'Core_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           namespace: 'pgskipper'
           service_ready_max_retries: 60
           service_ready_retry_interval: '10s'
           test_completion_max_retries: 60
           test_completion_retry_interval: '10s'
           crd_list: 'patronicores.netcracker.com'
+
+      - name: Collect Diagnostics Core installation
+        if: always() 
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'pgskipper'
+          artifact_name: 'Core_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
+          service_branch: '${{ matrix.test.install_version }}'
+          matrix_version: '${{ matrix.service_image }}'
       # == 02 End ======= Core installation steps =======
 
       # == 03 Start ======= Services installation steps =======
@@ -231,13 +239,21 @@ jobs:
         with:
           service_branch: '${{ matrix.test.install_version }}'
           check_tests: '${{ matrix.test.check_services_tests }}'
-          artifact_name: 'Services_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           namespace: 'pgskipper'
           service_ready_max_retries: 60
           service_ready_retry_interval: '10s'
           test_completion_max_retries: 60
           test_completion_retry_interval: '10s'
           crd_list: 'patronicores.netcracker.com'
+      
+      - name: Collect Diagnostics Services installation
+        if: always() 
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'pgskipper'
+          artifact_name: 'Services_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
+          service_branch: '${{ matrix.test.install_version }}'
+          matrix_version: '${{ matrix.service_image }}'
       # == 03 End ======= Services installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
@@ -266,13 +282,21 @@ jobs:
         with:
           service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
-          artifact_name: 'Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           namespace: 'pgskipper'
           service_ready_max_retries: 60
           service_ready_retry_interval: '10s'
           test_completion_max_retries: 60
           test_completion_retry_interval: '10s'
           crd_list: 'patronicores.netcracker.com'
+
+      - name: Collect Diagnostics Services installation
+        if: always() 
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'pgskipper'
+          artifact_name: 'Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
+          service_branch: '${{ matrix.test.install_version }}'
+          matrix_version: '${{ matrix.service_image }}'
 
       - name: Upgrade Pgskipper Services to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
@@ -297,13 +321,21 @@ jobs:
         with:
           service_branch: '${{ matrix.test.upgrade_version }}'
           check_tests: '${{ matrix.test.check_services_tests }}'
-          artifact_name: 'Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           namespace: 'pgskipper'
           service_ready_max_retries: 60
           service_ready_retry_interval: '10s'
           test_completion_max_retries: 60
           test_completion_retry_interval: '10s'
           crd_list: 'patronicores.netcracker.com'
+      
+      - name: Collect Diagnostics Services installation
+        if: always() 
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'pgskipper'
+          artifact_name: 'Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
+          service_branch: '${{ matrix.test.install_version }}'
+          matrix_version: '${{ matrix.service_image }}'
       # == End ======= Specific steps for upgrade tests =======
 
       # == Start ======= Diagnostic steps =======
