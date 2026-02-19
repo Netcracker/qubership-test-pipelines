@@ -150,7 +150,7 @@ runs:
       # language=bash
       run: |
         # ▶️ Check if version is release
-        if [[ "${{inputs.service_branch}}" =~ v?[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+        if [[ "${{inputs.service_branch}}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
           echo "${{inputs.service_branch}} is release version"
           echo "is_release=true" >> $GITHUB_OUTPUT
         else
