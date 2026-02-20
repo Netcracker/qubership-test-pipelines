@@ -71,4 +71,4 @@ akhq:
 integrationTests:
   install: true
   waitForResult: true
-  tags: kafka_crudORkafka_images
+  tags: kafka_crud

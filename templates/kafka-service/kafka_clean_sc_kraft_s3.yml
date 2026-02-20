@@ -59,4 +59,4 @@ backupDaemon:
 integrationTests:
   install: true
   waitForResult: true
-  tags: kafkaNOTbackup
+  tags: kafka_crud

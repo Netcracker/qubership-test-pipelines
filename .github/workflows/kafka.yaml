@@ -167,6 +167,7 @@ jobs:
           repository_name: 'Netcracker/qubership-zookeeper'
           path_to_chart: 'operator/charts/helm/zookeeper-service'
           namespace: 'zookeeper'
+          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Verify Zookeeper installation
         if: matrix.test.zookeeper == true
@@ -208,6 +209,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
+          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Installed Kafka CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
@@ -244,6 +246,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
           namespace: ${{ env.kfk_srvc_namespace }}
+          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Installed Kafka-Service CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
@@ -281,6 +284,7 @@ jobs:
           path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
           deploy_mode: upgrade
+          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
@@ -317,6 +321,7 @@ jobs:
           path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
           namespace: ${{ env.kfk_srvc_namespace }}
           deploy_mode: upgrade
+          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
@@ -355,6 +360,7 @@ jobs:
 #          path_to_chart: 'operator/charts/helm/kafka'
 #          namespace: ${{ env.kfk_namespace }}
 #          deploy_mode: upgrade
+#          test_tags: '${{ matrix.test.test_tags }}'
 #      - name: Sleep 1m after migration
 #        if: matrix.test.sequence == 'migrate'
 #        run: sleep 1m
@@ -381,6 +387,7 @@ jobs:
 #          path_to_chart: 'operator/charts/helm/kafka'
 #          namespace: ${{ env.kfk_namespace }}
 #          deploy_mode: upgrade
+#          test_tags: '${{ matrix.test.test_tags }}'
 #      - name: Sleep 1m after upgrade
 #        if: matrix.test.sequence == 'migrate'
 #        run: sleep 1m
@@ -407,6 +414,7 @@ jobs:
 #          path_to_chart: 'operator/charts/helm/kafka-service'
 #          namespace: ${{ env.kfk_srvc_namespace }}
 #          deploy_mode: upgrade
+#          test_tags: '${{ matrix.test.test_tags }}'
 #      - name: Sleep 1m after upgrade
 #        if: matrix.test.sequence == 'migrate'
 #        run: sleep 1m
