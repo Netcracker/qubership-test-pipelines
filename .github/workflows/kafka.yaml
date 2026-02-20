@@ -105,7 +105,7 @@ jobs:
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/kafka.yaml "${{ inputs.service_branch }}"
+          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/kafka_full.yaml "${{ inputs.service_branch }}"
 
       - name: Parse JSON into matrix
         id: parse-matrix
