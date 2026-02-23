@@ -11,6 +11,7 @@ operator:
       memory: 60Mi
 patroni:
   install: true
+  dockerImage: ghcr.io/netcracker/pgskipper123-docker-patroni-16:docker321
   replicas: 2
   securityContext:
     fsGroup: 26
