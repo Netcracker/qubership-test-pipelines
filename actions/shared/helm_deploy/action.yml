@@ -215,7 +215,7 @@ runs:
 
 
     - name: Update Test Tags
-      if: inputs.test_tags != ''
+      #if: inputs.test_tags != ''
       shell: bash
       run: |
         template_name=$(basename "${{ inputs.path_to_template }}")
