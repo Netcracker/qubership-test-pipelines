@@ -188,6 +188,7 @@ jobs:
       # == 02 Start ======= Core installation steps =======
       - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: pg_core_install
         with:
           path_to_template: '${{ matrix.test.core_template }}'
           service_branch: '${{ matrix.test.install_version }}'
@@ -201,6 +202,7 @@ jobs:
           image_replacement: ${{ matrix.service_image }}
 
       - name: Verify Pgskipper Core installation
+        id: verify_core_install
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           service_branch: '${{ matrix.test.install_version }}'
@@ -213,7 +215,7 @@ jobs:
           crd_list: 'patronicores.netcracker.com'
 
       - name: Collect Diagnostics Core installation
-        if: always() 
+        if: ${{ !cancelled() && steps.verify_core_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: 'pgskipper'
@@ -238,6 +240,7 @@ jobs:
           namespace: 'pgskipper'
 
       - name: Verify Pgskipper Services installation
+        id: verify_services_install
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           service_branch: '${{ matrix.test.install_version }}'
@@ -250,7 +253,7 @@ jobs:
           crd_list: 'patronicores.netcracker.com'
       
       - name: Collect Diagnostics Services installation
-        if: always() 
+        if: ${{ !cancelled() && steps.verify_services_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: 'pgskipper'
@@ -284,6 +287,7 @@ jobs:
 
       - name: Verify Pgskipper Core upgrade
         if: matrix.test.sequence == 'upgrade'
+        id: verify_core_upgrade
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           service_branch: ${{ matrix.test.upgrade_version }}
@@ -296,7 +300,7 @@ jobs:
           crd_list: 'patronicores.netcracker.com'
 
       - name: Collect Diagnostics Core upgrade
-        if: always() 
+        if: ${{ !cancelled() && steps.verify_core_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: 'pgskipper'
@@ -323,6 +327,7 @@ jobs:
 
       - name: Verify Pgskipper Services upgrade
         if: matrix.test.sequence == 'upgrade'
+        id: verify_services_upgrade
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           service_branch: '${{ matrix.test.upgrade_version }}'
@@ -335,7 +340,7 @@ jobs:
           crd_list: 'patronicores.netcracker.com'
       
       - name: Collect Diagnostics Services installation
-        if: always() 
+        if: ${{ !cancelled() && steps.verify_services_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: 'pgskipper'
