@@ -31,6 +31,11 @@ on:
             "qubership-docker-kafka-3",
             "qubership-docker-kafka-4"
           ]
+      scope:
+        description: 'Kafka Test Suite: smoke or full'
+        type: string
+        required: false
+        default: smoke
 
   workflow_call:
     inputs:
@@ -60,6 +65,11 @@ on:
             "qubership-docker-kafka-3",
             "qubership-docker-kafka-4"
           ]
+      scope:
+        description: 'Kafka Test Suite: smoke or full'
+        type: string
+        required: false
+        default: smoke
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -105,8 +115,15 @@ jobs:
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/kafka_full.yaml "${{ inputs.service_branch }}"
-
+          if [[ "${{ inputs.scope }}" == "full" ]]; then
+            CONFIG_FILE="./workflow-config/kafka_full.yaml"
+          elif [[ "${{ inputs.scope }}" == "smoke" ]]; then
+            CONFIG_FILE="./workflow-config/kafka.yaml"
+          else
+            echo "::error::Invalid scope parameter. Must be 'smoke' or 'full'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" "$CONFIG_FILE" "${{ inputs.service_branch }}"
       - name: Parse JSON into matrix
         id: parse-matrix
         run: |
