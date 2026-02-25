@@ -1,0 +1,61 @@
+global:
+  name: kafka
+  secrets:
+    kafka:
+      adminUsername: admin
+      adminPassword: admin
+      clientUsername: client
+      clientPassword: client
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: admin
+kafka:
+  install: true
+  kraft:
+    enabled: true
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: component
+                operator: In
+                values:
+                  - kafka
+          topologyKey: kubernetes.io/hostname
+  replicas: 3
+  storage:
+    size: 1Gi
+    className:
+      - standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+backupDaemon:
+  install: true
+  storage: 1Gi
+  storageClass: standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+operator:
+  kmmConfiguratorEnabled: false
+  akhqConfigurator:
+    enabled: true
+    watchNamespace: kafka-service
+monitoring:
+  install: true
+  securityContext:
+    runAsUser: 1000
+akhq:
+  install: true
+  ingress:
+    host: akhq-kafka-service.qubership.com
+integrationTests:
+  install: true
+  waitForResult: true
+  tags: kafka_crud
+  prometheusUrl: "http://vmsingle-k8s.monitoring:8429"

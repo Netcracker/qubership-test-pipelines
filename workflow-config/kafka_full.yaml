@@ -10,7 +10,7 @@ jobs:
     kafka_service_upgrade_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
     sequence: upgrade
     artifact_name: "Clean_${release_version}_Kraft_Upgrade_CURRENT_Kraft"
-    test_tags: ''
+    test_tags: kafka
   ## ===============================================================================
 #  - purpose: automation
 #    name: "Clean [${service_branch}] with Zookeeper in TLS. Migrate to [${service_branch}] without Zookeeper in TLS"
@@ -61,6 +61,15 @@ jobs:
     sequence: install
     artifact_name: "Clean_CURRENT_non-TLS"
     test_tags: kafka
+
+  - name: "Clean [${service_branch}] with monitoring"
+    kafka_install_version: '${service_branch}'
+    kafka_template: "templates/kafka-service/kafka_clean_sc_kraft_monitoring.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft_monitoring.yml"
+    sequence: install
+    artifact_name: "Clean_CURRENT_non-TLS"
+    test_tags: kafka
+    monitoring: true
 
   - name: "Clean [${service_branch}] in TLS"
     kafka_install_version: '${service_branch}'

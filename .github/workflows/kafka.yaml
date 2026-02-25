@@ -148,7 +148,7 @@ jobs:
       kfk_timeout_for_provisioner: '10s'
       kfk_path_to_chart: 'operator/charts/helm/kafka'
       kfk_srvc_namespace: kafka
-      kfk_srvc_max_attempts: 60
+      kfk_srvc_max_attempts: 100
       kfk_srvc_timeout: '10s'
       kfk_srvc_max_attempts_for_provisioner: 100
       kfk_srvc_timeout_for_provisioner: '10s'
@@ -197,6 +197,30 @@ jobs:
           echo "::endgroup::"
       # == End TLS certs addition if needed =======
 
+       # == Start Monitoring installation tests =======
+      - name: Install Monitoring [${{ matrix.test.install_version }}]
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: 'templates/monitoring/vm_with_smoke_and_simple_test.yml'
+          service_branch: 'main'
+          service_name: 'monitoring'
+          repository_name: 'Netcracker/qubership-monitoring-operator'
+          path_to_chart: 'charts/qubership-monitoring-operator'
+          namespace: 'monitoring'
+          restricted: 'false'
+      - name: Verify Monitoring installation
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: monitoring
+          test_completion_max_retries: 40
+          test_completion_retry_interval: '10s'
+          service_ready_max_retries: 80
+          service_ready_retry_interval: '10s'
+          artifact_name: Install_Monitoring_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+      # == End Monitoring installation tests =======
+
       # == Start Zookeeper installation tests =======
       - name: Print install deployment parameters
         if: matrix.test.zookeeper == true
@@ -211,7 +235,6 @@ jobs:
           repository_name: 'Netcracker/qubership-zookeeper'
           path_to_chart: 'operator/charts/helm/zookeeper-service'
           namespace: 'zookeeper'
-          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Verify Zookeeper installation
         if: matrix.test.zookeeper == true
