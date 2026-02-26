@@ -143,14 +143,13 @@ jobs:
           echo "::endgroup::"
           echo "::group::Add secrets to template"
           python qubership-test-pipelines/scripts/update_yaml.py \
-            -f 'qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
-            -p 'backupDaemon/s3/keyId' \
-            -v '${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+            --path='backupDaemon/s3/keyId' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            -f 'qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
-            -p 'backupDaemon/s3/keySecret' \
-            -v '${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-          echo "::endgroup::"
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+            --path='backupDaemon/s3/keySecret' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for S3-TLS =======
 
       # == 02 Start ======= Common steps for all tests =======
@@ -191,15 +190,15 @@ jobs:
       - name: Add secrets to template
         if: matrix.test.sequence == 'upgrade' && matrix.test.backend == 's3'
         shell: bash
-        run: >-
+        run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
-            -f 'qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
-            -p 'backupDaemon/s3/keyId' \
-            -v '${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
+            --path='backupDaemon/s3/keyId' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            -f 'qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
-            -p 'backupDaemon/s3/keySecret' \
-            -v '${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
+            --path='backupDaemon/s3/keySecret' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for S3 =======
 
       # == Start ======= Specific steps for upgrade tests =======
