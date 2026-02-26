@@ -201,6 +201,9 @@ jobs:
           resource_folder: ''
           image_replacement: ${{ matrix.service_image }}
 
+      - name: Sleep after core install
+        run: sleep 30s
+
       - name: Verify Pgskipper Core installation
         id: verify_core_install
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -222,9 +225,6 @@ jobs:
           artifact_name: 'Core_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           service_branch: '${{ matrix.test.install_version }}'
           matrix_version: '${{ matrix.service_image }}'
-
-      - name: Sleep after core install
-        run: sleep 30s
       # == 02 End ======= Core installation steps =======
 
       # == 03 Start ======= Services installation steps =======
@@ -238,6 +238,9 @@ jobs:
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
+        
+      - name: Sleep after services install
+        run: sleep 30s
 
       - name: Verify Pgskipper Services installation
         id: verify_services_install
@@ -260,9 +263,6 @@ jobs:
           artifact_name: 'Services_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
           service_branch: '${{ matrix.test.install_version }}'
           matrix_version: '${{ matrix.service_image }}'
-
-      - name: Sleep after services install
-        run: sleep 30s
       # == 03 End ======= Services installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
