@@ -142,10 +142,14 @@ jobs:
           kubectl get clusterissuer test-clusterissuer -o yaml
           echo "::endgroup::"
           echo "::group::Add secrets to template"
-          python qubership-test-pipelines/scripts/add_secrets_for_s3.py \
-          --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
-          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+          python qubership-test-pipelines/scripts/update_yaml.py \
+          -f 'qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+          -p 'backupDaemon/s3/keyId' \
+          -v '${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+          -f 'qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+          -p 'backupDaemon/s3/keySecret' \
+          -v '${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
           echo "::endgroup::"
       # == End ======= Specific steps for S3-TLS =======
 
