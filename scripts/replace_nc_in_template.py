@@ -1,6 +1,6 @@
-import os
-import yaml
 import argparse
+
+import yaml
 
 
 def main(args_):
@@ -14,11 +14,14 @@ def main(args_):
     with open(path_to_file, 'w') as file:
         file.write(yaml.dump(template, default_flow_style=False))
 
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Script to replace namespace in templates of resources')
-    parser.add_argument('--path_to_file', type=str,
-                        help='path to yaml file with template')
-    parser.add_argument('--nc', type=str,
-                        help='new namespace')
+    parser = argparse.ArgumentParser(
+        description='Script to replace namespace in templates of resources'
+    )
+    parser.add_argument(
+        '--path_to_file', type=str, help='path to yaml file with template'
+    )
+    parser.add_argument('--nc', type=str, help='new namespace')
     args = parser.parse_args()
     main(args)

@@ -1,6 +1,6 @@
-import os
-import yaml
 import argparse
+
+import yaml
 
 
 def main(args_):
@@ -18,13 +18,15 @@ def main(args_):
     with open(path_to_file, 'w') as file:
         file.write(yaml.dump(template, default_flow_style=False))
 
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Script to replace namespace in templates of resources')
-    parser.add_argument('--path_to_file', type=str,
-                        help='path to yaml file with template')
-    parser.add_argument('--key_id', type=str,
-                        help='Access key ID for S3')
-    parser.add_argument('--secret_key', type=str,
-                        help='Secret access key for S3')
+    parser = argparse.ArgumentParser(
+        description='Script to replace namespace in templates of resources'
+    )
+    parser.add_argument(
+        '--path_to_file', type=str, help='path to yaml file with template'
+    )
+    parser.add_argument('--key_id', type=str, help='Access key ID for S3')
+    parser.add_argument('--secret_key', type=str, help='Secret access key for S3')
     args = parser.parse_args()
     main(args)
