@@ -253,7 +253,7 @@ jobs:
           service_ready_retry_interval: '10s'
           test_completion_max_retries: 60
           test_completion_retry_interval: '10s'
-          crd_list: 'patronicores.netcracker.com'
+          crd_list: 'patroniservices.netcracker.com'
       
       - name: Collect Diagnostics Services installation
         if: ${{ !cancelled() && steps.verify_services_install.conclusion != 'skipped' }}
@@ -337,7 +337,7 @@ jobs:
           service_ready_retry_interval: '10s'
           test_completion_max_retries: 60
           test_completion_retry_interval: '10s'
-          crd_list: 'patronicores.netcracker.com'
+          crd_list: 'patroniservices.netcracker.com'
       
       - name: Collect Diagnostics Services installation
         if: ${{ !cancelled() && steps.verify_services_upgrade.conclusion != 'skipped' }}
