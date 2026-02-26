@@ -1,0 +1,25 @@
+name: Lint
+run-name: 'Lint: ${{ github.event_name }} on ${{ github.ref_name }}'
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - uses: pre-commit/action@v3.0.1
