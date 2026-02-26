@@ -1,6 +1,6 @@
 # qubership-test-pipelines
 
-This repository automates the end-to-end testing qubership services in a Kubernetes cluster using Kind. 
+This repository automates the end-to-end testing qubership services in a Kubernetes cluster using Kind.
 It implements a complete CI/CD lifecycle from infrastructure provisioning to post-deployment verification.
 
 ## Repository Structure

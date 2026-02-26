@@ -1,4 +1,4 @@
-# 🚀 Create Kubernetes cluster GitHub Action  
+# 🚀 Create Kubernetes cluster GitHub Action
 This Action automates creation of Kubernetes clusters using Kind (Kubernetes in Docker).
 
 ## Features

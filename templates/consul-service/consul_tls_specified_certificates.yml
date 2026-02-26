@@ -67,4 +67,3 @@ integrationTests:
 statusProvisioner:
   integrationTestsTimeout: 1500
   podReadinessTimeout: 900
-

@@ -1,4 +1,4 @@
-# 🚀 Verify Installation GitHub Action  
+# 🚀 Verify Installation GitHub Action
 This Action verifies Kubernetes deployments including status checks, log collection, and test validation.
 
 ## Features
