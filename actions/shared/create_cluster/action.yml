@@ -9,46 +9,46 @@ inputs:
 runs:
   using: 'composite'
   steps:
-      - name: Get info
-        shell: bash
-        # language=bash
-        run: |
-          free -h
-          echo '================================================================================'
-          lscpu
-          echo '================================================================================'
-          lsblk
-          echo '================================================================================'
-          sysctl vm.max_map_count
-      - name: Get info
-        shell: bash
-        # language=bash
-        run: top -b -n 1
-      - name: Install kind
-        shell: bash
-        # language=bash
-        run: |
-          echo Download kind
-          [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
-          chmod +x ./kind
-          # sudo mv ./kind /usr/local/bin/kind
-      - name: Delete kind
-        shell: bash
-        # language=bash
-        run: |
-          ./kind get clusters
-          for node in kind-worker kind-control-plane2 kind-external-load-balancer kind-control-plane kind-control-plane3 kind-worker3 kind-worker2; do
-            if docker ps -a --format '{{.Names}}' | grep -q "^${node}$"; then
-              docker rm -f -v "$node"
-            fi
-          done
-          ./kind delete cluster --name kind || true
-      - name: Run kind
-        shell: bash
-        # language=bash
-        run: >-
-          ./kind create cluster
-          --image kindest/node:v1.32.2
-          --config qubership-test-pipelines/kind-configs/kind-${{ inputs.kind-layout }}.yaml
-          --wait 5m
-        #! check kubernetes version is actual
+    - name: Get info
+      shell: bash
+      # language=bash
+      run: |
+        free -h
+        echo '================================================================================'
+        lscpu
+        echo '================================================================================'
+        lsblk
+        echo '================================================================================'
+        sysctl vm.max_map_count
+    - name: Get info
+      shell: bash
+      # language=bash
+      run: top -b -n 1
+    - name: Install kind
+      shell: bash
+      # language=bash
+      run: |
+        echo Download kind
+        [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
+        chmod +x ./kind
+        # sudo mv ./kind /usr/local/bin/kind
+    - name: Delete kind
+      shell: bash
+      # language=bash
+      run: |
+        ./kind get clusters
+        for node in kind-worker kind-control-plane2 kind-external-load-balancer kind-control-plane kind-control-plane3 kind-worker3 kind-worker2; do
+          if docker ps -a --format '{{.Names}}' | grep -q "^${node}$"; then
+            docker rm -f -v "$node"
+          fi
+        done
+        ./kind delete cluster --name kind || true
+    - name: Run kind
+      shell: bash
+      # language=bash
+      run: >-
+        ./kind create cluster
+        --image kindest/node:v1.32.2
+        --config qubership-test-pipelines/kind-configs/kind-${{ inputs.kind-layout }}.yaml
+        --wait 5m
+      #! check kubernetes version is actual
