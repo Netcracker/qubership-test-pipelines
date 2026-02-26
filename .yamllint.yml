@@ -1,0 +1,32 @@
+extends: default
+
+rules:
+  new-lines:
+    type: unix
+
+  # CI script lines are inherently long - warn only, don't fail
+  line-length:
+    max: 200
+    level: warning
+
+  # GitLab CI files do not use document-start marker (---)
+  document-start: disable
+
+  # Disable truthy key check to allow keys like "on:" in CI files
+  truthy:
+    check-keys: false
+
+  # Allow both indented (GitHub Actions) and unindented (Kubernetes) sequences
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+
+  # Allow single space before inline comments
+  comments:
+    min-spaces-from-content: 1
+
+  braces:
+    max-spaces-inside: 1
+
+  brackets:
+    max-spaces-inside: 1
