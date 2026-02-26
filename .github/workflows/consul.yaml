@@ -165,16 +165,23 @@ jobs:
           namespace: consul
           restricted: ${{ matrix.test.restricted }}
       - name: Verify Consul installation
+        id: verify_consul_install
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
+          service_branch: '${{ matrix.test.install_version }}'
+          check_tests: true
           namespace: consul
           test_completion_max_retries: 50
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
-          service_branch: ${{ matrix.test.install_version }}
-          check_tests: true
+      - name: Collect Diagnostics Services installation
+        if: ${{ !cancelled() && steps.verify_consul_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: consul
           artifact_name: Installation_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.install_version }}
       - name: Delete status-provisioner job
         shell: bash
         run: kubectl delete job consul-status-provisioner -n consul
@@ -214,16 +221,23 @@ jobs:
         run: sleep 90s
       - name: Verify Consul upgrade
         if: matrix.test.sequence == 'upgrade'
+        id: verify_consul_upgrade
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
+          service_branch: ${{ matrix.test.upgrade_version }}
+          check_tests: true
           namespace: consul
           test_completion_max_retries: 50
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
-          service_branch: ${{ matrix.test.upgrade_version }}
-          check_tests: true
+      - name: Collect Diagnostics Services installation
+        if: ${{ !cancelled() && steps.verify_consul_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: consul
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade_version }}
       # == End ======= Specific steps for upgrade tests =======
 
   final-status-check:
