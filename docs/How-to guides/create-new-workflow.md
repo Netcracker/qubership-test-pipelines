@@ -1,7 +1,7 @@
 # How to create a test workflow for new service
 
 1. Add `.github/helm-charts-release-config.yaml` (file with images) to service
-    
+
 If it is not possible to add file to service project, then add it to `qubership-test-pipelines/release_configs/<service>/helm-charts-release-config.yaml`
 ```yaml
 charts:
@@ -33,7 +33,7 @@ jobs:
 ```
 3. Add service-specific actions to this repository
 
-  Location: `qubership-test-pipelines/actions/<service>`  
+  Location: `qubership-test-pipelines/actions/<service>`
 
 Example of <service> action:
 ```yaml
@@ -55,13 +55,13 @@ runs:
   using: 'composite'
   steps:
     - name: Run <shared action> for <service>
-      uses: ./qubership-test-pipelines/actions/shared/<shared_action> 
+      uses: ./qubership-test-pipelines/actions/shared/<shared_action>
       with:
         param1: ${{inputs.param1}}
         param2: ${{inputs.param2}}
 ```
 4. Add files with values to `qubership-test-pipelines/templates/<service>`
-5. Add workflow with pipeline to this repository   
+5. Add workflow with pipeline to this repository
 
   Location: `qubership-test-pipelines/.github/workflows/<service>.yaml`
 ```yaml
@@ -78,16 +78,16 @@ on:
         type: string
         required: true
 ```
-6. Add jobs with test deploys to workflow  
+6. Add jobs with test deploys to workflow
 
-  If you want to check upgrade of some service, you need to add steps with clean deploy and upgrade to one job.   
+  If you want to check upgrade of some service, you need to add steps with clean deploy and upgrade to one job.
 
-**Job Structure Overview**:  
-  Step 1: Cluster Creation  
-  Step 2: Monitoring Installation (for alert tests)  
-  Step 3: Service clean installation  
-  Step 4: Validation (logs, events, tests)  
-  Step 5: Service upgrade  
+**Job Structure Overview**:
+  Step 1: Cluster Creation
+  Step 2: Monitoring Installation (for alert tests)
+  Step 3: Service clean installation
+  Step 4: Validation (logs, events, tests)
+  Step 5: Service upgrade
   Step 6: Validation
 
 Example:
@@ -95,7 +95,7 @@ Example:
 jobs:
   Clean-Latest-Upgrade-Diff-Params:
     runs-on: ${{inputs.runner_type}}
-    name: Clean [LATEST], Upgrade [LATEST] Diff Params  
+    name: Clean [LATEST], Upgrade [LATEST] Diff Params
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
@@ -121,5 +121,3 @@ jobs:
       - name: Verify <Service> upgrade
         uses: ./qubership-test-pipelines/actions/<service>/verify_installation_<service>
 ```
-
-

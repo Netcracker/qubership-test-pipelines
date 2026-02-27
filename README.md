@@ -1,9 +1,10 @@
 # qubership-test-pipelines
 
-This repository automates the end-to-end testing qubership services in a Kubernetes cluster using Kind. 
+This repository automates the end-to-end testing qubership services in a Kubernetes cluster using Kind.
 It implements a complete CI/CD lifecycle from infrastructure provisioning to post-deployment verification.
 
 ## Repository Structure
+
 ```
 qubership-test-pipelines/
 ├── .github/                         # GitHub configurations and automation
@@ -28,8 +29,11 @@ qubership-test-pipelines/
 │       └── [config-name].yml
 └── workflow-config/                 # Workflow configurations
 ```
+
 ## Workflows list
+
 Added workflow for the following services:
+
 - [Qubership Consul](https://github.com/Netcracker/qubership-consul)
 - [Qubership ZooKeeper Service](https://github.com/Netcracker/qubership-zookeeper)
 - [Qubership OpenSearch](https://github.com/Netcracker/qubership-opensearch)
@@ -37,3 +41,36 @@ Added workflow for the following services:
 - [Qubership RabbitMQ Service](https://github.com/Netcracker/qubership-rabbitmq)
 - [Qubership PGgskipper Operator](https://github.com/Netcracker/pgskipper-operator)
 - [Qubership Monitoring Operator](https://github.com/Netcracker/qubership-monitoring-operator)
+
+## Pre-commit hooks
+
+This repository uses `pre-commit` to run linters and formatters configured in `.pre-commit-config.yaml`.
+
+1. Install `pre-commit`:
+
+```bash
+pip install pre-commit
+```
+
+2. Install git hooks in the local repository:
+
+```bash
+pre-commit install
+```
+
+3. Run all hooks manually for all files:
+
+```bash
+pre-commit run --all-files
+```
+
+### Line endings on Windows
+
+If broken line endings keep reappearing, the usual cause is Git with `core.autocrlf=true` on Windows (files are rewritten on checkout).
+Set local Git line-ending settings for this repo:
+
+```bash
+git config --local core.autocrlf false
+git config --local core.eol lf
+git add --renormalize .
+```

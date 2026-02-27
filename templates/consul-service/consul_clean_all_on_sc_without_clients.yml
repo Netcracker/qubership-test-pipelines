@@ -14,7 +14,7 @@ consulAclConfigurator:
 dns:
   enabled: false
 monitoring:
- enabled: false
+  enabled: false
 ui:
   enabled: true
   ingress:
@@ -45,4 +45,3 @@ statusProvisioner:
   lifetimeAfterCompletion: 120
   integrationTestsTimeout: 600
   podReadinessTimeout: 900
-

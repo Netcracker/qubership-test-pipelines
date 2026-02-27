@@ -1,0 +1,21 @@
+# IDEs
+.idea/
+.vscode/
+.vs/
+
+# AI tools
+.claude/
+.cursor/
+.copilot/
+.codeium/
+.continue/
+.windsurf/
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.ruff_cache/

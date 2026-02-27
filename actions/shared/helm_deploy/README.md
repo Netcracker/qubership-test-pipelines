@@ -1,11 +1,11 @@
-# 🚀 Helm Deploy GitHub Action  
+# 🚀 Helm Deploy GitHub Action
 This Action automates Helm install/upgrade services using Helm
 ## Features
 - Checkout service and pipeline repositories
 - Namespace creation for new installations
 - Creation necessary resources before restricted installation
 - Replace Docker image versions in Helm charts for specified components
-- Deploy service with specified templates  
+- Deploy service with specified templates
 - Deploy (install/upgrade) service using Helm
 - Deploy with restricted permissions or cluster-admin rights
 

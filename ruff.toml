@@ -1,0 +1,13 @@
+line-length = 88
+
+[format]
+quote-style = "single"
+
+[lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+]

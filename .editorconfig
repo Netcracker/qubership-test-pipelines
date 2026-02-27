@@ -1,13 +1,14 @@
 root = true
 
-[{*,.*}]
+[*]
 charset = utf-8
 indent_style = space
+end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 
 [*.sh]
-end_of_line = lf
+indent_size = 4
 
 [{*.bat,*.cmd}]
 end_of_line = crlf
@@ -18,7 +19,6 @@ end_of_line = lf
 
 [*.md]
 # Trailing whitespace is important in Markdown (they distinguish a new line from a new paragraph)
-eclint_indent_style = unset
 trim_trailing_whitespace = false
 
 [{go.mod,go.sum,*.go,.gitmodules}]
@@ -29,7 +29,8 @@ indent_style = tab
 indent_size = 4
 
 [*.py]
-profile = black
-
-[*.sh]
 indent_size = 4
+
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
