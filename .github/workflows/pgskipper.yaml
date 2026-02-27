@@ -293,9 +293,9 @@ jobs:
           service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
           namespace: 'pgskipper'
-          service_ready_max_retries: 60
+          service_ready_max_retries: 100
           service_ready_retry_interval: '10s'
-          test_completion_max_retries: 60
+          test_completion_max_retries: 100
           test_completion_retry_interval: '10s'
           crd_list: 'patronicores.netcracker.com'
 
