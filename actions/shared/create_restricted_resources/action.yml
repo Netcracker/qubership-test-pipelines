@@ -101,18 +101,20 @@ runs:
     - name: Update yaml with Role
       shell: bash
       # language=bash
-      run: >-
-        python qubership-test-pipelines/scripts/replace_nc_in_template.py
-        --path_to_file='qubership-test-pipelines/restricted/restricted-role.yml'
-        --nc='${{inputs.namespace}}'
+      run: |
+        python qubership-test-pipelines/scripts/update_yaml.py \
+          --file='qubership-test-pipelines/restricted/restricted-role.yml' \
+          --path='metadata/namespace' \
+          --value='${{inputs.namespace}}'
 
     - name: Update yaml with RoleBinding
       shell: bash
       # language=bash
-      run: >-
-        python qubership-test-pipelines/scripts/replace_nc_in_template.py
-        --path_to_file='qubership-test-pipelines/restricted/restricted-rb.yml'
-        --nc='${{inputs.namespace}}'
+      run: |
+        python qubership-test-pipelines/scripts/update_yaml.py \
+          --file='qubership-test-pipelines/restricted/restricted-rb.yml' \
+          --path='metadata/namespace' \
+          --value='${{inputs.namespace}}'
 
     - name: Create Role
       shell: bash
