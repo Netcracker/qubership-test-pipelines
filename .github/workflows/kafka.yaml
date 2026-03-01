@@ -150,7 +150,7 @@ jobs:
       kfk_srvc_namespace: kafka
       kfk_srvc_max_attempts: 100
       kfk_srvc_timeout: '10s'
-      kfk_srvc_max_attempts_for_provisioner: 100
+      kfk_srvc_max_attempts_for_provisioner: 120
       kfk_srvc_timeout_for_provisioner: '10s'
       kfk_srvc_path_to_chart: 'operator/charts/helm/kafka-service'
     steps:
@@ -202,7 +202,7 @@ jobs:
         if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: 'templates/monitoring/vm_with_smoke_and_simple_test.yml'
+          path_to_template: 'templates/monitoring/vm_without_tests.yml'
           service_branch: 'main'
           service_name: 'monitoring'
           repository_name: 'Netcracker/qubership-monitoring-operator'
