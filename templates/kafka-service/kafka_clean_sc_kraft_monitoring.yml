@@ -34,13 +34,6 @@ kafka:
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
-  resources:
-    requests:
-      cpu: 51m
-      memory: 301Mi
-    limits:
-      cpu: 401m
-      memory: 801Mi
 backupDaemon:
   install: true
   storage: 1Gi
@@ -48,20 +41,13 @@ backupDaemon:
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
-  resources:
-    requests:
-      memory: 61Mi
-      cpu: 31m
-    limits:
-      memory: 251Mi
-      cpu: 201m
 operator:
   kmmConfiguratorEnabled: false
   akhqConfigurator:
     enabled: true
     watchNamespace: kafka-service
 monitoring:
-  install: false
+  install: true
   securityContext:
     runAsUser: 1000
 akhq:
@@ -72,3 +58,4 @@ integrationTests:
   install: true
   waitForResult: true
   tags: kafka_crud
+  prometheusUrl: "http://vmsingle-k8s.monitoring:8429"
