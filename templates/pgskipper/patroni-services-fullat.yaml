@@ -43,5 +43,5 @@ backupDaemon:
     size: 1Gi
     storageClass: standard
 tests:
-  install: true
+  install: false
   runTestScenarios: "full"
