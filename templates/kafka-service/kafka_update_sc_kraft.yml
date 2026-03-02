@@ -71,4 +71,4 @@ akhq:
 integrationTests:
   install: true
   waitForResult: true
-  tags: kafka_crud
+  tags: kafka_crudORaclORbackup
