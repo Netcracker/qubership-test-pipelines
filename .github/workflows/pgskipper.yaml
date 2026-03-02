@@ -202,7 +202,7 @@ jobs:
           image_replacement: ${{ matrix.service_image }}
 
       - name: Sleep after core install
-        run: sleep 30s
+        run: sleep 10s
 
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -240,7 +240,7 @@ jobs:
           namespace: 'pgskipper'
         
       - name: Sleep after services install
-        run: sleep 30s
+        run: sleep 10s
 
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -283,7 +283,7 @@ jobs:
 
       - name: Sleep after core upgrade
         if: matrix.test.sequence == 'upgrade'
-        run: sleep 30s
+        run: sleep 10s
 
       - name: Verify Pgskipper Core upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -323,7 +323,7 @@ jobs:
 
       - name: Sleep after services upgrade
         if: matrix.test.sequence == 'upgrade'
-        run: sleep 30s
+        run: sleep 10s
 
       - name: Verify Pgskipper Services upgrade
         if: matrix.test.sequence == 'upgrade'
