@@ -129,6 +129,7 @@ jobs:
       # == 02 Start ======= Installation steps =======
       - name: Install Monitoring [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: monitoring_install
         with:
           path_to_template: '${{ matrix.test.template }}'
           service_branch: '${{ matrix.test.install_version }}'
@@ -154,10 +155,17 @@ jobs:
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-          check_tests: 'true'
-          artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
+          check_tests: true
           monitoring_pipeline: 'true'
           repository_name: '${{ inputs.repository_name }}'
+
+      - name: Collect Diagnostics Monitoring installation
+        if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'monitoring'
+          artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
+          service_branch: '${{ matrix.test.install_version }}'
 
       # == 02 End ======= Installation steps =======
 
@@ -165,6 +173,7 @@ jobs:
       - name: Upgrade Monitoring to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: monitoring_upgrade
         with:
           path_to_template: '${{ matrix.test.upgrade_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
@@ -193,6 +202,28 @@ jobs:
           artifact_name: 'Upgrade_${{ matrix.test.artifact_name }}'
           monitoring_pipeline: 'true'
           repository_name: '${{ inputs.repository_name }}'
+      
+      - name: Verify Monitoring upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: 'monitoring'
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          test_completion_max_retries: ${{ env.test_completion_max_retries }}
+          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_branch: '${{ matrix.test.upgrade_version }}'
+          check_tests: true
+          monitoring_pipeline: 'true'
+          repository_name: '${{ inputs.repository_name }}'
+
+      - name: Collect Diagnostics Monitoring installation
+        if: ${{ !cancelled() && steps.monitoring_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'monitoring'
+          artifact_name: 'Upgrade_${{ matrix.test.artifact_name }}'
+          service_branch: '${{ matrix.test.upgrade_version }}'
       # == End ======= Specific steps for upgrade tests =======
 
   final-status-check:
