@@ -32,10 +32,10 @@ on:
             "qubership-docker-kafka-4"
           ]
       scope:
-        description: 'Kafka Test Suite: smoke or full'
+        description: 'Kafka Test Scope: pr or nightly'
         type: string
         required: false
-        default: smoke
+        default: pr
 
   workflow_call:
     inputs:
@@ -66,10 +66,10 @@ on:
             "qubership-docker-kafka-4"
           ]
       scope:
-        description: 'Kafka Test Suite: smoke or full'
+        description: 'Kafka Test Scope: pr or nightly'
         type: string
         required: false
-        default: smoke
+        default: pr
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -115,12 +115,12 @@ jobs:
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
           chmod +x ./scripts/matrix.sh
-          if [[ "${{ inputs.scope }}" == "full" ]]; then
-            CONFIG_FILE="./workflow-config/kafka_full.yaml"
-          elif [[ "${{ inputs.scope }}" == "smoke" ]]; then
+          if [[ "${{ inputs.scope }}" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/kafka_nightly.yaml"
+          elif [[ "${{ inputs.scope }}" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/kafka.yaml"
           else
-            echo "::error::Invalid scope parameter. Must be 'smoke' or 'full'."
+            echo "::error::Invalid scope parameter '${{ inputs.scope }}'. Must be 'pr' or 'nightly'."
             exit 1
           fi
           ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" "$CONFIG_FILE" "${{ inputs.service_branch }}"
@@ -260,14 +260,6 @@ jobs:
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.kafka_service_template }}' \
             --path='global/secrets/backupDaemon/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
-          && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.kafka_template }}' \
-            --path='backupDaemon/s3/keyId' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-          && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.kafka_service_template }}' \
-            --path='backupDaemon/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End update YAML secrets if needed =======
 
