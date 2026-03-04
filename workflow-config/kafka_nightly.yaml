@@ -87,4 +87,5 @@ jobs:
     sequence: install
     storage: s3
     artifact_name: "Clean_CURRENT_S3"
-    test_tags: kafka
+    ##return backup after fix qubership-kafka/issues/214
+    test_tags: kafkaNOTbackup

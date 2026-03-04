@@ -56,9 +56,8 @@ backupDaemon:
     enabled: true
     url: https://s3.amazonaws.com/
     bucket: test-pipelines-storage
-    keyId: ''
-    keySecret: ''
 integrationTests:
   install: true
   waitForResult: true
-  tags: kafka_crudORaclORbackup
+  #return backup after fix qubership-kafka/issues/214
+  tags: kafka_crudORacl
