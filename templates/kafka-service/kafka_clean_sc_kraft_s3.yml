@@ -60,4 +60,4 @@ integrationTests:
   install: true
   waitForResult: true
   #return backup after fix qubership-kafka/issues/214
-  tags: kafka_crudORacl
+  tags: kafka_crudORaclORbackup
