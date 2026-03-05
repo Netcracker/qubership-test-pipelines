@@ -59,4 +59,5 @@ backupDaemon:
 integrationTests:
   install: true
   waitForResult: true
-  tags: kafkaNOTbackup
+  #return backup after fix qubership-kafka/issues/214
+  tags: kafka_crudORacl

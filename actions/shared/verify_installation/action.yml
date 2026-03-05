@@ -161,7 +161,7 @@ runs:
           fi
 
     - name: Get logs from test pod
-      if: ${{ inputs.check_tests == 'true' }}
+      if: always() && inputs.check_tests == 'true'
       shell: bash
       # language=bash
       run: |
