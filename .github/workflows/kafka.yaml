@@ -237,6 +237,7 @@ jobs:
       - name: Print install deployment parameters
         if: matrix.test.zookeeper == true
         run: cat qubership-test-pipelines/${{ matrix.test.zookeeper_template }}
+
       - name: Clean Install Zookeeper [LATEST]
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -250,6 +251,7 @@ jobs:
           namespace: 'zookeeper'
   
       - name: Verify Zookeeper installation
+        if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           service_branch: 'main'
