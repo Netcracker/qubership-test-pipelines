@@ -30,3 +30,7 @@ rules:
 
   brackets:
     max-spaces-inside: 1
+
+  quoted-strings:
+    quote-type: double
+    required: only-when-needed
