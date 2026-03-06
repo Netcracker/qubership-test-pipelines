@@ -173,6 +173,7 @@ jobs:
 
       - name: Install Opensearch [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: opensearch_install
         with:
           path_to_template: '${{ matrix.test.template }}'
           service_branch: '${{ matrix.test.install_version }}'
@@ -191,15 +192,22 @@ jobs:
       - name: Verify Opensearch installation [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: 'opensearch'
           service_branch: '${{ matrix.test.install_version }}'
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          check_tests: true
+          namespace: 'opensearch'
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.install_opensearch_get_crds.outputs.crd_names }}
-          check_tests: true
+
+      - name: Collect Diagnostics Opensearch installation [${{ matrix.test.install_version }}]
+        if: ${{ !cancelled() && steps.opensearch_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'opensearch'
           artifact_name: Installation_${{ matrix.test.artifact_name }}
+          service_branch: '${{ matrix.test.install_version }}'
 
       - name: Get Opensearch secrets
         if: ${{ matrix.test.tls == true }}
@@ -219,6 +227,7 @@ jobs:
       - name: Upgrade Opensearch to [${{ matrix.test.upgrade_version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: opensearch_upgrade
         with:
           path_to_template: '${{ matrix.test.upgrade_template }}'
           service_branch: '${{ matrix.test.upgrade_version }}'
@@ -244,15 +253,23 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: 'opensearch'
           service_branch: '${{ matrix.test.upgrade_version }}'
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          check_tests: true
+          namespace: 'opensearch'
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.upgrade_opensearch_get_crds.outputs.crd_names }}
-          check_tests: true
+
+      - name: Collect Diagnostics Opensearch upgrade to [${{ matrix.test.upgrade_version }}]
+        if: ${{ !cancelled() && steps.opensearch_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'opensearch'
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
+          service_branch: '${{ matrix.test.upgrade_version }}'
+
       # == End ===== Upgrade steps ============
 
   final-status-check:
