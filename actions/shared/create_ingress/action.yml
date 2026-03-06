@@ -1,7 +1,7 @@
-name: 'Create Ingress-Controller'
-description: 'A GitHub Action that install ingress-controller into kind cluster'
+name: Create Ingress-Controller
+description: A GitHub Action that install ingress-controller into kind cluster
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - name: install ingress-controller
       shell: bash

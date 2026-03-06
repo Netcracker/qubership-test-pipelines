@@ -2,18 +2,18 @@ global:
   name: zookeeper
   secrets:
     zooKeeper:
-      adminUsername: "zadmin"
-      adminPassword: "zadmin"
-      clientUsername: "zclient"
-      clientPassword: "zclient"
+      adminUsername: zadmin
+      adminPassword: zadmin
+      clientUsername: zclient
+      clientPassword: zclient
       additionalUsers: user:pass
     backupDaemon:
-      username: "admin"
-      password: "admin"
+      username: admin
+      password: admin
     integrationTests:
       prometheus:
-        user: "admin"
-        password: "admin"
+        user: admin
+        password: admin
   tls:
     enabled: true
     cipherSuites: []
@@ -38,13 +38,13 @@ zooKeeper:
     enabled: true
     secretName: zookeeper-tls-secret
     certificates:
-      crt: ''
-      key: ''
-      ca: ''
+      crt: ""
+      key: ""
+      ca: ""
 backupDaemon:
   install: true
   backupStorage:
-    persistentVolumeType: "standalone"
+    persistentVolumeType: standalone
     storageClass: standard
     volumeSize: 1Gi
   securityContext:
@@ -53,9 +53,9 @@ backupDaemon:
   tls:
     secretName: zookeeper-backup-daemon-tls-secret
     certificates:
-      crt: ''
-      key: ''
-      ca: ''
+      crt: ""
+      key: ""
+      ca: ""
 monitoring:
   install: false
   securityContext:
@@ -63,7 +63,7 @@ monitoring:
     runAsUser: 1000
 integrationTests:
   install: true
-  tags: "zookeeper_crud"
+  tags: zookeeper_crud
   timeout: 900
   waitForResult: true
   securityContext:

@@ -1,5 +1,5 @@
-name: 'Verify Installation Action'
-description: 'A GitHub Action to verify Kubernetes deployments including status checks and test validation.'
+name: Verify Installation Action
+description: A GitHub Action to verify Kubernetes deployments including status checks and test validation.
 inputs:
   namespace:
     description: |
@@ -52,7 +52,7 @@ inputs:
     default: ""
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Initialize error flag
       shell: bash
@@ -79,7 +79,7 @@ runs:
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
 
-          if [ "$cr_success" = "false" ]; then
+          if [ $cr_success = "false" ]; then
             set +e
             ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"
             cr_exit_code=$?
@@ -104,7 +104,7 @@ runs:
             esac
           fi
         done
-        if [[ "${{ inputs.monitoring_pipeline }}" == "true" ]]; then
+        if [[ ${{ inputs.monitoring_pipeline }} == "true" ]]; then
           # ▶️ Check monitoring CRs statuses
           echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
           chmod +x ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh
@@ -115,7 +115,7 @@ runs:
         fi
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
-          if [ "$resources_success" = "false" ]; then
+          if [ $resources_success = "false" ]; then
             set +e
             ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
             resources_exit_code=$?
@@ -134,14 +134,14 @@ runs:
           fi
         done
 
-          if [ "$cr_success" = "true" ] && [ "$resources_success" = "true" ]; then
+          if [ $cr_success = "true" ] && [ $resources_success = "true" ]; then
             echo "✅ All checks completed successfully!"
           fi
-          if [ "$cr_success" = "false" ]; then
+          if [ $cr_success = "false" ]; then
             echo "::error:: ❌ CR check not successful after ${{inputs.service_ready_max_retries}} retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
-          if [ "$resources_success" = "false" ]; then
+          if [ $resources_success = "false" ]; then
             echo "::error:: ❌ Resources not ready after ${{inputs.service_ready_max_retries}} retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
@@ -201,7 +201,7 @@ runs:
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
 
-          if [ "$cr_success" = "false" ]; then
+          if [ $cr_success = "false" ]; then
             set +e
             ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"
             cr_exit_code=$?
@@ -226,7 +226,7 @@ runs:
             esac
           fi
         done
-        if [[ "${{ inputs.monitoring_pipeline }}" == "true" ]]; then
+        if [[ ${{ inputs.monitoring_pipeline }} == "true" ]]; then
           # ▶️ Check monitoring CRs statuses
           echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
           chmod +x ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh
@@ -237,7 +237,7 @@ runs:
         fi
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
-          if [ "$resources_success" = "false" ]; then
+          if [ $resources_success = "false" ]; then
             set +e
             ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
             resources_exit_code=$?
@@ -256,14 +256,14 @@ runs:
           fi
         done
 
-          if [ "$cr_success" = "true" ] && [ "$resources_success" = "true" ]; then
+          if [ $cr_success = "true" ] && [ $resources_success = "true" ]; then
             echo "✅ All checks completed successfully!"
           fi
-          if [ "$cr_success" = "false" ]; then
+          if [ $cr_success = "false" ]; then
             echo "::error:: ❌ CR check not successful after ${{inputs.service_ready_max_retries}} retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
-          if [ "$resources_success" = "false" ]; then
+          if [ $resources_success = "false" ]; then
             echo "::error:: ❌ Resources not ready after ${{inputs.service_ready_max_retries}} retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
@@ -312,7 +312,7 @@ runs:
       # language=bash
       run: |
         # ▶️ Check deploy status
-        if [[ "${{ env.ERROR_FLAG }}" == "true" ]]; then
+        if [[ ${{ env.ERROR_FLAG }} == "true" ]]; then
           echo "::error:: ❌ Service was installed with errors!"
           exit 1
         else

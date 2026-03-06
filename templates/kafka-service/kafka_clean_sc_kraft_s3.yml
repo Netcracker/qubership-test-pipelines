@@ -13,8 +13,8 @@ global:
       username: admin
       password: admin
       s3:
-        keyId: ''
-        keySecret: ''
+        keyId: ""
+        keySecret: ""
 kafka:
   install: true
   kraft:

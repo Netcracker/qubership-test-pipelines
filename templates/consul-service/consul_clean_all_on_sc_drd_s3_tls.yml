@@ -56,14 +56,14 @@ backupDaemon:
     enabled: true
     url: https://s3.amazonaws.com/
     bucket: test-pipelines-storage
-    keyId: ''
-    keySecret: ''
+    keyId: ""
+    keySecret: ""
 integrationTests:
   enabled: true
   secret:
     prometheus:
       user: admin
-      password: ''
+      password: ""
   tags: backupORcrudORhaORbackup
 statusProvisioner:
   lifetimeAfterCompletion: 120

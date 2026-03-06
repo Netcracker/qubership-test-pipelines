@@ -4,27 +4,27 @@ on:
   workflow_dispatch:
     inputs:
       repository_name:
-        description: 'Repository with Pgskipper service'
+        description: Repository with Pgskipper service
         required: false
         type: string
-        default: 'Netcracker/pgskipper-operator'
+        default: Netcracker/pgskipper-operator
       service_branch:
-        description: 'Branch of pgskipper-operator repository'
+        description: Branch of pgskipper-operator repository
         required: false
         type: string
-        default: 'main'
+        default: main
       pipeline_branch:
-        description: 'Branch of qubership-test-pipelines repository'
+        description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: 'main'
+        default: main
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       service_versions_json:
-        description: 'PostgreSQL image versions as JSON'
+        description: PostgreSQL image versions as JSON
         type: string
         required: false
         default: |
@@ -37,27 +37,27 @@ on:
   workflow_call:
     inputs:
       repository_name:
-        description: 'Repository with Pgskipper service'
+        description: Repository with Pgskipper service
         required: false
         type: string
-        default: 'Netcracker/pgskipper-operator'
+        default: Netcracker/pgskipper-operator
       service_branch:
-        description: 'Branch of pgskipper-operator repository'
+        description: Branch of pgskipper-operator repository
         required: false
         type: string
-        default: 'main'
+        default: main
       pipeline_branch:
-        description: 'Branch of qubership-test-pipelines repository'
+        description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: 'main'
+        default: main
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       service_versions_json:
-        description: 'PostgreSQL image versions as JSON'
+        description: PostgreSQL image versions as JSON
         type: string
         required: false
         default: |
@@ -84,16 +84,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: '${{ inputs.service_branch }}'
-          repository: '${{ inputs.repository_name }}'
-          path: 'pgskipper-operator'
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: pgskipper-operator
 
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: ${{ github.repository_owner }}/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Get latest tag
         id: get-latest-tag
@@ -106,7 +106,7 @@ jobs:
 
       - name: Process versions file and matrix generation
         id: process-versions
-        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
           ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/pgskipper.yaml "${{ inputs.service_branch }}"
@@ -126,10 +126,10 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
         service_image: ${{ fromJson(needs.prepare.outputs.service_images) }}
-    name: "${{ matrix.service_image }} | ${{ matrix.test.name }}"
+    name: ${{ matrix.service_image }} | ${{ matrix.test.name }}
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
-      - name: "Print job parameters"
+      - name: Print job parameters
         run: |
           echo "======== Job parameters ======="
           echo "${{ toJson(matrix.test) }}"
@@ -137,9 +137,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Free Disk Space (Ubuntu)
         if: inputs.runner_type == 'ubuntu-latest'
@@ -190,15 +190,15 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: core_install
         with:
-          path_to_template: '${{ matrix.test.core_template }}'
-          service_branch: '${{ matrix.test.install_version }}'
-          deploy_mode: 'install'
+          path_to_template: ${{ matrix.test.core_template }}
+          service_branch: ${{ matrix.test.install_version }}
+          deploy_mode: install
           restricted: ${{ matrix.test.restricted }}
-          service_name: 'pgskipper'
-          repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'operator/charts/patroni-core'
-          namespace: 'pgskipper'
-          resource_folder: ''
+          service_name: pgskipper
+          repository_name: Netcracker/pgskipper-operator
+          path_to_chart: operator/charts/patroni-core
+          namespace: pgskipper
+          resource_folder: ""
           image_replacement: ${{ matrix.service_image }}
 
       - name: Sleep after core install
@@ -207,23 +207,23 @@ jobs:
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.install_version }}'
-          check_tests: '${{ matrix.test.check_core_tests }}'
-          namespace: 'pgskipper'
+          service_branch: ${{ matrix.test.install_version }}
+          check_tests: ${{ matrix.test.check_core_tests }}
+          namespace: pgskipper
           service_ready_max_retries: 60
-          service_ready_retry_interval: '10s'
+          service_ready_retry_interval: 10s
           test_completion_max_retries: 60
-          test_completion_retry_interval: '10s'
-          crd_list: 'patronicores.netcracker.com'
+          test_completion_retry_interval: 10s
+          crd_list: patronicores.netcracker.com
 
       - name: Collect Diagnostics Core installation
         if: ${{ !cancelled() && steps.core_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'pgskipper'
-          artifact_name: 'Core_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
-          service_branch: '${{ matrix.test.install_version }}'
-          matrix_version: '${{ matrix.service_image }}'
+          namespace: pgskipper
+          artifact_name: Core_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.install_version }}
+          matrix_version: ${{ matrix.service_image }}
       # == 02 End ======= Core installation steps =======
 
       # == 03 Start ======= Services installation steps =======
@@ -231,13 +231,13 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: services_install
         with:
-          path_to_template: '${{ matrix.test.services_template }}'
-          service_branch: '${{ matrix.test.install_version }}'
-          service_name: 'pgskipper-services'
+          path_to_template: ${{ matrix.test.services_template }}
+          service_branch: ${{ matrix.test.install_version }}
+          service_name: pgskipper-services
           restricted: ${{ matrix.test.restricted }}
-          repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'operator/charts/patroni-services'
-          namespace: 'pgskipper'
+          repository_name: Netcracker/pgskipper-operator
+          path_to_chart: operator/charts/patroni-services
+          namespace: pgskipper
 
       - name: Sleep after services install
         run: sleep 10s
@@ -245,23 +245,23 @@ jobs:
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.install_version }}'
-          check_tests: '${{ matrix.test.check_services_tests }}'
-          namespace: 'pgskipper'
+          service_branch: ${{ matrix.test.install_version }}
+          check_tests: ${{ matrix.test.check_services_tests }}
+          namespace: pgskipper
           service_ready_max_retries: 60
-          service_ready_retry_interval: '10s'
+          service_ready_retry_interval: 10s
           test_completion_max_retries: 60
-          test_completion_retry_interval: '10s'
-          crd_list: 'patroniservices.netcracker.com'
+          test_completion_retry_interval: 10s
+          crd_list: patroniservices.netcracker.com
 
       - name: Collect Diagnostics Services installation
         if: ${{ !cancelled() && steps.services_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'pgskipper'
-          artifact_name: 'Services_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
-          service_branch: '${{ matrix.test.install_version }}'
-          matrix_version: '${{ matrix.service_image }}'
+          namespace: pgskipper
+          artifact_name: Services_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.install_version }}
+          matrix_version: ${{ matrix.service_image }}
       # == 03 End ======= Services installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
@@ -270,15 +270,15 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: core_upgrade
         with:
-          deploy_mode: 'upgrade'
-          path_to_template: '${{ matrix.test.upgrade_core_template }}'
-          service_branch: '${{ matrix.test.upgrade_version }}'
+          deploy_mode: upgrade
+          path_to_template: ${{ matrix.test.upgrade_core_template }}
+          service_branch: ${{ matrix.test.upgrade_version }}
           restricted: ${{ matrix.test.restricted }}
-          service_name: 'pgskipper'
-          repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'operator/charts/patroni-core'
-          namespace: 'pgskipper'
-          resource_folder: ''
+          service_name: pgskipper
+          repository_name: Netcracker/pgskipper-operator
+          path_to_chart: operator/charts/patroni-core
+          namespace: pgskipper
+          resource_folder: ""
           image_replacement: ${{ matrix.service_image }}
 
       - name: Sleep after core upgrade
@@ -291,21 +291,21 @@ jobs:
         with:
           service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
-          namespace: 'pgskipper'
+          namespace: pgskipper
           service_ready_max_retries: 60
-          service_ready_retry_interval: '10s'
+          service_ready_retry_interval: 10s
           test_completion_max_retries: 60
-          test_completion_retry_interval: '10s'
-          crd_list: 'patronicores.netcracker.com'
+          test_completion_retry_interval: 10s
+          crd_list: patronicores.netcracker.com
 
       - name: Collect Diagnostics Core upgrade
         if: ${{ !cancelled() && steps.core_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'pgskipper'
-          artifact_name: 'Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
+          namespace: pgskipper
+          artifact_name: Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.upgrade_version }}
-          matrix_version: '${{ matrix.service_image }}'
+          matrix_version: ${{ matrix.service_image }}
 
       - name: Upgrade Pgskipper Services to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
@@ -313,13 +313,13 @@ jobs:
         id: services_upgrade
         with:
           deploy_mode: upgrade
-          path_to_template: '${{ matrix.test.upgrade_services_template }}'
-          service_branch: '${{ matrix.test.upgrade_version }}'
-          service_name: 'pgskipper-services'
+          path_to_template: ${{ matrix.test.upgrade_services_template }}
+          service_branch: ${{ matrix.test.upgrade_version }}
+          service_name: pgskipper-services
           restricted: ${{ matrix.test.restricted }}
-          repository_name: 'Netcracker/pgskipper-operator'
-          path_to_chart: 'operator/charts/patroni-services'
-          namespace: 'pgskipper'
+          repository_name: Netcracker/pgskipper-operator
+          path_to_chart: operator/charts/patroni-services
+          namespace: pgskipper
 
       - name: Sleep after services upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -329,23 +329,23 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.upgrade_version }}'
-          check_tests: '${{ matrix.test.check_services_tests }}'
-          namespace: 'pgskipper'
+          service_branch: ${{ matrix.test.upgrade_version }}
+          check_tests: ${{ matrix.test.check_services_tests }}
+          namespace: pgskipper
           service_ready_max_retries: 60
-          service_ready_retry_interval: '10s'
+          service_ready_retry_interval: 10s
           test_completion_max_retries: 60
-          test_completion_retry_interval: '10s'
-          crd_list: 'patroniservices.netcracker.com'
+          test_completion_retry_interval: 10s
+          crd_list: patroniservices.netcracker.com
 
       - name: Collect Diagnostics Services installation
         if: ${{ !cancelled() && steps.services_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'pgskipper'
-          artifact_name: 'Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}'
-          service_branch: '${{ matrix.test.upgrade_version }}'
-          matrix_version: '${{ matrix.service_image }}'
+          namespace: pgskipper
+          artifact_name: Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade_version }}
+          matrix_version: ${{ matrix.service_image }}
       # == End ======= Specific steps for upgrade tests =======
 
       # == Start ======= Diagnostic steps =======
@@ -371,9 +371,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:
