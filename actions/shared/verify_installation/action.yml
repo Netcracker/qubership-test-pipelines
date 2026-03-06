@@ -1,5 +1,6 @@
 name: 'Verify Installation Action'
 description: 'A GitHub Action to verify Kubernetes deployments including status checks and test validation.'
+description: 'A GitHub Action to verify Kubernetes deployments including status checks and test validation.'
 inputs:
   namespace:
     description: |
@@ -136,17 +137,14 @@ runs:
 
           if [ "$cr_success" = "true" ] && [ "$resources_success" = "true" ]; then
             echo "✅ All checks completed successfully!"
-            exit 0
           fi
           if [ "$cr_success" = "false" ]; then
             echo "::error:: ❌ CR check not successful after ${{inputs.service_ready_max_retries}} retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
-            exit 1
           fi
           if [ "$resources_success" = "false" ]; then
             echo "::error:: ❌ Resources not ready after ${{inputs.service_ready_max_retries}} retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
-            exit 1
           fi
 
     - name: Get logs from test pod
