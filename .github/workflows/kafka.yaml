@@ -213,6 +213,7 @@ jobs:
 
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        if: matrix.test.monitoring == true
         with:
           namespace: monitoring
           service_branch: 'main'
