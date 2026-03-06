@@ -187,7 +187,7 @@ jobs:
       - name: Sleep 2m
         if: matrix.test.sequence == 'upgrade'
         run: sleep 2m
-      
+
       - name: Verify Monitoring upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation

@@ -238,7 +238,7 @@ jobs:
           repository_name: 'Netcracker/pgskipper-operator'
           path_to_chart: 'operator/charts/patroni-services'
           namespace: 'pgskipper'
-        
+
       - name: Sleep after services install
         run: sleep 10s
 
@@ -253,7 +253,7 @@ jobs:
           test_completion_max_retries: 60
           test_completion_retry_interval: '10s'
           crd_list: 'patroniservices.netcracker.com'
-      
+
       - name: Collect Diagnostics Services installation
         if: ${{ !cancelled() && steps.services_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
@@ -337,7 +337,7 @@ jobs:
           test_completion_max_retries: 60
           test_completion_retry_interval: '10s'
           crd_list: 'patroniservices.netcracker.com'
-      
+
       - name: Collect Diagnostics Services installation
         if: ${{ !cancelled() && steps.services_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
