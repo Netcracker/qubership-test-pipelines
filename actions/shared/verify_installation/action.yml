@@ -1,6 +1,5 @@
 name: 'Verify Installation Action'
 description: 'A GitHub Action to verify Kubernetes deployments including status checks and test validation.'
-description: 'A GitHub Action to verify Kubernetes deployments including status checks and test validation.'
 inputs:
   namespace:
     description: |
