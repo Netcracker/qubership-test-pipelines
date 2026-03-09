@@ -16,7 +16,7 @@ echo "Max attempts: $MAX_ATTEMPTS, sleep: $SLEEP_SEC sec"
 echo "Expected JSON: $EXPECTED_JSON"
 
 # --- 1. Get install_map from PlatformMonitoring ---
-install_map=$(kubectl get $CRD_LIST platformmonitoring \
+install_map=$(kubectl get "$CRD_LIST" platformmonitoring \
   -n "$NAMESPACE" -o json | jq '{
   grafana:        (.spec.grafana.install // false),
   vmAgent:        (.spec.victoriametrics.vmAgent.install // false),

@@ -1,5 +1,5 @@
 postgresUser: postgres
-postgresPassword: "p@ssWOrD1"
+postgresPassword: p@ssWOrD1
 operator:
   resources:
     limits:
@@ -26,8 +26,8 @@ metricCollector:
 backupDaemon:
   install: true
   walArchiving: false
-  backupSchedule: "0 0/7 * * *"
-  evictionPolicy: "7d/delete"
+  backupSchedule: 0 0/7 * * *
+  evictionPolicy: 7d/delete
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
@@ -43,5 +43,5 @@ backupDaemon:
     size: 1Gi
     storageClass: standard
 tests:
-  install: false
-  runTestScenarios: "full"
+  install: true
+  runTestScenarios: full

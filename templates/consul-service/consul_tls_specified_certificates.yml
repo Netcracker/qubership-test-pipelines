@@ -16,8 +16,8 @@ global:
 server:
   tls:
     certificates:
-      crt: ''
-      key: ''
+      crt: ""
+      key: ""
   replicas: 3
   bootstrapExpect: 3
   storage: 1Gi
@@ -41,8 +41,8 @@ client:
   enabled: true
   tls:
     certificates:
-      crt: ''
-      key: ''
+      crt: ""
+      key: ""
   resources:
     requests:
       memory: 64Mi
@@ -54,8 +54,8 @@ backupDaemon:
   enabled: true
   tls:
     certificates:
-      crt: ''
-      key: ''
+      crt: ""
+      key: ""
   storage: 1Gi
   storageClass: standard
   backupSchedule: "*/15 * * * *"
@@ -67,4 +67,3 @@ integrationTests:
 statusProvisioner:
   integrationTestsTimeout: 1500
   podReadinessTimeout: 900
-

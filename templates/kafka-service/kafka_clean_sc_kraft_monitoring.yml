@@ -58,4 +58,4 @@ integrationTests:
   install: true
   waitForResult: true
   tags: kafka
-  prometheusUrl: "http://vmsingle-k8s.monitoring:8429"
+  prometheusUrl: http://vmsingle-k8s.monitoring:8429
