@@ -1,43 +1,43 @@
-name: "Helm deploy Action for Rabbitmq"
-description: "GitHub Action for install/upgrade Rabbitmq using Helm"
+name: Helm deploy Action for Rabbitmq
+description: GitHub Action for install/upgrade Rabbitmq using Helm
 inputs:
   deploy_mode:
-    description: 'See helm_deploy.deploy_mode'
+    description: See helm_deploy.deploy_mode
     required: true
-    default: 'install'
+    default: install
   restricted:
-    description: 'See helm_deploy.restricted'
+    description: See helm_deploy.restricted
     required: true
     default: "false"
     type: boolean
   path_to_template:
-    description: 'See helm_deploy.path_to_template'
+    description: See helm_deploy.path_to_template
     required: true
   service_branch:
-    description: 'branch name in repository with service'
+    description: branch name in repository with service
     required: true
   service_name:
-    description: 'See helm_deploy.service_name'
+    description: See helm_deploy.service_name
     required: true
-    default: 'rabbitmq'
+    default: rabbitmq
   repository_name:
-    description: 'See helm_deploy.repository_name'
+    description: See helm_deploy.repository_name
     required: true
-    default: 'Netcracker/qubership-rabbitmq'
+    default: Netcracker/qubership-rabbitmq
   path_to_chart:
-    description: 'See helm_deploy.path_to_chart'
+    description: See helm_deploy.path_to_chart
     required: true
-    default: 'operator/charts/helm/rabbitmq'
+    default: operator/charts/helm/rabbitmq
   namespace:
-    description: 'See helm_deploy.namespace'
+    description: See helm_deploy.namespace
     required: true
-    default: 'rabbitmq'
+    default: rabbitmq
   resource_folder:
-    description: 'See helm_deploy.resource_folder'
+    description: See helm_deploy.resource_folder
     required: true
     default: ""
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - name: Run helm_install action for Rabbitmq
       uses: ./qubership-test-pipelines/actions/shared/helm_deploy

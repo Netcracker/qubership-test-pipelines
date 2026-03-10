@@ -1,5 +1,5 @@
-name: 'Create Restricted Resources Action'
-description: 'A GitHub Action to create resources before restricted installation'
+name: Create Restricted Resources Action
+description: A GitHub Action to create resources before restricted installation
 inputs:
   service_name:
     description: |
@@ -24,7 +24,7 @@ inputs:
     required: true
 
 runs:
-  using: 'composite'
+  using: composite
   steps:
 # Create CRD
     - name: Create ClusterRoles

@@ -1,6 +1,6 @@
 global:
   privilegedRights: true
-  profile: "small"
+  profile: small
 role:
   install: true
 roleBinding:
@@ -24,7 +24,7 @@ monitoringOperator:
       # labels: {}
   serviceAccount:
     install: true
-    name: "monitoring-operator"
+    name: monitoring-operator
   # tolerations: []
   # nodeSelector: {}
   # affinity: {}
@@ -37,25 +37,25 @@ monitoringOperator:
     metricRelabelings:
       - action: drop
         regex: controller_runtime_reconcile_time_seconds_bucket;(0.005|0.01|0.025|0.05|0.15|0.2|0.25|0.3|0.35|0.4|0.45|0.6|0.7|0.8|0.9|1.25|1.5|1.75|2.5|3|3.5|4|4.5|6|7|8|9|15|20|25|40|50)
-        sourceLabels: ['__name__', 'le']
+        sourceLabels: [__name__, le]
     # relabelings: []
 grafana:
   install: true
   ingress:
-    host: "grafana.testdomain.local"
+    host: grafana.testdomain.local
 victoriametrics:
   vmOperator:
     install: true
   vmAgent:
     install: true
     ingress:
-      host: "vmagent.testdomain.local"
+      host: vmagent.testdomain.local
       install: true
   vmSingle:
     install: true
     ingress:
       install: true
-      host: "vmsingle.testdomain.local"
+      host: vmsingle.testdomain.local
     storage:
       accessModes:
         - ReadWriteOnce
@@ -66,12 +66,12 @@ victoriametrics:
   vmAlertManager:
     install: true
     ingress:
-      host: "vmalertmanager.testdomain.local"
+      host: vmalertmanager.testdomain.local
       install: true
   vmAlert:
     install: true
     ingress:
-      host: "vmalert.testdomain.local"
+      host: vmalert.testdomain.local
       install: true
 alertManager:
   install: true
@@ -86,7 +86,7 @@ alertManager:
   # containers: []
   replicas: 1
   ingress: {
-    host: "alertmanager.testdomain.local"
+    host: alertmanager.testdomain.local
   }
   # securityContext: {}
   # tolerations: []
@@ -164,22 +164,22 @@ kubernetesMonitors:
     scrapeTimeout: 10s
     metricRelabelings:
       - action: keep
-        sourceLabels: ['__name__']
-        regex: 'apiserver_request_(.*)|apiserver_storage_(.*)|workqueue_(.*)|etcd_(.*)|process_(.*)|go_(.*)'
+        sourceLabels: [__name__]
+        regex: apiserver_request_(.*)|apiserver_storage_(.*)|workqueue_(.*)|etcd_(.*)|process_(.*)|go_(.*)
       - action: drop
-        regex: 'apiserver_request_duration_seconds_bucket;(0.005|0.05|0.8|1.25|3|4|5|6|8|15|20|45)'
-        sourceLabels: ['__name__', 'le']
+        regex: apiserver_request_duration_seconds_bucket;(0.005|0.05|0.8|1.25|3|4|5|6|8|15|20|45)
+        sourceLabels: [__name__, le]
       - action: drop
-        regex: 'etcd_request_duration_seconds_bucket;(0.005|0.8|1.25|1.5|3|4|5|6|8|15|20|45)'
-        sourceLabels: ['__name__', 'le']
+        regex: etcd_request_duration_seconds_bucket;(0.005|0.8|1.25|1.5|3|4|5|6|8|15|20|45)
+        sourceLabels: [__name__, le]
       - action: drop
-        regex: 'apiserver_request_(slo|sli)_duration_seconds_.*'
-        sourceLabels: ['__name__']
+        regex: apiserver_request_(slo|sli)_duration_seconds_.*
+        sourceLabels: [__name__]
     relabelings:
       - action: replace
-        sourceLabels: ['job']
-        targetLabel: 'job'
-        replacement: 'kube-apiserver'
+        sourceLabels: [job]
+        targetLabel: job
+        replacement: kube-apiserver
   kubeControllerManagerServiceMonitor:
     install: false
     interval: 30s
@@ -187,12 +187,12 @@ kubernetesMonitors:
     metricRelabelings:
       - action: drop
         regex: etcd_(debugging|disk|request|server).*
-        sourceLabels: ['__name__']
+        sourceLabels: [__name__]
     relabelings:
       - action: replace
         regex: (.+)(?::\d+)
         replacement: $1:10252
-        sourceLabels: ['__address__']
+        sourceLabels: [__address__]
         targetLabel: __address__
   kubeSchedulerServiceMonitor:
     install: true
@@ -203,7 +203,7 @@ kubernetesMonitors:
       - action: replace
         regex: (.+)(?::\d+)
         replacement: $1:10251
-        sourceLabels: ['__address__']
+        sourceLabels: [__address__]
         targetLabel: __address__
   kubeletServiceMonitor:
     install: true
@@ -213,15 +213,15 @@ kubernetesMonitors:
       - action: drop
         regex: container_start_time_seconds;\/metrics\/resource
         separator: ;
-        sourceLabels: ['__name__', 'metrics_path']
+        sourceLabels: [__name__, metrics_path]
       - action: labeldrop
         regex: metrics_path
       - action: replace
-        sourceLabels: ['pod_name']
+        sourceLabels: [pod_name]
         targetLabel: pod
         regex: (.+)
       - action: replace
-        sourceLabels: ['container_name']
+        sourceLabels: [container_name]
         targetLabel: container
         regex: (.+)
       - action: labeldrop
@@ -229,24 +229,24 @@ kubernetesMonitors:
       - action: labeldrop
         regex: container_name
       - action: replace
-        regex: 'kubelet_running_pods'
-        replacement: 'kubelet_running_pod_count'
-        sourceLabels: ['__name__']
+        regex: kubelet_running_pods
+        replacement: kubelet_running_pod_count
+        sourceLabels: [__name__]
         targetLabel: __name__
       - action: replace
-        regex: 'kubelet_running_containers'
-        replacement: 'kubelet_running_container_count'
-        sourceLabels: ['__name__']
+        regex: kubelet_running_containers
+        replacement: kubelet_running_container_count
+        sourceLabels: [__name__]
         targetLabel: __name__
       - action: drop
-        regex: 'container_tasks_state'
-        sourceLabels: ['__name__']
+        regex: container_tasks_state
+        sourceLabels: [__name__]
       - action: drop
-        regex: 'container_blkio_device_usage_total'
-        sourceLabels: ['__name__']
+        regex: container_blkio_device_usage_total
+        sourceLabels: [__name__]
       - action: drop
-        regex: 'container_memory_failures_total'
-        sourceLabels: ['__name__']
+        regex: container_memory_failures_total
+        sourceLabels: [__name__]
       - action: labeldrop
         regex: id
     relabelings:
@@ -265,7 +265,7 @@ kubernetesMonitors:
       - action: replace
         regex: (.*)
         replacement: $1
-        sourceLabels: ['__meta_kubernetes_pod_node_name']
+        sourceLabels: [__meta_kubernetes_pod_node_name]
         targetLabel: node
   nginxIngressPodMonitor:
     install: true
@@ -273,28 +273,28 @@ kubernetesMonitors:
     scrapeTimeout: 10s
     metricRelabelings:
       - action: drop
-        regex: 'nginx_ingress_controller_response_size_bucket'
-        sourceLabels: ['__name__']
+        regex: nginx_ingress_controller_response_size_bucket
+        sourceLabels: [__name__]
       - action: drop
-        regex: 'nginx_ingress_controller_request_size_bucket'
-        sourceLabels: ['__name__']
+        regex: nginx_ingress_controller_request_size_bucket
+        sourceLabels: [__name__]
       - action: drop
-        regex: 'nginx_ingress_controller_connect_duration_seconds_bucket'
-        sourceLabels: ['__name__']
+        regex: nginx_ingress_controller_connect_duration_seconds_bucket
+        sourceLabels: [__name__]
       - action: drop
-        regex: 'nginx_ingress_controller_header_duration_seconds_bucket'
-        sourceLabels: ['__name__']
+        regex: nginx_ingress_controller_header_duration_seconds_bucket
+        sourceLabels: [__name__]
       - action: drop
-        regex: 'nginx_ingress_controller_bytes_sent_bucket'
-        sourceLabels: ['__name__']
+        regex: nginx_ingress_controller_bytes_sent_bucket
+        sourceLabels: [__name__]
       - action: drop
-        regex: 'nginx_ingress_controller_orphan_ingress'
-        sourceLabels: ['__name__']
+        regex: nginx_ingress_controller_orphan_ingress
+        sourceLabels: [__name__]
     relabelings:
       - action: replace
         regex: (.*)
         replacement: $1
-        sourceLabels: ['__meta_kubernetes_pod_node_name']
+        sourceLabels: [__meta_kubernetes_pod_node_name]
         targetLabel: node
   openshiftApiserverServiceMonitor:
     install: true
@@ -408,7 +408,7 @@ pushgateway:
     relabelings: []
   ingress: {
     install: "true",
-    host: "pushgateway.testdomain.local"
+    host: pushgateway.testdomain.local
   }
   # nodeSelector: {}
   # affinity: {}
@@ -434,7 +434,7 @@ integrationTests:
     enabled: true
     isShortStatusMessage: true
     onlyIntegrationTests: true
-    customResourcePath: "monitoring.qubership.org/v1alpha1/monitoring/platformmonitorings/platformmonitoring"
+    customResourcePath: monitoring.qubership.org/v1alpha1/monitoring/platformmonitorings/platformmonitoring
 commonDashboards:
   install: true
 prometheusAdapter:

@@ -4,57 +4,57 @@ on:
   workflow_dispatch:
     inputs:
       repository_name:
-        description: 'Repository with Monitoring service'
+        description: Repository with Monitoring service
         required: false
         type: string
-        default: 'Netcracker/qubership-monitoring-operator'
+        default: Netcracker/qubership-monitoring-operator
       service_branch:
-        description: 'Branch of qubership-monitoring-operator repository'
+        description: Branch of qubership-monitoring-operator repository
         required: false
         type: string
-        default: 'main'
+        default: main
       pipeline_branch:
-        description: 'Branch of qubership-test-pipelines repository'
+        description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: 'main'
+        default: main
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       kind-layout:
-        description: 'Kind cluster layout (single-node or multi-node)'
+        description: Kind cluster layout (single-node or multi-node)
         type: string
         required: false
-        default: 'multi-node'
+        default: multi-node
   workflow_call:
     inputs:
       repository_name:
-        description: 'Repository with Monitoring service'
+        description: Repository with Monitoring service
         required: false
         type: string
-        default: 'Netcracker/qubership-monitoring-operator'
+        default: Netcracker/qubership-monitoring-operator
       service_branch:
-        description: 'Branch of qubership-monitoring-operator repository'
+        description: Branch of qubership-monitoring-operator repository
         required: false
         type: string
-        default: 'main'
+        default: main
       pipeline_branch:
-        description: 'Branch of qubership-test-pipelines repository'
+        description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: 'main'
+        default: main
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       kind-layout:
-        description: 'Kind cluster layout (single-node or multi-node)'
+        description: Kind cluster layout (single-node or multi-node)
         type: string
         required: false
-        default: 'multi-node'
+        default: multi-node
 
 jobs:
   prepare:
@@ -66,16 +66,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: '${{ inputs.service_branch }}'
-          repository: '${{ inputs.repository_name }}'
-          path: 'qubership-monitoring-operator'
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-monitoring-operator
 
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: ${{ github.repository_owner }}/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Get latest tag
         id: get-latest-tag
@@ -84,7 +84,7 @@ jobs:
 
       - name: Process versions file and matrix generation
         id: process-versions
-        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
           ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/monitoring.yaml "${{ inputs.service_branch }}"
@@ -98,14 +98,14 @@ jobs:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
     env:
-      path_to_chart: 'charts/qubership-monitoring-operator'
+      path_to_chart: charts/qubership-monitoring-operator
       test_completion_max_retries: 100
-      test_completion_retry_interval: '5s'
+      test_completion_retry_interval: 5s
       service_ready_max_retries: 100
-      service_ready_retry_interval: '5s'
+      service_ready_retry_interval: 5s
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
-      - name: "Print job parameters"
+      - name: Print job parameters
         run: |
           echo "======== Job parameters ======="
           echo "${{ toJson(matrix.test) }}"
@@ -113,14 +113,14 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: '${{ github.repository_owner }}/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: ${{ github.repository_owner }}/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
         with:
-          kind-layout: '${{ inputs.kind-layout }}'
+          kind-layout: ${{ inputs.kind-layout }}
 
       - name: Install Ingress Controller
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
@@ -131,25 +131,25 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_install
         with:
-          path_to_template: '${{ matrix.test.template }}'
-          service_branch: '${{ matrix.test.install_version }}'
-          service_name: 'monitoring'
-          repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'charts/qubership-monitoring-operator'
-          namespace: 'monitoring'
-          restricted: '${{ matrix.test.restricted }}'
+          path_to_template: ${{ matrix.test.template }}
+          service_branch: ${{ matrix.test.install_version }}
+          service_name: monitoring
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: charts/qubership-monitoring-operator
+          namespace: monitoring
+          restricted: ${{ matrix.test.restricted }}
 
       - name: Get Installed Monitoring CR name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
-          crd_location: '${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds'
+          crd_location: ${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds
 
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: 'monitoring'
-          service_branch: '${{ matrix.test.install_version }}'
+          namespace: monitoring
+          service_branch: ${{ matrix.test.install_version }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
@@ -157,15 +157,15 @@ jobs:
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           check_tests: true
           monitoring_pipeline: "true"
-          repository_name: '${{ inputs.repository_name }}'
+          repository_name: ${{ inputs.repository_name }}
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'monitoring'
-          artifact_name: 'Installation_${{ matrix.test.artifact_name }}'
-          service_branch: '${{ matrix.test.install_version }}'
+          namespace: monitoring
+          artifact_name: Installation_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.install_version }}
 
       # == 02 End ======= Installation steps =======
 
@@ -175,14 +175,14 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_upgrade
         with:
-          path_to_template: '${{ matrix.test.upgrade_template }}'
-          service_branch: '${{ matrix.test.upgrade_version }}'
-          deploy_mode: 'upgrade'
-          service_name: 'monitoring'
-          repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'charts/qubership-monitoring-operator'
-          namespace: 'monitoring'
-          restricted: '${{ matrix.test.restricted }}'
+          path_to_template: ${{ matrix.test.upgrade_template }}
+          service_branch: ${{ matrix.test.upgrade_version }}
+          deploy_mode: upgrade
+          service_name: monitoring
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: charts/qubership-monitoring-operator
+          namespace: monitoring
+          restricted: ${{ matrix.test.restricted }}
 
       - name: Sleep 2m
         if: matrix.test.sequence == 'upgrade'
@@ -192,23 +192,23 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: 'monitoring'
+          namespace: monitoring
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
-          service_branch: '${{ matrix.test.upgrade_version }}'
+          service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: true
           monitoring_pipeline: "true"
-          repository_name: '${{ inputs.repository_name }}'
+          repository_name: ${{ inputs.repository_name }}
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'monitoring'
-          artifact_name: 'Upgrade_${{ matrix.test.artifact_name }}'
-          service_branch: '${{ matrix.test.upgrade_version }}'
+          namespace: monitoring
+          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade_version }}
       # == End ======= Specific steps for upgrade tests =======
 
   final-status-check:
@@ -219,9 +219,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:

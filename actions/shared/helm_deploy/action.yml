@@ -1,5 +1,5 @@
-name: "Helm deploy Action"
-description: "GitHub Action to install/upgrade services using Helm"
+name: Helm deploy Action
+description: GitHub Action to install/upgrade services using Helm
 inputs:
   deploy_mode:
     description: |
@@ -7,7 +7,7 @@ inputs:
       - 'install' for clean installation
       - 'upgrade' to upgrade an existing release
     required: true
-    default: 'install'
+    default: install
 
   restricted:
     description: |
@@ -70,14 +70,14 @@ inputs:
 
 
 runs:
-  using: 'composite'
+  using: composite
   steps:
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
-        ref: '${{inputs.service_branch}}'
-        repository: '${{inputs.repository_name}}'
-        path: '${{inputs.repository_name}}'
+        ref: ${{inputs.service_branch}}
+        repository: ${{inputs.repository_name}}
+        path: ${{inputs.repository_name}}
 
     - name: Create namespace
       if: inputs.deploy_mode == 'install'
@@ -249,10 +249,10 @@ runs:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
         config-file: .github/charts-values-update-config.yaml
         create-release-branch: "false"
-        version-replace-method: 'parse'
+        version-replace-method: parse
         working-directory: ${{inputs.repository_name}}
         chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
-        default-tag: 'main'
+        default-tag: main
 
     - name: Install/update service with helm
       shell: bash

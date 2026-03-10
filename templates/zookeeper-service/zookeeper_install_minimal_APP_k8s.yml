@@ -1,11 +1,11 @@
 global:
-  name: "zookeeper"
+  name: zookeeper
   secrets:
     zooKeeper:
-      adminUsername: "zadmin"
-      adminPassword: "zadmin"
-      clientUsername: "zclient"
-      clientPassword: "zclient"
+      adminUsername: zadmin
+      adminPassword: zadmin
+      clientUsername: zclient
+      clientPassword: zclient
 operator:
   securityContext:
     fsGroup: 1000
@@ -25,7 +25,7 @@ backupDaemon:
   install: false
 integrationTests:
   install: false
-  tags: "zookeeper_crud"
+  tags: zookeeper_crud
   timeout: 600
   securityContext:
     fsGroup: 1000

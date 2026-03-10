@@ -4,44 +4,44 @@ on:
   workflow_dispatch:
     inputs:
       repository_name:
-        description: 'Repository with Opensearch service'
+        description: Repository with Opensearch service
         required: false
         type: string
-        default: 'Netcracker/qubership-opensearch'
+        default: Netcracker/qubership-opensearch
       service_branch:
         required: false
         type: string
-        default: 'main'
+        default: main
       pipeline_branch:
-        description: 'Test pipeline branch name'
+        description: Test pipeline branch name
         type: string
         required: true
-        default: 'main'
+        default: main
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
 
   workflow_call:
     inputs:
       repository_name:
-        description: 'Repository with Opensearch service'
+        description: Repository with Opensearch service
         required: false
         type: string
-        default: 'Netcracker/qubership-opensearch'
+        default: Netcracker/qubership-opensearch
       service_branch:
         required: false
         type: string
       pipeline_branch:
-        description: 'Test pipeline branch name'
+        description: Test pipeline branch name
         type: string
         required: true
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -58,16 +58,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          ref: '${{ inputs.service_branch }}'
-          repository: '${{ inputs.repository_name }}'
-          path: 'qubership-opensearch'
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-opensearch
 
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Get latest tag
         id: get-latest-tag
@@ -80,7 +80,7 @@ jobs:
 
       - name: Process versions file and matrix generation
         id: process-versions
-        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
           ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/opensearch.yaml "${{ inputs.service_branch }}"
@@ -94,16 +94,16 @@ jobs:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
     env:
-      namespace: 'opensearch'
+      namespace: opensearch
       test_completion_max_retries: 50
-      test_completion_retry_interval: '10s'
+      test_completion_retry_interval: 10s
       service_ready_max_retries: 100
-      service_ready_retry_interval: '10s'
+      service_ready_retry_interval: 10s
       service_branch: ""
-      path_to_chart: 'operator/charts/helm/opensearch-service'
+      path_to_chart: operator/charts/helm/opensearch-service
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
-      - name: "Print job parameters"
+      - name: Print job parameters
         run: |
           echo "======== Job parameters ======="
           echo "${{ toJson(matrix.test) }}"
@@ -122,9 +122,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{inputs.pipeline_branch}}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -175,26 +175,26 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: opensearch_install
         with:
-          path_to_template: '${{ matrix.test.template }}'
-          service_branch: '${{ matrix.test.install_version }}'
+          path_to_template: ${{ matrix.test.template }}
+          service_branch: ${{ matrix.test.install_version }}
           restricted: ${{ matrix.test.restricted }}
-          service_name: 'opensearch'
-          repository_name: '${{ inputs.repository_name }}'
+          service_name: opensearch
+          repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.path_to_chart }}
-          namespace: 'opensearch'
+          namespace: opensearch
 
       - name: Get Installed Opensearch CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_opensearch_get_crds
         with:
-          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
 
       - name: Verify Opensearch installation [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
-          namespace: 'opensearch'
+          namespace: opensearch
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
@@ -205,9 +205,9 @@ jobs:
         if: ${{ !cancelled() && steps.opensearch_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'opensearch'
+          namespace: opensearch
           artifact_name: Installation_${{ matrix.test.artifact_name }}
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
 
       - name: Get Opensearch secrets
         if: ${{ matrix.test.tls == true }}
@@ -229,21 +229,21 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: opensearch_upgrade
         with:
-          path_to_template: '${{ matrix.test.upgrade_template }}'
-          service_branch: '${{ matrix.test.upgrade_version }}'
+          path_to_template: ${{ matrix.test.upgrade_template }}
+          service_branch: ${{ matrix.test.upgrade_version }}
           deploy_mode: upgrade
           restricted: ${{ matrix.test.restricted }}
-          service_name: 'opensearch'
-          repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: '${{ env.path_to_chart }}'
-          namespace: 'opensearch'
+          service_name: opensearch
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart }}
+          namespace: opensearch
 
       - name: Get Upgraded Opensearch CRD name
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: upgrade_opensearch_get_crds
         with:
-          crd_location: '${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds'
+          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
 
       - name: Sleep 1m after upgrade
         if: ${{ matrix.test.sequence == 'upgrade' }}
@@ -253,9 +253,9 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.upgrade_version }}'
+          service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: true
-          namespace: 'opensearch'
+          namespace: opensearch
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
@@ -266,9 +266,9 @@ jobs:
         if: ${{ !cancelled() && steps.opensearch_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'opensearch'
+          namespace: opensearch
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
-          service_branch: '${{ matrix.test.upgrade_version }}'
+          service_branch: ${{ matrix.test.upgrade_version }}
 
       # == End ===== Upgrade steps ============
 
@@ -280,9 +280,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:

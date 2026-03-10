@@ -1,5 +1,5 @@
-name: 'Verify Installation Action'
-description: 'A GitHub Action to verify Kubernetes deployments including status checks and test validation.'
+name: Verify Installation Action
+description: A GitHub Action to verify Kubernetes deployments including status checks and test validation.
 inputs:
   namespace:
     description: |
@@ -52,7 +52,7 @@ inputs:
     default: ""
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Initialize error flag
       shell: bash
