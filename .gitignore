@@ -10,6 +10,7 @@
 .codeium/
 .continue/
 .windsurf/
+.codex-pre-commit-cache/
 
 # Python
 .venv/
