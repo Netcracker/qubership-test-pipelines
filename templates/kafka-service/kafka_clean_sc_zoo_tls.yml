@@ -61,4 +61,4 @@ integrationTests:
   install: true
   waitForResult: true
   tags: kafka_crudORaclORbackup
-  zookeeperOsProject: "zookeeper"
+  zookeeperOsProject: zookeeper

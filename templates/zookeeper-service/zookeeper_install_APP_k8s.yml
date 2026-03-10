@@ -1,14 +1,14 @@
 global:
-  name: "zookeeper"
+  name: zookeeper
   secrets:
     zooKeeper:
-      adminUsername: "zadmin"
-      adminPassword: "zadmin"
-      clientUsername: "zclient"
-      clientPassword: "zclient"
+      adminUsername: zadmin
+      adminPassword: zadmin
+      clientUsername: zclient
+      clientPassword: zclient
     backupDaemon:
-      username: "admin"
-      password: "admin"
+      username: admin
+      password: admin
 operator:
   securityContext:
     fsGroup: 1000
@@ -30,7 +30,7 @@ monitoring:
 backupDaemon:
   install: true
   backupStorage:
-    persistentVolumeType: "standalone"
+    persistentVolumeType: standalone
     storageClass: standard
     volumeSize: 1Gi
   securityContext:
@@ -38,10 +38,10 @@ backupDaemon:
     fsGroup: 1000
 integrationTests:
   install: true
-  tags: "zookeeper_crud"
+  tags: zookeeper_crud
   timeout: 600
   waitForResult: true
-  pvType: "standalone"
+  pvType: standalone
   securityContext:
     fsGroup: 1000
     runAsUser: 1000

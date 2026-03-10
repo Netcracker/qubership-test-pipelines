@@ -65,14 +65,13 @@ integrationTests:
   extraLabels:
     CUSTOM_label: TESTS_check
   tags: backupORcrudORhaORalertsORbackupORconsul_images
-  #prometheusUrl: vmsingle.qa-kubernetes.openshift.sdntest.qubership.org
+  # prometheusUrl: vmsingle.qa-kubernetes.openshift.sdntest.qubership.org
   prometheusUrl: http://vmsingle-k8s.prometheus-operator:8429
   secret:
     prometheus:
       user: admin
-      password: ''
+      password: ""
 statusProvisioner:
   lifetimeAfterCompletion: 120
   integrationTestsTimeout: 1800
   podReadinessTimeout: 1200
-

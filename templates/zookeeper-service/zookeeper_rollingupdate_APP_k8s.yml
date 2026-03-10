@@ -1,14 +1,14 @@
 global:
-  name: "zookeeper"
+  name: zookeeper
   secrets:
     zooKeeper:
-      adminUsername: "zadmin"
-      adminPassword: "zadmin"
-      clientUsername: "zclient"
-      clientPassword: "zclient"
+      adminUsername: zadmin
+      adminPassword: zadmin
+      clientUsername: zclient
+      clientPassword: zclient
     backupDaemon:
-      username: "admin"
-      password: "admin"
+      username: admin
+      password: admin
 operator:
   securityContext:
     fsGroup: 1000
@@ -38,8 +38,8 @@ backupDaemon:
     runAsUser: 1000
 integrationTests:
   install: true
-  pvType: "standalone"
-  tags: "zookeeperNOTzookeeper_backup_daemon"
+  pvType: standalone
+  tags: zookeeperNOTzookeeper_backup_daemon
   timeout: 600
   securityContext:
     fsGroup: 1000

@@ -1,4 +1,4 @@
-# 🚀 Create Restricted Resources Action 
+# 🚀 Create Restricted Resources Action
 This Action creates resources before restricted installation
 
 ## Features

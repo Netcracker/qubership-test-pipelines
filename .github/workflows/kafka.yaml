@@ -4,26 +4,26 @@ on:
   workflow_dispatch:
     inputs:
       repository_name:
-        description: 'Kafka repository name'
+        description: Kafka repository name
         required: false
         type: string
-        default: 'Netcracker/qubership-kafka'
+        default: Netcracker/qubership-kafka
       service_branch:
         required: false
         type: string
-        default: 'main'
+        default: main
       pipeline_branch:
-        description: 'Test pipeline branch name'
+        description: Test pipeline branch name
         type: string
         required: true
-        default: 'main'
+        default: main
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       service_versions_json:
-        description: 'Kafka image versions as JSON'
+        description: Kafka image versions as JSON
         type: string
         required: false
         default: |
@@ -32,7 +32,7 @@ on:
             "qubership-docker-kafka-4"
           ]
       scope:
-        description: 'Kafka Test Scope: pr or nightly'
+        description: "Kafka Test Scope: pr or nightly"
         type: string
         required: false
         default: pr
@@ -40,24 +40,24 @@ on:
   workflow_call:
     inputs:
       repository_name:
-        description: 'Kafka repository name'
+        description: Kafka repository name
         required: false
         type: string
-        default: 'Netcracker/qubership-kafka'
+        default: Netcracker/qubership-kafka
       service_branch:
         required: false
         type: string
       pipeline_branch:
-        description: 'Test pipeline branch name'
+        description: Test pipeline branch name
         type: string
         required: true
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       service_versions_json:
-        description: 'Kafka image versions as JSON'
+        description: Kafka image versions as JSON
         type: string
         required: false
         default: |
@@ -66,7 +66,7 @@ on:
             "qubership-docker-kafka-4"
           ]
       scope:
-        description: 'Kafka Test Scope: pr or nightly'
+        description: "Kafka Test Scope: pr or nightly"
         type: string
         required: false
         default: pr
@@ -88,16 +88,16 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.service_branch }}'
-          repository: '${{ inputs.repository_name }}'
-          path: 'qubership-kafka'
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-kafka
 
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Get latest tag
         id: get-latest-tag
@@ -112,7 +112,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: process-versions
-        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
           if [[ "${{ inputs.scope }}" == "nightly" ]]; then
@@ -139,32 +139,32 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
         service_image: ${{ fromJson(needs.prepare.outputs.service_images) }}
-    name: "${{ matrix.service_image }} | ${{ matrix.test.name }}"
+    name: ${{ matrix.service_image }} | ${{ matrix.test.name }}
     env:
       kfk_namespace: kafka
       kfk_max_attempts: 60
-      kfk_timeout: '10s'
+      kfk_timeout: 10s
       kfk_max_attempts_for_provisioner: 100
-      kfk_timeout_for_provisioner: '10s'
-      kfk_path_to_chart: 'operator/charts/helm/kafka'
+      kfk_timeout_for_provisioner: 10s
+      kfk_path_to_chart: operator/charts/helm/kafka
       kfk_srvc_namespace: kafka
       kfk_srvc_max_attempts: 100
-      kfk_srvc_timeout: '10s'
+      kfk_srvc_timeout: 10s
       kfk_srvc_max_attempts_for_provisioner: 120
-      kfk_srvc_timeout_for_provisioner: '10s'
-      kfk_srvc_path_to_chart: 'operator/charts/helm/kafka-service'
+      kfk_srvc_timeout_for_provisioner: 10s
+      kfk_srvc_path_to_chart: operator/charts/helm/kafka-service
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
-      - name: "Print job parameters"
+      - name: Print job parameters
         run: |
           echo "======== Job parameters ======="
           echo "${{ toJson(matrix.test) }}"
       - name: Checkout pipeline
         uses: actions/checkout@v4
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
@@ -203,34 +203,34 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_install
         with:
-          path_to_template: 'templates/monitoring/vm_without_tests.yml'
-          service_branch: 'main'
-          service_name: 'monitoring'
-          repository_name: 'Netcracker/qubership-monitoring-operator'
-          path_to_chart: 'charts/qubership-monitoring-operator'
-          namespace: 'monitoring'
-          restricted: 'false'
+          path_to_template: templates/monitoring/vm_without_tests.yml
+          service_branch: main
+          service_name: monitoring
+          repository_name: Netcracker/qubership-monitoring-operator
+          path_to_chart: charts/qubership-monitoring-operator
+          namespace: monitoring
+          restricted: "false"
 
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         if: matrix.test.monitoring == true
         with:
           namespace: monitoring
-          service_branch: 'main'
+          service_branch: main
           test_completion_max_retries: 40
-          test_completion_retry_interval: '10s'
+          test_completion_retry_interval: 10s
           service_ready_max_retries: 80
-          service_ready_retry_interval: '10s'
-          monitoring_pipeline: 'true'
-          repository_name: 'Netcracker/qubership-monitoring-operator'
+          service_ready_retry_interval: 10s
+          monitoring_pipeline: "true"
+          repository_name: Netcracker/qubership-monitoring-operator
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: 'monitoring'
+          namespace: monitoring
           artifact_name: Install_Monitoring_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: 'main'
+          service_branch: main
       # == End Monitoring installation tests =======
 
       # == Start Zookeeper installation tests =======
@@ -243,24 +243,24 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: zoo_install
         with:
-          path_to_template: '${{ matrix.test.zookeeper_template }}'
-          service_branch: 'main'
-          service_name: 'zookeeper-service'
-          repository_name: 'Netcracker/qubership-zookeeper'
-          path_to_chart: 'operator/charts/helm/zookeeper-service'
-          namespace: 'zookeeper'
-  
+          path_to_template: ${{ matrix.test.zookeeper_template }}
+          service_branch: main
+          service_name: zookeeper-service
+          repository_name: Netcracker/qubership-zookeeper
+          path_to_chart: operator/charts/helm/zookeeper-service
+          namespace: zookeeper
+
       - name: Verify Zookeeper installation
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: 'main'
+          service_branch: main
           namespace: zookeeper
           test_completion_max_retries: 40
-          test_completion_retry_interval: '10s'
+          test_completion_retry_interval: 10s
           service_ready_max_retries: 80
-          service_ready_retry_interval: '10s'
-          repository_name: 'Netcracker/qubership-zookeeper'
+          service_ready_retry_interval: 10s
+          repository_name: Netcracker/qubership-zookeeper
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
@@ -268,7 +268,7 @@ jobs:
         with:
           namespace: zookeeper
           artifact_name: Install_Zookeeper_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: 'main'
+          service_branch: main
       # == End Zookeeper installation tests =======
 
       # == Start update YAML secrets if needed =======
@@ -294,25 +294,25 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_core_install
         with:
-          path_to_template: '${{ matrix.test.kafka_template }}'
-          service_branch: '${{ matrix.test.kafka_install_version }}'
-          service_name: 'kafka'
+          path_to_template: ${{ matrix.test.kafka_template }}
+          service_branch: ${{ matrix.test.kafka_install_version }}
+          service_name: kafka
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: '${{ env.kfk_path_to_chart}}'
+          path_to_chart: ${{ env.kfk_path_to_chart}}
           namespace: ${{ env.kfk_namespace }}
           image_replacement: ${{ matrix.service_image }}
-          test_tags: '${{ matrix.test.test_tags }}'
+          test_tags: ${{ matrix.test.test_tags }}
 
       - name: Get Installed Kafka CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_kafka_get_crds
         with:
-          crd_location: '${{ inputs.repository_name }}/${{ env.kfk_path_to_chart}}/crds'
+          crd_location: ${{ inputs.repository_name }}/${{ env.kfk_path_to_chart}}/crds
 
       - name: Verify Kafka installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
           test_completion_max_retries: ${{ env.kfk_max_attempts }}
@@ -327,7 +327,7 @@ jobs:
         with:
           namespace: ${{ env.kfk_namespace }}
           artifact_name: Install_Kafka_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
       # == End kafka installation tests =======
 
       - name: Get Kafka secrets
@@ -341,24 +341,24 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_service_install
         with:
-          path_to_template: '${{ matrix.test.kafka_service_template }}'
-          service_branch: '${{ matrix.test.kafka_install_version }}'
-          service_name: 'kafka-service'
+          path_to_template: ${{ matrix.test.kafka_service_template }}
+          service_branch: ${{ matrix.test.kafka_install_version }}
+          service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
+          path_to_chart: ${{ env.kfk_srvc_path_to_chart }}
           namespace: ${{ env.kfk_srvc_namespace }}
-          test_tags: '${{ matrix.test.test_tags }}'
+          test_tags: ${{ matrix.test.test_tags }}
 
       - name: Get Installed Kafka-Service CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_kafka_service_get_crds
         with:
-          crd_location: '${{ inputs.repository_name }}/${{ env.kfk_srvc_path_to_chart}}/crds'
+          crd_location: ${{ inputs.repository_name }}/${{ env.kfk_srvc_path_to_chart}}/crds
 
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
@@ -373,7 +373,7 @@ jobs:
         with:
           namespace: ${{ env.kfk_srvc_namespace }}
           artifact_name: Install_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
       # == End kafka service installation tests =======
 
       # == Start kafka upgrade tests =======
@@ -386,22 +386,22 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_core_upgrade
         with:
-          path_to_template: '${{ matrix.test.kafka_upgrade_template }}'
-          service_branch: '${{ matrix.test.kafka_upgrade_version }}'
-          service_name: 'kafka'
+          path_to_template: ${{ matrix.test.kafka_upgrade_template }}
+          service_branch: ${{ matrix.test.kafka_upgrade_version }}
+          service_name: kafka
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: '${{ env.kfk_path_to_chart}}'
+          path_to_chart: ${{ env.kfk_path_to_chart}}
           namespace: ${{ env.kfk_namespace }}
           deploy_mode: upgrade
           image_replacement: ${{ matrix.service_image }}
-          test_tags: '${{ matrix.test.test_tags }}'
+          test_tags: ${{ matrix.test.test_tags }}
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: upgrade_kafka_get_crds
         with:
-          crd_location: '${{ inputs.repository_name }}/${{ env.kfk_path_to_chart}}/crds'
+          crd_location: ${{ inputs.repository_name }}/${{ env.kfk_path_to_chart}}/crds
 
       - name: Sleep 1m after upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -411,7 +411,7 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.kafka_upgrade_version }}'
+          service_branch: ${{ matrix.test.kafka_upgrade_version }}
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
           test_completion_max_retries: ${{ env.kfk_max_attempts }}
@@ -426,28 +426,28 @@ jobs:
         with:
           namespace: ${{ env.kfk_namespace }}
           artifact_name: Upgrade_Kafka_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: '${{ matrix.test.kafka_upgrade_version }}'
+          service_branch: ${{ matrix.test.kafka_upgrade_version }}
 
       - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_service_upgrade
         with:
-          path_to_template: '${{ matrix.test.kafka_service_upgrade_template }}'
-          service_branch: '${{ inputs.service_branch }}'
-          service_name: 'kafka-service'
+          path_to_template: ${{ matrix.test.kafka_service_upgrade_template }}
+          service_branch: ${{ inputs.service_branch }}
+          service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
+          path_to_chart: ${{ env.kfk_srvc_path_to_chart }}
           namespace: ${{ env.kfk_srvc_namespace }}
           deploy_mode: upgrade
-          test_tags: '${{ matrix.test.test_tags }}'
+          test_tags: ${{ matrix.test.test_tags }}
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: upgrade_kafka_service_get_crds
         with:
-          crd_location: '${{ inputs.repository_name }}/${{ env.kfk_srvc_path_to_chart}}/crds'
+          crd_location: ${{ inputs.repository_name }}/${{ env.kfk_srvc_path_to_chart}}/crds
 
       - name: Sleep 1m after upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -457,7 +457,7 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
@@ -472,7 +472,7 @@ jobs:
         with:
           namespace: ${{ env.kfk_srvc_namespace }}
           artifact_name: Upgrade_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
       # == End kafka upgrade tests =======
 
       # == Start kafka migrate tests =======
@@ -526,7 +526,7 @@ jobs:
       #     namespace: ${{ env.kfk_namespace }}
       #     deploy_mode: upgrade
       #     test_tags: '${{ matrix.test.test_tags }}'
-          
+
       # - name: Sleep 1m after upgrade
       #   if: matrix.test.sequence == 'migrate'
       #   run: sleep 1m
@@ -608,9 +608,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:
