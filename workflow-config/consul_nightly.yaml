@@ -24,6 +24,7 @@ jobs:
     sequence: install
     restricted: false
     artifact_name: "Clean_CURRENT_Full-AT"
+    monitoring: true
 
   - name: "Clean [${service_branch}] S3 TLS"
     install_version: "${service_branch}"
@@ -62,10 +63,10 @@ jobs:
     restricted: true
     artifact_name: "Clean_PREVIOUS_Restricted.Upgrade_CURRENT_Restricted"
 
-  - name: "Clean [${service_branch}] with monitoring"
+  - name: "Clean [${service_branch}] with Allure Report"
     install_version: "${service_branch}"
-    template: "templates/consul-service/consul_clean_all_on_sc_monitoring.yml"
+    template: "templates/consul-service/consul_clean_all_on_sc_allure.yml"
     sequence: install
-    artifact_name: "Clean_CURRENT_monitoring"
+    artifact_name: "Clean_CURRENT_allure"
     test_tags: crudORalerts
     monitoring: true

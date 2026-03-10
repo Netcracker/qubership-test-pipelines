@@ -24,6 +24,7 @@ jobs:
     sequence: install
     restricted: false
     artifact_name: "Clean_CURRENT_Full-AT"
+    monitoring: true
 
   - name: "Clean [${service_branch}] S3 TLS"
     install_version: "${service_branch}"

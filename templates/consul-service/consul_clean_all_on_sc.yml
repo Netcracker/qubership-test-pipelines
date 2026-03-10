@@ -36,7 +36,7 @@ backupDaemon:
   evictionPolicy: 1h/1d,7d/delete
 integrationTests:
   enabled: true
-  tags: backupORcrudORconsul_images
+  tags: backupORcrud
 statusProvisioner:
   lifetimeAfterCompletion: 120
   integrationTestsTimeout: 600
