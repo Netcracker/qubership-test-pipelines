@@ -14,7 +14,7 @@ consulAclConfigurator:
 dns:
   enabled: false
 monitoring:
- enabled: false
+  enabled: false
 ui:
   enabled: true
   ingress:
