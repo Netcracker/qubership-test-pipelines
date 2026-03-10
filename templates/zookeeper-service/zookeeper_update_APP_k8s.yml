@@ -61,7 +61,7 @@ backupDaemon:
 integrationTests:
   install: true
   pvType: "standalone"
-  #need to fix the test zookeeper_ha_without_leader, it's unstable.
+  # need to fix the test zookeeper_ha_without_leader, it's unstable.
   tags: "zookeeperNOTzookeeper_backup_daemonNOTzookeeper_ha_without_leader"
   timeout: 600
   securityContext:

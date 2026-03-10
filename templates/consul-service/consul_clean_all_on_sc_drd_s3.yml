@@ -2,7 +2,7 @@ global:
   enabled: true
   disasterRecovery:
     enabled: true
-    #mode: active
+    # mode: active
     mode: ""
     region: one
     httpAuth:

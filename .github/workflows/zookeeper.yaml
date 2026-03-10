@@ -205,7 +205,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: zoo_upgrade
         with:
-          #combined 2 cases: update params + rollingupdate
+          # combined 2 cases: update params + rollingupdate
           path_to_template: 'templates/zookeeper-service/zookeeper_update_APP_k8s.yml'
           service_branch: '${{ matrix.test.upgrade_version }}'
           deploy_mode: upgrade
@@ -249,7 +249,7 @@ jobs:
 #                                                                           #
 #############################################################################
 
-  #15-Clean [LATEST] TLS
+  # 15-Clean [LATEST] TLS
   Clean-Latest-TLS:
     runs-on: ${{inputs.runner_type}}
     name: Clean [${{ inputs.service_branch }}] TLS
@@ -349,7 +349,7 @@ jobs:
           path: certs_artifacts
           retention-days: 1
 
-  #16-Clean [LATEST] TLS Secrets
+  # 16-Clean [LATEST] TLS Secrets
   Clean-Latest-TLS-Secrets:
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
@@ -408,7 +408,7 @@ jobs:
           artifact_name: "Install_tls_secrets_${{inputs.service_branch}}"
           service_branch: ${{ inputs.service_branch }}
 
-  #17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
+  # 17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
   Clean-Latest-TLS-Certificates:
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS

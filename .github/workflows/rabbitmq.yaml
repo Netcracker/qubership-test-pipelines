@@ -113,8 +113,8 @@ jobs:
           path: 'qubership-test-pipelines'
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
-      #- name: Install Monitoring
-        #uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
+      # - name: Install Monitoring
+        # uses: ./qubership-test-pipelines/actions/monitoring/helm_deploy_monitoring
       # == End Common steps ==
 
       # == Start Install steps ==
