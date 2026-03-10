@@ -249,7 +249,7 @@ jobs:
           repository_name: 'Netcracker/qubership-zookeeper'
           path_to_chart: 'operator/charts/helm/zookeeper-service'
           namespace: 'zookeeper'
-  
+
       - name: Verify Zookeeper installation
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -526,7 +526,7 @@ jobs:
       #     namespace: ${{ env.kfk_namespace }}
       #     deploy_mode: upgrade
       #     test_tags: '${{ matrix.test.test_tags }}'
-          
+
       # - name: Sleep 1m after upgrade
       #   if: matrix.test.sequence == 'migrate'
       #   run: sleep 1m

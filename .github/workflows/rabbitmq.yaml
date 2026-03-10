@@ -171,7 +171,7 @@ jobs:
           repository_name: '${{ inputs.repository_name }}'
           path_to_chart: 'operator/charts/helm/rabbitmq'
           namespace: 'rabbitmq'
-      
+
       - name: Verify RabbitMQ installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
