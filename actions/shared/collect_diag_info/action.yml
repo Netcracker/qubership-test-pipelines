@@ -152,7 +152,7 @@ runs:
             fi
 
             # Copy pending to modify the original
-            declare -a current_pending=(${pending[@]})
+            declare -a current_pending=("${pending[@]}")
             pending=()
             for item in "${current_pending[@]}"; do
                 IFS=':' read -r pod container <<< "$item"

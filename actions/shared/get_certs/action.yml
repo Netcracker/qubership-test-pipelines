@@ -23,11 +23,11 @@ runs:
       run: |
         sudo snap install yq
         secret=$(kubectl get secret ${{inputs.secret_name}} -oyaml -n ${{inputs.namespace}})
-        ca_crt=$(echo $secret | yq eval '.data[ca.crt]' -)
-        tls_crt=$(echo $secret | yq eval '.data[tls.crt]' -)
-        tls_key=$(echo $secret | yq eval '.data[tls.key]' -)
+        ca_crt=$(echo "$secret" | yq eval '.data[ca.crt]' -)
+        tls_crt=$(echo "$secret" | yq eval '.data[tls.crt]' -)
+        tls_key=$(echo "$secret" | yq eval '.data[tls.key]' -)
 
-        if [ -z $ca_crt ] || [ -z $tls_crt ] || [ -z $tls_key ]; then
+        if [ -z "$ca_crt" ] || [ -z "$tls_crt" ] || [ -z "$tls_key" ]; then
           echo "ERROR: Failed to extract certificates!"
           exit 1
         fi

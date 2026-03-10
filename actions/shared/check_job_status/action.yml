@@ -14,8 +14,8 @@ runs:
       # language=bash
       run: |
         # ▶️ Check job status
-        echo Job status: ${{inputs.job_result}}
-        if [[ ${{inputs.job_result}} == success || ${{inputs.job_result}} == skipped ]]; then
+        echo "Job status: ${{inputs.job_result}}"
+        if [[ "${{inputs.job_result}}" == success || "${{inputs.job_result}}" == skipped ]]; then
           exit 0
         else
           exit 1

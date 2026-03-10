@@ -19,12 +19,12 @@ runs:
       shell: bash
       run: |
         # ▶️ Get CRDs
-        yamls=$(find ${{inputs.crd_location}} -type f -name "*.yaml" -or -name "*.yml")
+        yamls=$(find "${{inputs.crd_location}}" -type f -name "*.yaml" -or -name "*.yml")
         CRDS_ARRAY=()
-        for yaml in ${yamls}; do
-          yml_kind=$(yq e '.kind' $yaml)
-          if [ $yml_kind == CustomResourceDefinition ]; then
-            crd_name=$(yq e '.metadata.name' $yaml)
+        for yaml in $yamls; do
+          yml_kind=$(yq e '.kind' "$yaml")
+          if [ "$yml_kind" == "CustomResourceDefinition" ]; then
+            crd_name=$(yq e '.metadata.name' "$yaml")
             CRDS_ARRAY+=$crd_name
           fi
         done
