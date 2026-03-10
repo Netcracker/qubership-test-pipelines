@@ -24,7 +24,7 @@ inputs:
   service_branch:
     description: 'See verify_installation.service_branch'
     required: true
-    default: ''
+    default: ""
   cr_kind:
     description: 'See verify_installation.cr_kind'
     required: true

@@ -99,7 +99,7 @@ jobs:
       test_completion_retry_interval: '10s'
       service_ready_max_retries: 100
       service_ready_retry_interval: '10s'
-      service_branch: ''
+      service_branch: ""
       path_to_chart: 'operator/charts/helm/opensearch-service'
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======

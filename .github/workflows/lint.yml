@@ -1,5 +1,5 @@
 name: Lint
-run-name: 'Lint: ${{ github.event_name }} on ${{ github.ref_name }}'
+run-name: "Lint: ${{ github.event_name }} on ${{ github.ref_name }}"
 
 on:
   pull_request:

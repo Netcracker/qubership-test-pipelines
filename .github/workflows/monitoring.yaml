@@ -156,7 +156,7 @@ jobs:
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           check_tests: true
-          monitoring_pipeline: 'true'
+          monitoring_pipeline: "true"
           repository_name: '${{ inputs.repository_name }}'
 
       - name: Collect Diagnostics Monitoring installation
@@ -199,7 +199,7 @@ jobs:
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_branch: '${{ matrix.test.upgrade_version }}'
           check_tests: true
-          monitoring_pipeline: 'true'
+          monitoring_pipeline: "true"
           repository_name: '${{ inputs.repository_name }}'
 
       - name: Collect Diagnostics Monitoring installation

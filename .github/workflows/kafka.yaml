@@ -32,7 +32,7 @@ on:
             "qubership-docker-kafka-4"
           ]
       scope:
-        description: 'Kafka Test Scope: pr or nightly'
+        description: "Kafka Test Scope: pr or nightly"
         type: string
         required: false
         default: pr
@@ -66,7 +66,7 @@ on:
             "qubership-docker-kafka-4"
           ]
       scope:
-        description: 'Kafka Test Scope: pr or nightly'
+        description: "Kafka Test Scope: pr or nightly"
         type: string
         required: false
         default: pr
@@ -209,7 +209,7 @@ jobs:
           repository_name: 'Netcracker/qubership-monitoring-operator'
           path_to_chart: 'charts/qubership-monitoring-operator'
           namespace: 'monitoring'
-          restricted: 'false'
+          restricted: "false"
 
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -221,7 +221,7 @@ jobs:
           test_completion_retry_interval: '10s'
           service_ready_max_retries: 80
           service_ready_retry_interval: '10s'
-          monitoring_pipeline: 'true'
+          monitoring_pipeline: "true"
           repository_name: 'Netcracker/qubership-monitoring-operator'
 
       - name: Collect Diagnostics Monitoring installation

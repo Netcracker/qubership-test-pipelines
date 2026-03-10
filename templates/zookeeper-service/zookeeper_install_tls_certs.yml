@@ -38,9 +38,9 @@ zooKeeper:
     enabled: true
     secretName: zookeeper-tls-secret
     certificates:
-      crt: ''
-      key: ''
-      ca: ''
+      crt: ""
+      key: ""
+      ca: ""
 backupDaemon:
   install: true
   backupStorage:
@@ -53,9 +53,9 @@ backupDaemon:
   tls:
     secretName: zookeeper-backup-daemon-tls-secret
     certificates:
-      crt: ''
-      key: ''
-      ca: ''
+      crt: ""
+      key: ""
+      ca: ""
 monitoring:
   install: false
   securityContext:

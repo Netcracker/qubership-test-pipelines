@@ -50,8 +50,8 @@ backupDaemon:
     enabled: true
     url: https://s3.amazonaws.com/
     bucket: test-pipelines-storage
-    keyId: ''
-    keySecret: ''
+    keyId: ""
+    keySecret: ""
 integrationTests:
   enabled: true
   tags: backupORcrud

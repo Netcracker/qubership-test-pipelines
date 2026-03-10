@@ -8,7 +8,7 @@ inputs:
   restricted:
     description: 'See helm_deploy.restricted'
     required: true
-    default: 'false'
+    default: "false"
     type: boolean
   path_to_template:
     description: 'See helm_deploy.path_to_template'
@@ -35,7 +35,7 @@ inputs:
   resource_folder:
     description: 'See helm_deploy.resource_folder'
     required: true
-    default: ''
+    default: ""
 runs:
   using: 'composite'
   steps:

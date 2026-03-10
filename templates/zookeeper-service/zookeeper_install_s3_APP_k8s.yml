@@ -29,8 +29,8 @@ backupDaemon:
     enabled: true
     url: https://s3.amazonaws.com/
     bucket: test-pipelines-storage
-    keyId: ''
-    keySecret: ''
+    keyId: ""
+    keySecret: ""
   securityContext:
     fsGroup: 1000
     runAsUser: 1000

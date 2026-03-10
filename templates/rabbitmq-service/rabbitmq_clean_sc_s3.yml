@@ -40,8 +40,8 @@ backupDaemon:
     enabled: true
     url: https://s3.amazonaws.com/
     bucket: test-pipelines-storage
-    keyId: ''
-    keySecret: ''
+    keyId: ""
+    keySecret: ""
 tests:
   runTests: true
   runTestsOnly: false
