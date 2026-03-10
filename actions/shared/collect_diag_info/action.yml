@@ -125,7 +125,7 @@ runs:
             IFS=  read -ra containers <<< $(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.spec.containers[*].name}" 2>/dev/null || echo "")
             for container in ${containers[@]}; do
                 echo "Trying to get logs from ${container}"
-                status=$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\)].state} 2>/dev/null || echo unknown)
+                status=$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null || echo unknown)
                 if [[ $status == *running* || $status == *terminated* ]]; then
                     log_file="artifacts/logs/${pod}__${container}.log"
                     kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
@@ -156,7 +156,7 @@ runs:
             pending=()
             for item in ${current_pending[@]}; do
                 IFS=':' read -r pod container <<< "$item"
-                status=$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\)].state} 2>/dev/null || echo unknown)
+                status=$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null || echo unknown)
                 if [[ $status == *running* || $status == *terminated* ]]; then
                     log_file="artifacts/logs/${pod}_${container}.log"
                     kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
