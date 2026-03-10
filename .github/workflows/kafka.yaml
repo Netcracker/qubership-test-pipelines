@@ -28,7 +28,6 @@ on:
         required: false
         default: |
           [
-            "qubership-docker-kafka-3",
             "qubership-docker-kafka-4"
           ]
       scope:
@@ -62,7 +61,6 @@ on:
         required: false
         default: |
           [
-            "qubership-docker-kafka-3",
             "qubership-docker-kafka-4"
           ]
       scope:
