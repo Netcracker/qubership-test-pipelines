@@ -66,7 +66,7 @@ runs:
         # ▶️ Get yaml from pods
         mkdir -p artifacts/pod_yamls
         IFS=" " read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n "${{inputs.namespace}}" 2>/dev/null | tr "\n" " ")"
-        for pod in ${pods[@]}; do
+        for pod in "${pods[@]}"; do
             kubectl get pod "$pod" -n "${{inputs.namespace}}" -o yaml > "artifacts/pod_yamls/${pod}.yaml" 2>/dev/null || echo "⚠️ Failed to get yaml for $pod" > "artifacts/pod_yamls/${pod}_FAILED.txt"
         done
 
@@ -115,17 +115,17 @@ runs:
         set +e
         # ▶️ Get logs from all containers in pods
         mkdir -p artifacts/logs
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{ inputs.namespace }} 2>/dev/null | tr $'\n' ' ')
+        IFS=' ' read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{ inputs.namespace }} 2>/dev/null | tr $'\n' ' ')"
 
         # Array for pending containers "pod:container"
         declare -a pending=()
 
         # First pass: collect logs from ready containers, add unready ones to pending
-        for pod in ${pods[@]}; do
-            IFS=  read -ra containers <<< $(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.spec.containers[*].name}" 2>/dev/null || echo "")
-            for container in ${containers[@]}; do
+        for pod in "${pods[@]}"; do
+            IFS=' ' read -ra containers <<< "$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.spec.containers[*].name}" 2>/dev/null || echo "")"
+            for container in "${containers[@]}"; do
                 echo "Trying to get logs from ${container}"
-                status=$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\)].state} 2>/dev/null || echo unknown)
+                status=$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null || echo unknown)
                 if [[ $status == *running* || $status == *terminated* ]]; then
                     log_file="artifacts/logs/${pod}__${container}.log"
                     kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
@@ -144,7 +144,7 @@ runs:
         while [ ${#pending[@]} -gt 0 ]; do
             current_time=$(date +%s)
             if (( current_time - start_time > timeout )); then
-                for item in ${pending[@]}; do
+                for item in "${pending[@]}"; do
                     IFS=':' read -r pod container <<< "$item"
                     echo "$pod $container - skipped (timed out waiting for readiness)"
                 done
@@ -152,11 +152,11 @@ runs:
             fi
 
             # Copy pending to modify the original
-            declare -a current_pending=(${pending[@]})
+            declare -a current_pending=("${pending[@]}")
             pending=()
-            for item in ${current_pending[@]}; do
+            for item in "${current_pending[@]}"; do
                 IFS=':' read -r pod container <<< "$item"
-                status=$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\)].state} 2>/dev/null || echo unknown)
+                status=$(kubectl get pod $pod -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null || echo unknown)
                 if [[ $status == *running* || $status == *terminated* ]]; then
                     log_file="artifacts/logs/${pod}_${container}.log"
                     kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
@@ -196,17 +196,17 @@ runs:
       run: |
         set +e
         # ▶️ Generate artifact name
-        service_branch=$(echo ${{inputs.service_branch}} | tr -d "[:space:]")
+        service_branch=$(echo "${{inputs.service_branch}}" | tr -d "[:space:]")
         service_branch="${service_branch//\//_}"
         echo matrix_version ${{matrix.version}}
         matrix_suffix=""
-        if [[ -n ${{ matrix.version }} ]]; then
-          echo ${{ matrix.version }}
+        if [[ -n "${{ matrix.version }}" ]]; then
+          echo "${{ matrix.version }}"
           matrix_suffix="${{matrix.version}}_"
         fi
 
-        if [[ ${{inputs.artifact_name}} != "" ]]; then
-          artifact_name=${{inputs.artifact_name}}
+        if [[ "${{inputs.artifact_name}}" != "" ]]; then
+          artifact_name="${{inputs.artifact_name}}"
           ARTIFACT_NAME=${artifact_name//\//_}_$(date -u +'%Y%m%d%H%M%S%3N')
         else
           ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}_${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S%3N")"

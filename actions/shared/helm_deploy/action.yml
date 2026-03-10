@@ -97,8 +97,8 @@ runs:
       run: |
         folder="qubership-test-pipelines/${{inputs.resource_folder}}"
         files=($(find "$folder" -type f))
-        echo $files
-        for file in ${files[@]}; do
+        echo "${files[@]}"
+        for file in "${files[@]}"; do
           echo "Applying $file"
           kubectl create -f "$file"
         done
@@ -112,11 +112,11 @@ runs:
         if [ -d ./crds ]; then
           echo "CRDs directory exists"
           for file in ./crds/*; do
-            if [ -f $file ]; then
+            if [ -f "$file" ]; then
               echo "Processing file: $file"
               CRD_NAME=$(yq e '.metadata.name' "$file" 2>/dev/null)
 
-              if [ -z $CRD_NAME ]; then
+              if [ -z "$CRD_NAME" ]; then
                 echo "::error::Could not extract CRD name from $file"
                 exit 1
               fi
@@ -173,7 +173,7 @@ runs:
         # ▶️ Replace slash in service branch
         service_branch="${{ inputs.service_branch }}"
         # if branch is a commit hash (contains from 7 up to 40 characters: digits or letters from a to f), trim to 11 characters
-        if echo $service_branch | grep -Eq ^[0-9a-f]{7,40}$; then
+        if echo "$service_branch" | grep -Eq '^[0-9a-f]{7,40}$'; then
           service_branch_updated="git-${service_branch:0:7}"
         else
           service_branch_updated="${service_branch//\//_}"
@@ -189,16 +189,16 @@ runs:
         path_to_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
         new_image="${{ inputs.image_replacement }}"
         base="${new_image%-*}"
-        if [ ! -f $path_to_file ]; then echo "::error::File not found: $path_to_file"; exit 1; fi
-        current_image=$(grep -oE ${base}-[^:\' ]+ $path_to_file" | head -n 1)
-        if [ -z $current_image ]; then
+        if [ ! -f "$path_to_file" ]; then echo "::error::File not found: $path_to_file"; exit 1; fi
+        current_image=$(grep -oE "${base}-[^:' ]+" "$path_to_file" | head -n 1)
+        if [ -z "$current_image" ]; then
           echo "::error::Target pattern '${base}-...' not found in $path_to_file"; exit 1
         fi
-        if [ $current_image == $new_image ]; then
+        if [ "$current_image" == "$new_image" ]; then
           echo "ℹ️  Value is already set to: $current_image. No changes needed."
         else
           echo "🔄 Updating: $current_image -> $new_image"
-          sed -i -E s|${base}-[^:\' ]+|${new_image}|g $path_to_file"
+          sed -i -E "s|${base}-[^:' ]+|${new_image}|g" "$path_to_file"
           if grep -Fq "$new_image" "$path_to_file"; then
              echo "✅ Success: Replaced $current_image with $new_image"
           else
@@ -211,7 +211,7 @@ runs:
       run: |
         # ▶️ Echo tags
         new_tags="${{ inputs.test_tags }}"
-        echo $new_tags
+        echo "$new_tags"
 
 
     - name: Update Test Tags
@@ -223,17 +223,17 @@ runs:
         cd "${{ inputs.repository_name }}/${{ inputs.path_to_chart }}"
         file="$template_name"
         new_tags="${{ inputs.test_tags }}"
-        current_tags=$(grep -E ^[[:space:]]*tags:[[:space:]]* $file | head -n1 | sed -E 's/^[[:space:]]*tags:[[:space:]]*//; s/^//; s/$//')
-        if [ -z $current_tags ]; then
+        current_tags=$(grep -E "^[[:space:]]*tags:[[:space:]]*" "$file" | head -n1 | sed -E 's/^[[:space:]]*tags:[[:space:]]*//; s/^//; s/$//')
+        if [ -z "$current_tags" ]; then
           echo "::warning::No 'tags' field found in $file – nothing to update."
           exit 0
         fi
-        if [ $current_tags = $new_tags ]; then
+        if [ "$current_tags" = "$new_tags" ]; then
           echo "ℹ️ $file: tags already set to '$current_tags'. No changes needed."
         else
           echo "🔄 $file: replacing '$current_tags' tags -> '$new_tags' tags"
-          sed -i -E s/^([[:space:]]*tags:[[:space:]]*).*/\1$new_tags/ $file
-          if grep -qE ^[[:space:]]*tags:[[:space:]]*$new_tags $file; then
+          sed -i -E "s/^([[:space:]]*tags:[[:space:]]*).*/\1$new_tags/" "$file"
+          if grep -qE "^[[:space:]]*tags:[[:space:]]*$new_tags" "$file"; then
             echo "✅ $file: successfully updated"
           else
             echo "::error::Failed to update $file"
@@ -260,7 +260,7 @@ runs:
       run: |
         # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
         template_name=$(basename "${{inputs.path_to_template}}")
-        echo $template_name
+        echo "$template_name"
         cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
         if [[ ${{inputs.restricted}} == "false" ]]; then
           helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
