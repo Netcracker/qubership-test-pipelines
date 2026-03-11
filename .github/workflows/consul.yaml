@@ -59,7 +59,7 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}

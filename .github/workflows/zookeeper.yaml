@@ -63,7 +63,7 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -108,7 +108,7 @@ jobs:
           echo "${{ toJson(matrix.test) }}"
 
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -253,7 +253,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{inputs.pipeline_branch}}
           repository: netcracker/qubership-test-pipelines
@@ -353,7 +353,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS Secrets
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -411,7 +411,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS Certificates
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines

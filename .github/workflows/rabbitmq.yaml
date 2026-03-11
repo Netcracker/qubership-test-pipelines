@@ -56,7 +56,7 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -106,7 +106,7 @@ jobs:
           echo "${{ toJson(matrix.test) }}"
 
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -181,7 +181,6 @@ jobs:
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          crd_list: rabbitmqservices.netcracker.com
 
       - name: Collect Diagnostics RabbitMQ installation
         if: ${{ !cancelled() && steps.rabbit_install.conclusion != 'skipped' }}
@@ -225,7 +224,6 @@ jobs:
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          crd_list: rabbitmqservices.netcracker.com
 
       - name: Collect Diagnostics RabbitMQ upgrade
         if: ${{ !cancelled() && steps.rabbit_upgrade.conclusion != 'skipped' }}
