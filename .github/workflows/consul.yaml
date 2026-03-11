@@ -166,12 +166,6 @@ jobs:
           namespace: consul
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Get Installed Consul CRD name
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
-        id: install_consul_get_crds
-        with:
-          crd_location: ${{ inputs.repository_name }}/charts/helm/consul-service/crds
-
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
@@ -181,7 +175,6 @@ jobs:
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
-          crd_list: ${{ steps.install_consul_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Consul installation
         if: ${{ !cancelled() && steps.consul_install.conclusion != 'skipped' }}
@@ -226,13 +219,6 @@ jobs:
           namespace: consul
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Get Upgraded Consul CRD name
-        if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
-        id: upgrade_consul_get_crds
-        with:
-          crd_location: ${{ inputs.repository_name }}/charts/helm/consul-service/crds
-
       - name: Sleep 90s after update
         if: matrix.test.sequence == 'upgrade'
         run: sleep 90s
@@ -247,7 +233,6 @@ jobs:
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
-          crd_list: ${{ steps.upgrade_consul_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Consul upgrade
         if: ${{ !cancelled() && steps.consul_upgrade.conclusion != 'skipped' }}
