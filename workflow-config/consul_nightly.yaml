@@ -70,3 +70,4 @@ jobs:
     artifact_name: "Clean_CURRENT_allure"
     test_tags: crudORalerts
     monitoring: true
+    allure: true

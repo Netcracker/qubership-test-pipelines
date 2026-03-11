@@ -145,6 +145,7 @@ jobs:
           restricted: 'false'
 
       - name: Get Installed Monitoring CR name
+        if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
@@ -201,6 +202,25 @@ jobs:
           --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
           echo "::endgroup::"
       # == End ======= Specific steps for S3-TLS =======
+
+      - name: echo scope
+        run: echo ${{ inputs.scope }}
+
+      - name: Add s3 backet for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+
+      - name: Print template
+        if: matrix.test.allure == true
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
       # == 02 Start ======= Common steps for all tests =======
       - name: Install Consul [${{ matrix.test.install_version }}]
