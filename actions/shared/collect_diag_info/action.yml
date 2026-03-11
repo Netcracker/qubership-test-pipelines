@@ -1,5 +1,5 @@
-name: 'Collect Diagnostics Action'
-description: 'A GitHub Action to collect logs and artifacts from Kubernetes namespace.'
+name: Collect Diagnostics Action
+description: A GitHub Action to collect logs and artifacts from Kubernetes namespace.
 inputs:
   namespace:
     description: |
@@ -25,7 +25,7 @@ inputs:
     default: false
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Create folder for artifacts
       shell: bash
@@ -217,5 +217,5 @@ runs:
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: "${{env.ARTIFACT_NAME}}"
+        name: ${{env.ARTIFACT_NAME}}
         path: artifacts/

@@ -1,5 +1,5 @@
-name: 'Create Restricted Resources Action'
-description: 'A GitHub Action to create resources before restricted installation'
+name: Create Restricted Resources Action
+description: A GitHub Action to create resources before restricted installation
 inputs:
   service_name:
     description: |
@@ -24,9 +24,9 @@ inputs:
     required: true
 
 runs:
-  using: 'composite'
+  using: composite
   steps:
-#Create CRD
+# Create CRD
     - name: Create ClusterRoles
       shell: bash
       # language=bash
@@ -51,7 +51,7 @@ runs:
           kubectl create -f $restricted_folder/clusterRoleBindings
         fi
 
-#Create Certificate
+# Create Certificate
     - name: Install openssl
       shell: bash
       # language=bash
@@ -66,7 +66,7 @@ runs:
       shell: bash
       # language=bash
       run: openssl req -new -key restricted.key -out restricted.csr -subj "/CN=restricted/O=dev-team"
-    
+
     - name: Remove old CSR
       shell: bash
       run: kubectl delete csr restricted-csr --ignore-not-found
@@ -97,7 +97,7 @@ runs:
       # language=bash
       run: kubectl get csr restricted-csr -o jsonpath='{.status.certificate}' | base64 --decode > restricted.crt
 
-#Create Role and RB
+# Create Role and RB
     - name: Update yaml with Role
       shell: bash
       # language=bash
@@ -126,7 +126,7 @@ runs:
       # language=bash
       run: kubectl apply -f qubership-test-pipelines/restricted/restricted-rb.yml
 
-#Add user to kubeconfig
+# Add user to kubeconfig
     - name: Add user configuration
       shell: bash
       # language=bash

@@ -1,14 +1,14 @@
 global:
-  name: "zookeeper"
+  name: zookeeper
   secrets:
     zooKeeper:
-      adminUsername: "zadmin"
-      adminPassword: "zadmin"
-      clientUsername: "zclient"
-      clientPassword: "zclient"
+      adminUsername: zadmin
+      adminPassword: zadmin
+      clientUsername: zclient
+      clientPassword: zclient
     backupDaemon:
-      username: "admin"
-      password: "admin"
+      username: admin
+      password: admin
 operator:
   securityContext:
     fsGroup: 1000
@@ -60,9 +60,9 @@ backupDaemon:
       memory: 552Mi
 integrationTests:
   install: true
-  pvType: "standalone"
-  #need to fix the test zookeeper_ha_without_leader, it's unstable.
-  tags: "zookeeperNOTzookeeper_backup_daemonNOTzookeeper_ha_without_leader"
+  pvType: standalone
+  # need to fix the test zookeeper_ha_without_leader, it's unstable.
+  tags: zookeeperNOTzookeeper_backup_daemonNOTzookeeper_ha_without_leader
   timeout: 600
   securityContext:
     fsGroup: 1000

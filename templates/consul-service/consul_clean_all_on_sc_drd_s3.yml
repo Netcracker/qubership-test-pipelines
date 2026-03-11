@@ -2,7 +2,7 @@ global:
   enabled: true
   disasterRecovery:
     enabled: true
-    #mode: active
+    # mode: active
     mode: ""
     region: one
     httpAuth:
@@ -50,8 +50,8 @@ backupDaemon:
     enabled: true
     url: https://s3.amazonaws.com/
     bucket: test-pipelines-storage
-    keyId: ''
-    keySecret: ''
+    keyId: ""
+    keySecret: ""
 integrationTests:
   enabled: true
   tags: backupORcrud
@@ -60,4 +60,3 @@ statusProvisioner:
   integrationTestsTimeout: 600
   podReadinessTimeout: 900
   cleanupEnabled: true
-

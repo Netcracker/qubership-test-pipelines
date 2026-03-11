@@ -12,7 +12,7 @@ outputs:
   crd_names:
     value: ${{ steps.get_crds.outputs.crd_names }}
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Get CRDs
       id: get_crds
