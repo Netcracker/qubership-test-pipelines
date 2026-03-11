@@ -312,7 +312,7 @@ runs:
       # language=bash
       run: |
         # ▶️ Check deploy status
-        if [[ "${{ env.ERROR_FLAG }}" == "true" ]]; then
+        if [[ "$ERROR_FLAG" == "true" ]]; then
           echo "::error:: ❌ Service was installed with errors!"
           exit 1
         else

@@ -59,7 +59,7 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -169,7 +169,6 @@ jobs:
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: consul
           test_completion_max_retries: 50
@@ -228,7 +227,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: true
           namespace: consul
           test_completion_max_retries: 50

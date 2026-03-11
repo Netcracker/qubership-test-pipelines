@@ -160,7 +160,7 @@ jobs:
           echo "======== Job parameters ======="
           echo "${{ toJson(matrix.test) }}"
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -211,18 +211,25 @@ jobs:
           namespace: monitoring
           restricted: "false"
 
+      - name: Get Installed Monitoring CR name
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_monitoring_get_crds
+        with:
+          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
+
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         if: matrix.test.monitoring == true
         with:
           namespace: monitoring
-          service_branch: main
           test_completion_max_retries: 40
           test_completion_retry_interval: 10s
           service_ready_max_retries: 80
           service_ready_retry_interval: 10s
           monitoring_pipeline: "true"
           repository_name: Netcracker/qubership-monitoring-operator
+          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
@@ -250,17 +257,24 @@ jobs:
           path_to_chart: operator/charts/helm/zookeeper-service
           namespace: zookeeper
 
+      - name: Get Installed Zookeeper CRD name
+        if: matrix.test.zookeeper == true
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
+        with:
+          crd_location: Netcracker/qubership-zookeeper/operator/charts/helm/zookeeper-service/crds
+
       - name: Verify Zookeeper installation
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: main
           namespace: zookeeper
           test_completion_max_retries: 40
           test_completion_retry_interval: 10s
           service_ready_max_retries: 80
           service_ready_retry_interval: 10s
           repository_name: Netcracker/qubership-zookeeper
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
@@ -312,7 +326,6 @@ jobs:
       - name: Verify Kafka installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
           test_completion_max_retries: ${{ env.kfk_max_attempts }}
@@ -358,7 +371,6 @@ jobs:
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
@@ -411,7 +423,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.kafka_upgrade_version }}
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
           test_completion_max_retries: ${{ env.kfk_max_attempts }}
@@ -457,7 +468,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}

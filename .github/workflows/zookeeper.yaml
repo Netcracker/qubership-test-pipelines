@@ -63,7 +63,7 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -108,7 +108,7 @@ jobs:
           echo "${{ toJson(matrix.test) }}"
 
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -140,13 +140,12 @@ jobs:
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           namespace: ${{ env.namespace }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_list }}
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
@@ -228,7 +227,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
           namespace: ${{ env.namespace }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
@@ -255,7 +253,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{inputs.pipeline_branch}}
           repository: netcracker/qubership-test-pipelines
@@ -308,13 +306,12 @@ jobs:
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{inputs.service_branch}}
           namespace: ${{ env.namespace }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_list }}
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install_tls.conclusion != 'skipped' }}
@@ -356,7 +353,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS Secrets
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -392,13 +389,12 @@ jobs:
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ inputs.service_branch }}
           namespace: ${{ env.namespace }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_list }}
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install_tls_secrets.conclusion != 'skipped' }}
@@ -415,7 +411,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS Certificates
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -452,13 +448,12 @@ jobs:
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ inputs.service_branch }}
           namespace: ${{ env.namespace }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_list }}
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install_tls_cert.conclusion != 'skipped' }}

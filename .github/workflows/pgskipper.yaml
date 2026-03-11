@@ -82,7 +82,7 @@ jobs:
       service_images: ${{ steps.parse-matrix.outputs.service_images }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -207,7 +207,6 @@ jobs:
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
           namespace: pgskipper
           service_ready_max_retries: 60
@@ -223,7 +222,6 @@ jobs:
           namespace: pgskipper
           artifact_name: Core_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.install_version }}
-          matrix_version: ${{ matrix.service_image }}
       # == 02 End ======= Core installation steps =======
 
       # == 03 Start ======= Services installation steps =======
@@ -245,7 +243,6 @@ jobs:
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: ${{ matrix.test.check_services_tests }}
           namespace: pgskipper
           service_ready_max_retries: 60
@@ -261,7 +258,6 @@ jobs:
           namespace: pgskipper
           artifact_name: Services_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.install_version }}
-          matrix_version: ${{ matrix.service_image }}
       # == 03 End ======= Services installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
@@ -289,7 +285,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
           namespace: pgskipper
           service_ready_max_retries: 60
@@ -305,7 +300,6 @@ jobs:
           namespace: pgskipper
           artifact_name: Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.upgrade_version }}
-          matrix_version: ${{ matrix.service_image }}
 
       - name: Upgrade Pgskipper Services to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
@@ -329,7 +323,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_services_tests }}
           namespace: pgskipper
           service_ready_max_retries: 60
@@ -345,7 +338,6 @@ jobs:
           namespace: pgskipper
           artifact_name: Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.upgrade_version }}
-          matrix_version: ${{ matrix.service_image }}
       # == End ======= Specific steps for upgrade tests =======
 
       # == Start ======= Diagnostic steps =======

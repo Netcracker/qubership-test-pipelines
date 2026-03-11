@@ -56,7 +56,7 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -106,7 +106,7 @@ jobs:
           echo "${{ toJson(matrix.test) }}"
 
       - name: Checkout pipeline
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -175,7 +175,6 @@ jobs:
       - name: Verify RabbitMQ installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: rabbitmq
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
@@ -219,7 +218,6 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: rabbitmq
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
