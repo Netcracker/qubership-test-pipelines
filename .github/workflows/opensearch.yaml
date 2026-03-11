@@ -192,7 +192,6 @@ jobs:
       - name: Verify Opensearch installation [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: opensearch
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
@@ -253,7 +252,6 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: true
           namespace: opensearch
           test_completion_max_retries: ${{ env.test_completion_max_retries }}

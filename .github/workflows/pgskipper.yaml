@@ -207,7 +207,6 @@ jobs:
       - name: Verify Pgskipper Core installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
           namespace: pgskipper
           service_ready_max_retries: 60
@@ -245,7 +244,6 @@ jobs:
       - name: Verify Pgskipper Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: ${{ matrix.test.check_services_tests }}
           namespace: pgskipper
           service_ready_max_retries: 60
@@ -289,7 +287,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_core_tests }}
           namespace: pgskipper
           service_ready_max_retries: 60
@@ -329,7 +326,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.upgrade_version }}
           check_tests: ${{ matrix.test.check_services_tests }}
           namespace: pgskipper
           service_ready_max_retries: 60

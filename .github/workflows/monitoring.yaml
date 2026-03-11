@@ -149,7 +149,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: monitoring
-          service_branch: ${{ matrix.test.install_version }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
@@ -188,6 +187,13 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         run: sleep 2m
 
+      - name: Get Upgraded Monitoring CR name
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: upgrade_monitoring_get_crds
+        with:
+          crd_location: ${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds
+
       - name: Verify Monitoring upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -197,7 +203,7 @@ jobs:
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          crd_list: ${{ steps.upgrade_monitoring_get_crds.outputs.crd_names }}
           check_tests: true
           monitoring_pipeline: "true"
           repository_name: ${{ inputs.repository_name }}

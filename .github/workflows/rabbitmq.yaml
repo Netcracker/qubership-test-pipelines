@@ -175,13 +175,13 @@ jobs:
       - name: Verify RabbitMQ installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: rabbitmq
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          crd_list: rabbitmqservices.netcracker.com
 
       - name: Collect Diagnostics RabbitMQ installation
         if: ${{ !cancelled() && steps.rabbit_install.conclusion != 'skipped' }}
@@ -219,13 +219,13 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: ${{ matrix.test.install_version }}
           check_tests: true
           namespace: rabbitmq
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          crd_list: rabbitmqservices.netcracker.com
 
       - name: Collect Diagnostics RabbitMQ upgrade
         if: ${{ !cancelled() && steps.rabbit_upgrade.conclusion != 'skipped' }}
