@@ -4,6 +4,7 @@ This repository automates the end-to-end testing qubership services in a Kuberne
 It implements a complete CI/CD lifecycle from infrastructure provisioning to post-deployment verification.
 
 ## Repository Structure
+
 ```
 qubership-test-pipelines/
 ├── .github/                         # GitHub configurations and automation
@@ -29,8 +30,11 @@ qubership-test-pipelines/
 │       └── [config-name].yml
 └── workflow-config/                 # Workflow configurations
 ```
+
 ## Workflows list
+
 Added workflow for the following services:
+
 - [Qubership Consul](https://github.com/Netcracker/qubership-consul)
 - [Qubership ZooKeeper Service](https://github.com/Netcracker/qubership-zookeeper)
 - [Qubership OpenSearch](https://github.com/Netcracker/qubership-opensearch)
@@ -38,3 +42,29 @@ Added workflow for the following services:
 - [Qubership RabbitMQ Service](https://github.com/Netcracker/qubership-rabbitmq)
 - [Qubership PGgskipper Operator](https://github.com/Netcracker/pgskipper-operator)
 - [Qubership Monitoring Operator](https://github.com/Netcracker/qubership-monitoring-operator)
+
+## Pre-commit Hooks
+
+It is recommended to install local pre-commit hooks. The same checks are run in GitHub Actions, and failing checks block merging changes.
+
+Install and enable local hooks:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Run hooks for all files:
+
+```bash
+pre-commit run --all-files
+```
+
+## GitHub Actions: Pre-commit on MR (PR)
+
+Pre-commit checks are configured in `.github/workflows/lint.yml`.
+
+The workflow runs on:
+
+- every `pull_request` to the `main` branch (MR equivalent in GitHub)
+- every `push` to the `main` branch
