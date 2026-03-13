@@ -131,7 +131,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
-      # == Start Monitoring installation tests =======
+      # == Start Monitoring installation =======
       - name: Install Monitoring
         if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -165,7 +165,7 @@ jobs:
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           check_tests: 'true'
           repository_name: 'Netcracker/qubership-monitoring-operator'
-      # == End Monitoring installation tests =======
+      # == End Monitoring installation =======
 
       # == Start ======= Specific steps for S3-TLS =======
       - name: S3-TLS specific step
