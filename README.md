@@ -16,7 +16,8 @@ qubership-test-pipelines/
 │       │   ├── get_certs
 │       │   ├── get_crds
 │       │   ├── helm_deploy
-│       │   └── verify_installation
+│       │   ├── verify_installation
+|       |   └── collect_diag_info
 │       └── [service-name]/          # Service-specific actions
 ├── docs/                            # Project documentation
 ├── kind-configs/                    # Kind cluster configurations
