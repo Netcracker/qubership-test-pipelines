@@ -10,7 +10,7 @@ consulAclConfigurator:
 dns:
   enabled: false
 monitoring:
-  enabled: false
+  enabled: true
 ui:
   enabled: true
   ingress:
@@ -36,7 +36,13 @@ backupDaemon:
   evictionPolicy: 1h/1d,7d/delete
 integrationTests:
   enabled: true
-  tags: backupORcrud
+  tags: backupORcrudORalertsORha
+  prometheusUrl: "http://vmsingle-k8s.monitoring:8429"
+  atpStorage:
+    bucket: "qstp-consul"
+    username: ""
+    password: ""
+
 statusProvisioner:
   lifetimeAfterCompletion: 120
   integrationTestsTimeout: 600

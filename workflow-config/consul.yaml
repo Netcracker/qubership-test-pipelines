@@ -10,6 +10,7 @@ jobs:
     restricted: false
     artifact_name: "Clean_${release_version}_Upgrade_CURRENT"
   ## ===============================================================================
+
   - name: "Clean [${service_branch}] restricted"
     install_version: "${service_branch}"
     template: "templates/consul-service/consul_clean_all_on_sc_restricted.yml"
@@ -23,6 +24,7 @@ jobs:
     sequence: install
     restricted: false
     artifact_name: "Clean_CURRENT_Full-AT"
+    monitoring: true
 
   - name: "Clean [${service_branch}] S3 TLS"
     install_version: "${service_branch}"

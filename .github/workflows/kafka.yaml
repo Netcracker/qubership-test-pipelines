@@ -124,6 +124,7 @@ jobs:
             exit 1
           fi
           ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" "$CONFIG_FILE" "${{ inputs.service_branch }}"
+
       - name: Parse JSON into matrix
         id: parse-matrix
         run: |
@@ -201,6 +202,7 @@ jobs:
       - name: Install Monitoring [${{ matrix.test.install_version }}]
         if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: monitoring_install
         with:
           path_to_template: 'templates/monitoring/vm_without_tests.yml'
           service_branch: 'main'
@@ -209,25 +211,38 @@ jobs:
           path_to_chart: 'charts/qubership-monitoring-operator'
           namespace: 'monitoring'
           restricted: 'false'
+
       - name: Verify Monitoring installation
-        if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        if: matrix.test.monitoring == true
         with:
           namespace: monitoring
+          service_branch: 'main'
           test_completion_max_retries: 40
           test_completion_retry_interval: '10s'
           service_ready_max_retries: 80
           service_ready_retry_interval: '10s'
+          monitoring_pipeline: 'true'
+          repository_name: 'Netcracker/qubership-monitoring-operator'
+
+      - name: Collect Diagnostics Monitoring installation
+        if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: 'monitoring'
           artifact_name: Install_Monitoring_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          service_branch: 'main'
       # == End Monitoring installation tests =======
 
       # == Start Zookeeper installation tests =======
       - name: Print install deployment parameters
         if: matrix.test.zookeeper == true
         run: cat qubership-test-pipelines/${{ matrix.test.zookeeper_template }}
+
       - name: Clean Install Zookeeper [LATEST]
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: zoo_install
         with:
           path_to_template: '${{ matrix.test.zookeeper_template }}'
           service_branch: 'main'
@@ -240,12 +255,21 @@ jobs:
         if: matrix.test.zookeeper == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
+          service_branch: 'main'
           namespace: zookeeper
           test_completion_max_retries: 40
           test_completion_retry_interval: '10s'
           service_ready_max_retries: 80
           service_ready_retry_interval: '10s'
+          repository_name: 'Netcracker/qubership-zookeeper'
+
+      - name: Collect Diagnostics Zookeeper installation
+        if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: zookeeper
           artifact_name: Install_Zookeeper_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          service_branch: 'main'
       # == End Zookeeper installation tests =======
 
       # == Start update YAML secrets if needed =======
@@ -253,6 +277,15 @@ jobs:
         if: matrix.test.storage == 's3'
         # language=bash
         run: |
+          if [[ "${{ matrix.service_image }}" == *kafka-4* ]]; then
+              bucket="test-pipelines-storage"
+          elif [[ "${{ matrix.service_image }}" == *kafka-3* ]]; then
+              bucket="test-pipelines-storage-2"
+          else
+              echo "incorrect kafka version"
+              exit 1
+          fi
+          echo "S3 bucket: $bucket"
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.kafka_template }}' \
             --path='global/secrets/backupDaemon/s3/keyId' \
@@ -260,7 +293,11 @@ jobs:
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.kafka_service_template }}' \
             --path='global/secrets/backupDaemon/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.kafka_service_template }}' \
+            --path='backupDaemon/s3/bucket' \
+            --value="$bucket"
       # == End update YAML secrets if needed =======
 
       # == Start kafka installation tests =======
@@ -277,7 +314,6 @@ jobs:
           path_to_chart: '${{ env.kfk_path_to_chart}}'
           namespace: ${{ env.kfk_namespace }}
           image_replacement: ${{ matrix.service_image }}
-          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Installed Kafka CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
@@ -314,7 +350,6 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
           namespace: ${{ env.kfk_srvc_namespace }}
-          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Installed Kafka-Service CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
@@ -353,7 +388,6 @@ jobs:
           namespace: ${{ env.kfk_namespace }}
           deploy_mode: upgrade
           image_replacement: ${{ matrix.service_image }}
-          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
@@ -390,7 +424,6 @@ jobs:
           path_to_chart: '${{ env.kfk_srvc_path_to_chart }}'
           namespace: ${{ env.kfk_srvc_namespace }}
           deploy_mode: upgrade
-          test_tags: '${{ matrix.test.test_tags }}'
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'

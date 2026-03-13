@@ -23,6 +23,10 @@ def main(args_):
     except yaml.YAMLError as exc:
         print(f"YAML loading error: {exc}")
         sys.exit(1)
+    except FileNotFoundError:
+        print(f"File not found: {path_to_file}")
+        sys.exit(1) 
+        sys.exit(1) 
     set_new_value(data_, args_.path, args_.value)
     with open(path_to_file, 'w') as f:
         yaml.dump(data_, f, default_flow_style=False, sort_keys=False)
