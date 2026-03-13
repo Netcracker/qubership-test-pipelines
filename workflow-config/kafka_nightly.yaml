@@ -67,7 +67,7 @@ jobs:
     kafka_template: "templates/kafka-service/kafka_clean_sc_kraft_monitoring.yml"
     kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft_monitoring.yml"
     sequence: install
-    artifact_name: "Clean_CURRENT_non-TLS"
+    artifact_name: "Clean_CURRENT_monitoring"
     test_tags: kafka
     monitoring: true
 
@@ -87,5 +87,4 @@ jobs:
     sequence: install
     storage: s3
     artifact_name: "Clean_CURRENT_S3"
-    ##return backup after fix qubership-kafka/issues/214
-    test_tags: kafkaNOTbackup
+    test_tags: kafka

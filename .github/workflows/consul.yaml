@@ -23,6 +23,11 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      scope:
+        description: 'Consul Test Scope: pr or nightly'
+        type: string
+        required: false
+        default: pr
   workflow_call:
     inputs:
       repository_name:
@@ -45,6 +50,11 @@ on:
         type: string
         required: false
         default: 'ubuntu-latest'
+      scope:
+        description: 'Consul Test Scope: pr or nightly'
+        type: string
+        required: false
+        default: pr
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -86,7 +96,15 @@ jobs:
         working-directory: "${{ github.workspace }}/qubership-test-pipelines"
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/consul.yaml "${{ inputs.service_branch }}"
+          if [[ "${{ inputs.scope }}" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/consul_nightly.yaml"
+          elif [[ "${{ inputs.scope }}" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/consul.yaml"
+          else
+            echo "::error::Invalid scope parameter '${{ inputs.scope }}'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" "$CONFIG_FILE" "${{ inputs.service_branch }}"
 
   Consul-Test-Cases:
     needs: prepare
@@ -109,9 +127,46 @@ jobs:
           ref: '${{inputs.pipeline_branch}}'
           repository: 'netcracker/qubership-test-pipelines'
           path: 'qubership-test-pipelines'
+
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
+
+      # == Start Monitoring installation =======
+      - name: Install Monitoring
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        with:
+          path_to_template: 'templates/monitoring/vm_without_tests.yml'
+          service_branch: 'main'
+          service_name: 'monitoring'
+          repository_name: 'Netcracker/qubership-monitoring-operator'
+          path_to_chart: 'charts/qubership-monitoring-operator'
+          namespace: 'monitoring'
+          restricted: 'false'
+
+      - name: Get Installed Monitoring CR name
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_monitoring_get_crds
+        with:
+          crd_location: 'Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds'
+
+      - name: Verify Monitoring installation
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: monitoring
+          test_completion_max_retries: 40
+          test_completion_retry_interval: '10s'
+          service_ready_max_retries: 80
+          service_ready_retry_interval: '10s'
+          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
+          monitoring_pipeline: 'true'
+          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
+          check_tests: 'true'
+          repository_name: 'Netcracker/qubership-monitoring-operator'
+      # == End Monitoring installation =======
 
       # == Start ======= Specific steps for S3-TLS =======
       - name: S3-TLS specific step
@@ -142,16 +197,39 @@ jobs:
           kubectl get clusterissuer test-clusterissuer -o yaml
           echo "::endgroup::"
           echo "::group::Add secrets to template"
-          python qubership-test-pipelines/scripts/add_secrets_for_s3.py \
-          --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
-          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
-          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-          echo "::endgroup::"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+            --path='backupDaemon/s3/keyId' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+            --path='backupDaemon/s3/keySecret' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for S3-TLS =======
+
+      - name: echo scope
+        run: echo ${{ inputs.scope }}
+
+      - name: Add s3 backet for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+
+      - name: Print template
+        if: matrix.test.allure == true
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
       # == 02 Start ======= Common steps for all tests =======
       - name: Install Consul [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: consul_install
         with:
           path_to_template: ${{ matrix.test.template }}
           service_branch: '${{ matrix.test.install_version }}'
@@ -160,17 +238,26 @@ jobs:
           path_to_chart: 'charts/helm/consul-service'
           namespace: consul
           restricted: ${{ matrix.test.restricted }}
+
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
+          service_branch: '${{ matrix.test.install_version }}'
+          check_tests: true
           namespace: consul
           test_completion_max_retries: 50
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
-          service_branch: ${{ matrix.test.install_version }}
-          check_tests: true
+
+      - name: Collect Diagnostics Consul installation
+        if: ${{ !cancelled() && steps.consul_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: consul
           artifact_name: Installation_${{ matrix.test.artifact_name }}
+          service_branch: '${{ matrix.test.install_version }}'
+
       - name: Delete status-provisioner job
         shell: bash
         run: kubectl delete job consul-status-provisioner -n consul
@@ -180,17 +267,22 @@ jobs:
       - name: Add secrets to template
         if: matrix.test.sequence == 'upgrade' && matrix.test.backend == 's3'
         shell: bash
-        run: >-
-          python qubership-test-pipelines/scripts/add_secrets_for_s3.py
-          --path_to_file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml'
-          --key_id='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
-          --secret_key='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+        run: |
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
+            --path='backupDaemon/s3/keyId' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
+            --path='backupDaemon/s3/keySecret' \
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for S3 =======
 
       # == Start ======= Specific steps for upgrade tests =======
       - name: Upgrade to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: consul_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade_template }}
           service_branch: '${{ matrix.test.upgrade_version }}'
@@ -204,18 +296,26 @@ jobs:
       - name: Sleep 90s after update
         if: matrix.test.sequence == 'upgrade'
         run: sleep 90s
+
       - name: Verify Consul upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
+          service_branch: '${{ matrix.test.upgrade_version }}'
+          check_tests: true
           namespace: consul
           test_completion_max_retries: 50
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
-          service_branch: ${{ matrix.test.upgrade_version }}
-          check_tests: true
+
+      - name: Collect Diagnostics Consul upgrade
+        if: ${{ !cancelled() && steps.consul_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: consul
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
+          service_branch: '${{ matrix.test.upgrade_version }}'
       # == End ======= Specific steps for upgrade tests =======
 
   final-status-check:
