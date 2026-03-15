@@ -1,6 +1,6 @@
 # qubership-test-pipelines
 
-This repository automates the end-to-end testing qubership services in a Kubernetes cluster using Kind. 
+This repository automates the end-to-end testing qubership services in a Kubernetes cluster using Kind.
 It implements a complete CI/CD lifecycle from infrastructure provisioning to post-deployment verification.
 
 ## Repository Structure
@@ -29,6 +29,25 @@ qubership-test-pipelines/
 │       └── [config-name].yml
 └── workflow-config/                 # Workflow configurations
 ```
+## Development
+
+### Pre-commit hooks
+
+This repository uses [pre-commit](https://pre-commit.com/) to enforce code quality.
+
+#### Installation
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+#### Run against all files
+
+```bash
+pre-commit run --all-files
+```
+
 ## Workflows list
 Added workflow for the following services:
 - [Qubership Consul](https://github.com/Netcracker/qubership-consul)
