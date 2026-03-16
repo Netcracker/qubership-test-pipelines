@@ -21,6 +21,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Get secrets
         sudo snap install yq
         secret=$(kubectl get secret ${{inputs.secret_name}} -oyaml -n ${{inputs.namespace}})
         ca_crt=$(echo "$secret" | yq eval '.data["ca.crt"]' -)

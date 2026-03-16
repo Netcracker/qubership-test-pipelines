@@ -7,6 +7,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ install ingress-controller
         kubectl apply -f https://kind.sigs.k8s.io/examples/ingress/deploy-ingress-nginx.yaml
         kubectl patch ingressclass nginx -p '{"metadata": {"annotations":{"ingressclass.kubernetes.io/is-default-class": "true"}}}'
 
@@ -14,10 +15,12 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Get cluster ip of ingress-controller service
         NGINX_IP="$(kubectl get -n ingress-nginx service/ingress-nginx-controller -o jsonpath='{.spec.clusterIP}')"
 
     - name: Patch coredns with wildcard record to testdomain.local zone
       run: |
+        # ▶️ Patch coredns with wildcard record to testdomain.local zone
         NGINX_IP="$(kubectl get -n ingress-nginx service/ingress-nginx-controller -o jsonpath='{.spec.clusterIP}')"
         echo $NGINX_IP
         cat <<EOF | kubectl replace -f -
@@ -60,11 +63,13 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Restart coredns pods to apply changes
         kubectl delete pod -n kube-system -l k8s-app=kube-dns
 
     - name: Sleep
       shell: bash
       run: |
+        # ▶️ Sleep
         kubectl wait --namespace kube-system --for=condition=Ready pods \
           --selector=k8s-app=kube-dns --timeout=180s
 

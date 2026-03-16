@@ -13,6 +13,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Get info
         free -h
         echo '================================================================================'
         lscpu
@@ -28,6 +29,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Install kind
         echo Download kind
         [ $(uname -m) = x86_64 ] && curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.25.0/kind-linux-amd64
         chmod +x ./kind
@@ -36,6 +38,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Delete kind
         ./kind get clusters
         for node in kind-worker kind-control-plane2 kind-external-load-balancer kind-control-plane kind-control-plane3 kind-worker3 kind-worker2; do
           if docker ps -a --format '{{.Names}}' | grep -q "^${node}$"; then

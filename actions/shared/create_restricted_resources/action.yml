@@ -31,6 +31,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Create ClusterRoles
         restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
         if [ ! -d "$restricted_folder" ] || [ ! -d "$restricted_folder/clusterRoles" ]; then
           echo "::warning::Files with clusterRoles not found. Resources not created."
@@ -43,6 +44,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Create ClusterRoleBindings
         restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
         if [ ! -d "$restricted_folder" ] || [ ! -d "$restricted_folder/clusterRoleBindings" ]; then
           echo "::warning::Files with clusterRoleBindings not found. Resources not created."
@@ -75,6 +77,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Create CSR object
         cat <<EOF | kubectl apply -f -
         apiVersion: certificates.k8s.io/v1
         kind: CertificateSigningRequest
@@ -102,6 +105,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Update yaml with Role
         python qubership-test-pipelines/scripts/update_yaml.py \
           --file='qubership-test-pipelines/restricted/restricted-role.yml' \
           --path='metadata/namespace' \
@@ -111,6 +115,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Update yaml with RoleBinding
         python qubership-test-pipelines/scripts/update_yaml.py \
           --file='qubership-test-pipelines/restricted/restricted-rb.yml' \
           --path='metadata/namespace' \

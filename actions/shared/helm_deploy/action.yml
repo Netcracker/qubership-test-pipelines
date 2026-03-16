@@ -84,6 +84,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Create namespace
         if ! kubectl get namespace ${{inputs.namespace}} >/dev/null 2>&1; then
         kubectl create namespace ${{inputs.namespace}}
         else
@@ -95,6 +96,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Create resources
         folder="qubership-test-pipelines/${{inputs.resource_folder}}"
         files=($(find "$folder" -type f))
         echo $files
@@ -149,6 +151,7 @@ runs:
       shell: bash
       # language=bash
       run: |
+        # ▶️ Copy template
         cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
 
     - name: Check if version is release
@@ -218,6 +221,7 @@ runs:
       if: inputs.test_tags != ''
       shell: bash
       run: |
+        # ▶️ Update Test Tags
         template_name=$(basename "${{ inputs.path_to_template }}")
         echo "Template file: $template_name"
         cd "${{ inputs.repository_name }}/${{ inputs.path_to_chart }}"
