@@ -41,7 +41,7 @@ monitoring:
     runAsUser: 1000
 integrationTests:
   install: true
-  tags: "zookeeper"
+  tags: zookeeper_crudORzookeeper_backup_daemonORzookeeper_imagesNOTtransactional_backup
   timeout: 600
   securityContext:
     fsGroup: 1000
