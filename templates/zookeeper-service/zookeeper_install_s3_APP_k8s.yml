@@ -41,7 +41,7 @@ monitoring:
     runAsUser: 1000
 integrationTests:
   install: true
-  tags: "zookeeperNOTzookeeper_backup_daemon"
+  tags: "zookeeper"
   timeout: 600
   securityContext:
     fsGroup: 1000
