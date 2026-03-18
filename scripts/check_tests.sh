@@ -33,6 +33,8 @@ check_tests() {
         echo "::warning:: ⚠️ Failed to copy robot results"
       else
         echo "Robot results copied successfully"
+        echo "Contents of artifacts/robot-results:"
+        ls -la artifacts/robot-results
       fi
 
       if [[ "$logs" == *"| FAIL |"* ]]; then
