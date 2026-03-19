@@ -43,23 +43,23 @@ jobs:
 #    zookeeper_template: "templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml"
 #    artifact_name: "Clean_${release_version}_Zookeeper_Migrate_${release_version}_Kraft_Upgrade_CURRENT_Kraft"
 
-  - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft
-    kafka_install_version: ${service_branch}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_upgrade_version: ${service_branch}
-    kafka_upgrade_template: templates/kafka-service/kafka_update_sc_kraft.yml
-    kafka_service_upgrade_template: templates/kafka-service/kafka_update_sc_kraft.yml
+  - name: "Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft"
+    kafka_install_version: '${service_branch}'
+    kafka_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
+    kafka_upgrade_version: '${service_branch}'
+    kafka_upgrade_template: "templates/kafka-service/kafka_update_sc_kraft.yml"
+    kafka_service_upgrade_template: "templates/kafka-service/kafka_update_sc_kraft.yml"
     sequence: upgrade
-    artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params_Kraft
+    artifact_name: "Clean_CURRENT_Update_CURRENT_Diff_Params_Kraft"
     test_tags: kafka
 
-  - name: Clean [${service_branch}] in non-TLS
-    kafka_install_version: ${service_branch}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+  - name: "Clean [${service_branch}] in non-TLS"
+    kafka_install_version: '${service_branch}'
+    kafka_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
+    kafka_service_template: "templates/kafka-service/kafka_clean_sc_kraft.yml"
     sequence: install
-    artifact_name: Clean_CURRENT_non-TLS
+    artifact_name: "Clean_CURRENT_non-TLS"
     test_tags: kafka
 
   - name: Clean [${service_branch}] with monitoring
@@ -67,7 +67,7 @@ jobs:
     kafka_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring.yml
     kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring.yml
     sequence: install
-    artifact_name: Clean_CURRENT_non-TLS
+    artifact_name: Clean_CURRENT_monitoring
     test_tags: kafka
     monitoring: true
 
@@ -86,6 +86,5 @@ jobs:
     kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml
     sequence: install
     storage: s3
-    artifact_name: Clean_CURRENT_S3
-    ## return backup after fix qubership-kafka/issues/214
-    test_tags: kafkaNOTbackup
+    artifact_name: "Clean_CURRENT_S3"
+    test_tags: kafka
