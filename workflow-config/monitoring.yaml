@@ -6,6 +6,6 @@ jobs:
     upgrade_version: ${service_branch}
     upgrade_template: templates/monitoring/values_test.yml
     sequence: clean
-    check_tests: "true"
-    restricted: "false"
+    check_tests: true
+    restricted: false
     artifact_name: Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params
