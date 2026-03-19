@@ -14,7 +14,7 @@ inputs:
       - 'true': helm installation by user with restricted rights
       - 'false': helm installation by cluster admin user
     required: true
-    default: "false"
+    default: false
     type: boolean
 
   path_to_template:
@@ -252,7 +252,7 @@ runs:
       with:
         release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
         config-file: .github/charts-values-update-config.yaml
-        create-release-branch: "false"
+        create-release-branch: false
         version-replace-method: parse
         working-directory: ${{inputs.repository_name}}
         chart-version: ${{github.run_number}}.${{github.run_attempt}}.${{github.run_id}}
