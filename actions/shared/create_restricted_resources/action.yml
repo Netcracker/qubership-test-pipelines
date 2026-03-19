@@ -26,7 +26,7 @@ inputs:
 runs:
   using: composite
   steps:
-# Create CRD
+    # Create CRD
     - name: Create ClusterRoles
       shell: bash
       # language=bash

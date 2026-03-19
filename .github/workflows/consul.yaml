@@ -150,7 +150,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
-          crd_location: 'Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds'
+          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
 
       - name: Verify Monitoring installation
         if: matrix.test.monitoring == true
@@ -158,14 +158,14 @@ jobs:
         with:
           namespace: monitoring
           test_completion_max_retries: 40
-          test_completion_retry_interval: '10s'
+          test_completion_retry_interval: 10s
           service_ready_max_retries: 80
-          service_ready_retry_interval: '10s'
+          service_ready_retry_interval: 10s
           artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
-          monitoring_pipeline: 'true'
+          monitoring_pipeline: true
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-          check_tests: 'true'
-          repository_name: 'Netcracker/qubership-monitoring-operator'
+          check_tests: true
+          repository_name: Netcracker/qubership-monitoring-operator
       # == End Monitoring installation =======
 
       # == Start ======= Specific steps for S3-TLS =======
