@@ -44,7 +44,7 @@ if [ -n "$auto_matrix_json" ]; then
         matrix_json=$(echo "$matrix_json" | jq -c --argjson new_job "$auto_part" '.jobs += [ $new_job ]')
     done < <(echo "$auto_matrix_json" | jq -c '.auto_jobs[]')
 fi
-matrix=$(echo ${matrix_json} | jq -c '.jobs')
-echo "matrix=$matrix" >> $GITHUB_OUTPUT
+matrix=$(echo "${matrix_json}" | jq -c '.jobs')
+echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 echo "matrix=$matrix"
 echo "::endgroup::"

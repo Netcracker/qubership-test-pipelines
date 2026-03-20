@@ -4,54 +4,54 @@ on:
   workflow_dispatch:
     inputs:
       repository_name:
-        description: 'Repository with Consul service'
+        description: Repository with Consul service
         required: false
         type: string
-        default: 'Netcracker/qubership-consul'
+        default: Netcracker/qubership-consul
       service_branch:
-        description: 'Branch of qubership-consul repository'
+        description: Branch of qubership-consul repository
         required: false
         type: string
-        default: 'main'
+        default: main
       pipeline_branch:
-        description: 'Branch of qubership-test-pipelines repository'
+        description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: 'main'
+        default: main
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       scope:
-        description: 'Consul Test Scope: pr or nightly'
+        description: Consul Test Scope (pr or nightly)
         type: string
         required: false
         default: pr
   workflow_call:
     inputs:
       repository_name:
-        description: 'Repository with Consul service'
+        description: Repository with Consul service
         required: false
         type: string
-        default: 'Netcracker/qubership-consul'
+        default: Netcracker/qubership-consul
       service_branch:
-        description: 'Branch of qubership-consul repository'
+        description: Branch of qubership-consul repository
         required: false
         type: string
-        default: 'main'
+        default: main
       pipeline_branch:
-        description: 'Branch of qubership-test-pipelines repository'
+        description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: 'main'
+        default: main
       runner_type:
-        description: 'Runner type (self-hosted or ubuntu-latest)'
+        description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
-        default: 'ubuntu-latest'
+        default: ubuntu-latest
       scope:
-        description: 'Consul Test Scope: pr or nightly'
+        description: Consul Test Scope (pr or nightly)
         type: string
         required: false
         default: pr
@@ -69,18 +69,18 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.service_branch }}'
-          repository: '${{ inputs.repository_name }}'
-          path: 'qubership-consul'
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-consul
 
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Get latest tag
         id: get-latest-tag
@@ -93,7 +93,7 @@ jobs:
 
       - name: Process versions file and matrix generation
         id: process-versions
-        working-directory: "${{ github.workspace }}/qubership-test-pipelines"
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
           if [[ "${{ inputs.scope }}" == "nightly" ]]; then
@@ -116,7 +116,7 @@ jobs:
     name: ${{ matrix.test.name }}
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
-      - name: "Print job parameters"
+      - name: Print job parameters
         run: |
           echo "======== Job parameters ======="
           echo "${{ toJson(matrix.test) }}"
@@ -124,9 +124,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{inputs.pipeline_branch}}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -137,20 +137,20 @@ jobs:
         if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
-          path_to_template: 'templates/monitoring/vm_without_tests.yml'
-          service_branch: 'main'
-          service_name: 'monitoring'
-          repository_name: 'Netcracker/qubership-monitoring-operator'
-          path_to_chart: 'charts/qubership-monitoring-operator'
-          namespace: 'monitoring'
-          restricted: 'false'
+          path_to_template: templates/monitoring/vm_without_tests.yml
+          service_branch: main
+          service_name: monitoring
+          repository_name: Netcracker/qubership-monitoring-operator
+          path_to_chart: charts/qubership-monitoring-operator
+          namespace: monitoring
+          restricted: false
 
       - name: Get Installed Monitoring CR name
         if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
-          crd_location: 'Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds'
+          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
 
       - name: Verify Monitoring installation
         if: matrix.test.monitoring == true
@@ -158,14 +158,14 @@ jobs:
         with:
           namespace: monitoring
           test_completion_max_retries: 40
-          test_completion_retry_interval: '10s'
+          test_completion_retry_interval: 10s
           service_ready_max_retries: 80
-          service_ready_retry_interval: '10s'
+          service_ready_retry_interval: 10s
           artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
-          monitoring_pipeline: 'true'
+          monitoring_pipeline: true
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-          check_tests: 'true'
-          repository_name: 'Netcracker/qubership-monitoring-operator'
+          check_tests: true
+          repository_name: Netcracker/qubership-monitoring-operator
       # == End Monitoring installation =======
 
       # == Start ======= Specific steps for S3-TLS =======
@@ -207,8 +207,6 @@ jobs:
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for S3-TLS =======
 
-      - name: echo scope
-        run: echo ${{ inputs.scope }}
 
       - name: Add s3 backet for Allure report
         if: matrix.test.allure == true
@@ -232,17 +230,16 @@ jobs:
         id: consul_install
         with:
           path_to_template: ${{ matrix.test.template }}
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
           service_name: consul
-          repository_name: '${{ inputs.repository_name }}'
-          path_to_chart: 'charts/helm/consul-service'
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: charts/helm/consul-service
           namespace: consul
           restricted: ${{ matrix.test.restricted }}
 
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.install_version }}'
           check_tests: true
           namespace: consul
           test_completion_max_retries: 50
@@ -256,7 +253,7 @@ jobs:
         with:
           namespace: consul
           artifact_name: Installation_${{ matrix.test.artifact_name }}
-          service_branch: '${{ matrix.test.install_version }}'
+          service_branch: ${{ matrix.test.install_version }}
 
       - name: Delete status-provisioner job
         shell: bash
@@ -285,7 +282,7 @@ jobs:
         id: consul_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade_template }}
-          service_branch: '${{ matrix.test.upgrade_version }}'
+          service_branch: ${{ matrix.test.upgrade_version }}
           deploy_mode: upgrade
           service_name: consul
           repository_name: ${{ inputs.repository_name }}
@@ -301,7 +298,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          service_branch: '${{ matrix.test.upgrade_version }}'
           check_tests: true
           namespace: consul
           test_completion_max_retries: 50
@@ -315,7 +311,7 @@ jobs:
         with:
           namespace: consul
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
-          service_branch: '${{ matrix.test.upgrade_version }}'
+          service_branch: ${{ matrix.test.upgrade_version }}
       # == End ======= Specific steps for upgrade tests =======
 
   final-status-check:
@@ -326,9 +322,9 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@v5
         with:
-          ref: '${{ inputs.pipeline_branch }}'
-          repository: 'netcracker/qubership-test-pipelines'
-          path: 'qubership-test-pipelines'
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:

@@ -1,5 +1,5 @@
-name: 'Verify Installation Action'
-description: 'A GitHub Action to verify Kubernetes deployments including status checks and test validation.'
+name: Verify Installation Action
+description: A GitHub Action to verify Kubernetes deployments including status checks and test validation.
 inputs:
   namespace:
     description: |
@@ -52,7 +52,7 @@ inputs:
     default: ""
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - name: Initialize error flag
       shell: bash
@@ -111,7 +111,12 @@ runs:
           echo $(pwd)
           echo "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
           cat "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
-          ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json ${{inputs.crd_list}}
+          ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh \
+            "${{inputs.namespace}}" \
+            "${{inputs.service_ready_max_retries}}" \
+            "${{inputs.service_ready_retry_interval}}" \
+            "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json" \
+            "${{inputs.crd_list}}"
         fi
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
@@ -233,7 +238,12 @@ runs:
           echo $(pwd)
           echo "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
           cat "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
-          ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh ${{inputs.namespace}} ${{inputs.service_ready_max_retries}} ${{inputs.service_ready_retry_interval}} ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json ${{inputs.crd_list}}
+          ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh \
+            ${{inputs.namespace}} \
+            ${{inputs.service_ready_max_retries}} \
+            ${{inputs.service_ready_retry_interval}} \
+            ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json \
+            ${{inputs.crd_list}}
         fi
         for i in {1..${{inputs.service_ready_max_retries}}}; do
           echo "Attempt $i/${{inputs.service_ready_max_retries}}"
@@ -312,7 +322,7 @@ runs:
       # language=bash
       run: |
         # ▶️ Check deploy status
-        if [[ "${{ env.ERROR_FLAG }}" == "true" ]]; then
+        if [[ "$ERROR_FLAG" == "true" ]]; then
           echo "::error:: ❌ Service was installed with errors!"
           exit 1
         else

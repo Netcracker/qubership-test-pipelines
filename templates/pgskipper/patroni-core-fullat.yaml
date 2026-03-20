@@ -1,6 +1,6 @@
 postgresUser: postgres
-postgresPassword: "p@ssWOrD1"
-replicatorPassword: "replicator"
+postgresPassword: p@ssWOrD1
+replicatorPassword: replicator
 operator:
   resources:
     limits:
@@ -28,4 +28,4 @@ patroni:
     storageClass: standard
 tests:
   install: true
-  runTestScenarios: "full"
+  runTestScenarios: full
