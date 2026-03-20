@@ -312,7 +312,7 @@ jobs:
           namespace: consul
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.upgrade_version }}
-          # == End ======= Specific steps for upgrade tests =======
+      # == End ======= Specific steps for upgrade tests =======
 
   final-status-check:
     if: ${{ always() }}
