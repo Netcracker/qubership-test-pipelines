@@ -182,7 +182,12 @@ jobs:
           TIMESTAMP=$(date +'%Y%m%d%H%M%S')
           BUCKET_NAME="test-pipelines-consul-${TIMESTAMP}"
           aws s3 mb s3://${BUCKET_NAME} \
-            --region ${{ vars.AWS_REGION || 'us-east-1' }}
+            --region 'us-east-1'
+          echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
+          echo "Bucket name ${BUCKET_NAME} created"
+
+#          aws s3 rb s3://${BUCKET_NAME} \
+#            --region 'us-east-1'
 
       - name: S3-TLS specific step
         if: matrix.test.backend == 's3-tls'
