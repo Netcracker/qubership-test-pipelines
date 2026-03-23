@@ -168,27 +168,9 @@ jobs:
           repository_name: Netcracker/qubership-monitoring-operator
       # == End Monitoring installation =======
 
-      # == Start ======= Specific steps for S3-TLS =======
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
-          aws-region: us-east-1
-
-      - name: Create s3 bucket
-        if: matrix.test.backend == 's3-tls'
-        id: create_bucket
-        run: |
-          TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-          BUCKET_NAME="test-pipelines-consul-${TIMESTAMP}"
-          aws s3 mb s3://${BUCKET_NAME} \
-            --region us-east-1
-          echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
-          echo "Bucket name ${BUCKET_NAME} created"
-
-      - name: S3-TLS specific step
-        if: matrix.test.backend == 's3-tls'
+      # == Start ======= Specific steps for TLS =======
+      - name: TLS specific step
+        if: matrix.test.tls == true
         run: |
           echo "::group::Describe nodes"
           kubectl describe nodes
@@ -214,6 +196,30 @@ jobs:
           kubectl get clusterissuer
           kubectl get clusterissuer test-clusterissuer -o yaml
           echo "::endgroup::"
+      # == End ======= Specific steps for TLS =======
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          aws-region: us-east-1
+
+      - name: Create s3 bucket
+        if: matrix.test.s3 == true
+        id: create_bucket
+        run: |
+          TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+          BUCKET_NAME="test-pipelines-consul-${TIMESTAMP}"
+          aws s3 mb s3://${BUCKET_NAME} \
+            --region us-east-1
+          echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
+          echo "Bucket name ${BUCKET_NAME} created"
+
+      - name: Add s3 secrets to template (clean install)
+        if: matrix.test.s3 == true
+        run: |
           echo "::group::Add secrets to template"
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
@@ -227,9 +233,9 @@ jobs:
             --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
             --path='backupDaemon/s3/bucket' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
-      # == End ======= Specific steps for S3-TLS =======
+      # == End ======= Specific steps for S3 =======
 
-
+      # == Start ======= Specific steps for Allure report =======
       - name: Add s3 backet for Allure report
         if: matrix.test.allure == true
         run: >-
@@ -241,8 +247,9 @@ jobs:
           --file='qubership-test-pipelines/${{ matrix.test.template }}'
           --path='integrationTests/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for Allure report =======
 
-      - name: Print template
+      - name: Print template (clean install)
         run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
       # == 02 Start ======= Common steps for all tests =======
@@ -282,8 +289,8 @@ jobs:
       # == 02 End ======= Common steps for all tests =======
 
       # == Start ======= Specific steps for S3 =======
-      - name: Add secrets to template
-        if: matrix.test.sequence == 'upgrade' && matrix.test.backend == 's3'
+      - name: Add s3 secrets to template (upgrade)
+        if: matrix.test.sequence == 'upgrade' && matrix.test.s3 == true
         shell: bash
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
@@ -293,8 +300,16 @@ jobs:
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
             --path='backupDaemon/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
+            --path='backupDaemon/s3/bucket' \
+            --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
+
+      - name: Print template (upgrade)
+        if: matrix.test.sequence == 'upgrade'
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
 
       # == Start ======= Specific steps for upgrade tests =======
       - name: Upgrade to [${{ matrix.test.upgrade_version }}]
@@ -336,7 +351,7 @@ jobs:
       # == End ======= Specific steps for upgrade tests =======
 
       - name: Delete S3 bucket
-        if: always() && matrix.test.backend == 's3-tls'
+        if: always() && matrix.test.s3 == true
         run: |
           BUCKET="${{ steps.create_bucket.outputs.bucket_name }}"
           if aws s3 ls s3://${BUCKET} --region us-east-1 >/dev/null 2>&1; then
