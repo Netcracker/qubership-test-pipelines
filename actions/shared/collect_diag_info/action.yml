@@ -47,6 +47,27 @@ runs:
         kubectl get vmauths -n "${{inputs.namespace}}" -o yaml > artifacts/vmauths.yaml 2>/dev/null || true
         kubectl get PlatformMonitoring platformmonitoring -n ${{inputs.namespace}} -o yaml > artifacts/PlatformMonitoring.yaml 2>/dev/null || true
 
+    - name: Wait for namespace to stabilize
+      shell: bash
+      # language=bash
+      if: always()
+      run: |
+        # ▶️ Wait until terminating pods disappear to avoid collecting old and new rollout pods together.
+        set +e
+        for attempt in $(seq 1 18); do
+          terminating_count="$(
+            kubectl get pods -n "${{inputs.namespace}}" \
+              -o jsonpath='{range .items[*]}{.metadata.deletionTimestamp}{"\n"}{end}' \
+              2>/dev/null | grep -cve '^[[:space:]]*$'
+          )"
+          if [[ "$terminating_count" -eq 0 ]]; then
+            echo "No terminating pods left in namespace ${{inputs.namespace}}"
+            break
+          fi
+          echo "Found terminating pods in namespace ${{inputs.namespace}}, waiting before collecting artifacts (attempt $attempt/18)"
+          sleep 10
+        done
+
     - name: Get pods
       shell: bash
       # language=bash
