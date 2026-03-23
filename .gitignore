@@ -1,0 +1,15 @@
+# IDEs
+.vscode/
+.idea/
+
+# AI tools
+.claude/
+.cursor/
+.continue/
+.codeium/
+.codex-pre-commit-cache/
+
+# Build & tool caches
+.pre-commit-cache/
+.ruff_cache/
+.venv/

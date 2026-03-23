@@ -34,8 +34,8 @@ opensearch:
       url: https://s3.amazonaws.com/
       bucket: test-pipelines-storage-opensearch
       region: us-east-1
-      keyId: ''
-      keySecret: ''
+      keyId: ""
+      keySecret: ""
   client:
     ingress:
       enabled: true

@@ -37,9 +37,9 @@ backupDaemon:
 integrationTests:
   enabled: true
   tags: backupORcrudORalertsORha
-  prometheusUrl: "http://vmsingle-k8s.monitoring:8429"
+  prometheusUrl: http://vmsingle-k8s.monitoring:8429
   atpStorage:
-    bucket: "qstp-consul"
+    bucket: qstp-consul
     username: ""
     password: ""
 
