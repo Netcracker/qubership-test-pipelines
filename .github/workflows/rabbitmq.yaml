@@ -144,9 +144,19 @@ jobs:
           kubectl get clusterissuer test-clusterissuer -o yaml
           echo "::endgroup::"
 
-      # S3 secrets setup
+      # == Start ======= Specific steps for S3 =======
+      - name: Create S3 bucket
+        id: create_bucket
+        if: matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: rabbitmq
+
       - name: Update YAML secrets
-        if: matrix.test.backend == 's3'
+        if: matrix.test.s3 == true
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
@@ -155,7 +165,12 @@ jobs:
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='backupDaemon/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.template }}' \
+            --path='backupDaemon/s3/bucket' \
+            --value="${{ steps.create_bucket.outputs.bucket_name }}"
+      # == End ======= Specific steps for S3 =======
 
       - name: Print install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template }}
@@ -233,6 +248,17 @@ jobs:
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.install_version }}
       # == End Update steps ==
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Delete S3 bucket
+        if: always() && matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
+      # == End ======= Specific steps for S3 =======
 
   final-status-check:
     if: ${{ always() }}
