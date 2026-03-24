@@ -130,7 +130,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
-      # == Start ======= Installation steps =======
+      # == Start ======= Specific steps for TLS =======
       - name: Install cert-manager
         if: ${{ matrix.test.tls == true }}
         run: |
@@ -155,9 +155,21 @@ jobs:
           kubectl get clusterissuer
           kubectl get clusterissuer test-clusterissuer -o yaml
           echo "::endgroup::"
+      # == End ======= Specific steps for TLS =======
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Create S3 bucket
+        id: create_bucket
+        if: matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: opensearch
 
       - name: Update YAML secrets
-        if: matrix.test.backend == 's3'
+        if: matrix.test.s3 == true
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
@@ -166,7 +178,12 @@ jobs:
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='opensearch/snapshots/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.template }}' \
+            --path='opensearch/snapshots/s3/bucket' \
+            --value="${{ steps.create_bucket.outputs.bucket_name }}"
+      # == End ======= Specific steps for S3 =======
 
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template }}
@@ -267,9 +284,19 @@ jobs:
           namespace: opensearch
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.upgrade_version }}
-
       # == End ===== Upgrade steps ============
 
+      # == Start ======= Specific steps for S3 =======
+      - name: Delete S3 bucket
+        if: always() && matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
+
+      # == End ======= Specific steps for S3 =======
   final-status-check:
     if: ${{ always() }}
     runs-on: ubuntu-latest
