@@ -1,0 +1,37 @@
+name: Setup S3 Bucket
+description: Creates a unique S3 bucket and outputs its name
+inputs:
+  aws_access_key_id:
+    description: AWS access key ID
+    required: true
+  aws_secret_access_key:
+    description: AWS secret access key
+    required: true
+  region:
+    description: AWS region
+    required: false
+    default: us-east-1
+  prefix:
+    description: Prefix for bucket name (e.g., "consul")
+    required: true
+outputs:
+  bucket_name:
+    description: Name of the created bucket
+    value: ${{ steps.create.outputs.bucket_name }}
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.aws_access_key_id }}
+        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+        aws-region: ${{ inputs.region }}
+    - name: Create bucket
+      id: create
+      shell: bash
+      run: |
+        TIMESTAMP=$(date +'%Y%m%d%H%M%S')
+        BUCKET_NAME="test-pipelines-${{ inputs.prefix }}-${TIMESTAMP}"
+        aws s3 mb "s3://${BUCKET_NAME}" --region "${{ inputs.region }}"
+        echo "bucket_name=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"

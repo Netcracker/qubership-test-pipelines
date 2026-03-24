@@ -1,0 +1,31 @@
+name: Cleanup S3 Bucket
+description: Deletes an S3 bucket if it exists
+inputs:
+  aws_access_key_id:
+    required: true
+  aws_secret_access_key:
+    required: true
+  bucket_name:
+    required: true
+  region:
+    required: false
+    default: us-east-1
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ inputs.aws_access_key_id }}
+        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+        aws-region: ${{ inputs.region }}
+    - name: Delete bucket
+      shell: bash
+      run: |
+        BUCKET="${{ inputs.bucket_name }}"
+        if aws s3 ls "s3://${BUCKET}" --region "${{ inputs.region }}" >/dev/null 2>&1; then
+          aws s3 rb "s3://${BUCKET}" --region "${{ inputs.region }}" --force
+          echo "Bucket ${BUCKET} deleted"
+        else
+          echo "::warning:: Bucket ${BUCKET} does not exist, skipping deletion."
+        fi

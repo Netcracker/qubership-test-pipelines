@@ -199,23 +199,15 @@ jobs:
       # == End ======= Specific steps for TLS =======
 
       # == Start ======= Specific steps for S3 =======
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
-          aws-region: us-east-1
-
-      - name: Create s3 bucket
-        if: matrix.test.s3 == true
+      - name: Create S3 bucket
         id: create_bucket
-        run: |
-          TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-          BUCKET_NAME="test-pipelines-consul-${TIMESTAMP}"
-          aws s3 mb s3://${BUCKET_NAME} \
-            --region us-east-1
-          echo "bucket_name=${BUCKET_NAME}" >> $GITHUB_OUTPUT
-          echo "Bucket name ${BUCKET_NAME} created"
+        if: matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: consul
 
       - name: Add s3 secrets to template (clean install)
         if: matrix.test.s3 == true
@@ -352,15 +344,12 @@ jobs:
 
       - name: Delete S3 bucket
         if: always() && matrix.test.s3 == true
-        run: |
-          BUCKET="${{ steps.create_bucket.outputs.bucket_name }}"
-          if aws s3 ls s3://${BUCKET} --region us-east-1 >/dev/null 2>&1; then
-            aws s3 rb s3://${BUCKET} --region us-east-1 --force
-            echo "Bucket ${BUCKET} deleted"
-          else
-            echo "::warning:: Bucket ${BUCKET} does not exist, skipping deletion."
-          fi
-
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
 
   final-status-check:
     if: ${{ always() }}
