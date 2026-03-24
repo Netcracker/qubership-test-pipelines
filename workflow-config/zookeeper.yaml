@@ -33,7 +33,7 @@ jobs:
     upgrade_template: templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml
     sequence: upgrade
     restricted: false
-    storage: s3
+    s3: true
     artifact_name: Clean_CURRENT_WO_Components_Upgrade_CURRENT_All_Components_S3
 
   - name: Clean [${service_branch}], Upgrade [${service_branch}] TLS
