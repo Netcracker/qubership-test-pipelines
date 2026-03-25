@@ -259,6 +259,17 @@ jobs:
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.upgrade_zoo_get_crds.outputs.crd_names }}
 
+      # == Start ======= Specific steps for S3 =======
+      - name: Delete S3 bucket
+        if: always() && matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
+      # == End ======= Specific steps for S3 =======
+
       - name: Collect Diagnostics Zookeeper Upgrade
         if: ${{ !cancelled() && steps.zoo_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
@@ -487,17 +498,6 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Install_tls_cert_${{inputs.service_branch}}
           service_branch: ${{ inputs.service_branch }}
-
-      # == Start ======= Specific steps for S3 =======
-      - name: Delete S3 bucket
-        if: always() && matrix.test.s3 == true
-        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
-        with:
-          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
-          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
-          region: us-east-1
-      # == End ======= Specific steps for S3 =======
 
   final-status-check:
     if: ${{ always() }}
