@@ -182,9 +182,13 @@ jobs:
             --path='backupDaemon/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.upgrade_template }}' \
+            --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml' \
             --path='backupDaemon/s3/bucket' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
+
+      - name: Print s3 template
+        if: matrix.test.sequence == 'upgrade' && matrix.test.s3 == true
+        run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml
       # == End ======= Specific steps for S3 =======
 
       # == Start Spetial TLS Upgrade step =============================
