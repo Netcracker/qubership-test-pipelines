@@ -52,8 +52,9 @@ backupDaemon:
     fsGroup: 5000
   s3:
     enabled: true
-    url: https://s3.amazonaws.com/
+    url: https://s3.us-east-1.amazonaws.com/
     bucket: test-pipelines-storage
+    region: us-east-1
     keyId: ""
     keySecret: ""
 tests:
