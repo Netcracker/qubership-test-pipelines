@@ -118,6 +118,9 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+
       # == 02 Start ===== Install Zookeeper [LATEST] =====
       - name: Clean Install Zookeeper ${{ matrix.test.install_version }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -211,6 +214,10 @@ jobs:
           kubectl get clusterissuer test-clusterissuer -o yaml
           echo "::endgroup::"
       # == End Spetial TLS Upgrade step =============================
+
+
+      - name: Print update deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
       # == 03 Start === Upgrade Zookeeper [LATEST] =====
       - name: Update to [${{ matrix.test.upgrade_version }}] Version
