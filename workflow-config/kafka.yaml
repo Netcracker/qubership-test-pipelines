@@ -73,5 +73,5 @@ jobs:
     kafka_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml
     kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml
     sequence: install
-    storage: s3
+    s3: true
     artifact_name: Clean_CURRENT_S3
