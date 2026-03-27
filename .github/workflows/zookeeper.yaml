@@ -118,6 +118,9 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+
       # == 02 Start ===== Install Zookeeper [LATEST] =====
       - name: Clean Install Zookeeper ${{ matrix.test.install_version }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -156,9 +159,19 @@ jobs:
           service_branch: ${{ matrix.test.install_version }}
       # == 02 End ===== Install Zookeeper [LATEST] =====
 
-      # == Start Spetial S3 Upgrade step =============================
+      # == Start ======= Specific steps for S3 =======
+      - name: Create S3 bucket
+        id: create_bucket
+        if: matrix.test.s3 == true && matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: zookeeper
+
       - name: Update YAML secrets
-        if: matrix.test.sequence == 'upgrade' && matrix.test.storage == 's3'
+        if: matrix.test.sequence == 'upgrade' && matrix.test.s3 == true
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml' \
@@ -167,8 +180,16 @@ jobs:
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml' \
             --path='backupDaemon/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
-      # == End Spetial S3 step =============================
+            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml' \
+            --path='backupDaemon/s3/bucket' \
+            --value="${{ steps.create_bucket.outputs.bucket_name }}"
+
+      - name: Print s3 template
+        if: matrix.test.sequence == 'upgrade' && matrix.test.s3 == true
+        run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml
+      # == End ======= Specific steps for S3 =======
 
       # == Start Spetial TLS Upgrade step =============================
       - name: Install cert-manager
@@ -198,6 +219,10 @@ jobs:
           echo "::endgroup::"
       # == End Spetial TLS Upgrade step =============================
 
+
+      - name: Print update deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+
       # == 03 Start === Upgrade Zookeeper [LATEST] =====
       - name: Update to [${{ matrix.test.upgrade_version }}] Version
         if: matrix.test.sequence == 'upgrade'
@@ -205,7 +230,7 @@ jobs:
         id: zoo_upgrade
         with:
           # combined 2 cases: update params + rollingupdate
-          path_to_template: templates/zookeeper-service/zookeeper_update_APP_k8s.yml
+          path_to_template: ${{ matrix.test.upgrade_template }}
           service_branch: ${{ matrix.test.upgrade_version }}
           deploy_mode: upgrade
           service_name: zookeeper-service
@@ -233,6 +258,17 @@ jobs:
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.upgrade_zoo_get_crds.outputs.crd_names }}
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Delete S3 bucket
+        if: always() && matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
+      # == End ======= Specific steps for S3 =======
 
       - name: Collect Diagnostics Zookeeper Upgrade
         if: ${{ !cancelled() && steps.zoo_upgrade.conclusion != 'skipped' }}

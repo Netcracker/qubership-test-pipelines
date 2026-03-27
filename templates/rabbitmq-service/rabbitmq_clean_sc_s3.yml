@@ -46,5 +46,5 @@ tests:
   runTests: true
   runTestsOnly: false
   timeout: 300
-  tags: smokeORrabbitmq_images
+  tags: smoke
   waitTestResultOnJob: true

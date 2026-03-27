@@ -31,7 +31,7 @@ jobs:
     template: templates/opensearch-service/opensearch_clean_all_on_sc_s3.yml
     sequence: install
     restricted: false
-    backend: s3
+    s3: true
     artifact_name: Clean_CURRENT_S3
 
   - name: Clean [${service_branch}] in TLS mode

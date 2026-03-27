@@ -60,7 +60,7 @@ tests:
   runTests: true
   runTestsOnly: false
   timeout: 300
-  tags: smokeORrabbitmq_images
+  tags: smoke
   waitTestResultOnJob: true
   rabbitmq_port: 15671
   amqp_port: 5671
