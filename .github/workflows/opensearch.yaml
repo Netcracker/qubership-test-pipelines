@@ -103,7 +103,7 @@ jobs:
       path_to_chart: operator/charts/helm/opensearch-service
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
-      - name: "Print job parameters"
+      - name: Print job parameters
         run: |
           echo "======== Job parameters ======="
           echo "${{ toJson(matrix.test) }}"
