@@ -14,30 +14,30 @@ name: Lint Code Base
 on:
   push:
     branches:
-      - '**'
+      - **
   pull_request:
     branches:
-      - '**'
+      - **
   workflow_dispatch:
     inputs:
       full_scan:
         type: boolean
         default: false
         required: false
-        description: "Lint all codebase"
+        description: Lint all codebase
 permissions:
   contents: read
 
 jobs:
   super-linter:
-    name: "Lint Code Base"
+    name: Lint Code Base
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: read
       statuses: write
     steps:
-    - name: "Get the common linters configuration"
+    - name: Get the common linters configuration
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
         ref: main # fix/superlinter-config
@@ -46,23 +46,23 @@ jobs:
         path: common-configs
         sparse-checkout: |
           config/linters
-    - name: "Move configs"
+    - name: Move configs
       run: |
         cp --update=none -vRT ./common-configs/config/linters /tmp/linters
         rm -rf ./common-configs
       # To report GitHub Actions status checks
-    - name: "Checkout code"
+    - name: Checkout code
       uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       with:
         # Full git history is needed to get a proper list of changed files within `super-linter`
         fetch-depth: 0
         persist-credentials: false
-    - name: "Apply the common linters configuration"
+    - name: Apply the common linters configuration
       run: |
         mkdir -p ./.github/linters
         cp --update=none -vRT /tmp/linters ./.github/linters
 
-    - name: "Load super-linter environment file"
+    - name: Load super-linter environment file
       shell: bash
       run: |
         # shellcheck disable=2086
@@ -77,7 +77,7 @@ jobs:
           grep "\S" /tmp/linters/super-linter.env | grep -v "^#" >> $GITHUB_ENV
         fi
 
-    - name: "Lint Code Base"
+    - name: Lint Code Base
       uses: super-linter/super-linter/slim@61abc07d755095a68f4987d1c2c3d1d64408f1f9 # v8.5.0
       env:
         VALIDATE_ALL_CODEBASE: ${{ inputs.full_scan || false }}
