@@ -62,14 +62,15 @@ jobs:
     artifact_name: Clean_CURRENT_non-TLS
     test_tags: kafka
 
-  - name: Clean [${service_branch}] with monitoring
+  - name: Clean [${service_branch}] with Monitoring and Allure
     kafka_install_version: ${service_branch}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring.yml
+    kafka_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring_allure.yml
+    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring_allure.yml
     sequence: install
     artifact_name: Clean_CURRENT_monitoring
     test_tags: kafka
     monitoring: true
+    allure: true
 
   - name: Clean [${service_branch}] in TLS
     kafka_install_version: ${service_branch}
