@@ -169,34 +169,10 @@ jobs:
       # == End Monitoring installation =======
 
       # == Start ======= Specific steps for TLS =======
-      - name: TLS specific step
+      - name: Setup TLS
         if: matrix.test.install.tls == true
-        run: |
-          echo "::group::Describe nodes"
-          kubectl describe nodes
-          echo "::endgroup::"
-          echo "::group::Install cert-manager"
-          helm repo add jetstack https://charts.jetstack.io --force-update
-          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
-            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-          echo "::endgroup::"
-          echo "::group::Create cert-manager entities"
-          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-          echo "::endgroup::"
-          echo "::group::Get cert-manager resources"
-          kubectl get pods -n cert-manager
-          kubectl get secrets -n cert-manager
-          kubectl get certificates -A
-          echo "::endgroup::"
-          echo "::group::Get clusterissuer"
-          kubectl get clusterissuer
-          kubectl get clusterissuer test-clusterissuer -o yaml
-          echo "::endgroup::"
-      # == End ======= Specific steps for TLS =======
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+        # == End ======= Specific steps for TLS =======
 
       # == Start ======= Specific steps for S3 =======
       - name: Create S3 bucket
