@@ -188,7 +188,7 @@ jobs:
       - name: Add s3 secrets to template (clean install)
         if: matrix.test.install.s3 == true
         run: |
-          echo "::group::Add secrets to template"
+          # ▶️ Add s3 secrets to template
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='backupDaemon/s3/keyId' \
@@ -207,6 +207,7 @@ jobs:
       - name: Add s3 backet for Allure report
         if: matrix.test.install.allure == true
         run: >-
+          # ▶️ Add s3 backet for Allure report
           python qubership-test-pipelines/scripts/update_yaml.py
           --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpStorage/username'
