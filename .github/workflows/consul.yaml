@@ -134,7 +134,7 @@ jobs:
 
       # == Start Monitoring installation =======
       - name: Install Monitoring
-        if: matrix.test.monitoring == true
+        if: matrix.test.install.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: templates/monitoring/vm_without_tests.yml
@@ -146,14 +146,14 @@ jobs:
           restricted: false
 
       - name: Get Installed Monitoring CR name
-        if: matrix.test.monitoring == true
+        if: matrix.test.install.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
           crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
 
       - name: Verify Monitoring installation
-        if: matrix.test.monitoring == true
+        if: matrix.test.install.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: monitoring
@@ -161,7 +161,7 @@ jobs:
           test_completion_retry_interval: 10s
           service_ready_max_retries: 80
           service_ready_retry_interval: 10s
-          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
+          artifact_name: ${{ matrix.test.install.artifact_name }}_monitoring
           monitoring_pipeline: true
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           check_tests: true
@@ -169,39 +169,15 @@ jobs:
       # == End Monitoring installation =======
 
       # == Start ======= Specific steps for TLS =======
-      - name: TLS specific step
-        if: matrix.test.tls == true
-        run: |
-          echo "::group::Describe nodes"
-          kubectl describe nodes
-          echo "::endgroup::"
-          echo "::group::Install cert-manager"
-          helm repo add jetstack https://charts.jetstack.io --force-update
-          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
-            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-          echo "::endgroup::"
-          echo "::group::Create cert-manager entities"
-          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-          echo "::endgroup::"
-          echo "::group::Get cert-manager resources"
-          kubectl get pods -n cert-manager
-          kubectl get secrets -n cert-manager
-          kubectl get certificates -A
-          echo "::endgroup::"
-          echo "::group::Get clusterissuer"
-          kubectl get clusterissuer
-          kubectl get clusterissuer test-clusterissuer -o yaml
-          echo "::endgroup::"
-      # == End ======= Specific steps for TLS =======
+      - name: Setup TLS
+        if: matrix.test.install.tls == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+        # == End ======= Specific steps for TLS =======
 
       # == Start ======= Specific steps for S3 =======
       - name: Create S3 bucket
         id: create_bucket
-        if: matrix.test.s3 == true
+        if: matrix.test.install.s3 == true || matrix.test.upgrade.s3 == true
         uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
@@ -210,47 +186,48 @@ jobs:
           prefix: consul
 
       - name: Add s3 secrets to template (clean install)
-        if: matrix.test.s3 == true
+        if: matrix.test.install.s3 == true
         run: |
-          echo "::group::Add secrets to template"
+          # ▶️ Add s3 secrets to template
           python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='backupDaemon/s3/keyId' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='backupDaemon/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='backupDaemon/s3/bucket' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
 
       # == Start ======= Specific steps for Allure report =======
       - name: Add s3 backet for Allure report
-        if: matrix.test.allure == true
+        if: matrix.test.install.allure == true
         run: >-
+          # ▶️ Add s3 backet for Allure report
           python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for Allure report =======
 
       - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
       # == 02 Start ======= Common steps for all tests =======
-      - name: Install Consul [${{ matrix.test.install_version }}]
+      - name: Install Consul [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: consul_install
         with:
-          path_to_template: ${{ matrix.test.template }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
           service_name: consul
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: charts/helm/consul-service
@@ -272,8 +249,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: consul
-          artifact_name: Installation_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: ${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
 
       - name: Delete status-provisioner job
         shell: bash
@@ -282,35 +259,35 @@ jobs:
 
       # == Start ======= Specific steps for S3 =======
       - name: Add s3 secrets to template (upgrade)
-        if: matrix.test.sequence == 'upgrade' && matrix.test.s3 == true
+        if: matrix.test.sequence == 'upgrade' && matrix.test.upgrade.s3 == true
         shell: bash
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
+            --file='qubership-test-pipelines/${{ matrix.test.upgrade.template }}' \
             --path='backupDaemon/s3/keyId' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
+            --file='qubership-test-pipelines/${{ matrix.test.upgrade.template }}' \
             --path='backupDaemon/s3/keySecret' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/templates/consul-service/consul_clean_all_on_sc_drd_s3.yml' \
+            --file='qubership-test-pipelines/${{ matrix.test.upgrade.template }}' \
             --path='backupDaemon/s3/bucket' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
 
       - name: Print upgrade deployment parameters
-        if: matrix.test.sequence == 'upgrade' && matrix.test.s3 == true
-        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
+        if: matrix.test.sequence == 'upgrade' && matrix.test.upgrade.s3 == true
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
       # == End ======= Specific steps for S3 =======
 
       # == Start ======= Specific steps for upgrade tests =======
-      - name: Upgrade to [${{ matrix.test.upgrade_version }}]
+      - name: Upgrade to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: consul_upgrade
         with:
-          path_to_template: ${{ matrix.test.upgrade_template }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
           deploy_mode: upgrade
           service_name: consul
           repository_name: ${{ inputs.repository_name }}
@@ -338,13 +315,13 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: consul
-          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          artifact_name: ${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
       # == End ======= Specific steps for upgrade tests =======
 
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
-        if: always() && matrix.test.s3 == true
+        if: always() && (matrix.test.install.s3 == true || matrix.test.upgrade.s3 == true)
         uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}

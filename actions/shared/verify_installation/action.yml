@@ -59,11 +59,6 @@ runs:
       # language=bash
       run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
 
-    - name: Initialize error flag
-      shell: bash
-      # language=bash
-      run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
-
     - name: Check service is ready
       shell: bash
       # language=bash
@@ -150,45 +145,6 @@ runs:
             echo "::error:: ❌ Resources not ready after ${{inputs.service_ready_max_retries}} retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
-
-    - name: Get logs from test pod
-      if: inputs.check_tests == 'true'
-      shell: bash
-      # language=bash
-      run: |
-        # ▶️ Get logs from test pod
-        chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
-        ls -la ./qubership-test-pipelines/scripts/check_tests.sh
-
-        for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
-          echo "Test check attempt $i/${{inputs.test_completion_max_retries}}"
-          set +e
-          ./qubership-test-pipelines/scripts/check_tests.sh "${{inputs.namespace}}"
-          tests_exit_code=$?
-          set -e
-
-          case $tests_exit_code in
-            0)
-              echo "✅ Tests passed successfully"
-              break
-              ;;
-            1)
-              echo "⏳ Tests still in progress"
-              ;;
-            2)
-              echo "::error:: ❌ Tests failed"
-              echo "ERROR_FLAG=true" >> $GITHUB_ENV
-              break
-              ;;
-          esac
-
-          if [ $i -eq ${{inputs.test_completion_max_retries}} ]; then
-            echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
-            echo "ERROR_FLAG=true" >> $GITHUB_ENV
-          else
-            sleep ${{inputs.test_completion_retry_interval}}
-          fi
-        done
 
     - name: Get monitoring specific resources
       if: ${{ inputs.monitoring_pipeline == 'true' }}
