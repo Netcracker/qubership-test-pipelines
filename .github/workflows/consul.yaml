@@ -114,6 +114,13 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
+    env:
+      CHECK_TESTS: true
+      NAMESPACE: consul
+      TEST_COMPLETION_MAX_RETRIES: 1
+      TEST_COMPLETION_RETRY_INTERVAL: 10s
+      SERVICE_READY_MAX_RETRIES: 100
+      SERVICE_READY_RETRY_INTERVAL: 10s
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: Print job parameters
@@ -237,12 +244,12 @@ jobs:
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
-          namespace: consul
-          test_completion_max_retries: 50
-          test_completion_retry_interval: 10s
-          service_ready_max_retries: 50
-          service_ready_retry_interval: 10s
+          check_tests: ${{ env.CHECK_TESTS }}
+          namespace: ${{ env.NAMESPACE }}
+          test_completion_max_retries: ${{ env.TEST_COMPLETION_MAX_RETRIES }}
+          test_completion_retry_interval: ${{ env.TEST_COMPLETION_RETRY_INTERVAL }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
 
       - name: Collect Diagnostics Consul installation
         if: ${{ !cancelled() && steps.consul_install.conclusion != 'skipped' }}
@@ -303,12 +310,12 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
-          namespace: consul
-          test_completion_max_retries: 50
-          test_completion_retry_interval: 10s
-          service_ready_max_retries: 50
-          service_ready_retry_interval: 10s
+          check_tests: ${{ env.CHECK_TESTS }}
+          namespace: ${{ env.NAMESPACE }}
+          test_completion_max_retries: ${{ env.TEST_COMPLETION_MAX_RETRIES }}
+          test_completion_retry_interval: ${{ env.TEST_COMPLETION_RETRY_INTERVAL }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
 
       - name: Collect Diagnostics Consul upgrade
         if: ${{ !cancelled() && steps.consul_upgrade.conclusion != 'skipped' }}
