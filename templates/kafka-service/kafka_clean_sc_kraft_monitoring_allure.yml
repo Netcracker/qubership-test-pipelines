@@ -59,7 +59,7 @@ integrationTests:
   waitForResult: true
   tags: kafka
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
-  atpStorage:
-    bucket: qstp-consul
-    username: ""
-    password: ""
+#  atpStorage:
+#    bucket: ""
+#    username: ""
+#    password: ""
