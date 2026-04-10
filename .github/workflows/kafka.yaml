@@ -36,6 +36,11 @@ on:
         type: string
         required: false
         default: pr
+      skip_tests:
+        description: 'Skip all tests (for doc-only changes)'
+        type: boolean
+        required: false
+        default: false
 
   workflow_call:
     inputs:
@@ -70,6 +75,11 @@ on:
         type: string
         required: false
         default: pr
+      skip_tests:
+        description: 'Skip all tests (for doc-only changes)'
+        type: boolean
+        required: false
+        default: false
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -78,6 +88,7 @@ on:
 
 jobs:
   prepare:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
@@ -132,6 +143,7 @@ jobs:
           echo "service_images=$IMAGES" >> $GITHUB_OUTPUT
 
   Kafka-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
     needs: prepare
     strategy:
