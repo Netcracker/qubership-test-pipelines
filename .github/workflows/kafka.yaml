@@ -40,7 +40,7 @@ on:
         description: 'Skip all tests (for doc-only changes)'
         type: boolean
         required: false
-        default: true
+        default: false
 
   workflow_call:
     inputs:
