@@ -37,7 +37,7 @@ on:
         required: false
         default: pr
       skip_tests:
-        description: 'Skip all tests (for doc-only changes)'
+        description: Skip all tests (for doc-only changes)
         type: boolean
         required: false
         default: false
@@ -76,7 +76,7 @@ on:
         required: false
         default: pr
       skip_tests:
-        description: 'Skip all tests (for doc-only changes)'
+        description: Skip all tests (for doc-only changes)
         type: boolean
         required: false
         default: false
