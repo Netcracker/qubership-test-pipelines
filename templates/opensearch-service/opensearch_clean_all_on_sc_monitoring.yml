@@ -4,7 +4,7 @@ global:
     enabled: false
     generateCerts:
       certProvider: cert-manager
-      clusterIssuerName: dev-clusterissuer
+      clusterIssuerName: test-clusterissuer
 opensearch:
   tls:
     enabled: false
