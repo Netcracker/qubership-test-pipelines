@@ -62,7 +62,7 @@ monitoring:
   enabled: true
   includeIndices: true
   slowQueries:
-    enabled: true
+    enabled: false
 curator:
   enabled: true
   backupSchedule: 0 * * * *
@@ -74,7 +74,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORauthenticationORprometheusORhaORbackupNOTslow_query
+  tags: smokeORauthenticationORprometheusORhaORbackup
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
 statusProvisioner:
   lifetimeAfterCompletion: 30
