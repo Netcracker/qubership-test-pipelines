@@ -74,7 +74,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORdbaasORauthenticationORprometheusORhaORbackupNOTslow_query
+  tags: smokeORauthenticationORprometheusORhaORbackupNOTslow_query
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
 statusProvisioner:
   lifetimeAfterCompletion: 30
