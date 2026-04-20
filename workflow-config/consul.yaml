@@ -1,65 +1,83 @@
 jobs:
   ## A special configuration section for generating jobs for installing previous releases on the current version
   - purpose: automation
-    name: Clean [${release_version}], Upgrade to [${service_branch}]
-    install_version: ${release_version}
-    template: templates/consul-service/consul_clean_all_on_sc.yml
-    upgrade_version: ${service_branch}
-    upgrade_template: templates/consul-service/consul_clean_all_on_sc.yml
+    name: Clean [${release_version}]. Upgrade to [${service_branch}]
     sequence: upgrade
     restricted: false
-    artifact_name: Clean_${release_version}_Upgrade_CURRENT
+    install:
+      version: ${release_version}
+      template: templates/consul-service/consul_clean_all_on_sc.yml
+      artifact_name: consul_clean_${release_version}
+    upgrade:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_all_on_sc.yml
+      artifact_name: consul_upgrade_current
   ## ===============================================================================
 
   - name: Clean [${service_branch}] restricted
-    install_version: ${service_branch}
-    template: templates/consul-service/consul_clean_all_on_sc_restricted.yml
     sequence: install
     restricted: true
-    artifact_name: Clean_CURRENT_Restricted
+    install:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_all_on_sc_restricted.yml
+      artifact_name: consul_clean_current_restricted
 
-  - name: Clean [${service_branch}] Full-AT Ports-specifying Custom-labels
-    install_version: ${service_branch}
-    template: templates/consul-service/consul_clean_all_on_sc_full_at.yml
+  - name: Clean [${service_branch}] full-at
     sequence: install
     restricted: false
-    artifact_name: Clean_CURRENT_Full-AT
-    monitoring: true
+    install:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_all_on_sc_full_at.yml
+      artifact_name: consul_clean_current_full_at
+      monitoring: true
 
-  - name: Clean [${service_branch}] S3 TLS
-    install_version: ${service_branch}
-    template: templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml
+  - name: Clean [${service_branch}] s3 tls
     sequence: install
     restricted: false
-    s3: true
-    tls: true
-    artifact_name: Clean_CURRENT_S3_TLS
+    install:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_all_on_sc_drd_s3_tls.yml
+      artifact_name: consul_clean_current_s3_tls
+      s3: true
+      tls: true
 
-  - name: Clean [${service_branch}]. Upgrade [${service_branch}] Diff Params
-    install_version: ${service_branch}
-    template: templates/consul-service/consul_clean_all_on_sc.yml
-    upgrade_version: ${service_branch}
-    upgrade_template: templates/consul-service/consul_clean_all_on_sc_updated.yml
+  - name: Clean [${service_branch}]. Upgrade to [${service_branch}] diff params
     sequence: upgrade
     restricted: false
-    artifact_name: Clean_CURRENT_Upgrade_CURRENT_Diff_Params
+    install:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_all_on_sc.yml
+      artifact_name: consul_clean_current
+    upgrade:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_all_on_sc_updated.yml
+      artifact_name: consul_upgrade_current_diff_params
 
-  - name: Clean [${service_branch}] W/O Components. Upgrade [${service_branch}] All Components S3
-    install_version: ${service_branch}
-    template: templates/consul-service/consul_clean_on_sc_without_components.yml
-    upgrade_version: ${service_branch}
-    upgrade_template: templates/consul-service/consul_clean_all_on_sc_drd_s3.yml
+  - name: Clean [${service_branch}] w/o components. Upgrade to [${service_branch}] all components s3
     sequence: upgrade
     restricted: false
-    s3: true
-    artifact_name: Clean_CURRENT_WO_Components.Upgrade_CURRENT_All_Components_S3
+    install:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_on_sc_without_components.yml
+      artifact_name: consul_clean_current_wo_components
+      s3: false
+      tls: false
+    upgrade:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_all_on_sc_drd_s3.yml
+      artifact_name: consul_upgrade_current_all_components_s3
+      s3: true
+      tls: false
 
   - purpose: automation
-    name: Clean [${release_version}] Restricted. Upgrade To [${service_branch}] Restricted
-    install_version: ${release_version}
-    template: templates/consul-service/consul_clean_all_on_sc_restricted.yml
-    upgrade_version: ${service_branch}
-    upgrade_template: templates/consul-service/consul_clean_all_on_sc_restricted.yml
+    name: Clean [${release_version}] restricted. Upgrade to [${service_branch}] restricted
     sequence: upgrade
     restricted: true
-    artifact_name: Clean_PREVIOUS_Restricted.Upgrade_CURRENT_Restricted
+    install:
+      version: ${release_version}
+      template: templates/consul-service/consul_clean_all_on_sc_restricted.yml
+      artifact_name: consul_clean_previous_restricted
+    upgrade:
+      version: ${service_branch}
+      template: templates/consul-service/consul_clean_all_on_sc_restricted.yml
+      artifact_name: consul_upgrade_current_restricted
