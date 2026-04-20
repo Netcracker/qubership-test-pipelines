@@ -80,6 +80,7 @@ on:
         type: boolean
         required: false
         default: false
+
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
