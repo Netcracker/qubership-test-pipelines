@@ -231,7 +231,7 @@ jobs:
           namespace: monitoring
           test_completion_max_retries: 40
           test_completion_retry_interval: 10s
-          service_ready_max_retries: 300
+          service_ready_max_retries: 500
           service_ready_retry_interval: 10s
           monitoring_pipeline: true
           repository_name: Netcracker/qubership-monitoring-operator
