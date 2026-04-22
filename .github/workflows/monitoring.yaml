@@ -28,6 +28,12 @@ on:
         type: string
         required: false
         default: multi-node
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+
   workflow_call:
     inputs:
       repository_name:
@@ -55,9 +61,15 @@ on:
         type: string
         required: false
         default: multi-node
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   prepare:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
@@ -90,6 +102,7 @@ jobs:
           ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/monitoring.yaml "${{ inputs.service_branch }}"
 
   Monitoring-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
     needs: prepare
     runs-on: ${{ inputs.runner_type }}
     strategy:
