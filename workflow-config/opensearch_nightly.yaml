@@ -48,4 +48,5 @@ jobs:
     sequence: install
     restricted: false
     monitoring: true
+    s3: true
     artifact_name: Clean_CURRENT_Monitoring
