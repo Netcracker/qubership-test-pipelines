@@ -17,7 +17,6 @@ on:
         description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -55,7 +54,6 @@ on:
         description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string

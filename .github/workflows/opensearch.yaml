@@ -16,7 +16,6 @@ on:
         description: Test pipeline branch name
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string

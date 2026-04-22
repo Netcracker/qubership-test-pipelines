@@ -16,7 +16,6 @@ on:
         description: Test pipeline branch name
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -303,6 +302,7 @@ jobs:
         if: matrix.test.s3 == true
         id: prefix
         run: |
+          # shellcheck disable=2193
           if [[ "${{ matrix.service_image }}" == *kafka-4* ]]; then
             echo "prefix=kafka-4" >> $GITHUB_OUTPUT
           elif [[ "${{ matrix.service_image }}" == *kafka-3* ]]; then
