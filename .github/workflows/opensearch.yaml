@@ -1,5 +1,8 @@
 name: Reusable Opensearch Tests
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -67,39 +70,45 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
           path: qubership-opensearch
+          persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Get latest tag
         id: get-latest-tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
         run: |
-          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
       - name: Process versions file and matrix generation
         id: process-versions
+        env:
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/opensearch.yaml "${{ inputs.service_branch }}"
+          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/opensearch.yaml "$SERVICE_BRANCH"
 
   Opensearch-Test-Cases:
     if: ${{ !inputs.skip_tests }}
     needs: prepare
-    runs-on: ${{inputs.runner_type}}
+    runs-on: ${{ inputs.runner_type }}
     strategy:
       fail-fast: false
       matrix:
@@ -118,10 +127,11 @@ jobs:
       - name: Print job parameters
         run: |
           echo "======== Job parameters ======="
+          # zizmor: ignore[template-injection]
           echo "${{ toJson(matrix.test) }}"
 
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
           android: true
@@ -132,11 +142,12 @@ jobs:
           swap-storage: true
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
-          ref: ${{inputs.pipeline_branch}}
+          ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -182,15 +193,16 @@ jobs:
 
       - name: Update YAML secrets
         if: matrix.test.s3 == true
+        # zizmor: ignore[template-injection]
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='opensearch/snapshots/s3/keyId' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='opensearch/snapshots/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='opensearch/snapshots/s3/bucket' \
@@ -307,19 +319,20 @@ jobs:
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
           bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
           region: us-east-1
-
       # == End ======= Specific steps for S3 =======
+
   final-status-check:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs: [Opensearch-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:

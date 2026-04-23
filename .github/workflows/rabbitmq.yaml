@@ -1,5 +1,8 @@
 name: Reusable RabbitMQ Tests
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -78,46 +81,53 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
           path: qubership-rabbitmq
+          persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Get latest tag
         id: get-latest-tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
         run: |
-          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
       - name: Process versions file and matrix generation
         id: process-versions
+        env:
+          SCOPE: ${{ inputs.scope }}
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          if [[ "${{ inputs.scope }}" == "nightly" ]]; then
+          if [[ "$SCOPE" == "nightly" ]]; then
             CONFIG_FILE="./workflow-config/rabbitmq_nightly.yaml"
-          elif [[ "${{ inputs.scope }}" == "pr" ]]; then
+          elif [[ "$SCOPE" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/rabbitmq.yaml"
           else
-            echo "::error::Invalid scope parameter '${{ inputs.scope }}'. Must be 'pr' or 'nightly'."
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
             exit 1
           fi
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" "$CONFIG_FILE" "${{ inputs.service_branch }}"
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   RabbitMQ-Test-Cases:
     if: ${{ !inputs.skip_tests }}
-    runs-on: ${{inputs.runner_type}}
+    runs-on: ${{ inputs.runner_type }}
     needs: prepare
     strategy:
       fail-fast: false
@@ -134,14 +144,17 @@ jobs:
       - name: Print job parameters
         run: |
           echo "======== Job parameters ======="
+          # zizmor: ignore[template-injection]
           echo "${{ toJson(matrix.test) }}"
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
+
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == End Common steps ==
@@ -210,15 +223,15 @@ jobs:
           echo "::endgroup::"
 
       # == Start ======= Specific steps for S3 =======
-#      - name: Create S3 bucket
-#        id: create_bucket
-#        if: matrix.test.s3 == true
-#        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
-#        with:
-#          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-#          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
-#          region: us-east-1
-#          prefix: rabbitmq
+      # - name: Create S3 bucket
+      #   id: create_bucket
+      #   if: matrix.test.s3 == true
+      #   uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+      #   with:
+      #     aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+      #     aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+      #     region: us-east-1
+      #     prefix: rabbitmq
 
       - name: Update YAML secrets
         if: matrix.test.s3 == true
@@ -231,10 +244,10 @@ jobs:
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='backupDaemon/s3/keySecret' \
             --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}'
-#          && python qubership-test-pipelines/scripts/update_yaml.py \
-#            --file='qubership-test-pipelines/${{ matrix.test.template }}' \
-#            --path='backupDaemon/s3/bucket' \
-#            --value="${{ steps.create_bucket.outputs.bucket_name }}"
+      #       && python qubership-test-pipelines/scripts/update_yaml.py \
+      #         --file='qubership-test-pipelines/${{ matrix.test.template }}' \
+      #         --path='backupDaemon/s3/bucket' \
+      #         --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
 
       - name: Print install deployment parameters
@@ -315,14 +328,14 @@ jobs:
       # == End Update steps ==
 
       # == Start ======= Specific steps for S3 =======
-#      - name: Delete S3 bucket
-#        if: always() && matrix.test.s3 == true
-#        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
-#        with:
-#          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-#          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
-#          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
-#          region: us-east-1
+      # - name: Delete S3 bucket
+      #   if: always() && matrix.test.s3 == true
+      #   uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+      #   with:
+      #     aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+      #     aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+      #     bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+      #     region: us-east-1
       # == End ======= Specific steps for S3 =======
 
   final-status-check:
@@ -331,11 +344,12 @@ jobs:
     needs: [RabbitMQ-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:
