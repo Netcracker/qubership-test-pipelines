@@ -28,15 +28,11 @@ opensearch:
         cpu: 2
         memory: 4Gi
   snapshots:
-    enabled: true
+    enabled: false
     size: 1Gi
     s3:
-      enabled: true
+      enabled: false
       pathStyleAccess: true
-      url: https://s3.amazonaws.com/
-      bucket: test-pipelines-storage
-      keyId: ""
-      keySecret: ""
   client:
     ingress:
       enabled: true
@@ -51,7 +47,7 @@ dashboards:
         paths:
           - path: /
 dbaasAdapter:
-  enabled: false
+  enabled: true
   dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
   opensearchRepo: snapshots
   opensearchRepoRoot: /usr/share/opensearch/
@@ -78,7 +74,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORauthenticationORprometheusORhaORbackup
+  tags: smokeORauthenticationORprometheusORhaORbackupNOTslow_query
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
 statusProvisioner:
   lifetimeAfterCompletion: 30
