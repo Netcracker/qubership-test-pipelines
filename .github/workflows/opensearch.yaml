@@ -125,10 +125,11 @@ jobs:
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
         run: |
           echo "======== Job parameters ======="
-          # zizmor: ignore[template-injection]
-          echo "${{ toJson(matrix.test) }}"
+          echo "$MATRIX_JSON"
 
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
