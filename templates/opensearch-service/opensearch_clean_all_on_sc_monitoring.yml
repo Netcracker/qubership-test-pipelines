@@ -51,7 +51,7 @@ dashboards:
         paths:
           - path: /
 dbaasAdapter:
-  enabled: true
+  enabled: false
   dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
   opensearchRepo: snapshots
   opensearchRepoRoot: /usr/share/opensearch/
