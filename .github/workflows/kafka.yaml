@@ -517,7 +517,7 @@ jobs:
         run: sleep 1m
 
       - name: Hardening Check
-        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@712-feat-k8s-hardening-scan-improvements
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@e64a1ee2fc2f68ab44a4ef416c27d83ce36ba8e1 # v2.2.1
         with:
           namespaces: ${{ env.kfk_srvc_namespace }}
           output-file: kafka-service-hardening-scan.json
