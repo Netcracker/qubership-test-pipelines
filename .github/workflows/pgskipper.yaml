@@ -1,5 +1,8 @@
 name: Pgskipper Tests
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -17,7 +20,6 @@ on:
         description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -33,6 +35,11 @@ on:
             "pgskipper-docker-patroni-17",
             "pgskipper-docker-patroni-18"
           ]
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
 
   workflow_call:
     inputs:
@@ -50,7 +57,6 @@ on:
         description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -66,6 +72,12 @@ on:
             "pgskipper-docker-patroni-17",
             "pgskipper-docker-patroni-18"
           ]
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -74,6 +86,7 @@ on:
 
 jobs:
   prepare:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
@@ -82,43 +95,52 @@ jobs:
       service_images: ${{ steps.parse-matrix.outputs.service_images }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
           path: pgskipper-operator
+          persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: ${{ github.repository_owner }}/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Get latest tag
         id: get-latest-tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
         run: |
-          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
       - name: Process versions file and matrix generation
         id: process-versions
+        env:
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/pgskipper.yaml "${{ inputs.service_branch }}"
+          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/pgskipper.yaml "$SERVICE_BRANCH"
 
       - name: Parse JSON into matrix
         id: parse-matrix
+        env:
+          VERSIONS_JSON: ${{ inputs.service_versions_json }}
         run: |
-          IMAGES=$(echo '${{ inputs.service_versions_json }}' | jq -c '.')
+          IMAGES=$(echo "$VERSIONS_JSON" | jq -c '.')
           echo "PG Images: $IMAGES"
           echo "service_images=$IMAGES" >> $GITHUB_OUTPUT
 
   Pgskipper-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
     needs: prepare
     runs-on: ${{ inputs.runner_type }}
     strategy:
@@ -130,20 +152,23 @@ jobs:
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
         run: |
           echo "======== Job parameters ======="
-          echo "${{ toJson(matrix.test) }}"
+          echo "$MATRIX_JSON"
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Free Disk Space (Ubuntu)
         if: inputs.runner_type == 'ubuntu-latest'
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
           android: true
@@ -361,11 +386,12 @@ jobs:
     needs: [Pgskipper-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:
