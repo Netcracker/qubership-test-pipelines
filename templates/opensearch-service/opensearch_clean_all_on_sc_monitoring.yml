@@ -47,7 +47,7 @@ dashboards:
         paths:
           - path: /
 dbaasAdapter:
-  enabled: true
+  enabled: false
   dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
   opensearchRepo: snapshots
   opensearchRepoRoot: /usr/share/opensearch/
@@ -74,7 +74,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORauthenticationORprometheusORhaORbackupNOTslow_query
+  tags: smokeORauthenticationORprometheusORhaORbackup
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
 statusProvisioner:
   lifetimeAfterCompletion: 30
