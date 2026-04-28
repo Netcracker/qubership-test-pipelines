@@ -1,0 +1,34 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "packageRules": [
+    {
+      "description": "GitHub Actions — workflows и composite actions",
+      "matchManagers": ["github-actions"],
+      "matchFileNames": [
+        ".github/workflows/**/*.yml",
+        ".github/workflows/**/*.yaml",
+        "actions/**/action.yml",
+        "actions/**/action.yaml"
+      ],
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions"
+    },
+    {
+      "description": "Minor, patch and digest updates GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
+      "automerge": false,
+      "platformAutomerge": false
+    },
+    {
+      "description": "Major updates GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "labels": ["github-actions", "major"]
+    }
+  ]
+}
