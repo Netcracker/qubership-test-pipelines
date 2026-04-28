@@ -1,5 +1,8 @@
 name: Reusable Monitoring Tests
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -17,7 +20,6 @@ on:
         description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -28,6 +30,12 @@ on:
         type: string
         required: false
         default: multi-node
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+
   workflow_call:
     inputs:
       repository_name:
@@ -44,7 +52,6 @@ on:
         description: Branch of qubership-test-pipelines repository
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -55,27 +62,35 @@ on:
         type: string
         required: false
         default: multi-node
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   prepare:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
           path: qubership-monitoring-operator
+          persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: ${{ github.repository_owner }}/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Get latest tag
         id: get-latest-tag
@@ -84,12 +99,16 @@ jobs:
 
       - name: Process versions file and matrix generation
         id: process-versions
+        env:
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/monitoring.yaml "${{ inputs.service_branch }}"
+          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/monitoring.yaml "$SERVICE_BRANCH"
 
   Monitoring-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
     needs: prepare
     runs-on: ${{ inputs.runner_type }}
     strategy:
@@ -106,16 +125,19 @@ jobs:
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
         run: |
           echo "======== Job parameters ======="
-          echo "${{ toJson(matrix.test) }}"
+          echo "$MATRIX_JSON"
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: ${{ github.repository_owner }}/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -223,11 +245,12 @@ jobs:
     needs: [Monitoring-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:
