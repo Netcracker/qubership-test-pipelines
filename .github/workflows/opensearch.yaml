@@ -104,15 +104,24 @@ jobs:
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
-      - name: Process versions file and matrix generation
-        id: process-versions
+      - name: Process latest tag and matrix generation
         env:
+          SCOPE: ${{ inputs.scope }}
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
+        id: process-versions
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/opensearch.yaml "$SERVICE_BRANCH"
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/opensearch_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/opensearch.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   Opensearch-Test-Cases:
     if: ${{ !inputs.skip_tests }}
@@ -258,7 +267,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: monitoring
-          artifact_name: Install_Monitoring_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
           service_branch: main
       # == End Monitoring installation tests =======
 
