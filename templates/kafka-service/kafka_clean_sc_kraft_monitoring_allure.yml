@@ -59,10 +59,6 @@ integrationTests:
   waitForResult: true
   tags: kafka
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
-#  atpStorage:
-#    bucket: ""
-#    username: ""
-#    password: ""
   atpReport:
     enabled: true
     atpStorage:
