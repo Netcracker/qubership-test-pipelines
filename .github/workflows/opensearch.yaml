@@ -24,6 +24,11 @@ on:
         type: string
         required: false
         default: ubuntu-latest
+      scope:
+        description: Opensearch Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
@@ -49,12 +54,16 @@ on:
         type: string
         required: false
         default: ubuntu-latest
+      scope:
+        description: Opensearch Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
         required: false
         default: false
-
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -95,15 +104,24 @@ jobs:
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
-      - name: Process versions file and matrix generation
-        id: process-versions
+      - name: Process latest tag and matrix generation
         env:
+          SCOPE: ${{ inputs.scope }}
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
+        id: process-versions
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/opensearch.yaml "$SERVICE_BRANCH"
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/opensearch_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/opensearch.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   Opensearch-Test-Cases:
     if: ${{ !inputs.skip_tests }}
@@ -209,6 +227,49 @@ jobs:
             --path='opensearch/snapshots/s3/bucket' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
+
+      # == Start Monitoring installation tests =======
+      - name: Install Monitoring [${{ matrix.test.install_version }}]
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: monitoring_install
+        with:
+          path_to_template: templates/monitoring/vm_without_tests.yml
+          service_branch: main
+          service_name: monitoring
+          repository_name: Netcracker/qubership-monitoring-operator
+          path_to_chart: charts/qubership-monitoring-operator
+          namespace: monitoring
+          restricted: false
+
+      - name: Get Installed Monitoring CR name
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_monitoring_get_crds
+        with:
+          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
+
+      - name: Verify Monitoring installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        if: matrix.test.monitoring == true
+        with:
+          namespace: monitoring
+          test_completion_max_retries: 40
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 500
+          service_ready_retry_interval: 10s
+          monitoring_pipeline: true
+          repository_name: Netcracker/qubership-monitoring-operator
+          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Monitoring installation
+        if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: monitoring
+          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
+          service_branch: main
+      # == End Monitoring installation tests =======
 
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template }}
