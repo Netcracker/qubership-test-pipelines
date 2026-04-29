@@ -1,0 +1,9 @@
+jobs:
+  ## Upgrade from previous releases to current
+  - name: Clean [${service_branch}] hardening
+    install_version: ${service_branch}
+    template: templates/monitoring/monitoring_hardening.yml
+    sequence: install
+    check_tests: true
+    restricted: false
+    artifact_name: Clean_${service_branch}_Hardening

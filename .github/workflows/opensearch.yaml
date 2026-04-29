@@ -25,7 +25,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: Opensearch Test Scope (pr or nightly)
+        description: Opensearch Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -55,7 +55,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: Opensearch Test Scope (pr or nightly)
+        description: Opensearch Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -117,8 +117,10 @@ jobs:
             CONFIG_FILE="./workflow-config/opensearch_nightly.yaml"
           elif [[ "$SCOPE" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/opensearch.yaml"
+          elif [[ "$SCOPE" == "hardening" ]]; then
+            CONFIG_FILE="./workflow-config/opensearch_hardening.yaml"
           else
-            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr', 'nightly' or 'hardening'."
             exit 1
           fi
           ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
@@ -350,6 +352,17 @@ jobs:
       - name: Sleep 1m after upgrade
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: sleep 1m
+
+      - name: Hardening Check
+        if: inputs.scope == 'hardening'
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@e64a1ee2fc2f68ab44a4ef416c27d83ce36ba8e1 # v2.2.1
+        with:
+          namespaces: opensearch
+          output-file: opensearch-hardening-scan.json
+          install-kubescape: true
+          execute-trivy-scan: false
+          fail-on-mandatory-checks: true
+          config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
 
       - name: Verify Opensearch upgrade to [${{ matrix.test.upgrade_version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
