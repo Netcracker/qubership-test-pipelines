@@ -35,101 +35,115 @@ runs:
     - name: Get monitoring specific resources
       if: ${{ inputs.monitoring_pipeline == 'true' }}
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
       # language=bash
       run: |
         # ▶️ Get monitoring specific resources
         set +e
         echo "Getting VictoriaMetrics specific resources..."
-        kubectl get vmalertmanagers -n "${{inputs.namespace}}" -o yaml > artifacts/vmalertmanagers.yaml 2>/dev/null || true
-        kubectl get vmalerts -n "${{inputs.namespace}}" -o yaml > artifacts/vmalerts.yaml 2>/dev/null || true
-        kubectl get vmagent -n "${{inputs.namespace}}" -o yaml > artifacts/vmagent.yaml 2>/dev/null || true
-        kubectl get vmsingles -n "${{inputs.namespace}}" -o yaml > artifacts/vmsingles.yaml 2>/dev/null || true
-        kubectl get vmauths -n "${{inputs.namespace}}" -o yaml > artifacts/vmauths.yaml 2>/dev/null || true
-        kubectl get PlatformMonitoring platformmonitoring -n ${{inputs.namespace}} -o yaml > artifacts/PlatformMonitoring.yaml 2>/dev/null || true
+        kubectl get vmalertmanagers -n "$NAMESPACE" -o yaml > artifacts/vmalertmanagers.yaml 2>/dev/null || true
+        kubectl get vmalerts -n "$NAMESPACE" -o yaml > artifacts/vmalerts.yaml 2>/dev/null || true
+        kubectl get vmagent -n "$NAMESPACE" -o yaml > artifacts/vmagent.yaml 2>/dev/null || true
+        kubectl get vmsingles -n "$NAMESPACE" -o yaml > artifacts/vmsingles.yaml 2>/dev/null || true
+        kubectl get vmauths -n "$NAMESPACE" -o yaml > artifacts/vmauths.yaml 2>/dev/null || true
+        kubectl get PlatformMonitoring platformmonitoring -n "$NAMESPACE" -o yaml > artifacts/PlatformMonitoring.yaml 2>/dev/null || true
 
     - name: Get pods
       shell: bash
-      # language=bash
       if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
       run: |
         # ▶️ Get pods
         set +e
-        file_name="artifacts/${{inputs.namespace}}_get_pods.txt"
-        kubectl get pods -n "${{inputs.namespace}}"
-        kubectl get pods -n "${{inputs.namespace}}" > "$file_name" 2>/dev/null || true
+        file_name="artifacts/${NAMESPACE}_get_pods.txt"
+        kubectl get pods -n "$NAMESPACE"
+        kubectl get pods -n "$NAMESPACE" > "$file_name" 2>/dev/null || true
 
     - name: Get yaml from pods
       shell: bash
-      # language=bash
       if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
       run: |
         # ▶️ Get yaml from pods
         set +e
         mkdir -p artifacts/pod_yamls
-        IFS=" " read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n "${{inputs.namespace}}" 2>/dev/null | tr "\n" " ")"
+        IFS=" " read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n "$NAMESPACE" 2>/dev/null | tr "\n" " ")"
         for pod in "${pods[@]}"; do
-            kubectl get pod "$pod" -n "${{inputs.namespace}}" -o yaml > "artifacts/pod_yamls/${pod}.yaml" 2>/dev/null || echo "⚠️ Failed to get yaml for $pod" > "artifacts/pod_yamls/${pod}_FAILED.txt"
+            kubectl get pod "$pod" -n "$NAMESPACE" -o yaml > "artifacts/pod_yamls/${pod}.yaml" 2>/dev/null || echo "⚠️ Failed to get yaml for $pod" > "artifacts/pod_yamls/${pod}_FAILED.txt"
         done
 
     - name: Get events from namespace
       shell: bash
-      # language=bash
       if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
       run: |
         # ▶️ Get events from namespace
         set +e
-        file_name="artifacts/${{inputs.namespace}}_get_events.txt"
-        kubectl events -n "${{inputs.namespace}}" > "$file_name" 2>/dev/null || true
+        file_name="artifacts/${NAMESPACE}_get_events.txt"
+        kubectl events -n "$NAMESPACE" > "$file_name" 2>/dev/null || true
 
     - name: Get yaml from PVC
       shell: bash
-      # language=bash
       if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
       run: |
         # ▶️ Get yaml from PVC
         set +e
-        file_name="artifacts/${{inputs.namespace}}_get_pvc_yaml.yaml"
-        kubectl get pvc -n "${{inputs.namespace}}" 2>/dev/null || true
-        kubectl get pvc -n "${{inputs.namespace}}" -o yaml > "$file_name" 2>/dev/null || true
+        file_name="artifacts/${NAMESPACE}_get_pvc_yaml.yaml"
+        kubectl get pvc -n "$NAMESPACE" 2>/dev/null || true
+        kubectl get pvc -n "$NAMESPACE" -o yaml > "$file_name" 2>/dev/null || true
 
     - name: Get PV from namespace
       shell: bash
-      # language=bash
       if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
       run: |
         # ▶️ Get PV from namespace
         set +e
-        file_name="artifacts/${{inputs.namespace}}_get_pv.txt"
-        if kubectl get pv 2>/dev/null | grep -q "${{inputs.namespace}}"; then
-          kubectl get pv | grep "${{inputs.namespace}}" > "$file_name"
+        file_name="artifacts/${NAMESPACE}_get_pv.txt"
+        if kubectl get pv 2>/dev/null | grep -q "$NAMESPACE"; then
+          kubectl get pv | grep "$NAMESPACE" > "$file_name"
           echo "✅ PV found and saved to $file_name"
         else
-          echo "No PV found for namespace ${{inputs.namespace}}" > "$file_name"
-          echo "ℹ️ No PV found for namespace ${{inputs.namespace}}"
+          echo "No PV found for namespace $NAMESPACE" > "$file_name"
+          echo "ℹ️ No PV found for namespace $NAMESPACE"
         fi
 
     - name: Get logs from all containers in pods
       shell: bash
-      # language=bash
       if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
       run: |
         # ▶️ Get logs from all containers in pods
         set +e
         mkdir -p artifacts/logs
-        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n ${{ inputs.namespace }} 2>/dev/null | tr $'\n' ' ')
+        IFS=' ' read -ra pods <<< $(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n "$NAMESPACE" 2>/dev/null | tr $'\n' ' ')
 
         # Array for pending containers "pod:container"
         declare -a pending=()
 
         # First pass: collect logs from ready containers, add unready ones to pending
         for pod in "${pods[@]}"; do
-            IFS=' ' read -ra containers <<< $(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.spec.containers[*].name}" 2>/dev/null || echo "")
+            IFS=' ' read -ra containers <<< $(kubectl get pod "$pod" -n "$NAMESPACE" -o jsonpath="{.spec.containers[*].name}" 2>/dev/null || echo "")
             for container in "${containers[@]}"; do
                 echo "Trying to get logs from ${container}"
-                status=$(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null || echo "unknown")
+                status=$(kubectl get pod "$pod" -n "$NAMESPACE" -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null || echo "unknown")
                 if [[ $status == *"running"* || $status == *"terminated"* ]]; then
                     log_file="artifacts/logs/${pod}__${container}.log"
-                    kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
+                    kubectl logs "$pod" -n "$NAMESPACE" -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
                     echo "✅ Container (${container}) logs successfully saved to $log_file"
                 else
                     echo "ℹ️ Container (${container}) is not ready yet. Send it to pending."
@@ -157,10 +171,10 @@ runs:
             pending=()
             for item in "${current_pending[@]}"; do
                 IFS=':' read -r pod container <<< "$item"
-                status=$(kubectl get pod "$pod" -n ${{ inputs.namespace }} -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null || echo "unknown")
+                status=$(kubectl get pod "$pod" -n "$NAMESPACE" -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].state}" 2>/dev/null || echo "unknown")
                 if [[ $status == *"running"* || $status == *"terminated"* ]]; then
                     log_file="artifacts/logs/${pod}_${container}.log"
-                    kubectl logs "$pod" -n ${{ inputs.namespace }} -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
+                    kubectl logs "$pod" -n "$NAMESPACE" -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
                     echo "✅ Container (${container}) logs successfully saved to $log_file"
                 else
                     pending+=("$pod:$container")
@@ -176,49 +190,56 @@ runs:
 
     - name: Get All
       shell: bash
-      # language=bash
       if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
       run: |
         # ▶️ Get All
         set +e
-        kubectl get all -n "${{inputs.namespace}}" 2>/dev/null || true
+        kubectl get all -n "$NAMESPACE" 2>/dev/null || true
 
     - name: Get Secrets
       shell: bash
-      # language=bash
       if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
       run: |
         # ▶️ Get Secrets
         set +e
-        kubectl get secrets -n "${{inputs.namespace}}" 2>/dev/null || true
+        kubectl get secrets -n "$NAMESPACE" 2>/dev/null || true
 
     - name: Generate artifact name
       if: always()
+      id: generate_artifact_name
       shell: bash
-      # language=bash
+      env:
+        SERVICE_BRANCH: ${{ inputs.service_branch }}
+        INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+        MATRIX_VERSION: ${{ matrix.version }}
+        GITHUB_JOB: ${{ github.job }}
+        NAMESPACE: ${{ inputs.namespace }}
       run: |
         # ▶️ Generate artifact name
         set +e
-        service_branch=$(echo "${{inputs.service_branch}}" | tr -d '[:space:]')
+        service_branch=$(echo "$SERVICE_BRANCH" | tr -d '[:space:]')
         service_branch="${service_branch//\//_}"
-        echo matrix_version ${{matrix.version}}
         matrix_suffix=""
-        if [[ -n "${{ matrix.version }}" ]]; then
-          echo ${{ matrix.version }}
-          matrix_suffix="${{matrix.version}}_"
+        if [[ -n "$MATRIX_VERSION" ]]; then
+          matrix_suffix="${MATRIX_VERSION}_"
         fi
 
-        if [[ "${{inputs.artifact_name}}" != "" ]]; then
-          artifact_name=${{inputs.artifact_name}}
-          ARTIFACT_NAME=${artifact_name//\//_}_$(date -u +'%Y%m%d%H%M%S%3N')
+        if [[ "$INPUT_ARTIFACT_NAME" != "" ]]; then
+          artifact_name="$INPUT_ARTIFACT_NAME"
+          ARTIFACT_NAME="${artifact_name//\//_}_$(date -u +'%Y%m%d%H%M%S%3N')"
         else
-          ARTIFACT_NAME="${{github.job}}_${{inputs.namespace}}_${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S%3N")"
+          ARTIFACT_NAME="${GITHUB_JOB}_${NAMESPACE}_${service_branch}_${matrix_suffix}artifacts_$(date -u +"%Y%m%d%H%M%S%3N")"
         fi
-        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_ENV
+        echo "ARTIFACT_NAME=$ARTIFACT_NAME" >> $GITHUB_OUTPUT
 
     - name: Upload artifact
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
       with:
-        name: ${{env.ARTIFACT_NAME}}
+        name: ${{ steps.generate_artifact_name.outputs.ARTIFACT_NAME }}
         path: artifacts/
