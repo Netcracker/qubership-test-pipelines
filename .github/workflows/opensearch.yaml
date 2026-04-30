@@ -360,7 +360,7 @@ jobs:
           namespaces: opensearch
           output-file: opensearch-hardening-scan.json
           install-kubescape: true
-          execute-trivy-scan: false
+          execute-trivy-scan: true
           fail-on-mandatory-checks: true
           config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
 
