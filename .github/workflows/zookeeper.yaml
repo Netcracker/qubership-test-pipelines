@@ -1,6 +1,7 @@
 name: Zookeeper Tests
 
 permissions:
+  actions: write
   contents: read
 
 on:
