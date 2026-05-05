@@ -76,7 +76,7 @@ env:
   namespace: zookeeper
   test_completion_max_retries: 60
   test_completion_retry_interval: 10s
-  service_ready_max_retries: 150
+  service_ready_max_retries: 200
   service_ready_retry_interval: 10s
   path_to_chart: operator/charts/helm/zookeeper-service
 
