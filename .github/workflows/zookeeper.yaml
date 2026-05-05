@@ -214,7 +214,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: zoo_install
         with:
-          path_to_template: templates/zookeeper-service/zookeeper_install_APP_k8s.yml
+          path_to_template: ${{ matrix.test.template }}
           service_branch: ${{ matrix.test.install_version }}
           deploy_mode: install
           service_name: zookeeper-service

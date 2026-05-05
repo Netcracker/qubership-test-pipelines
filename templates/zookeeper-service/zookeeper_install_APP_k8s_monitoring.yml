@@ -59,7 +59,7 @@ backupDaemon:
       memory: 552Mi
 integrationTests:
   install: true
-  tags: zookeeper
+  tags: zookeeperNOTtransactional_backup
   timeout: 600
   waitForResult: true
   pvType: standalone
