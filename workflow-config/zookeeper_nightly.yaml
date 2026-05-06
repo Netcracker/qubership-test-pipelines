@@ -58,7 +58,7 @@ jobs:
 
   - name: Clean [${service_branch}] with Monitoring
     install_version: ${service_branch}
-    template: templates/zookeeper-service/zookeeper_install_APP_k8s_monitoring.yml
+    template: templates/zookeeper-service/zookeeper_install_APP_k8s_monitoring_allure.yml
     sequence: install
     restricted: false
     monitoring: true
