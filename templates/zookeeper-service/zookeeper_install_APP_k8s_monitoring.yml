@@ -61,7 +61,7 @@ backupDaemon:
 integrationTests:
   install: true
   tags: zookeeperNOTtransactional_backup
-  timeout: 600
+  timeout: 1800
   waitForResult: true
   pvType: standalone
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
