@@ -68,3 +68,12 @@ integrationTests:
   securityContext:
     fsGroup: 1000
     runAsUser: 1000
+  atpReport:
+    enabled: true
+    atpStorage:
+      provider: aws
+      serverUrl: s3.amazonaws.com
+      bucket: qstp-results
+      region: us-east-1
+      username: ""
+      password: ""
