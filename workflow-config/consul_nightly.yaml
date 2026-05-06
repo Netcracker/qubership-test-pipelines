@@ -64,9 +64,9 @@ jobs:
     restricted: true
     artifact_name: Clean_PREVIOUS_Restricted.Upgrade_CURRENT_Restricted
 
-  - name: Clean [${service_branch}] with Allure Report
+  - name: Clean [${service_branch}] with Monitoring and Allure
     install_version: ${service_branch}
-    template: templates/consul-service/consul_clean_all_on_sc_allure.yml
+    template: templates/consul-service/consul_clean_all_on_sc_monitoring_allure.yml
     sequence: install
     artifact_name: Clean_CURRENT_allure
     test_tags: crudORalerts

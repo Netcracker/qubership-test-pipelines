@@ -38,11 +38,15 @@ integrationTests:
   enabled: true
   tags: backupORcrudORalertsORha
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
-  atpStorage:
-    bucket: qstp-consul
-    username: ""
-    password: ""
-
+  atpReport:
+    enabled: true
+    atpStorage:
+      provider: aws
+      serverUrl: s3.amazonaws.com
+      bucket: qstp-results
+      region: us-east-1
+      username: ""
+      password: ""
 statusProvisioner:
   lifetimeAfterCompletion: 120
   integrationTestsTimeout: 600
