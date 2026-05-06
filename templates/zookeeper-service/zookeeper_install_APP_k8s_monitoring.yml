@@ -9,6 +9,7 @@ global:
     backupDaemon:
       username: admin
       password: admin
+  podReadinessTimeout: 1800
 operator:
   securityContext:
     fsGroup: 1000
