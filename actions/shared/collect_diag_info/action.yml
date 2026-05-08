@@ -30,9 +30,7 @@ runs:
     - name: Create folder for artifacts
       shell: bash
       # language=bash
-      run: |
-        mkdir -p artifacts
-        rm -rf -- artifacts/* artifacts/.[!.]* artifacts/..?* 2>/dev/null || true
+      run: mkdir -p artifacts
 
     - name: Get monitoring specific resources
       if: ${{ inputs.monitoring_pipeline == 'true' }}

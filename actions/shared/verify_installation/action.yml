@@ -54,6 +54,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Create folder for artifacts
+      shell: bash
+      # language=bash
+      run: |
+        mkdir -p artifacts
+        rm -rf -- artifacts/* artifacts/.[!.]* artifacts/..?* 2>/dev/null || true
+
     - name: Initialize error flag
       shell: bash
       # language=bash
