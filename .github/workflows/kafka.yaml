@@ -546,7 +546,7 @@ jobs:
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.upgrade_kafka_service_get_crds.outputs.crd_names }}
 
-      - name: Collect Diagnostics Core installation
+      - name: Collect Diagnostics Kafka Service upgrade
         if: ${{ !cancelled() && steps.kafka_service_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
