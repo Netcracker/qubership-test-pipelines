@@ -1,5 +1,4 @@
 jobs:
-  ## Upgrade from previous releases to current
   - name: Clean [${service_branch}] hardening
     install_version: ${service_branch}
     template: templates/monitoring/monitoring_hardening.yml
