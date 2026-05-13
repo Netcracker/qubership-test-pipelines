@@ -50,7 +50,7 @@ opensearch:
       hosts:
         - opensearch-opensearch-service.qubership.com
 dbaasAdapter:
-  enabled: false
+  enabled: true
   dbaasAggregatorPhysicalDatabaseIdentifier: opensearch
   opensearchRepo: snapshots
   opensearchRepoRoot: /usr/share/opensearch/
@@ -62,7 +62,7 @@ dbaasAdapter:
     runAsUser: 1000
     fsGroup: 1000
 monitoring:
-  enabled: false
+  enabled: true
   includeIndices: true
   slowQueries:
     enabled: true
@@ -86,7 +86,7 @@ curator:
     fsGroup: 1000
 integrationTests:
   enabled: true
-  tags: smokeORhaORopensearch_images
+  tags: smoke
 secret:
   idp:
     username: ""
