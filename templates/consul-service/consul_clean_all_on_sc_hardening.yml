@@ -8,7 +8,7 @@ global:
     httpAuth:
       enabled: false
       smNamespace: site-manager
-      smServiceAccountName: sm-auth-saserver:
+      smServiceAccountName: sm-auth-saserver
   replicas: 3
   bootstrapExpect: 3
   storage: 1Gi
