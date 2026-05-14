@@ -57,8 +57,8 @@ crdInit:
   sleepAfterCompletion: 10
 
 monitoring:
-  install: true
-  serviceMonitorEnabled: true
+  install: false
+  serviceMonitorEnabled: false
 
   lagExporter:
     enabled: true
@@ -76,7 +76,7 @@ mirrorMaker:
   replicationPrefixEnabled: true
 
 mirrorMakerMonitoring:
-  install: true
+  install: false
 
 integrationTests:
   install: true
