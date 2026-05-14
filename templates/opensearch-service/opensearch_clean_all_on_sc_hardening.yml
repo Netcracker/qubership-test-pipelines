@@ -3,8 +3,9 @@ global:
   tls:
     enabled: true
     generateCerts:
-      certProvider: cert-manager
-      clusterIssuerName: dev-clusterissuer
+      enabled: true
+      certProvider: helm
+      # clusterIssuerName: dev-clusterissuer
   restrictedEnvironment: true
   disasterRecovery:
     mode: "active"
