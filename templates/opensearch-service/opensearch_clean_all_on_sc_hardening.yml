@@ -62,12 +62,12 @@ dbaasAdapter:
     runAsUser: 1000
     fsGroup: 1000
 monitoring:
-  enabled: true
+  enabled: false
   includeIndices: true
   slowQueries:
     enabled: true
 dashboards:
-  enabled: true
+  enabled: false
   ingress:
     enabled: true
     hosts:
@@ -75,7 +75,7 @@ dashboards:
         paths:
           - path: /
 curator:
-  enabled: false
+  enabled: true
   backupSchedule: 0 * * * *
   evictionPolicy: 0/1d,7d/delete
   username: backup
