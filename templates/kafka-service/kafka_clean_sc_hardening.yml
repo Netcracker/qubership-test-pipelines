@@ -30,6 +30,8 @@ global:
 
 kafka:
   install: true
+  kraft:
+    enabled: true
   ccMetricReporterEnabled: true
   affinity:
     podAntiAffinity:
