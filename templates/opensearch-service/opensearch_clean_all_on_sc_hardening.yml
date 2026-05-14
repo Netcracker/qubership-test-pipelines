@@ -1,7 +1,7 @@
 global:
   cloudIntegrationEnabled: false
   tls:
-    enabled: false
+    enabled: true
     generateCerts:
       certProvider: cert-manager
       clusterIssuerName: dev-clusterissuer

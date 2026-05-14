@@ -6,3 +6,4 @@ jobs:
     restricted: true
     artifact_name: Clean_CURRENT_Hardening
     monitoring: false
+    tls: true
