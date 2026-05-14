@@ -22,7 +22,7 @@ global:
     httpAuth:
       enabled: false
       smSecureAuth: false
-    mode: "active"
+    mode: "standby"
     region: "first"
     siteManagerEnabled: false
     mirrorMakerReplication:
@@ -73,6 +73,7 @@ mirrorMaker:
   regionName: "first"
   clusters:
     - {"name": "first", "bootstrapServers": "kafka:9092", "username": "client", "password": "client"}
+    - {"name": "second", "bootstrapServers": "kafka:9092", "username": "client", "password": "client"}
   replicationPrefixEnabled: true
 
 mirrorMakerMonitoring:
