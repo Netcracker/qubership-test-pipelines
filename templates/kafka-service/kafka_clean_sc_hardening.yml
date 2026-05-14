@@ -12,8 +12,25 @@ global:
     backupDaemon:
       username: admin
       password: admin
+    cruiseControl:
+      adminUsername: "admin"
+      adminPassword: "admin"
+      viewerUsername: "cert"
+      viewerPassword: "cert"  
+
+  disasterRecovery:
+    httpAuth:
+      enabled: false
+      smSecureAuth: false
+    mode: "active"
+    region: "first"
+    siteManagerEnabled: false
+    mirrorMakerReplication:
+      enabled: true
+
 kafka:
   install: true
+  ccMetricReporterEnabled: true
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -32,14 +49,37 @@ kafka:
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
+
+crdInit:
+  lifetimeAfterCompletion: 320
+  sleepAfterCompletion: 10
+
 monitoring:
-  install: false
-  securityContext:
-    runAsUser: 1000
+  install: true
+  serviceMonitorEnabled: true
+
+  lagExporter:
+    enabled: true
+
 akhq:
   install: true
   ingress:
     host: akhq-kafka-service.qubership.com
+
+mirrorMaker:
+  install: true
+  regionName: "first"
+  clusters:
+    - {"name": "first", "bootstrapServers": "kafka:9092", "username": "client", "password": "client"}
+  replicationPrefixEnabled: true
+
+mirrorMakerMonitoring:
+  install: true
+
+integrationTests:
+  install: true
+  waitForResult: true
+  tags: kafka_crud
 backupDaemon:
   install: true
   storage: 1Gi
@@ -47,7 +87,6 @@ backupDaemon:
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
-integrationTests:
+cruiseControl:
   install: true
-  waitForResult: true
-  tags: kafka_crud
+PAAS_PLATFORM: KUBERNETES
