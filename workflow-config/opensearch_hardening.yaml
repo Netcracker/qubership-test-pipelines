@@ -5,4 +5,4 @@ jobs:
     sequence: install
     restricted: true
     artifact_name: Clean_CURRENT_Hardening
-    monitoring: true
+    monitoring: false
