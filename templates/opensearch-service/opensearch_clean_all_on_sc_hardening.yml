@@ -8,6 +8,7 @@ global:
   restrictedEnvironment: true
   disasterRecovery:
     mode: "active"
+    siteManagerEnabled: false
 opensearch:
   tls:
     enabled: false
