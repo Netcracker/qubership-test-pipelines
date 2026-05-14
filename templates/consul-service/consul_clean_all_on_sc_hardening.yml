@@ -2,13 +2,14 @@ global:
   restrictedEnvironment: true
   enablePodSecurityPolicies: false
   enabled: true
+server:
   disasterRecovery:
     mode: active
     region: one
     httpAuth:
       enabled: false
       smNamespace: site-manager
-      smServiceAccountName: sm-auth-saserver
+      smServiceAccountName: sm-auth-sa
   replicas: 3
   bootstrapExpect: 3
   storage: 1Gi
