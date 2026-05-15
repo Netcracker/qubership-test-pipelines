@@ -22,7 +22,7 @@ global:
     httpAuth:
       enabled: false
       smSecureAuth: false
-    mode: "standby"
+    mode: ""
     region: "first"
     siteManagerEnabled: false
     mirrorMakerReplication:
