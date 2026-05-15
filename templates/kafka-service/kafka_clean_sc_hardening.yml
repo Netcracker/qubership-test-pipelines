@@ -16,7 +16,7 @@ global:
       adminUsername: "admin"
       adminPassword: "admin"
       viewerUsername: "cert"
-      viewerPassword: "cert"  
+      viewerPassword: "cert"
 
   disasterRecovery:
     httpAuth:
@@ -59,7 +59,7 @@ crdInit:
   sleepAfterCompletion: 10
 
 monitoring:
-  install: false
+  install: true
   serviceMonitorEnabled: false
 
   lagExporter:
@@ -79,7 +79,7 @@ mirrorMaker:
   replicationPrefixEnabled: true
 
 mirrorMakerMonitoring:
-  install: false
+  install: true
 
 integrationTests:
   install: true
