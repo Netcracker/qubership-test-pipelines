@@ -234,9 +234,9 @@ jobs:
         with:
           check_tests: ${{ matrix.test.check_core_tests }}
           namespace: pgskipper
-          service_ready_max_retries: 60
+          service_ready_max_retries: 120
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 60
+          test_completion_max_retries: 120
           test_completion_retry_interval: 10s
           crd_list: patronicores.netcracker.com
 
@@ -270,9 +270,9 @@ jobs:
         with:
           check_tests: ${{ matrix.test.check_services_tests }}
           namespace: pgskipper
-          service_ready_max_retries: 60
+          service_ready_max_retries: 120
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 60
+          test_completion_max_retries: 120
           test_completion_retry_interval: 10s
           crd_list: patroniservices.netcracker.com
 

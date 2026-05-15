@@ -29,3 +29,5 @@ patroni:
 tests:
   install: true
   runTestScenarios: full
+dbaas:
+  install: true

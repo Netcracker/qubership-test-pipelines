@@ -35,3 +35,5 @@ tls:
     enabled: true
     clusterIssuerName: test-clusterissuer
 INTERNAL_TLS_ENABLED: true
+dbaas:
+  install: true

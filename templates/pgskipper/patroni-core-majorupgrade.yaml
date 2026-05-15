@@ -31,3 +31,5 @@ patroni:
 tests:
   install: true
   runTestScenarios: basic
+dbaas:
+  install: true
