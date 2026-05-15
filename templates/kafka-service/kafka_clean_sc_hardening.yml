@@ -27,6 +27,8 @@ global:
     siteManagerEnabled: false
     mirrorMakerReplication:
       enabled: true
+    topicsBackup:
+      enabled: true
 
 kafka:
   install: true
