@@ -230,6 +230,17 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         run: sleep 2m
 
+      - name: Hardening Check
+        if: inputs.scope == 'hardening'
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@feature/k8s-hardening-scan-action-improvement
+        with:
+          namespaces: monitoring
+          output-file: monitoring-hardening-scan.json
+          install-kubescape: true
+          execute-trivy-scan: true
+          fail-on-mandatory-checks: true
+          config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
+
       - name: Get Upgraded Monitoring CR name
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/get_crds
