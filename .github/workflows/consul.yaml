@@ -287,7 +287,7 @@ jobs:
         with:
           check_tests: true
           namespace: consul
-          test_completion_max_retries: 50
+          test_completion_max_retries: 1
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
@@ -354,7 +354,7 @@ jobs:
         with:
           check_tests: true
           namespace: consul
-          test_completion_max_retries: 50
+          test_completion_max_retries: 1
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
