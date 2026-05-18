@@ -26,7 +26,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: Consul Test Scope (pr or nightly)
+        description: Consul Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -57,7 +57,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: Consul Test Scope (pr or nightly)
+        description: Consul Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -120,8 +120,10 @@ jobs:
             CONFIG_FILE="./workflow-config/consul_nightly.yaml"
           elif [[ "$SCOPE" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/consul.yaml"
+          elif [[ "$SCOPE" == "hardening" ]]; then
+            CONFIG_FILE="./workflow-config/consul_hardening.yaml"
           else
-            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr', 'nightly' or 'hardening'."
             exit 1
           fi
           ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
@@ -347,6 +349,17 @@ jobs:
       - name: Sleep 90s after update
         if: matrix.test.sequence == 'upgrade'
         run: sleep 90s
+
+      - name: Hardening Check
+        if: inputs.scope == 'hardening'
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@feature/k8s-hardening-scan-action-improvement
+        with:
+          namespaces: consul
+          output-file: consul-hardening-scan.json
+          install-kubescape: true
+          execute-trivy-scan: false
+          fail-on-mandatory-checks: true
+          config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
 
       - name: Verify Consul upgrade
         if: matrix.test.sequence == 'upgrade'

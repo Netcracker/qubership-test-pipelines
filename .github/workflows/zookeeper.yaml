@@ -24,6 +24,11 @@ on:
         type: string
         required: false
         default: ubuntu-latest
+      scope:
+        description: Zookeeper Test Scope (pr, nightly or hardening)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
@@ -54,6 +59,11 @@ on:
         type: boolean
         required: false
         default: false
+      scope:
+        description: Zookeeper Test Scope (pr, nightly or hardening)
+        type: string
+        required: false
+        default: pr
 
     secrets:
       AWS_S3_ACCESS_KEY_ID:
@@ -108,10 +118,21 @@ jobs:
         env:
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
+          SCOPE: ${{ inputs.scope }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/zookeeper.yaml "$SERVICE_BRANCH"
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/zookeeper_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/zookeeper.yaml"
+          elif [[ "$SCOPE" == "hardening" ]]; then
+            CONFIG_FILE="./workflow-config/zookeeper_hardening.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr', 'nightly' or 'hardening'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   Zookeeper-Test-Cases:
     if: ${{ !inputs.skip_tests }}
@@ -273,6 +294,17 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         run: sleep 1m
 
+      - name: Hardening Check
+        if: inputs.scope == 'hardening'
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@6a2de8d62ac5b6998e30f923613c998c263ea9f2 # v2.2.2
+        with:
+          namespaces: zookeeper
+          output-file: zookeeper-hardening-scan.json
+          install-kubescape: true
+          execute-trivy-scan: false
+          fail-on-mandatory-checks: true
+          config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
+
       - name: Verify Zookeeper upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -306,7 +338,7 @@ jobs:
 
   # 15-Clean [LATEST] TLS
   Clean-Latest-TLS:
-    if: ${{ !inputs.skip_tests }}
+    if: ${{ !inputs.skip_tests && inputs.scope != 'hardening' }}
     runs-on: ${{ inputs.runner_type }}
     name: Clean [${{ inputs.service_branch }}] TLS
     steps:
@@ -407,7 +439,7 @@ jobs:
 
   # 16-Clean [LATEST] TLS Secrets
   Clean-Latest-TLS-Secrets:
-    if: ${{ !inputs.skip_tests }}
+    if: ${{ !inputs.skip_tests && inputs.scope != 'hardening' }}
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
     name: Clean [${{ inputs.service_branch }}] TLS Secrets
@@ -467,7 +499,7 @@ jobs:
 
   # 17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
   Clean-Latest-TLS-Certificates:
-    if: ${{ !inputs.skip_tests }}
+    if: ${{ !inputs.skip_tests && inputs.scope != 'hardening' }}
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
     name: Clean [${{ inputs.service_branch }}] TLS Certificates
@@ -529,7 +561,7 @@ jobs:
   final-status-check:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    needs: [Zookeeper-Test-Cases, Clean-Latest-TLS-Certificates, Clean-Latest-TLS-Secrets]
+    needs: [Zookeeper-Test-Cases, Clean-Latest-TLS, Clean-Latest-TLS-Certificates, Clean-Latest-TLS-Secrets]
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
