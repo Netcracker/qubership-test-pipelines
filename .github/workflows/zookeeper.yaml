@@ -1,8 +1,8 @@
 name: Zookeeper Tests
 
 permissions:
-  actions: write
   contents: read
+  actions: read
 
 on:
   workflow_dispatch:
@@ -385,6 +385,9 @@ jobs:
   Clean-Latest-TLS:
     if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
+    permissions:
+      contents: read
+      actions: write
     name: Clean [${{ inputs.service_branch }}] TLS
     steps:
       - name: Checkout pipeline
