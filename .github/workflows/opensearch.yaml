@@ -1,5 +1,8 @@
 name: Reusable Opensearch Tests
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -16,12 +19,21 @@ on:
         description: Test pipeline branch name
         type: string
         required: true
-        default: main
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
         required: false
         default: ubuntu-latest
+      scope:
+        description: Opensearch Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
 
   workflow_call:
     inputs:
@@ -42,6 +54,16 @@ on:
         type: string
         required: false
         default: ubuntu-latest
+      scope:
+        description: Opensearch Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -50,44 +72,61 @@ on:
 
 jobs:
   prepare:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
           path: qubership-opensearch
+          persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Get latest tag
         id: get-latest-tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
         run: |
-          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
-      - name: Process versions file and matrix generation
+      - name: Process latest tag and matrix generation
+        env:
+          SCOPE: ${{ inputs.scope }}
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
         id: process-versions
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" ./workflow-config/opensearch.yaml "${{ inputs.service_branch }}"
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/opensearch_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/opensearch.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   Opensearch-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
     needs: prepare
-    runs-on: ${{inputs.runner_type}}
+    runs-on: ${{ inputs.runner_type }}
     strategy:
       fail-fast: false
       matrix:
@@ -104,12 +143,14 @@ jobs:
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
         run: |
           echo "======== Job parameters ======="
-          echo "${{ toJson(matrix.test) }}"
+          echo "$MATRIX_JSON"
 
       - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: false
           android: true
@@ -120,11 +161,12 @@ jobs:
           swap-storage: true
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
-          ref: ${{inputs.pipeline_branch}}
+          ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -170,20 +212,64 @@ jobs:
 
       - name: Update YAML secrets
         if: matrix.test.s3 == true
+        # zizmor: ignore[template-injection]
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='opensearch/snapshots/s3/keyId' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='opensearch/snapshots/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.template }}' \
             --path='opensearch/snapshots/s3/bucket' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
+
+      # == Start Monitoring installation tests =======
+      - name: Install Monitoring [${{ matrix.test.install_version }}]
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: monitoring_install
+        with:
+          path_to_template: templates/monitoring/vm_without_tests.yml
+          service_branch: 7bc52a7ea246f43111e816588ca4ce122c7ce96a #0.88.0
+          service_name: monitoring
+          repository_name: Netcracker/qubership-monitoring-operator
+          path_to_chart: charts/qubership-monitoring-operator
+          namespace: monitoring
+          restricted: false
+
+      - name: Get Installed Monitoring CR name
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_monitoring_get_crds
+        with:
+          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
+
+      - name: Verify Monitoring installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        if: matrix.test.monitoring == true
+        with:
+          namespace: monitoring
+          test_completion_max_retries: 40
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 500
+          service_ready_retry_interval: 10s
+          monitoring_pipeline: true
+          repository_name: Netcracker/qubership-monitoring-operator
+          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Monitoring installation
+        if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: monitoring
+          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
+          service_branch: main
+      # == End Monitoring installation tests =======
 
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template }}
@@ -295,19 +381,20 @@ jobs:
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
           bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
           region: us-east-1
-
       # == End ======= Specific steps for S3 =======
+
   final-status-check:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     needs: [Opensearch-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:

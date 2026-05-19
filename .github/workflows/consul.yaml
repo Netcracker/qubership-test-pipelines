@@ -1,5 +1,8 @@
 name: Reusable Consul Tests
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -28,6 +31,11 @@ on:
         type: string
         required: false
         default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
   workflow_call:
     inputs:
       repository_name:
@@ -55,6 +63,12 @@ on:
         type: string
         required: false
         default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -63,58 +77,68 @@ on:
 
 jobs:
   prepare:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
           path: qubership-consul
+          persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Get latest tag
         id: get-latest-tag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
         run: |
-          LATEST_TAG=$(gh api repos/${{ inputs.repository_name }}/releases/latest --jq '.tag_name')
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
 
       - name: Process versions file and matrix generation
         id: process-versions
+        env:
+          SCOPE: ${{ inputs.scope }}
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          if [[ "${{ inputs.scope }}" == "nightly" ]]; then
+          if [[ "$SCOPE" == "nightly" ]]; then
             CONFIG_FILE="./workflow-config/consul_nightly.yaml"
-          elif [[ "${{ inputs.scope }}" == "pr" ]]; then
+          elif [[ "$SCOPE" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/consul.yaml"
           else
-            echo "::error::Invalid scope parameter '${{ inputs.scope }}'. Must be 'pr' or 'nightly'."
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
             exit 1
           fi
-          ./scripts/matrix.sh "${{ steps.get-latest-tag.outputs.latest_tag }}" "$CONFIG_FILE" "${{ inputs.service_branch }}"
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   Consul-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
     needs: prepare
-    runs-on: ${{inputs.runner_type}}
+    runs-on: ${{ inputs.runner_type }}
     strategy:
       fail-fast: false
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
     env:
+      MATRIX_JSON: ${{ toJson(matrix.test) }}
       CHECK_TESTS: true
       NAMESPACE: consul
       TEST_COMPLETION_MAX_RETRIES: 1
@@ -124,16 +148,19 @@ jobs:
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
         run: |
           echo "======== Job parameters ======="
-          echo "${{ toJson(matrix.test) }}"
+          echo "$MATRIX_JSON"
 
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
-          ref: ${{inputs.pipeline_branch}}
+          ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
 
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -194,16 +221,17 @@ jobs:
 
       - name: Add s3 secrets to template (clean install)
         if: matrix.test.install.s3 == true
+        # zizmor: ignore[template-injection]
         run: |
           # ▶️ Add s3 secrets to template
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='backupDaemon/s3/keyId' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='backupDaemon/s3/keySecret' \
-            --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='backupDaemon/s3/bucket' \
@@ -268,6 +296,7 @@ jobs:
       - name: Add s3 secrets to template (upgrade)
         if: matrix.test.sequence == 'upgrade' && matrix.test.upgrade.s3 == true
         shell: bash
+        # zizmor: ignore[template-injection]
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.upgrade.template }}' \
@@ -343,11 +372,12 @@ jobs:
     needs: [Consul-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
+          persist-credentials: false
       - name: Check job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:
