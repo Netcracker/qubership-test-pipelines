@@ -23,7 +23,7 @@ zooKeeper:
     fsGroup: 1000
     runAsUser: 1000
 monitoring:
-  install: false
+  install: true
   securityContext:
     runAsUser: 1000
     fsGroup: 1000
