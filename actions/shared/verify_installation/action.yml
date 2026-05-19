@@ -54,6 +54,13 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Create folder for artifacts
+      shell: bash
+      # language=bash
+      run: |
+        mkdir -p artifacts
+        rm -rf -- artifacts/* artifacts/.[!.]* artifacts/..?* 2>/dev/null || true
+
     - name: Initialize error flag
       shell: bash
       # language=bash
@@ -66,22 +73,29 @@ runs:
 
     - name: Check service is ready
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+        SERVICE_READY_MAX_RETRIES: ${{ inputs.service_ready_max_retries }}
+        SERVICE_READY_RETRY_INTERVAL: ${{ inputs.service_ready_retry_interval }}
+        CRD_LIST: ${{ inputs.crd_list }}
+        MONITORING_PIPELINE: ${{ inputs.monitoring_pipeline }}
+        REPOSITORY_NAME: ${{ inputs.repository_name }}
       # language=bash
       run: |
         # ▶️ Check service is ready
         chmod +x ./qubership-test-pipelines/scripts/check_cr.sh
         chmod +x ./qubership-test-pipelines/scripts/check_resources.sh
 
-        echo "Checking CRDs: ${{inputs.crd_list}}"
+        echo "Checking CRDs: $CRD_LIST"
         cr_success=false
         resources_success=false
 
-        for i in {1..${{inputs.service_ready_max_retries}}}; do
-          echo "Attempt $i/${{inputs.service_ready_max_retries}}"
+        for i in $(seq 1 "$SERVICE_READY_MAX_RETRIES"); do
+          echo "Attempt $i/$SERVICE_READY_MAX_RETRIES"
 
           if [ "$cr_success" = "false" ]; then
             set +e
-            ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"
+            ./qubership-test-pipelines/scripts/check_cr.sh "$CRD_LIST" "$NAMESPACE"
             cr_exit_code=$?
             set -e
 
@@ -93,8 +107,8 @@ runs:
                 ;;
               1)
                 echo "⏳ CR check in progress"
-                echo -e "Retrying in ${{inputs.service_ready_retry_interval}} seconds...\n"
-                sleep ${{inputs.service_ready_retry_interval}}
+                echo -e "Retrying in $SERVICE_READY_RETRY_INTERVAL seconds...\n"
+                sleep "$SERVICE_READY_RETRY_INTERVAL"
                 ;;
               2)
                 echo "::error:: ❌ CR check failed"
@@ -104,25 +118,25 @@ runs:
             esac
           fi
         done
-        if [[ "${{ inputs.monitoring_pipeline }}" == "true" ]]; then
+        if [[ "$MONITORING_PIPELINE" == "true" ]]; then
           # ▶️ Check monitoring CRs statuses
-          echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
+          echo "Checking VictoriaMetrics CRs in namespace: $NAMESPACE"
           chmod +x ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh
           echo $(pwd)
-          echo "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
-          cat "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
+          echo "$REPOSITORY_NAME/.github/expected-vm-cr-statuses.json"
+          cat "$REPOSITORY_NAME/.github/expected-vm-cr-statuses.json"
           ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh \
-            "${{inputs.namespace}}" \
-            "${{inputs.service_ready_max_retries}}" \
-            "${{inputs.service_ready_retry_interval}}" \
-            "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json" \
-            "${{inputs.crd_list}}"
+            "$NAMESPACE" \
+            "$SERVICE_READY_MAX_RETRIES" \
+            "$SERVICE_READY_RETRY_INTERVAL" \
+            "$REPOSITORY_NAME/.github/expected-vm-cr-statuses.json" \
+            "$CRD_LIST"
         fi
-        for i in {1..${{inputs.service_ready_max_retries}}}; do
-          echo "Attempt $i/${{inputs.service_ready_max_retries}}"
+        for i in $(seq 1 "$SERVICE_READY_MAX_RETRIES"); do
+          echo "Attempt $i/$SERVICE_READY_MAX_RETRIES"
           if [ "$resources_success" = "false" ]; then
             set +e
-            ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
+            ./qubership-test-pipelines/scripts/check_resources.sh "$NAMESPACE"
             resources_exit_code=$?
             set -e
 
@@ -133,8 +147,8 @@ runs:
             elif [ $resources_exit_code -eq 1 ]; then
               echo "⏳ Some resources are not ready"
               echo "PODS:"
-              kubectl get pods -n "${{inputs.namespace}}"
-              sleep ${{inputs.service_ready_retry_interval}}
+              kubectl get pods -n "$NAMESPACE"
+              sleep "$SERVICE_READY_RETRY_INTERVAL"
             fi
           fi
         done
@@ -143,27 +157,31 @@ runs:
             echo "✅ All checks completed successfully!"
           fi
           if [ "$cr_success" = "false" ]; then
-            echo "::error:: ❌ CR check not successful after ${{inputs.service_ready_max_retries}} retries"
+            echo "::error:: ❌ CR check not successful after $SERVICE_READY_MAX_RETRIES retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
           if [ "$resources_success" = "false" ]; then
-            echo "::error:: ❌ Resources not ready after ${{inputs.service_ready_max_retries}} retries"
+            echo "::error:: ❌ Resources not ready after $SERVICE_READY_MAX_RETRIES retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
 
     - name: Get logs from test pod
       if: inputs.check_tests == 'true'
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+        TEST_COMPLETION_MAX_RETRIES: ${{ inputs.test_completion_max_retries }}
+        TEST_COMPLETION_RETRY_INTERVAL: ${{ inputs.test_completion_retry_interval }}
       # language=bash
       run: |
         # ▶️ Get logs from test pod
         chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
         ls -la ./qubership-test-pipelines/scripts/check_tests.sh
 
-        for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
-          echo "Test check attempt $i/${{inputs.test_completion_max_retries}}"
+        for i in $(seq 1 "$TEST_COMPLETION_MAX_RETRIES"); do
+          echo "Test check attempt $i/$TEST_COMPLETION_MAX_RETRIES"
           set +e
-          ./qubership-test-pipelines/scripts/check_tests.sh "${{inputs.namespace}}"
+          ./qubership-test-pipelines/scripts/check_tests.sh "$NAMESPACE"
           tests_exit_code=$?
           set -e
 
@@ -182,33 +200,40 @@ runs:
               ;;
           esac
 
-          if [ $i -eq ${{inputs.test_completion_max_retries}} ]; then
-            echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
+          if [ "$i" -eq "$TEST_COMPLETION_MAX_RETRIES" ]; then
+            echo "::warning:: ⚠️ Tests not completed after $TEST_COMPLETION_MAX_RETRIES retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           else
-            sleep ${{inputs.test_completion_retry_interval}}
+            sleep "$TEST_COMPLETION_RETRY_INTERVAL"
           fi
         done
 
     - name: Get monitoring specific resources
       if: ${{ inputs.monitoring_pipeline == 'true' }}
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+        SERVICE_READY_MAX_RETRIES: ${{ inputs.service_ready_max_retries }}
+        SERVICE_READY_RETRY_INTERVAL: ${{ inputs.service_ready_retry_interval }}
+        CRD_LIST: ${{ inputs.crd_list }}
+        MONITORING_PIPELINE: ${{ inputs.monitoring_pipeline }}
+        REPOSITORY_NAME: ${{ inputs.repository_name }}
       # language=bash
       run: |
         # ▶️ Check service is ready
         chmod +x ./qubership-test-pipelines/scripts/check_cr.sh
         chmod +x ./qubership-test-pipelines/scripts/check_resources.sh
 
-        echo "Checking CRDs: ${{inputs.crd_list}}"
+        echo "Checking CRDs: $CRD_LIST"
         cr_success=false
         resources_success=false
 
-        for i in {1..${{inputs.service_ready_max_retries}}}; do
-          echo "Attempt $i/${{inputs.service_ready_max_retries}}"
+        for i in $(seq 1 "$SERVICE_READY_MAX_RETRIES"); do
+          echo "Attempt $i/$SERVICE_READY_MAX_RETRIES"
 
           if [ "$cr_success" = "false" ]; then
             set +e
-            ./qubership-test-pipelines/scripts/check_cr.sh "${{inputs.crd_list}}" "${{inputs.namespace}}"
+            ./qubership-test-pipelines/scripts/check_cr.sh "$CRD_LIST" "$NAMESPACE"
             cr_exit_code=$?
             set -e
 
@@ -220,8 +245,8 @@ runs:
                 ;;
               1)
                 echo "⏳ CR check in progress"
-                echo -e "Retrying in ${{inputs.service_ready_retry_interval}} seconds...\n"
-                sleep ${{inputs.service_ready_retry_interval}}
+                echo -e "Retrying in $SERVICE_READY_RETRY_INTERVAL seconds...\n"
+                sleep "$SERVICE_READY_RETRY_INTERVAL"
                 ;;
               2)
                 echo "::error:: ❌ CR check failed"
@@ -231,25 +256,25 @@ runs:
             esac
           fi
         done
-        if [[ "${{ inputs.monitoring_pipeline }}" == "true" ]]; then
+        if [[ "$MONITORING_PIPELINE" == "true" ]]; then
           # ▶️ Check monitoring CRs statuses
-          echo "Checking VictoriaMetrics CRs in namespace: ${{inputs.namespace}}"
+          echo "Checking VictoriaMetrics CRs in namespace: $NAMESPACE"
           chmod +x ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh
           echo $(pwd)
-          echo "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
-          cat "${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json"
+          echo "$REPOSITORY_NAME/.github/expected-vm-cr-statuses.json"
+          cat "$REPOSITORY_NAME/.github/expected-vm-cr-statuses.json"
           ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh \
-            ${{inputs.namespace}} \
-            ${{inputs.service_ready_max_retries}} \
-            ${{inputs.service_ready_retry_interval}} \
-            ${{inputs.repository_name}}/.github/expected-vm-cr-statuses.json \
-            ${{inputs.crd_list}}
+            "$NAMESPACE" \
+            "$SERVICE_READY_MAX_RETRIES" \
+            "$SERVICE_READY_RETRY_INTERVAL" \
+            "$REPOSITORY_NAME/.github/expected-vm-cr-statuses.json" \
+            "$CRD_LIST"
         fi
-        for i in {1..${{inputs.service_ready_max_retries}}}; do
-          echo "Attempt $i/${{inputs.service_ready_max_retries}}"
+        for i in $(seq 1 "$SERVICE_READY_MAX_RETRIES"); do
+          echo "Attempt $i/$SERVICE_READY_MAX_RETRIES"
           if [ "$resources_success" = "false" ]; then
             set +e
-            ./qubership-test-pipelines/scripts/check_resources.sh "${{inputs.namespace}}"
+            ./qubership-test-pipelines/scripts/check_resources.sh "$NAMESPACE"
             resources_exit_code=$?
             set -e
 
@@ -260,8 +285,8 @@ runs:
             elif [ $resources_exit_code -eq 1 ]; then
               echo "⏳ Some resources are not ready"
               echo "PODS:"
-              kubectl get pods -n "${{inputs.namespace}}"
-              sleep ${{inputs.service_ready_retry_interval}}
+              kubectl get pods -n "$NAMESPACE"
+              sleep "$SERVICE_READY_RETRY_INTERVAL"
             fi
           fi
         done
@@ -270,27 +295,31 @@ runs:
             echo "✅ All checks completed successfully!"
           fi
           if [ "$cr_success" = "false" ]; then
-            echo "::error:: ❌ CR check not successful after ${{inputs.service_ready_max_retries}} retries"
+            echo "::error:: ❌ CR check not successful after $SERVICE_READY_MAX_RETRIES retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
           if [ "$resources_success" = "false" ]; then
-            echo "::error:: ❌ Resources not ready after ${{inputs.service_ready_max_retries}} retries"
+            echo "::error:: ❌ Resources not ready after $SERVICE_READY_MAX_RETRIES retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           fi
 
     - name: Get logs from test pod
       if: ${{ inputs.check_tests == 'true' }}
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+        TEST_COMPLETION_MAX_RETRIES: ${{ inputs.test_completion_max_retries }}
+        TEST_COMPLETION_RETRY_INTERVAL: ${{ inputs.test_completion_retry_interval }}
       # language=bash
       run: |
         # ▶️ Get logs from test pod
         chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
         ls -la ./qubership-test-pipelines/scripts/check_tests.sh
 
-        for i in $(seq 1 ${{inputs.test_completion_max_retries}}); do
-          echo "Test check attempt $i/${{inputs.test_completion_max_retries}}"
+        for i in $(seq 1 "$TEST_COMPLETION_MAX_RETRIES"); do
+          echo "Test check attempt $i/$TEST_COMPLETION_MAX_RETRIES"
           set +e
-          ./qubership-test-pipelines/scripts/check_tests.sh "${{inputs.namespace}}"
+          ./qubership-test-pipelines/scripts/check_tests.sh "$NAMESPACE"
           tests_exit_code=$?
           set -e
 
@@ -309,11 +338,11 @@ runs:
               ;;
           esac
 
-          if [ $i -eq ${{inputs.test_completion_max_retries}} ]; then
-            echo "::warning:: ⚠️ Tests not completed after ${{inputs.test_completion_max_retries}} retries"
+          if [ "$i" -eq "$TEST_COMPLETION_MAX_RETRIES" ]; then
+            echo "::warning:: ⚠️ Tests not completed after $TEST_COMPLETION_MAX_RETRIES retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           else
-            sleep ${{inputs.test_completion_retry_interval}}
+            sleep "$TEST_COMPLETION_RETRY_INTERVAL"
           fi
         done
 

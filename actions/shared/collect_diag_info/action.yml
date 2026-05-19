@@ -145,6 +145,16 @@ runs:
                     log_file="artifacts/logs/${pod}__${container}.log"
                     kubectl logs "$pod" -n "$NAMESPACE" -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
                     echo "✅ Container (${container}) logs successfully saved to $log_file"
+                    restart_count=$(kubectl get pod "$pod" -n "$NAMESPACE" -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].restartCount}" 2>/dev/null || echo "0")
+                    restart_count="${restart_count:-0}"
+                    if [[ "$restart_count" =~ ^[0-9]+$ && "$restart_count" -gt 0 ]]; then
+                        previous_log_file="artifacts/logs/${pod}__${container}__previous.log"
+                        if kubectl logs "$pod" -n "$NAMESPACE" -c "$container" --previous > "$previous_log_file" 2>&1; then
+                            echo "✅ Container (${container}) previous logs successfully saved to $previous_log_file"
+                        else
+                            echo "❌ Failed to collect previous log (pod might be gone)" >> "$previous_log_file"
+                        fi
+                    fi
                 else
                     echo "ℹ️ Container (${container}) is not ready yet. Send it to pending."
                     pending+=("$pod:$container")
@@ -176,6 +186,16 @@ runs:
                     log_file="artifacts/logs/${pod}_${container}.log"
                     kubectl logs "$pod" -n "$NAMESPACE" -c "$container" > "$log_file" 2>&1 || echo "❌ Failed to collect log (pod might be gone)" >> "$log_file"
                     echo "✅ Container (${container}) logs successfully saved to $log_file"
+                    restart_count=$(kubectl get pod "$pod" -n "$NAMESPACE" -o jsonpath="{.status.containerStatuses[?(@.name==\"$container\")].restartCount}" 2>/dev/null || echo "0")
+                    restart_count="${restart_count:-0}"
+                    if [[ "$restart_count" =~ ^[0-9]+$ && "$restart_count" -gt 0 ]]; then
+                        previous_log_file="artifacts/logs/${pod}_${container}__previous.log"
+                        if kubectl logs "$pod" -n "$NAMESPACE" -c "$container" --previous > "$previous_log_file" 2>&1; then
+                            echo "✅ Container (${container}) previous logs successfully saved to $previous_log_file"
+                        else
+                            echo "❌ Failed to collect previous log (pod might be gone)" >> "$previous_log_file"
+                        fi
+                    fi
                 else
                     pending+=("$pod:$container")
                     echo "ℹ️ Container (${container}) is not ready yet. Send it to pending."
