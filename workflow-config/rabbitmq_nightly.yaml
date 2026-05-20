@@ -46,7 +46,7 @@ jobs:
     tls: true
     artifact_name: Clean_CURRENT_S3_DRD_TLS
 
-  - name: Clean [${service_branch}] with full at
+  - name: Clean [${service_branch}] with Monitoring and Allure
     install_version: ${service_branch}
     template: templates/rabbitmq-service/rabbitmq_clean_sc_monitoring_allure.yml
     sequence: install
