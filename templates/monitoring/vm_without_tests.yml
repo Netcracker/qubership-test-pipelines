@@ -13,8 +13,6 @@ kubernetesMonitors:
     install: true
   kubeControllerManagerServiceMonitor:
     install: true
-monitoringOperator:
-  image: ghcr.io/netcracker/qubership-monitoring-operator:0.88.0
 victoriametrics:
   vmAuth:
     ingress:
