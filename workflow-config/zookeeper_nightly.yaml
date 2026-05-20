@@ -56,7 +56,7 @@ jobs:
     restricted: true
     artifact_name: Clean_REVIOUS_Restricted_Upgrade_to_CURRENT_Restricted
 
-  - name: Clean [${service_branch}] with Monitoring
+  - name: Clean [${service_branch}] with Monitoring and Allure
     install_version: ${service_branch}
     template: templates/zookeeper-service/zookeeper_install_APP_k8s_monitoring_allure.yml
     sequence: install
