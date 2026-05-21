@@ -40,6 +40,11 @@ on:
         type: boolean
         required: false
         default: false
+      scope:
+        description: Pgskipper Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
 
   workflow_call:
     inputs:
@@ -77,6 +82,11 @@ on:
         type: boolean
         required: false
         default: false
+      scope:
+        description: Pgskipper Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
 
     secrets:
       AWS_S3_ACCESS_KEY_ID:
@@ -123,12 +133,21 @@ jobs:
       - name: Process versions file and matrix generation
         id: process-versions
         env:
+          SCOPE: ${{ inputs.scope }}
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/pgskipper.yaml "$SERVICE_BRANCH"
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/pgskipper_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/pgskipper.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
       - name: Parse JSON into matrix
         id: parse-matrix
@@ -209,6 +228,28 @@ jobs:
           kubectl get clusterissuer test-clusterissuer -o yaml
           echo "::endgroup::"
       # == End TLS certs addition if needed =======
+
+      # == Start ======= Specific steps for Allure report =======
+      - name: Add s3 backet for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
+          --path='integrationTests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
+          --path='integrationTests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.services_template }}'
+          --path='integrationTests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.services_template }}'
+          --path='integrationTests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for Allure report =======
 
       # == 02 Start ======= Core installation steps =======
       - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
