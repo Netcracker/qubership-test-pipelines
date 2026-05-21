@@ -1,4 +1,4 @@
-рк# 🚀 Collect Diagnostics Action
+# 🚀 Collect Diagnostics Action
 
 GitHub Action to collect logs, resource manifests, and artifacts from a Kubernetes namespace
 and upload them as a workflow artifact for post-deploy or post-failure investigation.
