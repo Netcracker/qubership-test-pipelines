@@ -19,11 +19,15 @@ runs:
   steps:
     - name: Get secrets
       shell: bash
+      env:
+        SECRET_NAME: ${{ inputs.secret_name }}
+        NAMESPACE: ${{ inputs.namespace }}
+        RUNNER_TEMP: ${{ runner.temp }}
       # language=bash
       run: |
         # ▶️ Get secrets
         sudo snap install yq
-        secret=$(kubectl get secret ${{inputs.secret_name}} -oyaml -n ${{inputs.namespace}})
+        secret=$(kubectl get secret "${SECRET_NAME}" -oyaml -n "${NAMESPACE}")
         ca_crt=$(echo "$secret" | yq eval '.data["ca.crt"]' -)
         tls_crt=$(echo "$secret" | yq eval '.data["tls.crt"]' -)
         tls_key=$(echo "$secret" | yq eval '.data["tls.key"]' -)
@@ -33,6 +37,6 @@ runs:
           exit 1
         fi
 
-        echo "$ca_crt" > ${{runner.temp}}/${{inputs.secret_name}}_ca_crt.txt
-        echo "$tls_crt" > ${{runner.temp}}/${{inputs.secret_name}}_tls_crt.txt
-        echo "$tls_key" > ${{runner.temp}}/${{inputs.secret_name}}_tls_key.txt
+        echo "$ca_crt" > "${RUNNER_TEMP}/${SECRET_NAME}_ca_crt.txt"
+        echo "$tls_crt" > "${RUNNER_TEMP}/${SECRET_NAME}_tls_crt.txt"
+        echo "$tls_key" > "${RUNNER_TEMP}/${SECRET_NAME}_tls_key.txt"

@@ -19,9 +19,11 @@ runs:
     - name: Get CRDs
       id: get_crds
       shell: bash
+      env:
+        CRD_LOCATION: ${{ inputs.crd_location }}
       run: |
         # ▶️ Get CRDs
-        yamls=$(find ${{inputs.crd_location}} -type f -name "*.yaml" -or -name "*.yml")
+        yamls=$(find "${CRD_LOCATION}" -type f -name "*.yaml" -or -name "*.yml")
         CRDS_ARRAY=()
         for yaml in ${yamls}; do
           yml_kind=$(yq e '.kind' $yaml)
