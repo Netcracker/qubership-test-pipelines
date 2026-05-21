@@ -21,7 +21,7 @@ so that subsequent Helm commands run under that user's permissions.
 ## 📌 Inputs
 
 | Name | Description | Required | Default |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `service_name` | Helm release name. Also used as the subdirectory name under `qubership-test-pipelines/restricted/` when looking for service-specific ClusterRoles and ClusterRoleBindings. | Yes | - |
 | `repository_name` | Service repository name. Accepted for call-site compatibility with `helm_deploy` but not used by any step in this action. | No | - |
 | `path_to_chart` | Path to the Helm chart within the service repository. Accepted for call-site compatibility with `helm_deploy` but not used by any step in this action. | No | - |

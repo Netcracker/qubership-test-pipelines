@@ -21,7 +21,7 @@ pod readiness validation, and Robot Framework test result collection.
 ## 📌 Inputs
 
 | Name | Description | Required | Default |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `namespace` | Kubernetes namespace where the service is installed. | Yes | - |
 | `service_ready_max_retries` | Maximum number of poll attempts for CR and resource readiness checks. | Yes | - |
 | `service_ready_retry_interval` | Delay in seconds between CR and resource readiness poll attempts. | Yes | - |

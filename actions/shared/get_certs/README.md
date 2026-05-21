@@ -18,7 +18,7 @@ the base64-encoded values to files in the runner's temporary directory.
 ## 📌 Inputs
 
 | Name | Description | Required | Default |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `service_name` | Helm release name. Accepted for call-site compatibility but not used by any step in this action. | No | - |
 | `secret_name` | Name of the Kubernetes secret containing the TLS certificates. Also used as the prefix for the output file names. | Yes | - |
 | `namespace` | Kubernetes namespace where the secret is located. | Yes | - |
@@ -40,7 +40,7 @@ an error. On success, the three base64-encoded values are written to files under
 `${{ runner.temp }}`:
 
 | File | Content |
-|---|---|
+| --- | --- |
 | `${{ runner.temp }}/<secret_name>_ca_crt.txt` | `data["ca.crt"]` — base64-encoded CA certificate |
 | `${{ runner.temp }}/<secret_name>_tls_crt.txt` | `data["tls.crt"]` — base64-encoded server certificate |
 | `${{ runner.temp }}/<secret_name>_tls_key.txt` | `data["tls.key"]` — base64-encoded private key |

@@ -24,7 +24,7 @@ GitHub Action to install or upgrade Kubernetes services using Helm.
 ## 📌 Inputs
 
 | Name | Description | Required | Default |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `deploy_mode` | Deployment mode: `install` for a clean installation, `upgrade` to upgrade an existing release. | Yes | `install` |
 | `restricted` | When `true`, installs using a user with restricted rights and passes `--skip-crds` to Helm. When `false`, installs as cluster admin. | Yes | `false` |
 | `path_to_template` | Path to the values template file inside the `qubership-test-pipelines` repository. Example: `templates/consul-service/consul_clean_infra_passport.yml` | Yes | - |

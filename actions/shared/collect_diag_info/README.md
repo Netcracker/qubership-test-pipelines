@@ -1,4 +1,4 @@
-# 🚀 Collect Diagnostics Action
+рк# 🚀 Collect Diagnostics Action
 
 GitHub Action to collect logs, resource manifests, and artifacts from a Kubernetes namespace
 and upload them as a workflow artifact for post-deploy or post-failure investigation.
@@ -22,7 +22,7 @@ and upload them as a workflow artifact for post-deploy or post-failure investiga
 ## 📌 Inputs
 
 | Name | Description | Required | Default |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `namespace` | Kubernetes namespace to collect diagnostics from. | Yes | - |
 | `service_branch` | Branch or tag name of the service being tested. Used in the auto-generated artifact name — slashes are replaced with underscores, whitespace is stripped. Ignored when `artifact_name` is provided. | No | - |
 | `artifact_name` | Custom base name for the uploaded artifact. When provided, the final name is `<artifact_name>_<timestamp>`. When empty, the name is generated as `<job>_<namespace>_<branch>_<version>_artifacts_<timestamp>`. | No | `""` |
@@ -107,7 +107,7 @@ Log files collected in the retry loop use a single-underscore separator (`pod_co
 When `monitoring_pipeline: true`, the following files are written to `artifacts/`:
 
 | File | Resource |
-|---|---|
+| --- | --- |
 | `vmalertmanagers.yaml` | `VMAlertManager` |
 | `vmalerts.yaml` | `VMAlert` |
 | `vmagent.yaml` | `VMAgent` |
