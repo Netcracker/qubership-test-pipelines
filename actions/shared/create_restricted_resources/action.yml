@@ -10,13 +10,13 @@ inputs:
     description: |
       Service repository name (without organization prefix)
       Example: 'qubership-consul' for https://github.com/Netcracker/qubership-consul
-    required: true
+    required: false
 
   path_to_chart:
     description: |
       Path to helm chart within service repository
       Example: 'charts/helm/consul-service'
-    required: true
+    required: false
 
   namespace:
     description: |
@@ -150,4 +150,4 @@ runs:
     - name: Get config
       shell: bash
       # language=bash
-      run: kubectl config view --raw
+      run: kubectl config view

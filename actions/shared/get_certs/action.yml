@@ -4,7 +4,7 @@ inputs:
   service_name:
     description: |
       Helm release name
-    required: true
+    required: false
   secret_name:
     description: |
       Name of secret with certs
