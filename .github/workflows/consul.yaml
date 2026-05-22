@@ -241,11 +241,11 @@ jobs:
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
-            --path='integrationTests/atpStorage/username' \
+            --path='integrationTests/atpReport/atpStorage/username' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
-            --path='integrationTests/atpStorage/password' \
+            --path='integrationTests/atpReport/atpStorage/password' \
             --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
 
       - name: Print clean install deployment parameters
