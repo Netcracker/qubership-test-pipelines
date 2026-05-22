@@ -45,3 +45,5 @@ backupDaemon:
 tests:
   install: true
   runTestScenarios: basic
+dbaas:
+  install: true

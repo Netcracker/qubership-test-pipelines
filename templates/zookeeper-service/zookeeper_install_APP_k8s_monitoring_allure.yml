@@ -1,0 +1,79 @@
+global:
+  name: zookeeper
+  secrets:
+    zooKeeper:
+      adminUsername: zadmin
+      adminPassword: zadmin
+      clientUsername: zclient
+      clientPassword: zclient
+    backupDaemon:
+      username: admin
+      password: admin
+  podReadinessTimeout: 1800
+operator:
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+zooKeeper:
+  replicas: 3
+  storage:
+    className:
+      - standard
+    size: 1Gi
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  resources:
+    requests:
+      cpu: 70m
+      memory: 524Mi
+    limits:
+      cpu: 330m
+      memory: 524Mi
+monitoring:
+  install: true
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 158Mi
+    limits:
+      cpu: 230m
+      memory: 286Mi
+backupDaemon:
+  install: true
+  backupStorage:
+    storageClass: standard
+    persistentVolumeType: standalone
+    volumeSize: 1Gi
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  resources:
+    requests:
+      cpu: 50m
+      memory: 552Mi
+    limits:
+      cpu: 350m
+      memory: 552Mi
+integrationTests:
+  install: true
+  tags: zookeeperNOTtransactional_backup
+  timeout: 1800
+  waitForResult: true
+  pvType: standalone
+  prometheusUrl: http://vmsingle-k8s.monitoring:8429
+  securityContext:
+    fsGroup: 1000
+    runAsUser: 1000
+  atpReport:
+    enabled: true
+    atpStorage:
+      provider: aws
+      serverUrl: s3.amazonaws.com
+      bucket: qstp-results
+      region: us-east-1
+      username: ""
+      password: ""

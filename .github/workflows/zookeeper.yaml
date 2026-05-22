@@ -2,6 +2,7 @@ name: Zookeeper Tests
 
 permissions:
   contents: read
+  actions: read
 
 on:
   workflow_dispatch:
@@ -24,6 +25,11 @@ on:
         type: string
         required: false
         default: ubuntu-latest
+      scope:
+        description: Zookeeper Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
@@ -49,6 +55,11 @@ on:
         type: string
         required: false
         default: ubuntu-latest
+      scope:
+        description: Zookeeper Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
@@ -106,12 +117,21 @@ jobs:
       - name: Process versions file and matrix generation
         id: process-versions
         env:
+          SCOPE: ${{ inputs.scope }}
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/zookeeper.yaml "$SERVICE_BRANCH"
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/zookeeper_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/zookeeper.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   Zookeeper-Test-Cases:
     if: ${{ !inputs.skip_tests }}
@@ -143,6 +163,63 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
+      # == Start Monitoring installation tests =======
+      - name: Install Monitoring [${{ matrix.test.install_version }}]
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: monitoring_install
+        with:
+          path_to_template: templates/monitoring/vm_without_tests.yml
+          service_branch: v0.88.0
+          service_name: monitoring
+          repository_name: Netcracker/qubership-monitoring-operator
+          path_to_chart: charts/qubership-monitoring-operator
+          namespace: monitoring
+          restricted: false
+
+      - name: Get Installed Monitoring CR name
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_monitoring_get_crds
+        with:
+          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
+
+      - name: Verify Monitoring installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        if: matrix.test.monitoring == true
+        with:
+          namespace: monitoring
+          test_completion_max_retries: 40
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 500
+          service_ready_retry_interval: 10s
+          monitoring_pipeline: true
+          repository_name: Netcracker/qubership-monitoring-operator
+          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Monitoring installation
+        if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: monitoring
+          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
+          service_branch: main
+      # == End Monitoring installation tests =======
+
+      # == Start ======= Specific steps for Allure report =======
+      - name: Add s3 backet for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template}}'
+          --path='integrationTests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for Allure report =======
+
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
@@ -151,7 +228,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: zoo_install
         with:
-          path_to_template: templates/zookeeper-service/zookeeper_install_APP_k8s.yml
+          path_to_template: ${{ matrix.test.template }}
           service_branch: ${{ matrix.test.install_version }}
           deploy_mode: install
           service_name: zookeeper-service
@@ -308,6 +385,9 @@ jobs:
   Clean-Latest-TLS:
     if: ${{ !inputs.skip_tests }}
     runs-on: ${{ inputs.runner_type }}
+    permissions:
+      contents: read
+      actions: write
     name: Clean [${{ inputs.service_branch }}] TLS
     steps:
       - name: Checkout pipeline
@@ -399,7 +479,7 @@ jobs:
           cp ${{ runner.temp }}/zookeeper-tls-secret_*.txt certs_artifacts/
           cp ${{ runner.temp }}/zookeeper-backup-daemon-tls-secret_*.txt certs_artifacts/
       - name: Upload certs artifacts
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: zookeeper-certs
           path: certs_artifacts
@@ -422,7 +502,7 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Download zookeeper certs artifacts
-        uses: actions/download-artifact@a9bc5e6ef2cb54c177f32aa5726adaa15e7e2d59 # v3.1.0
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: zookeeper-certs
           path: certs_artifacts
@@ -482,7 +562,7 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Download certs artifacts
-        uses: actions/download-artifact@a9bc5e6ef2cb54c177f32aa5726adaa15e7e2d59 # v3.1.0
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: zookeeper-certs
           path: certs_artifacts
