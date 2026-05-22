@@ -48,6 +48,6 @@ jobs:
     sequence: install
     restricted: false
     monitoring: true
-    s3: false
+    s3: true
     allure: true
     artifact_name: Clean_CURRENT_Monitoring
