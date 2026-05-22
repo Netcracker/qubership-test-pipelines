@@ -100,3 +100,4 @@ statusProvisioner:
   lifetimeAfterCompletion: 30
   integrationTestsTimeout: 900
   podReadinessTimeout: 900
+PAAS_PLATFORM: "KUBERNETES"
