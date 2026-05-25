@@ -252,6 +252,9 @@ jobs:
       # == End ======= Specific steps for Allure report =======
 
       # == 02 Start ======= Core installation steps =======
+      - name: Print install deployment parameters (core)
+        run: cat qubership-test-pipelines/${{ matrix.test.core_template }}
+
       - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: core_install
@@ -291,6 +294,9 @@ jobs:
       # == 02 End ======= Core installation steps =======
 
       # == 03 Start ======= Services installation steps =======
+      - name: Print install deployment parameters (services)
+        run: cat qubership-test-pipelines/${{ matrix.test.services_template }}
+
       - name: Install Pgskipper Services [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: services_install
