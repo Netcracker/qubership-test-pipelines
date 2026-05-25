@@ -86,3 +86,4 @@ jobs:
     check_services_tests: true
     tls: false
     artifact_name: Clean_CURRENT_Allure
+    allure: true
