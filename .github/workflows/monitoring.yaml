@@ -105,7 +105,15 @@ jobs:
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/monitoring.yaml "$SERVICE_BRANCH"
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/monitoring_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/monitoring.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   Monitoring-Test-Cases:
     if: ${{ !inputs.skip_tests }}
@@ -143,6 +151,20 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
         with:
           kind-layout: ${{ inputs.kind-layout }}
+
+      # == Start ======= Specific steps for Allure report =======
+      - name: Add s3 backet for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for Allure report =======
 
       - name: Install Ingress Controller
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
