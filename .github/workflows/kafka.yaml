@@ -538,14 +538,13 @@ jobs:
 
       - name: Hardening Check
         if: inputs.scope == 'hardening'
-        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@main
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@cabbb90e9471163cfac84bd50ff0296b2803b44c # v2.3.0
         with:
           namespaces: ${{ env.kfk_srvc_namespace }}
           output-file: kafka-service-hardening-scan.json
           install-kubescape: true
           execute-trivy-scan: false
           fail-on-mandatory-checks: true
-          config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
 
       - name: Verify Kafka Service upgrade
         if: matrix.test.sequence == 'upgrade'
