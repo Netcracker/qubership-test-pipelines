@@ -355,7 +355,7 @@ jobs:
 
   final-status-check:
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner_type }}
     needs: [RabbitMQ-Test-Cases]
     steps:
       - name: Checkout pipeline
