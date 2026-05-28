@@ -181,6 +181,9 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
       # == 01 End ======= Common pre-steps for all tests =======
 
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+
       # == 02 Start ======= Installation steps =======
       - name: Install Monitoring [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -224,6 +227,10 @@ jobs:
       # == 02 End ======= Installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
+      - name: Print upgrade deployment parameters
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
+
       - name: Upgrade Monitoring to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
