@@ -30,6 +30,11 @@ on:
         type: string
         required: false
         default: multi-node
+      scope:
+        description: Monitoring Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
@@ -62,6 +67,11 @@ on:
         type: string
         required: false
         default: multi-node
+      scope:
+        description: Monitoring Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
@@ -102,6 +112,7 @@ jobs:
         env:
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
+          SCOPE: ${{ inputs.scope }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh

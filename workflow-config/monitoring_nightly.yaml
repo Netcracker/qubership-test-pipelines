@@ -2,7 +2,7 @@ jobs:
   ## Upgrade from previous releases to current
   - name: Clean [${service_branch}], Upgrade [${service_branch}] Diff Params
     install_version: ${service_branch}
-    template: templates/monitoring/vm_with_smoke_and_simple_test.yml
+    template: templates/monitoring/vm_with_smoke_and_simple_test_allure.yml
     upgrade_version: ${service_branch}
     upgrade_template: templates/monitoring/values_test.yml
     sequence: clean
