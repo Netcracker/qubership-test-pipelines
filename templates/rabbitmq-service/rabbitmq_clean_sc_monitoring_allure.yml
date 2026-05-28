@@ -44,3 +44,12 @@ tests:
   # delete NOTsome_pods_are_not_working_alert after fix
   waitTestResultOnJob: true
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
+  atpReport:
+    enabled: true
+    atpStorage:
+      provider: aws
+      serverUrl: s3.amazonaws.com
+      bucket: qstp-results
+      region: us-east-1
+      username: ""
+      password: ""
