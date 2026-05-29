@@ -30,6 +30,11 @@ on:
         type: string
         required: false
         default: multi-node
+      scope:
+        description: Monitoring Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
@@ -62,11 +67,22 @@ on:
         type: string
         required: false
         default: multi-node
+      scope:
+        description: Monitoring Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
       skip_tests:
         description: Skip all tests (for doc-only changes)
         type: boolean
         required: false
         default: false
+
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
 
 jobs:
   prepare:
@@ -102,10 +118,19 @@ jobs:
         env:
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
+          SCOPE: ${{ inputs.scope }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          ./scripts/matrix.sh "$LATEST_TAG" ./workflow-config/monitoring.yaml "$SERVICE_BRANCH"
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/monitoring_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/monitoring.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
 
   Monitoring-Test-Cases:
     if: ${{ !inputs.skip_tests }}
@@ -144,9 +169,26 @@ jobs:
         with:
           kind-layout: ${{ inputs.kind-layout }}
 
+      # == Start ======= Specific steps for Allure report =======
+      - name: Add s3 backet for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for Allure report =======
+
       - name: Install Ingress Controller
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
       # == 01 End ======= Common pre-steps for all tests =======
+
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
       # == 02 Start ======= Installation steps =======
       - name: Install Monitoring [${{ matrix.test.install_version }}]
@@ -191,6 +233,10 @@ jobs:
       # == 02 End ======= Installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
+      - name: Print upgrade deployment parameters
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
+
       - name: Upgrade Monitoring to [${{ matrix.test.upgrade_version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
