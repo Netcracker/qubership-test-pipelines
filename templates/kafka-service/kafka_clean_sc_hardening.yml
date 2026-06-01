@@ -72,7 +72,7 @@ akhq:
 
 mirrorMaker:
   install: true
-  regionName: "first"
+  regionName: first
   clusters:
     - {"name": "first", "bootstrapServers": "kafka:9092", "username": "client", "password": "client"}
     - {"name": "second", "bootstrapServers": "kafka:9092", "username": "client", "password": "client"}
