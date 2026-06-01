@@ -119,7 +119,6 @@ jobs:
           SCOPE: ${{ inputs.scope }}
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
-          SCOPE: ${{ inputs.scope }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
@@ -297,6 +296,7 @@ jobs:
           namespace: monitoring
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.upgrade_version }}
+
       # == End ======= Specific steps for upgrade tests =======
 
   final-status-check:

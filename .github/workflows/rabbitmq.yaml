@@ -353,6 +353,7 @@ jobs:
           namespace: rabbitmq
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.install_version }}
+
       # == End Update steps ==
 
       # == Start ======= Specific steps for S3 =======
