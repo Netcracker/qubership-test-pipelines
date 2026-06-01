@@ -13,17 +13,17 @@ global:
       username: admin
       password: admin
     cruiseControl:
-      adminUsername: "admin"
-      adminPassword: "admin"
-      viewerUsername: "cert"
-      viewerPassword: "cert"
+      adminUsername: admin
+      adminPassword: admin
+      viewerUsername: cert
+      viewerPassword: cert
 
   disasterRecovery:
     httpAuth:
       enabled: false
       smSecureAuth: false
     mode: ""
-    region: "first"
+    region: first
     siteManagerEnabled: false
     mirrorMakerReplication:
       enabled: true
