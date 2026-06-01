@@ -26,7 +26,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: Zookeeper Test Scope (pr or nightly)
+        description: Zookeeper Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -56,7 +56,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: Zookeeper Test Scope (pr or nightly)
+        description: Zookeeper Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -127,8 +127,10 @@ jobs:
             CONFIG_FILE="./workflow-config/zookeeper_nightly.yaml"
           elif [[ "$SCOPE" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/zookeeper.yaml"
+          elif [[ "$SCOPE" == "hardening" ]]; then
+            CONFIG_FILE="./workflow-config/zookeeper_hardening.yaml"
           else
-            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr', 'nightly' or 'hardening'."
             exit 1
           fi
           ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
@@ -350,6 +352,17 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         run: sleep 1m
 
+      - name: Hardening Check
+        if: inputs.scope == 'hardening'
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@cabbb90e9471163cfac84bd50ff0296b2803b44c # v2.3.0
+        with:
+          namespaces: zookeeper
+          output-file: zookeeper-hardening-scan.json
+          install-kubescape: true
+          execute-trivy-scan: false
+          fail-on-mandatory-checks: true
+          config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
+
       - name: Verify Zookeeper upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -379,11 +392,12 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.upgrade_version }}
+
       # == 03 End === Upgrade Zookeeper [LATEST] =====
 
   # 15-Clean [LATEST] TLS
   Clean-Latest-TLS:
-    if: ${{ !inputs.skip_tests }}
+    if: ${{ !inputs.skip_tests && inputs.scope != 'hardening' }}
     runs-on: ${{ inputs.runner_type }}
     permissions:
       contents: read
@@ -487,7 +501,7 @@ jobs:
 
   # 16-Clean [LATEST] TLS Secrets
   Clean-Latest-TLS-Secrets:
-    if: ${{ !inputs.skip_tests }}
+    if: ${{ !inputs.skip_tests && inputs.scope != 'hardening' }}
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
     name: Clean [${{ inputs.service_branch }}] TLS Secrets
@@ -547,7 +561,7 @@ jobs:
 
   # 17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
   Clean-Latest-TLS-Certificates:
-    if: ${{ !inputs.skip_tests }}
+    if: ${{ !inputs.skip_tests && inputs.scope != 'hardening' }}
     runs-on: ${{ inputs.runner_type }}
     needs: Clean-Latest-TLS
     name: Clean [${{ inputs.service_branch }}] TLS Certificates
@@ -609,7 +623,7 @@ jobs:
   final-status-check:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    needs: [Zookeeper-Test-Cases, Clean-Latest-TLS-Certificates, Clean-Latest-TLS-Secrets]
+    needs: [Zookeeper-Test-Cases, Clean-Latest-TLS, Clean-Latest-TLS-Certificates, Clean-Latest-TLS-Secrets]
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
