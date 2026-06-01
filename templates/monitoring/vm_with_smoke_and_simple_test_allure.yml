@@ -3,11 +3,20 @@ grafana:
     host: grafana-monitoring.testdomain.local
     install: true
 integrationTests:
-  install: false
+  install: true
   tags: grafanaORsmoke
   timeoutBeforeStart: 60
   statusWriting:
     enabled: false
+  atpReport:
+    enabled: true
+    atpStorage:
+      provider: aws
+      serverUrl: s3.amazonaws.com
+      bucket: qstp-results
+      region: us-east-1
+      username: ""
+      password: ""
 kubernetesMonitors:
   kubeSchedulerServiceMonitor:
     install: true
