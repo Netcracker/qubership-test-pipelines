@@ -74,8 +74,14 @@ mirrorMaker:
   install: true
   regionName: first
   clusters:
-    - {"name": "first", "bootstrapServers": "kafka:9092", "username": "client", "password": "client"}
-    - {"name": "second", "bootstrapServers": "kafka:9092", "username": "client", "password": "client"}
+    - name: first
+      bootstrapServers: kafka:9092
+      username: client
+      password: client
+    - name: second
+      bootstrapServers: kafka:9092
+      username: client
+      password: client
   replicationPrefixEnabled: true
 
 mirrorMakerMonitoring:
