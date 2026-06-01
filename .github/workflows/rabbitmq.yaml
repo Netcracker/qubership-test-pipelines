@@ -26,7 +26,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: RabbitMQ Test Scope (pr or nightly)
+        description: RabbitMQ Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -56,7 +56,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: RabbitMQ Test Scope (pr or nightly)
+        description: RabbitMQ Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -119,8 +119,10 @@ jobs:
             CONFIG_FILE="./workflow-config/rabbitmq_nightly.yaml"
           elif [[ "$SCOPE" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/rabbitmq.yaml"
+          elif [[ "$SCOPE" == "hardening" ]]; then
+            CONFIG_FILE="./workflow-config/rabbitmq_hardening.yaml"
           else
-            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr', 'nightly' or 'hardening'."
             exit 1
           fi
           ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
@@ -251,6 +253,20 @@ jobs:
       #         --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
 
+      # == Start ======= Specific steps for Allure report =======
+      - name: Add s3 backet for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='tests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='tests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for Allure report =======
+
       - name: Print install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
@@ -308,6 +324,17 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: sleep 1m
 
+      - name: Hardening Check
+        if: inputs.scope == 'hardening'
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@cabbb90e9471163cfac84bd50ff0296b2803b44c # v2.3.0
+        with:
+          namespaces: rabbitmq
+          output-file: rabbitmq-hardening-scan.json
+          install-kubescape: true
+          execute-trivy-scan: false
+          fail-on-mandatory-checks: true
+          config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
+
       - name: Verify RabbitMQ upgrade
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -326,6 +353,7 @@ jobs:
           namespace: rabbitmq
           artifact_name: Upgrade_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.install_version }}
+
       # == End Update steps ==
 
       # == Start ======= Specific steps for S3 =======
@@ -341,7 +369,7 @@ jobs:
 
   final-status-check:
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner_type }}
     needs: [RabbitMQ-Test-Cases]
     steps:
       - name: Checkout pipeline

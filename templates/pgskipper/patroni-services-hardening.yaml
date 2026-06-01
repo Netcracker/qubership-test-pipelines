@@ -1,0 +1,47 @@
+postgresUser: postgres
+postgresPassword: p@ssWOrD1
+operator:
+  resources:
+    limits:
+      cpu: 256m
+      memory: 256Mi
+    requests:
+      cpu: 256m
+      memory: 256Mi
+metricCollector:
+  install: false
+  prometheusRules:
+    backupAlertThreshold: 5
+    backupWarningThreshold: 20
+    alertDelay: 3m
+    maxLastBackupAge: 86400
+    locksThreshold: 500
+    queryMaxTimeThreshold: 3600
+  collectionInterval: 60
+  telegrafPluginTimeout: 60
+  ocExecTimeout: 10
+  metricsProfile: prod
+  prometheusMonitoring: false
+  applyGrafanaDashboard: false
+backupDaemon:
+  install: true
+  walArchiving: false
+  backupSchedule: 0 0/7 * * *
+  evictionPolicy: 7d/delete
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+  resources:
+    limits:
+      cpu: 250m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  storage:
+    type: provisioned
+    size: 1Gi
+    storageClass: standard
+tests:
+  install: true
+  runTestScenarios: basic
