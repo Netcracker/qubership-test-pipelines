@@ -231,7 +231,32 @@ jobs:
           echo "::endgroup::"
       # == End TLS certs addition if needed =======
 
+      # == Start ======= Specific steps for Allure report =======
+      - name: Add s3 bucket for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
+          --path='tests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
+          --path='tests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.services_template }}'
+          --path='tests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.services_template }}'
+          --path='tests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for Allure report =======
+
       # == 02 Start ======= Core installation steps =======
+      - name: Print install deployment parameters (core)
+        run: cat qubership-test-pipelines/${{ matrix.test.core_template }}
+
       - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: core_install
@@ -271,6 +296,9 @@ jobs:
       # == 02 End ======= Core installation steps =======
 
       # == 03 Start ======= Services installation steps =======
+      - name: Print install deployment parameters (services)
+        run: cat qubership-test-pipelines/${{ matrix.test.services_template }}
+
       - name: Install Pgskipper Services [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: services_install
