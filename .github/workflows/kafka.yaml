@@ -741,29 +741,6 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
 
-      # ===== TLS setup =====
-      - name: Install cert-manager
-        run: |
-          helm repo add jetstack https://charts.jetstack.io --force-update
-          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
-            --create-namespace --version v1.16.3 --set prometheus.enabled=true --set crds.enabled=true
-          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-
-      # ===== Get latest tag for release_version =====
-      - name: Get latest tag
-        id: get-latest-tag
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO_NAME: ${{ inputs.repository_name }}
-        run: |
-          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
-          echo "release_version=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "Latest tag: $LATEST_TAG"
-
       # ===== 1. ZooKeeper =====
       - name: Install ZooKeeper
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -802,7 +779,7 @@ jobs:
           service_branch: main
 
       # ===== 2. Kafka 3 with Zookeeper =====
-      - name: Install Kafka 3 Core
+      - name: Install [${{ inputs.service_branch }}] Kafka 3 Core
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_core_install
         with:
@@ -839,7 +816,7 @@ jobs:
           artifact_name: Migration_Kafka3_Core
           service_branch: ${{ inputs.service_branch }}
 
-      - name: Install Kafka 3 Service
+      - name: Install [${{ inputs.service_branch }}] Kafka 3 Service
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_service_install
         with:
@@ -877,12 +854,12 @@ jobs:
           service_branch: ${{ inputs.service_branch }}
 
       # ===== 3. Migration to Kafka 3 KRaft =====
-      - name: Migrate Kafka Core to KRaft
+      - name: Migrate [${{ inputs.service_branch }}] Kafka Core to KRaft
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_core_migrate
         with:
           path_to_template: ${{ env.KAFKA_MIGRATE_TEMPLATE }}
-          service_branch: ${{ steps.get-latest-tag.outputs.release_version }}
+          service_branch: ${{ inputs.service_branch }}
           service_name: kafka
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.kfk_path_to_chart }}
@@ -909,15 +886,15 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.kfk_namespace }}
-          artifact_name: Migration_Kafka_Core_KRaft
-          service_branch: ${{ steps.get-latest-tag.outputs.release_version }}
+          artifact_name: Migration_Kafka3_Core_KRaft
+          service_branch: ${{ inputs.service_branch }}
 
-      - name: Migrate Kafka 3 Service to KRaft
+      - name: Migrate [${{ inputs.service_branch }}] Kafka 3 Service to KRaft
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_service_migrate
         with:
           path_to_template: ${{ env.KAFKA_MIGRATE_TEMPLATE }}
-          service_branch: ${{ steps.get-latest-tag.outputs.release_version }}
+          service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.kfk_srvc_path_to_chart }}
@@ -945,10 +922,10 @@ jobs:
         with:
           namespace: ${{ env.kfk_srvc_namespace }}
           artifact_name: Migration_Kafka3_Service_KRaft
-          service_branch: ${{ steps.get-latest-tag.outputs.release_version }}
+          service_branch: ${{ inputs.service_branch }}
 
       # ===== 4. Upgrade to Kafka 4 =====
-      - name: Upgrade Kafka Core to Kafka 4
+      - name: Upgrade Kafka 3 Core to [${{ inputs.service_branch }}] Kafka 4 Core
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_core_upgrade
         with:
@@ -980,10 +957,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.kfk_namespace }}
-          artifact_name: Migration_Kafka_Core_Kafka4
+          artifact_name: Migration_Kafka4_Core
           service_branch: ${{ inputs.service_branch }}
 
-      - name: Upgrade Kafka 4 Service to [${{ inputs.service_branch }}]
+      - name: Upgrade Kafka 3 Service to [${{ inputs.service_branch }}] Kafka 4 Service
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_service_upgrade
         with:
