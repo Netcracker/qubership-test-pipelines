@@ -32,19 +32,3 @@ runs:
         echo "ℹ️ CRDs: '$CRDS'"
         echo "crd_names=${CRDS}" >> $GITHUB_OUTPUT
       continue-on-error: true
-
-    - name: Print contents of found CRDs
-      shell: bash
-      run: |
-        echo "==================== CRD files content ===================="
-        yamls=$(find ${{inputs.crd_location}} -type f -name "*.yaml" -or -name "*.yml")
-        for yaml in ${yamls}; do
-          yml_kind=$(yq e '.kind' $yaml)
-          if [ "$yml_kind" == "CustomResourceDefinition" ]; then
-            echo "----- $yaml -----"
-            cat "$yaml"
-            echo ""
-          fi
-        done
-        echo "============================================================"
-      continue-on-error: true
