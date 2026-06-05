@@ -25,7 +25,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: Opensearch Test Scope (pr or nightly)
+        description: Opensearch Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -55,7 +55,7 @@ on:
         required: false
         default: ubuntu-latest
       scope:
-        description: Opensearch Test Scope (pr or nightly)
+        description: Opensearch Test Scope (pr, nightly or hardening)
         type: string
         required: false
         default: pr
@@ -117,8 +117,10 @@ jobs:
             CONFIG_FILE="./workflow-config/opensearch_nightly.yaml"
           elif [[ "$SCOPE" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/opensearch.yaml"
+          elif [[ "$SCOPE" == "hardening" ]]; then
+            CONFIG_FILE="./workflow-config/opensearch_hardening.yaml"
           else
-            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr', 'nightly' or 'hardening'."
             exit 1
           fi
           ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
@@ -134,9 +136,9 @@ jobs:
     name: ${{ matrix.test.name }}
     env:
       namespace: opensearch
-      test_completion_max_retries: 100
+      test_completion_max_retries: 1
       test_completion_retry_interval: 10s
-      service_ready_max_retries: 120
+      service_ready_max_retries: 140
       service_ready_retry_interval: 10s
       service_branch: ""
       path_to_chart: operator/charts/helm/opensearch-service
@@ -271,6 +273,20 @@ jobs:
           service_branch: main
       # == End Monitoring installation tests =======
 
+      # == Start ======= Specific steps for Allure report =======
+      - name: Add s3 backet for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpReport/atpStorage/username'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --path='integrationTests/atpReport/atpStorage/password'
+          --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+      # == End ======= Specific steps for Allure report =======
+
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template }}
 
@@ -351,6 +367,17 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: sleep 1m
 
+      - name: Hardening Check
+        if: inputs.scope == 'hardening'
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@cabbb90e9471163cfac84bd50ff0296b2803b44c # v2.3.0
+        with:
+          namespaces: opensearch
+          output-file: opensearch-hardening-scan.json
+          install-kubescape: true
+          execute-trivy-scan: true
+          fail-on-mandatory-checks: true
+          config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
+
       - name: Verify Opensearch upgrade to [${{ matrix.test.upgrade_version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -381,6 +408,7 @@ jobs:
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
           bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
           region: us-east-1
+
       # == End ======= Specific steps for S3 =======
 
   final-status-check:

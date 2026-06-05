@@ -42,11 +42,12 @@ jobs:
     tls: true
     artifact_name: Clean_CURRENT_TLS
 
-  - name: Clean [${service_branch}] with Monitoring
+  - name: Clean [${service_branch}] with Monitoring and Allure
     install_version: ${service_branch}
-    template: templates/opensearch-service/opensearch_clean_all_on_sc_monitoring.yml
+    template: templates/opensearch-service/opensearch_clean_all_on_sc_monitoring_allure.yml
     sequence: install
     restricted: false
     monitoring: true
     s3: true
+    allure: true
     artifact_name: Clean_CURRENT_Monitoring

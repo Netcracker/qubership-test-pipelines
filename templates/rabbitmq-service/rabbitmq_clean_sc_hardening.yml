@@ -1,7 +1,7 @@
 global:
   cloudIntegrationEnabled: false
 name: rabbitmq-service
-rabbitmqPrometheusMonitoring: true
+rabbitmqPrometheusMonitoring: false
 rabbitmq:
   fsGroup: 5000
   runAsUser: 5000
@@ -40,7 +40,5 @@ tests:
   runTests: true
   runTestsOnly: false
   timeout: 300
-  tags: allNOTsome_pods_are_not_working_alert
-  # delete NOTsome_pods_are_not_working_alert after fix
+  tags: smoke
   waitTestResultOnJob: true
-  prometheusUrl: http://vmsingle-k8s.monitoring:8429
