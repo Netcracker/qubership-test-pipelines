@@ -66,11 +66,6 @@ runs:
       # language=bash
       run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
 
-    - name: Initialize error flag
-      shell: bash
-      # language=bash
-      run: echo "ERROR_FLAG=false" >> $GITHUB_ENV
-
     - name: Check service is ready
       shell: bash
       env:

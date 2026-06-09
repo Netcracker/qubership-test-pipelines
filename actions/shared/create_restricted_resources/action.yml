@@ -10,13 +10,13 @@ inputs:
     description: |
       Service repository name (without organization prefix)
       Example: 'qubership-consul' for https://github.com/Netcracker/qubership-consul
-    required: true
+    required: false
 
   path_to_chart:
     description: |
       Path to helm chart within service repository
       Example: 'charts/helm/consul-service'
-    required: true
+    required: false
 
   namespace:
     description: |
@@ -29,28 +29,32 @@ runs:
     # Create CRD
     - name: Create ClusterRoles
       shell: bash
+      env:
+        SERVICE_NAME: ${{ inputs.service_name }}
       # language=bash
       run: |
         # ▶️ Create ClusterRoles
-        restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
+        restricted_folder="qubership-test-pipelines/restricted/${SERVICE_NAME}"
         if [ ! -d "$restricted_folder" ] || [ ! -d "$restricted_folder/clusterRoles" ]; then
           echo "::warning::Files with clusterRoles not found. Resources not created."
         else
           echo "Applying ClusterRoles..."
-          kubectl create -f $restricted_folder/clusterRoles
+          kubectl create -f "$restricted_folder/clusterRoles"
         fi
 
     - name: Create ClusterRoleBindings
       shell: bash
+      env:
+        SERVICE_NAME: ${{ inputs.service_name }}
       # language=bash
       run: |
         # ▶️ Create ClusterRoleBindings
-        restricted_folder="qubership-test-pipelines/restricted/${{inputs.service_name}}"
+        restricted_folder="qubership-test-pipelines/restricted/${SERVICE_NAME}"
         if [ ! -d "$restricted_folder" ] || [ ! -d "$restricted_folder/clusterRoleBindings" ]; then
           echo "::warning::Files with clusterRoleBindings not found. Resources not created."
         else
           echo "Applying clusterRoleBindings..."
-          kubectl create -f $restricted_folder/clusterRoleBindings
+          kubectl create -f "$restricted_folder/clusterRoleBindings"
         fi
 
 # Create Certificate
@@ -103,23 +107,27 @@ runs:
 # Create Role and RB
     - name: Update yaml with Role
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
       # language=bash
       run: |
         # ▶️ Update yaml with Role
         python qubership-test-pipelines/scripts/update_yaml.py \
           --file='qubership-test-pipelines/restricted/restricted-role.yml' \
           --path='metadata/namespace' \
-          --value='${{inputs.namespace}}'
+          --value="${NAMESPACE}"
 
     - name: Update yaml with RoleBinding
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
       # language=bash
       run: |
         # ▶️ Update yaml with RoleBinding
         python qubership-test-pipelines/scripts/update_yaml.py \
           --file='qubership-test-pipelines/restricted/restricted-rb.yml' \
           --path='metadata/namespace' \
-          --value='${{inputs.namespace}}'
+          --value="${NAMESPACE}"
 
     - name: Create Role
       shell: bash
@@ -139,8 +147,10 @@ runs:
 
     - name: Create context for user
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
       # language=bash
-      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace=${{inputs.namespace}} --user=restricted
+      run: kubectl config set-context restricted-context --cluster=kind-kind --namespace="${NAMESPACE}" --user=restricted
 
     - name: Use context
       shell: bash
@@ -150,4 +160,4 @@ runs:
     - name: Get config
       shell: bash
       # language=bash
-      run: kubectl config view --raw
+      run: kubectl config view

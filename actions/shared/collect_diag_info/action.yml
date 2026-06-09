@@ -17,6 +17,13 @@ inputs:
     required: false
     default: ""
 
+  version:
+    description: |
+      Matrix version value used as a suffix in the auto-generated artifact name.
+      Pass any matrix dimension that identifies this run (e.g. matrix.version or matrix.service_image).
+    required: false
+    default: ""
+
   monitoring_pipeline:
     description: |
       Only for Monitoring. Enable monitoring CRs checks (true) or disable them (false)
@@ -33,7 +40,7 @@ runs:
       run: mkdir -p artifacts
 
     - name: Get monitoring specific resources
-      if: ${{ inputs.monitoring_pipeline == 'true' }}
+      if: always() && inputs.monitoring_pipeline == 'true'
       shell: bash
       env:
         NAMESPACE: ${{ inputs.namespace }}
@@ -236,7 +243,7 @@ runs:
       env:
         SERVICE_BRANCH: ${{ inputs.service_branch }}
         INPUT_ARTIFACT_NAME: ${{ inputs.artifact_name }}
-        MATRIX_VERSION: ${{ matrix.version }}
+        MATRIX_VERSION: ${{ inputs.version }}
         GITHUB_JOB: ${{ github.job }}
         NAMESPACE: ${{ inputs.namespace }}
       run: |
