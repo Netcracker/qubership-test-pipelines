@@ -1,4 +1,5 @@
 name: Get CRD names
+description: GitHub Action to get CRD names from yaml files
 inputs:
   crd_location:
     description: |
@@ -8,6 +9,7 @@ inputs:
       # if checked out to qubership-kafka directory, then
       # 'qubership-kafka/operator/charts/helm/kafka-service/crds'
     required: true
+    type: string
 outputs:
   crd_names:
     value: ${{ steps.get_crds.outputs.crd_names }}
@@ -17,9 +19,11 @@ runs:
     - name: Get CRDs
       id: get_crds
       shell: bash
+      env:
+        CRD_LOCATION: ${{ inputs.crd_location }}
       run: |
         # ▶️ Get CRDs
-        yamls=$(find ${{inputs.crd_location}} -type f -name "*.yaml" -or -name "*.yml")
+        yamls=$(find "${CRD_LOCATION}" -type f -name "*.yaml" -or -name "*.yml")
         CRDS_ARRAY=()
         for yaml in ${yamls}; do
           yml_kind=$(yq e '.kind' $yaml)
