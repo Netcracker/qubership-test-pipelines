@@ -73,7 +73,7 @@ runs:
   using: composite
   steps:
     - name: Checkout repo
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       with:
         ref: ${{inputs.service_branch}}
         repository: ${{inputs.repository_name}}
