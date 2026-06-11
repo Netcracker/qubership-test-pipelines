@@ -42,7 +42,7 @@ jobs:
       statuses: write
     steps:
       - name: Get the common linters configuration
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main # fix/superlinter-config
           repository: netcracker/.github
@@ -56,7 +56,7 @@ jobs:
           rm -rf ./common-configs
         # To report GitHub Actions status checks
       - name: Checkout code
-        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Full git history is needed to get a proper list of changed files within `super-linter`
           fetch-depth: 0
@@ -82,7 +82,7 @@ jobs:
           fi
 
       - name: Lint Code Base
-        uses: super-linter/super-linter/slim@61abc07d755095a68f4987d1c2c3d1d64408f1f9 # v8.5.0
+        uses: super-linter/super-linter/slim@9e863354e3ff62e0727d37183162c4a88873df41 # v8.6.0
         env:
           VALIDATE_ALL_CODEBASE: ${{ inputs.full_scan || false }}
           # To report GitHub Actions status checks
