@@ -89,7 +89,7 @@ jobs:
       matrix: ${{ steps.process-versions.outputs.matrix }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -97,7 +97,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -154,7 +154,7 @@ jobs:
           echo "$MATRIX_JSON"
 
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -405,7 +405,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -493,7 +493,7 @@ jobs:
           cp ${{ runner.temp }}/zookeeper-tls-secret_*.txt certs_artifacts/
           cp ${{ runner.temp }}/zookeeper-backup-daemon-tls-secret_*.txt certs_artifacts/
       - name: Upload certs artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: zookeeper-certs
           path: certs_artifacts
@@ -507,7 +507,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS Secrets
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -516,7 +516,7 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Download zookeeper certs artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: zookeeper-certs
           path: certs_artifacts
@@ -567,7 +567,7 @@ jobs:
     name: Clean [${{ inputs.service_branch }}] TLS Certificates
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -576,7 +576,7 @@ jobs:
       - name: Create cluster
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       - name: Download certs artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: zookeeper-certs
           path: certs_artifacts
@@ -626,7 +626,7 @@ jobs:
     needs: [Zookeeper-Test-Cases, Clean-Latest-TLS, Clean-Latest-TLS-Certificates, Clean-Latest-TLS-Secrets]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
