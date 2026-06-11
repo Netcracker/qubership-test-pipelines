@@ -206,6 +206,10 @@ runs:
     - name: Update Image Version
       if: inputs.image_replacement != ''
       shell: bash
+      env:
+        REPOSITORY_NAME: ${{ inputs.repository_name }}
+        PATH_TO_CHART: ${{ inputs.path_to_chart }}
+        IMAGE_REPLACEMENT: ${{ inputs.image_replacement }}
       run: |
         # ▶️ Replace version of service
         path_to_file="${REPOSITORY_NAME}/${PATH_TO_CHART}/values.yaml"
