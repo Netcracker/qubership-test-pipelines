@@ -100,7 +100,7 @@ jobs:
       service_images: ${{ steps.parse-matrix.outputs.service_images }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -108,7 +108,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -188,7 +188,7 @@ jobs:
           echo "======== Job parameters ======="
           echo "$MATRIX_JSON"
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
@@ -710,7 +710,7 @@ jobs:
     needs: [Kafka-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
