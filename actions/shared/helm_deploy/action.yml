@@ -182,14 +182,15 @@ runs:
           echo "is_release=false" >> $GITHUB_OUTPUT
         fi
 
-    - name: Replace slash in service branch
-      id: replace_slash
+    - name: Normalize service branch name for image tag
+      id: normalize_service_branch
       shell: bash
       env:
         SERVICE_BRANCH: ${{ inputs.service_branch }}
       # language=bash
       run: |
-        # ▶️ Replace slash in service branch
+        # ▶️ Normalize service branch name for image tag
+        # 1. Replace slash in service branch
         service_branch="${SERVICE_BRANCH}"
         # if branch is a commit hash (contains from 7 up to 40 characters: digits or letters from a to f), trim to 11 characters
         if echo "$service_branch" | grep -Eq '^[0-9a-f]{7,40}$'; then
@@ -197,6 +198,8 @@ runs:
         else
           service_branch_updated="${service_branch//\//_}"
         fi
+        # 2. Convert to lowercase
+        service_branch_updated="${service_branch_updated,,}"
         echo "The image tag: ${service_branch_updated}"
         echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
 
@@ -277,7 +280,7 @@ runs:
       if: ${{ steps.check-release.outputs.is_release == 'false' }}
       uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@396774180000abdb825cbf150b56cc59c6913db8 # v2.0.5
       with:
-        release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
+        release-version: ${{steps.normalize_service_branch.outputs.service_branch_updated}}
         config-file: .github/charts-values-update-config.yaml
         create-release-branch: false
         version-replace-method: parse
