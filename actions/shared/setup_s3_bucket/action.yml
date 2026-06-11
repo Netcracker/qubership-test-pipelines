@@ -22,7 +22,7 @@ runs:
   using: composite
   steps:
     - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v4
+      uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a # v4
       with:
         aws-access-key-id: ${{ inputs.aws_access_key_id }}
         aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
@@ -30,8 +30,11 @@ runs:
     - name: Create bucket
       id: create
       shell: bash
+      env:
+        PREFIX: ${{ inputs.prefix }}
+        REGION: ${{ inputs.region }}
       run: |
         TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-        BUCKET_NAME="test-pipelines-${{ inputs.prefix }}-${TIMESTAMP}"
-        aws s3 mb "s3://${BUCKET_NAME}" --region "${{ inputs.region }}"
+        BUCKET_NAME="test-pipelines-${PREFIX}-${TIMESTAMP}"
+        aws s3 mb "s3://${BUCKET_NAME}" --region "${REGION}"
         echo "bucket_name=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
