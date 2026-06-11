@@ -21,10 +21,12 @@ runs:
         aws-region: ${{ inputs.region }}
     - name: Delete bucket
       shell: bash
+      env:
+        BUCKET: ${{ inputs.bucket_name }}
+        REGION: ${{ inputs.region }}
       run: |
-        BUCKET="${{ inputs.bucket_name }}"
-        if aws s3 ls "s3://${BUCKET}" --region "${{ inputs.region }}" >/dev/null 2>&1; then
-          aws s3 rb "s3://${BUCKET}" --region "${{ inputs.region }}" --force
+        if aws s3 ls "s3://${BUCKET}" --region "${REGION}" >/dev/null 2>&1; then
+          aws s3 rb "s3://${BUCKET}" --region "${REGION}" --force
           echo "Bucket ${BUCKET} deleted"
         else
           echo "::warning:: Bucket ${BUCKET} does not exist, skipping deletion."

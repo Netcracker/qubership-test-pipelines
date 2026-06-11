@@ -78,26 +78,31 @@ runs:
         ref: ${{inputs.service_branch}}
         repository: ${{inputs.repository_name}}
         path: ${{inputs.repository_name}}
+        persist-credentials: false
 
     - name: Create namespace
       if: inputs.deploy_mode == 'install'
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
       # language=bash
       run: |
         # ▶️ Create namespace
-        if ! kubectl get namespace ${{inputs.namespace}} >/dev/null 2>&1; then
-        kubectl create namespace ${{inputs.namespace}}
+        if ! kubectl get namespace "${NAMESPACE}" >/dev/null 2>&1; then
+        kubectl create namespace "${NAMESPACE}"
         else
-        echo "Namespace '${{inputs.namespace}}' already exists"
+        echo "Namespace '${NAMESPACE}' already exists"
         fi
 
     - name: Create resources
       if: inputs.resource_folder != ''
       shell: bash
+      env:
+        RESOURCE_FOLDER: ${{ inputs.resource_folder }}
       # language=bash
       run: |
         # ▶️ Create resources
-        folder="qubership-test-pipelines/${{inputs.resource_folder}}"
+        folder="qubership-test-pipelines/${RESOURCE_FOLDER}"
         files=($(find "$folder" -type f))
         echo $files
         for file in "${files[@]}"; do
@@ -107,10 +112,13 @@ runs:
 
     - name: Replace CRDs
       shell: bash
+      env:
+        REPOSITORY_NAME: ${{ inputs.repository_name }}
+        PATH_TO_CHART: ${{ inputs.path_to_chart }}
       # language=bash
       run: |
         # ▶️ Replace CRDs
-        cd "${{inputs.repository_name}}/${{inputs.path_to_chart}}"
+        cd "${REPOSITORY_NAME}/${PATH_TO_CHART}"
         if [ -d "./crds" ]; then
           echo "CRDs directory exists"
           for file in ./crds/*; do
@@ -149,48 +157,63 @@ runs:
 
     - name: Copy template
       shell: bash
+      env:
+        PATH_TO_TEMPLATE: ${{ inputs.path_to_template }}
+        REPOSITORY_NAME: ${{ inputs.repository_name }}
+        PATH_TO_CHART: ${{ inputs.path_to_chart }}
       # language=bash
       run: |
         # ▶️ Copy template
-        cp qubership-test-pipelines/${{inputs.path_to_template}} ${{inputs.repository_name}}/${{inputs.path_to_chart}}
+        cp "qubership-test-pipelines/${PATH_TO_TEMPLATE}" "${REPOSITORY_NAME}/${PATH_TO_CHART}"
 
     - name: Check if version is release
       id: check-release
       shell: bash
+      env:
+        SERVICE_BRANCH: ${{ inputs.service_branch }}
       # language=bash
       run: |
         # ▶️ Check if version is release
-        if [[ "${{inputs.service_branch}}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-          echo "${{inputs.service_branch}} is release version"
+        if [[ "${SERVICE_BRANCH}" =~ ^v?[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "${SERVICE_BRANCH} is release version"
           echo "is_release=true" >> $GITHUB_OUTPUT
         else
-          echo "${{inputs.service_branch}} is not release version"
+          echo "${SERVICE_BRANCH} is not release version"
           echo "is_release=false" >> $GITHUB_OUTPUT
         fi
 
-    - name: Replace slash in service branch
-      id: replace_slash
+    - name: Normalize service branch name for image tag
+      id: normalize_service_branch
       shell: bash
+      env:
+        SERVICE_BRANCH: ${{ inputs.service_branch }}
       # language=bash
       run: |
-        # ▶️ Replace slash in service branch
-        service_branch="${{ inputs.service_branch }}"
+        # ▶️ Normalize service branch name for image tag
+        # 1. Replace slash in service branch
+        service_branch="${SERVICE_BRANCH}"
         # if branch is a commit hash (contains from 7 up to 40 characters: digits or letters from a to f), trim to 11 characters
         if echo "$service_branch" | grep -Eq '^[0-9a-f]{7,40}$'; then
           service_branch_updated="git-${service_branch:0:7}"
         else
           service_branch_updated="${service_branch//\//_}"
         fi
+        # 2. Convert to lowercase
+        service_branch_updated="${service_branch_updated,,}"
         echo "The image tag: ${service_branch_updated}"
         echo "service_branch_updated=${service_branch_updated}" >> $GITHUB_OUTPUT
 
     - name: Update Image Version
       if: inputs.image_replacement != ''
       shell: bash
+      env:
+        REPOSITORY_NAME: ${{ inputs.repository_name }}
+        PATH_TO_CHART: ${{ inputs.path_to_chart }}
+        IMAGE_REPLACEMENT: ${{ inputs.image_replacement }}
       run: |
         # ▶️ Replace version of service
-        path_to_file="${{inputs.repository_name}}/${{inputs.path_to_chart}}/values.yaml"
-        new_image="${{ inputs.image_replacement }}"
+        path_to_file="${REPOSITORY_NAME}/${PATH_TO_CHART}/values.yaml"
+        new_image="${IMAGE_REPLACEMENT}"
         base="${new_image%-*}"
         if [ ! -f "$path_to_file" ]; then echo "::error::File not found: $path_to_file"; exit 1; fi
         current_image=$(grep -oE "${base}-[^:\"' ]+" "$path_to_file" | head -n 1)
@@ -211,22 +234,29 @@ runs:
 
     - name: echo tags
       shell: bash
+      env:
+        TEST_TAGS: ${{ inputs.test_tags }}
       run: |
         # ▶️ Echo tags
-        new_tags="${{ inputs.test_tags }}"
+        new_tags="${TEST_TAGS}"
         echo $new_tags
 
 
     - name: Update Test Tags
       if: inputs.test_tags != ''
       shell: bash
+      env:
+        PATH_TO_TEMPLATE: ${{ inputs.path_to_template }}
+        REPOSITORY_NAME: ${{ inputs.repository_name }}
+        PATH_TO_CHART: ${{ inputs.path_to_chart }}
+        TEST_TAGS: ${{ inputs.test_tags }}
       run: |
         # ▶️ Update Test Tags
-        template_name=$(basename "${{ inputs.path_to_template }}")
+        template_name=$(basename "${PATH_TO_TEMPLATE}")
         echo "Template file: $template_name"
-        cd "${{ inputs.repository_name }}/${{ inputs.path_to_chart }}"
+        cd "${REPOSITORY_NAME}/${PATH_TO_CHART}"
         file="$template_name"
-        new_tags="${{ inputs.test_tags }}"
+        new_tags="${TEST_TAGS}"
         current_tags=$(grep -E '^[[:space:]]*tags:[[:space:]]*' "$file" | head -n1 | sed -E 's/^[[:space:]]*tags:[[:space:]]*//; s/^"//; s/"$//')
         if [ -z "$current_tags" ]; then
           echo "::warning::No 'tags' field found in $file – nothing to update."
@@ -250,7 +280,7 @@ runs:
       if: ${{ steps.check-release.outputs.is_release == 'false' }}
       uses: netcracker/qubership-workflow-hub/actions/charts-values-update-action@cabbb90e9471163cfac84bd50ff0296b2803b44c # v2.3.0
       with:
-        release-version: ${{steps.replace_slash.outputs.service_branch_updated}}
+        release-version: ${{steps.normalize_service_branch.outputs.service_branch_updated}}
         config-file: .github/charts-values-update-config.yaml
         create-release-branch: false
         version-replace-method: parse
@@ -260,24 +290,34 @@ runs:
 
     - name: Install/update service with helm
       shell: bash
+      env:
+        DEPLOY_MODE: ${{ inputs.deploy_mode }}
+        SERVICE_NAME: ${{ inputs.service_name }}
+        PATH_TO_TEMPLATE: ${{ inputs.path_to_template }}
+        REPOSITORY_NAME: ${{ inputs.repository_name }}
+        PATH_TO_CHART: ${{ inputs.path_to_chart }}
+        RESTRICTED: ${{ inputs.restricted }}
+        NAMESPACE: ${{ inputs.namespace }}
       # language=bash
       run: |
-        # ▶️ ${{inputs.deploy_mode}} ${{inputs.service_name}} with Helm
-        template_name=$(basename "${{inputs.path_to_template}}")
+        # ▶️ Install/update service with Helm
+        template_name=$(basename "${PATH_TO_TEMPLATE}")
         echo $template_name
-        cd ${{inputs.repository_name}}/${{inputs.path_to_chart}}
-        if [[ "${{inputs.restricted}}" == "false" ]]; then
-          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m
+        cd "${REPOSITORY_NAME}/${PATH_TO_CHART}"
+        if [[ "${RESTRICTED}" == "false" ]]; then
+          helm "${DEPLOY_MODE}" "${SERVICE_NAME}" . -f "$template_name" -n "${NAMESPACE}" --timeout 10m
         else
-          helm ${{inputs.deploy_mode}} ${{inputs.service_name}} . -f $template_name -n ${{inputs.namespace}} --timeout 10m --skip-crds
+          helm "${DEPLOY_MODE}" "${SERVICE_NAME}" . -f "$template_name" -n "${NAMESPACE}" --timeout 10m --skip-crds
         fi
 
     - name: Get docker images
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
       # language=bash
       run: |
         # ▶️ Get docker images
-        kubectl get pods -n ${{inputs.namespace}} -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
+        kubectl get pods -n "${NAMESPACE}" -o go-template --template="{{range .items}}{{range .spec.containers}}{{.image}} {{end}}{{end}}"
 
     - name: Use default context
       if: inputs.restricted == 'true'
@@ -288,7 +328,9 @@ runs:
     - name: Get resources after deploy
       if: always()
       shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
       # language=bash
       run: |
         # ▶️ Get resources after deploy
-        kubectl get all -n ${{inputs.namespace}}
+        kubectl get all -n "${NAMESPACE}"

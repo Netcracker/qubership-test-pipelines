@@ -30,8 +30,11 @@ runs:
     - name: Create bucket
       id: create
       shell: bash
+      env:
+        PREFIX: ${{ inputs.prefix }}
+        REGION: ${{ inputs.region }}
       run: |
         TIMESTAMP=$(date +'%Y%m%d%H%M%S')
-        BUCKET_NAME="test-pipelines-${{ inputs.prefix }}-${TIMESTAMP}"
-        aws s3 mb "s3://${BUCKET_NAME}" --region "${{ inputs.region }}"
+        BUCKET_NAME="test-pipelines-${PREFIX}-${TIMESTAMP}"
+        aws s3 mb "s3://${BUCKET_NAME}" --region "${REGION}"
         echo "bucket_name=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
