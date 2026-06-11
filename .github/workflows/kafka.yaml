@@ -568,128 +568,131 @@ jobs:
       # == End kafka upgrade tests =======
 
       # == Start kafka migrate tests =======
-      # - name: Migrate Kafka to Kraft scheme
-      #   if: matrix.test.sequence == 'migrate'
-      #   uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-      #   id: kafka_migrate
-      #   with:
-      #     path_to_template: '${{ matrix.test.kafka_migrate_template }}'
-      #     service_branch: '${{ matrix.test.kafka_migrate_version }}'
-      #     service_name: 'kafka'
-      #     repository_name: ${{ inputs.repository_name }}
-      #     path_to_chart: 'operator/charts/helm/kafka'
-      #     namespace: ${{ env.kfk_namespace }}
-      #     deploy_mode: upgrade
-      #     test_tags: '${{ matrix.test.test_tags }}'
+      - name: Print migrate deployment parameters
+        if: matrix.test.sequence == 'migrate'
+        run: cat qubership-test-pipelines/${{ matrix.test.kafka_migrate_template }}
 
-      # - name: Sleep 1m after migration
-      #   if: matrix.test.sequence == 'migrate'
-      #   run: sleep 1m
+      - name: Migrate Kafka to Kraft scheme
+        if: matrix.test.sequence == 'migrate'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_migrate
+        with:
+          path_to_template: ${{ matrix.test.kafka_migrate_template }}
+          service_branch: ${{ matrix.test.kafka_migrate_version }}
+          service_name: kafka
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_path_to_chart }}
+          namespace: ${{ env.kfk_namespace }}
+          deploy_mode: upgrade
+          image_replacement: ${{ matrix.service_image }}
+          test_tags: ${{ matrix.test.test_tags }}
 
-      # - name: Verify Kafka migration
-      #   if: matrix.test.sequence == 'migrate'
-      #   uses: ./qubership-test-pipelines/actions/shared/verify_installation
-      #   with:
-      #     check_tests: true
-      #     namespace: ${{ env.kfk_namespace }}
-      #     test_completion_max_retries: ${{ env.kfk_max_attempts }}
-      #     test_completion_retry_interval: ${{ env.kfk_timeout }}
-      #     service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
-      #     service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
-      #     crd_list: ${{ env.kfk_cr_name }}
+      - name: Sleep 1m after migration
+        if: matrix.test.sequence == 'migrate'
+        run: sleep 1m
 
-      # - name: Collect Diagnostics Kafka Migration
-      #   if: ${{ !cancelled() && steps.kafka_migrate.conclusion != 'skipped' }}
-      #   uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
-      #   with:
-      #     namespace: ${{ env.kfk_namespace }}
-      #     artifact_name: Upgrade_Kafka_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+      - name: Verify Kafka migration
+        if: matrix.test.sequence == 'migrate'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_namespace }}
+          test_completion_max_retries: ${{ env.kfk_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_timeout }}
+          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
+          crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
 
-      # - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}]
-      #   if: matrix.test.sequence == 'migrate'
-      #   uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-      #   id: kafka_core_upgrade_migrate
-      #   with:
-      #     path_to_template: '${{ matrix.test.kafka_upgrade_template }}'
-      #     service_branch: '${{ matrix.test.kafka_upgrade_version }}'
-      #     service_name: 'kafka'
-      #     repository_name: ${{ inputs.repository_name }}
-      #     path_to_chart: 'operator/charts/helm/kafka'
-      #     namespace: ${{ env.kfk_namespace }}
-      #     deploy_mode: upgrade
-      #     test_tags: '${{ matrix.test.test_tags }}'
+      - name: Collect Diagnostics Kafka Migration
+        if: ${{ !cancelled() && steps.kafka_migrate.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_namespace }}
+          artifact_name: Migrate_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.kafka_migrate_version }}
 
-      # - name: Sleep 1m after upgrade
-      #   if: matrix.test.sequence == 'migrate'
-      #   run: sleep 1m
+      # Upgrade after migration (Kafka 4)
+      - name: Print upgrade deployment parameters (after migrate)
+        if: matrix.test.sequence == 'migrate'
+        run: cat qubership-test-pipelines/${{ matrix.test.kafka_upgrade_template }}
 
-      # - name: Verify Kafka upgrade
-      #   if: matrix.test.sequence == 'migrate'
-      #   uses: ./qubership-test-pipelines/actions/shared/verify_installation
-      #   with:
-      #     namespace: ${{ env.kfk_namespace }}
-      #     test_completion_max_retries: ${{ env.kfk_max_attempts }}
-      #     test_completion_retry_interval: ${{ env.kfk_timeout }}
-      #     service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
-      #     service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
-      #     crd_list: ${{ env.kfk_cr_name }}
-      #     check_tests: true
+      - name: Upgrade Kafka to [${{ matrix.test.kafka_upgrade_version }}] (after migrate)
+        if: matrix.test.sequence == 'migrate'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_core_upgrade_migrate
+        with:
+          path_to_template: ${{ matrix.test.kafka_upgrade_template }}
+          service_branch: ${{ matrix.test.kafka_upgrade_version }}
+          service_name: kafka
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_path_to_chart }}
+          namespace: ${{ env.kfk_namespace }}
+          deploy_mode: upgrade
+          image_replacement: ${{ matrix.service_image }}
+          test_tags: ${{ matrix.test.test_tags }}
 
-      # - name: Collect Diagnostics Kafka Migration
-      #   if: ${{ !cancelled() && steps.kafka_core_upgrade_migrate.conclusion != 'skipped' }}
-      #   uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
-      #   with:
-      #     namespace: ${{ env.kfk_namespace }}
-      #     artifact_name: Upgrade_Kafka_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+      - name: Sleep 1m after upgrade (after migrate)
+        if: matrix.test.sequence == 'migrate'
+        run: sleep 1m
 
-      # - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}]
-      #   if: matrix.test.sequence == 'migrate'
-      #   uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-      #   id: kafka_service_upgrade_migrate
-      #   with:
-      #     path_to_template: '${{ matrix.test.kafka_service_migrate_template }}'
-      #     service_branch: '${{ inputs.service_branch }}'
-      #     service_name: 'kafka-service'
-      #     repository_name: ${{ inputs.repository_name }}
-      #     path_to_chart: 'operator/charts/helm/kafka-service'
-      #     namespace: ${{ env.kfk_srvc_namespace }}
-      #     deploy_mode: upgrade
-      #     test_tags: '${{ matrix.test.test_tags }}'
+      - name: Verify Kafka upgrade (after migrate)
+        if: matrix.test.sequence == 'migrate'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_namespace }}
+          test_completion_max_retries: ${{ env.kfk_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_timeout }}
+          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
+          crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
 
-      # - name: Sleep 1m after upgrade
-      #   if: matrix.test.sequence == 'migrate'
-      #   run: sleep 1m
+      - name: Collect Diagnostics Kafka upgrade (after migrate)
+        if: ${{ !cancelled() && steps.kafka_core_upgrade_migrate.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_namespace }}
+          artifact_name: Upgrade_AfterMigrate_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.kafka_upgrade_version }}
 
-      # - name: Verify Kafka Service upgrade
-      #   if: matrix.test.sequence == 'migrate'
-      #   uses: ./qubership-test-pipelines/actions/shared/verify_installation
-      #   with:
-      #     namespace: ${{ env.kfk_srvc_namespace }}
-      #     test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-      #     test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
-      #     service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-      #     service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
-      #     crd_list: ${{ env.kfk_srvc_cr_name }}
-      #     check_tests: true
+      # Kafka Service after migration
+      - name: Upgrade Kafka Service to [${{ matrix.test.kafka_upgrade_version }}] (after migrate)
+        if: matrix.test.sequence == 'migrate'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_service_upgrade_migrate
+        with:
+          path_to_template: ${{ matrix.test.kafka_service_upgrade_template }}
+          service_branch: ${{ inputs.service_branch }}
+          service_name: kafka-service
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_srvc_path_to_chart }}
+          namespace: ${{ env.kfk_srvc_namespace }}
+          deploy_mode: upgrade
+          test_tags: ${{ matrix.test.test_tags }}
 
-      # - name: Verify Kafka Service upgrade
-      #   if: matrix.test.sequence == 'migrate'
-      #   uses: ./qubership-test-pipelines/actions/shared/verify_installation
-      #   with:
-      #     namespace: ${{ env.kfk_srvc_namespace }}
-      #     test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-      #     test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
-      #     service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-      #     service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
-      #     crd_list: ${{ env.kfk_srvc_cr_name }}
-      #     check_tests: true
+      - name: Sleep 1m after service upgrade (after migrate)
+        if: matrix.test.sequence == 'migrate'
+        run: sleep 1m
 
-      # - name: Collect Diagnostics Kafka Migration
-      #   if: ${{ !cancelled() && steps.kafka_service_upgrade_migrate.conclusion != 'skipped' }}
-      #   uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
-      #   with:
-      #     namespace: ${{ env.kfk_namespace }}
-      #     artifact_name: Upgrade_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+      - name: Verify Kafka Service upgrade (after migrate)
+        if: matrix.test.sequence == 'migrate'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_srvc_namespace }}
+          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Kafka Service upgrade (after migrate)
+        if: ${{ !cancelled() && steps.kafka_service_upgrade_migrate.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_srvc_namespace }}
+          artifact_name: ServiceUpgrade_AfterMigrate_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.install_version }}
       # == End kafka migrate tests =======
 
       # == Start ======= Specific steps for S3 =======
@@ -704,10 +707,28 @@ jobs:
 
       # == End ======= Specific steps for S3 =======
 
-  final-status-check:
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    needs: [Kafka-Test-Cases]
+  # ===== Kafka Migration (Kafka 3 → Kafka 3 KRaft → Kafka 4 KRaft) =====
+  Kafka-Migration:
+    needs: prepare
+    if: inputs.scope == 'nightly' && !inputs.skip_tests
+    runs-on: ${{ inputs.runner_type }}
+    env:
+      kfk_namespace: kafka
+      kfk_max_attempts: 60
+      kfk_timeout: 10s
+      kfk_max_attempts_for_provisioner: 100
+      kfk_timeout_for_provisioner: 10s
+      kfk_path_to_chart: operator/charts/helm/kafka
+      kfk_srvc_namespace: kafka
+      kfk_srvc_max_attempts: 100
+      kfk_srvc_timeout: 10s
+      kfk_srvc_max_attempts_for_provisioner: 120
+      kfk_srvc_timeout_for_provisioner: 10s
+      kfk_srvc_path_to_chart: operator/charts/helm/kafka-service
+      ZK_TEMPLATE: templates/zookeeper-service/zookeeper_install_APP_k8s.yml
+      KAFKA_INSTALL_TEMPLATE: templates/kafka-service/kafka_clean_migration.yml
+      KAFKA_MIGRATE_TEMPLATE: templates/kafka-service/kafka_clean_migration_kraft.yml
+      KAFKA_UPGRADE_TEMPLATE: templates/kafka-service/kafka_clean_kraft.yml
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -716,7 +737,283 @@ jobs:
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
           persist-credentials: false
-      - name: Check job status
+
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+
+      # ===== 1. ZooKeeper =====
+      - name: Install ZooKeeper
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: zoo_install
+        with:
+          path_to_template: ${{ env.ZK_TEMPLATE }}
+          service_branch: main
+          service_name: zookeeper-service
+          repository_name: Netcracker/qubership-zookeeper
+          path_to_chart: operator/charts/helm/zookeeper-service
+          namespace: zookeeper
+
+      - name: Get ZooKeeper CRDs
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: zoo_get_crds
+        with:
+          crd_location: Netcracker/qubership-zookeeper/operator/charts/helm/zookeeper-service/crds
+
+      - name: Verify ZooKeeper
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: zookeeper
+          test_completion_max_retries: 40
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 80
+          service_ready_retry_interval: 10s
+          repository_name: Netcracker/qubership-zookeeper
+          crd_list: ${{ steps.zoo_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics ZooKeeper
+        if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: zookeeper
+          artifact_name: Migration_ZooKeeper_Install
+          service_branch: main
+
+      # ===== 2. Kafka 3 Core with Zookeeper =====
+      - name: Install [${{ inputs.service_branch }}] Kafka 3 Core
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_core_install
+        with:
+          path_to_template: ${{ env.KAFKA_INSTALL_TEMPLATE }}
+          service_branch: ${{ inputs.service_branch }}
+          service_name: kafka
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_path_to_chart }}
+          namespace: ${{ env.kfk_namespace }}
+          image_replacement: qubership-docker-kafka-3
+
+      - name: Get Kafka Core CRDs
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: core_get_crds
+        with:
+          crd_location: ${{ inputs.repository_name }}/${{ env.kfk_path_to_chart }}/crds
+
+      - name: Verify Kafka 3 Core
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_namespace }}
+          test_completion_max_retries: ${{ env.kfk_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_timeout }}
+          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
+          crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Kafka 3 Core
+        if: ${{ !cancelled() && steps.kafka_core_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_namespace }}
+          artifact_name: Migration_Kafka3_Core
+          service_branch: ${{ inputs.service_branch }}
+
+      - name: Install [${{ inputs.service_branch }}] Kafka 3 Service
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_service_install
+        with:
+          path_to_template: ${{ env.KAFKA_INSTALL_TEMPLATE }}
+          service_branch: ${{ inputs.service_branch }}
+          service_name: kafka-service
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_srvc_path_to_chart }}
+          namespace: ${{ env.kfk_srvc_namespace }}
+          image_replacement: qubership-docker-kafka-3
+
+      - name: Get Kafka Service CRDs
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: service_get_crds
+        with:
+          crd_location: ${{ inputs.repository_name }}/${{ env.kfk_srvc_path_to_chart }}/crds
+
+      # ===== 3. Kafka 3 Service with Zookeeper =====
+      - name: Verify Kafka 3 Service
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_srvc_namespace }}
+          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Kafka 3 Service
+        if: ${{ !cancelled() && steps.kafka_service_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_srvc_namespace }}
+          artifact_name: Migration_Kafka3_Service
+          service_branch: ${{ inputs.service_branch }}
+
+      # ===== 4. Migration to Kafka 3 Core KRaft =====
+      - name: Migrate [${{ inputs.service_branch }}] Kafka Core to KRaft
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_core_migrate
+        with:
+          path_to_template: ${{ env.KAFKA_MIGRATE_TEMPLATE }}
+          service_branch: ${{ inputs.service_branch }}
+          service_name: kafka
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_path_to_chart }}
+          namespace: ${{ env.kfk_namespace }}
+          deploy_mode: upgrade
+          image_replacement: qubership-docker-kafka-3
+
+      - name: Sleep 1m after KRaft migration
+        run: sleep 1m
+
+      - name: Verify Kafka 3 Core KRaft
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_namespace }}
+          test_completion_max_retries: ${{ env.kfk_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_timeout }}
+          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
+          crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Kafka 3 Core KRaft
+        if: ${{ !cancelled() && steps.kafka_core_migrate.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_namespace }}
+          artifact_name: Migration_Kafka3_Core_KRaft
+          service_branch: ${{ inputs.service_branch }}
+
+      # ===== 5. Migration to Kafka 3 Service KRaft =====
+      - name: Migrate [${{ inputs.service_branch }}] Kafka 3 Service to KRaft
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_service_migrate
+        with:
+          path_to_template: ${{ env.KAFKA_MIGRATE_TEMPLATE }}
+          service_branch: ${{ inputs.service_branch }}
+          service_name: kafka-service
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_srvc_path_to_chart }}
+          namespace: ${{ env.kfk_srvc_namespace }}
+          deploy_mode: upgrade
+          image_replacement: qubership-docker-kafka-3
+
+      - name: Sleep 1m after KRaft migration
+        run: sleep 1m
+
+      - name: Verify Kafka 3 Service KRaft
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_srvc_namespace }}
+          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Kafka Service KRaft
+        if: ${{ !cancelled() && steps.kafka_service_migrate.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_srvc_namespace }}
+          artifact_name: Migration_Kafka3_Service_KRaft
+          service_branch: ${{ inputs.service_branch }}
+
+      # ===== 6. Upgrade to Kafka 4 Core =====
+      - name: Upgrade Kafka 3 Core to [${{ inputs.service_branch }}] Kafka 4 Core
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_core_upgrade
+        with:
+          path_to_template: ${{ env.KAFKA_UPGRADE_TEMPLATE }}
+          service_branch: ${{ inputs.service_branch }}
+          service_name: kafka
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_path_to_chart }}
+          namespace: ${{ env.kfk_namespace }}
+          deploy_mode: upgrade
+          image_replacement: qubership-docker-kafka-4
+
+      - name: Sleep 1m after Kafka 4 upgrade
+        run: sleep 1m
+
+      - name: Verify Kafka Core Kafka 4
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_namespace }}
+          test_completion_max_retries: ${{ env.kfk_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_timeout }}
+          service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
+          crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Kafka Core Kafka 4
+        if: ${{ !cancelled() && steps.kafka_core_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_namespace }}
+          artifact_name: Migration_Kafka4_Core
+          service_branch: ${{ inputs.service_branch }}
+
+      # ===== 7. Upgrade to Kafka 4 Service =====
+      - name: Upgrade Kafka 3 Service to [${{ inputs.service_branch }}] Kafka 4 Service
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: kafka_service_upgrade
+        with:
+          path_to_template: ${{ env.KAFKA_UPGRADE_TEMPLATE }}
+          service_branch: ${{ inputs.service_branch }}
+          service_name: kafka-service
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.kfk_srvc_path_to_chart }}
+          namespace: ${{ env.kfk_srvc_namespace }}
+          deploy_mode: upgrade
+
+      - name: Sleep 1m after Kafka 4 upgrade
+        run: sleep 1m
+
+      - name: Verify Kafka Service Kafka 4
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          check_tests: true
+          namespace: ${{ env.kfk_srvc_namespace }}
+          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Kafka Service Kafka 4
+        if: ${{ !cancelled() && steps.kafka_service_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.kfk_srvc_namespace }}
+          artifact_name: Migration_Kafka4_Service
+          service_branch: ${{ inputs.service_branch }}
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Kafka-Test-Cases, Kafka-Migration]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v5.1.0
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+      - name: Check Kafka-Test-Cases job status
         uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:
           job_result: ${{ needs.Kafka-Test-Cases.result }}
+      - name: Check Kafka-Migration job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Kafka-Migration.result }}
