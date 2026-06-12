@@ -151,8 +151,6 @@ runs:
       uses: ./qubership-test-pipelines/actions/shared/create_restricted_resources
       with:
         service_name: ${{inputs.service_name}}
-        repository_name: ${{inputs.repository_name}}
-        path_to_chart: ${{inputs.path_to_chart}}
         namespace: ${{inputs.namespace}}
 
     - name: Copy template

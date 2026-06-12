@@ -477,13 +477,11 @@ jobs:
       - name: Get Zookeeper Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
         with:
-          service_name: zookeeper
           secret_name: zookeeper-tls-secret
           namespace: zookeeper
       - name: Get Backup-Daemon Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
         with:
-          service_name: zookeeper
           secret_name: zookeeper-backup-daemon-tls-secret
           namespace: zookeeper
       - name: Copy certs to artifacts
