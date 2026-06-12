@@ -64,7 +64,7 @@ integrationTests:
   enabled: true
   extraLabels:
     CUSTOM_label: TESTS_check
-  tags: backupORcrudORhaORalerts
+  tags: backupORcrudORhaORalertsORhardening
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
   secret:
     prometheus:
