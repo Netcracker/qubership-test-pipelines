@@ -25,11 +25,11 @@ jobs:
   - name: Clean [${service_branch}] full-at
     sequence: install
     restricted: false
+    monitoring: true
     install:
       version: ${service_branch}
       template: templates/consul-service/consul_clean_all_on_sc_full_at.yml
       artifact_name: consul_clean_current_full_at
-      monitoring: true
 
   - name: Clean [${service_branch}] s3 tls
     sequence: install
