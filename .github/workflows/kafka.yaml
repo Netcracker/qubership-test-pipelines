@@ -230,8 +230,6 @@ jobs:
         if: matrix.test.monitoring == true
         with:
           namespace: monitoring
-          test_completion_max_retries: 40
-          test_completion_retry_interval: 10s
           service_ready_max_retries: 80
           service_ready_retry_interval: 10s
           monitoring_pipeline: true
@@ -276,8 +274,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: zookeeper
-          test_completion_max_retries: 40
-          test_completion_retry_interval: 10s
           service_ready_max_retries: 80
           service_ready_retry_interval: 10s
           repository_name: Netcracker/qubership-zookeeper
@@ -378,8 +374,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
-          test_completion_max_retries: ${{ env.kfk_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
@@ -423,8 +417,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
@@ -475,8 +467,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
-          test_completion_max_retries: ${{ env.kfk_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.upgrade_kafka_get_crds.outputs.crd_names }}
@@ -530,8 +520,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.upgrade_kafka_service_get_crds.outputs.crd_names }}
@@ -575,8 +563,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
-          test_completion_max_retries: ${{ env.kfk_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
@@ -619,8 +605,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
-          test_completion_max_retries: ${{ env.kfk_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
@@ -658,8 +642,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
@@ -741,8 +723,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: zookeeper
-          test_completion_max_retries: 40
-          test_completion_retry_interval: 10s
           service_ready_max_retries: 80
           service_ready_retry_interval: 10s
           repository_name: Netcracker/qubership-zookeeper
@@ -780,8 +760,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
-          test_completion_max_retries: ${{ env.kfk_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
@@ -818,8 +796,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
@@ -854,8 +830,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
-          test_completion_max_retries: ${{ env.kfk_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
@@ -890,8 +864,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
@@ -926,8 +898,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_namespace }}
-          test_completion_max_retries: ${{ env.kfk_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_timeout }}
           service_ready_max_retries: ${{ env.kfk_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_timeout_for_provisioner }}
           crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
@@ -961,8 +931,6 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          test_completion_max_retries: ${{ env.kfk_srvc_max_attempts }}
-          test_completion_retry_interval: ${{ env.kfk_srvc_timeout }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}

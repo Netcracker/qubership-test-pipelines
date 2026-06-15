@@ -74,8 +74,6 @@ on:
 
 env:
   namespace: zookeeper
-  test_completion_max_retries: 60
-  test_completion_retry_interval: 10s
   service_ready_max_retries: 150
   service_ready_retry_interval: 10s
   path_to_chart: operator/charts/helm/zookeeper-service
@@ -191,8 +189,6 @@ jobs:
         if: matrix.test.monitoring == true
         with:
           namespace: monitoring
-          test_completion_max_retries: 40
-          test_completion_retry_interval: 10s
           service_ready_max_retries: 500
           service_ready_retry_interval: 10s
           monitoring_pipeline: true
@@ -248,8 +244,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
@@ -346,8 +340,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.upgrade_zoo_get_crds.outputs.crd_names }}
@@ -415,8 +407,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
@@ -498,8 +488,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
@@ -559,8 +547,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}

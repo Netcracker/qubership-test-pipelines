@@ -136,8 +136,6 @@ jobs:
     name: ${{ matrix.test.name }}
     env:
       namespace: opensearch
-      test_completion_max_retries: 1
-      test_completion_retry_interval: 10s
       service_ready_max_retries: 200
       service_ready_retry_interval: 10s
       service_branch: ""
@@ -235,8 +233,6 @@ jobs:
         if: matrix.test.monitoring == true
         with:
           namespace: monitoring
-          test_completion_max_retries: 40
-          test_completion_retry_interval: 10s
           service_ready_max_retries: 500
           service_ready_retry_interval: 10s
           monitoring_pipeline: true
@@ -292,8 +288,6 @@ jobs:
         with:
           check_tests: true
           namespace: opensearch
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.install_opensearch_get_crds.outputs.crd_names }}
@@ -363,8 +357,6 @@ jobs:
         with:
           check_tests: true
           namespace: opensearch
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.upgrade_opensearch_get_crds.outputs.crd_names }}

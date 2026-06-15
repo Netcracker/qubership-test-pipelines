@@ -19,12 +19,14 @@ inputs:
   test_completion_max_retries:
     description: |
       Maximum verification retries for test pod to be completed
-    required: true
+    required: false
+    default: "1"
 
   test_completion_retry_interval:
     description: |
       Delay between test pod check attempts
-    required: true
+    required: false
+    default: "10s"
 
   crd_list:
     description: |

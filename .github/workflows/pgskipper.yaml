@@ -260,8 +260,6 @@ jobs:
           namespace: pgskipper
           service_ready_max_retries: 240
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 240
-          test_completion_retry_interval: 10s
           crd_list: patronicores.netcracker.com
 
       - name: Collect Diagnostics Core installation
@@ -299,8 +297,6 @@ jobs:
           namespace: pgskipper
           service_ready_max_retries: 240
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 240
-          test_completion_retry_interval: 10s
           crd_list: patroniservices.netcracker.com
 
       - name: Collect Diagnostics Services installation
@@ -341,8 +337,6 @@ jobs:
           namespace: pgskipper
           service_ready_max_retries: 60
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 60
-          test_completion_retry_interval: 10s
           crd_list: patronicores.netcracker.com
 
       - name: Collect Diagnostics Core upgrade
@@ -390,8 +384,6 @@ jobs:
           namespace: pgskipper
           service_ready_max_retries: 60
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 60
-          test_completion_retry_interval: 10s
           crd_list: patroniservices.netcracker.com
 
       - name: Collect Diagnostics Services installation

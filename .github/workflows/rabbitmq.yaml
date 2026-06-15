@@ -136,8 +136,6 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     env:
-      test_completion_max_retries: 20
-      test_completion_retry_interval: 10s
       service_ready_max_retries: 200
       service_ready_retry_interval: 10s
     name: ${{ matrix.test.name }}
@@ -187,8 +185,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: monitoring
-          test_completion_max_retries: 40
-          test_completion_retry_interval: 10s
           service_ready_max_retries: 80
           service_ready_retry_interval: 10s
           artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
@@ -266,8 +262,6 @@ jobs:
         with:
           check_tests: true
           namespace: rabbitmq
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
 
@@ -320,8 +314,6 @@ jobs:
         with:
           check_tests: true
           namespace: rabbitmq
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
 
