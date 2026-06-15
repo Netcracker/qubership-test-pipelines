@@ -168,7 +168,7 @@ jobs:
 
       # == Start Monitoring installation =======
       - name: Install Monitoring
-        if: matrix.test.install.monitoring == true
+        if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         with:
           path_to_template: templates/monitoring/vm_without_tests.yml
@@ -180,14 +180,14 @@ jobs:
           restricted: false
 
       - name: Get Installed Monitoring CR name
-        if: matrix.test.install.monitoring == true
+        if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
           crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
 
       - name: Verify Monitoring installation
-        if: matrix.test.install.monitoring == true
+        if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: monitoring

@@ -166,7 +166,7 @@ jobs:
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == Start Monitoring installation tests =======
-      - name: Install Monitoring [${{ matrix.test.install_version }}]
+      - name: Install Monitoring [${{ matrix.test.install.version }}]
         if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_install
@@ -204,34 +204,34 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: monitoring
-          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
+          artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
           service_branch: main
       # == End Monitoring installation tests =======
 
       # == Start ======= Specific steps for Allure report =======
       - name: Add s3 backet for Allure report
-        if: matrix.test.allure == true
+        if: matrix.test.install.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpReport/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template}}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template}}'
           --path='integrationTests/atpReport/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for Allure report =======
 
       - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
       # == 02 Start ===== Install Zookeeper [LATEST] =====
-      - name: Clean Install Zookeeper ${{ matrix.test.install_version }}
+      - name: Clean Install Zookeeper ${{ matrix.test.install.version }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: zoo_install
         with:
-          path_to_template: ${{ matrix.test.template }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
           deploy_mode: install
           service_name: zookeeper-service
           repository_name: ${{ inputs.repository_name }}
@@ -259,14 +259,14 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
-          artifact_name: Install_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
       # == 02 End ===== Install Zookeeper [LATEST] =====
 
       # == Start ======= Specific steps for S3 =======
       - name: Create S3 bucket
         id: create_bucket
-        if: matrix.test.s3 == true && matrix.test.sequence == 'upgrade'
+        if: matrix.test.upgrade.s3 == true && matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
@@ -275,7 +275,7 @@ jobs:
           prefix: zookeeper
 
       - name: Update YAML secrets
-        if: matrix.test.sequence == 'upgrade' && matrix.test.s3 == true
+        if: matrix.test.sequence == 'upgrade' && matrix.test.upgrade.s3 == true
         # zizmor: ignore[template-injection]
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
@@ -292,13 +292,13 @@ jobs:
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
 
       - name: Print s3 template
-        if: matrix.test.sequence == 'upgrade' && matrix.test.s3 == true
+        if: matrix.test.sequence == 'upgrade' && matrix.test.upgrade.s3 == true
         run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_s3_APP_k8s.yml
       # == End ======= Specific steps for S3 =======
 
       # == Start Spetial TLS Upgrade step =============================
       - name: Install cert-manager
-        if: matrix.test.sequence == 'upgrade' && matrix.test.tls == true
+        if: matrix.test.sequence == 'upgrade' && matrix.test.upgrade.tls == true
         run: |
           # Install cert-manager
           echo "::group::Install cert-manager"
@@ -325,17 +325,17 @@ jobs:
       # == End Spetial TLS Upgrade step =============================
 
       - name: Print update deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
       # == 03 Start === Upgrade Zookeeper [LATEST] =====
-      - name: Update to [${{ matrix.test.upgrade_version }}] Version
+      - name: Update to [${{ matrix.test.upgrade.version }}] Version
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: zoo_upgrade
         with:
           # combined 2 cases: update params + rollingupdate
-          path_to_template: ${{ matrix.test.upgrade_template }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
           deploy_mode: upgrade
           service_name: zookeeper-service
           repository_name: ${{ inputs.repository_name }}
@@ -376,7 +376,7 @@ jobs:
 
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
-        if: always() && matrix.test.s3 == true
+        if: always() && matrix.test.upgrade.s3 == true
         uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
@@ -390,8 +390,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
-          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
 
       # == 03 End === Upgrade Zookeeper [LATEST] =====
 

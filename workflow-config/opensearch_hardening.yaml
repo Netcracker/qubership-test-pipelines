@@ -1,9 +1,9 @@
 jobs:
   - name: Clean [${service_branch}] hardening
-    install_version: ${service_branch}
-    template: templates/opensearch-service/opensearch_clean_all_on_sc_hardening.yml
     sequence: install
     restricted: true
-    artifact_name: Clean_CURRENT_Hardening
-    monitoring: false
-    tls: true
+    install:
+      version: ${service_branch}
+      template: templates/opensearch-service/opensearch_clean_all_on_sc_hardening.yml
+      artifact_name: Clean_CURRENT_Hardening
+      tls: true
