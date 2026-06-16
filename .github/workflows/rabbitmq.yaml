@@ -36,6 +36,12 @@ on:
         required: false
         default: false
 
+
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
   workflow_call:
     inputs:
       repository_name:
@@ -65,7 +71,11 @@ on:
         type: boolean
         required: false
         default: false
-
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -79,6 +89,8 @@ jobs:
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_ready_max_retries: ${{ steps.calc-timeout.outputs.service_ready_max_retries }}
+      service_ready_retry_interval: ${{ steps.calc-timeout.outputs.service_ready_retry_interval }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -96,6 +108,14 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
+
+      - name: Calculate verify timeout parameters
+        id: calc-timeout
+        run: |
+          RETRY_INTERVAL=10
+          MAX_RETRIES=$(( ${{ inputs.verify_timeout_minutes }} * 60 / RETRY_INTERVAL ))
+          echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
+          echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
       - name: Get latest tag
         id: get-latest-tag
         env:
