@@ -446,8 +446,8 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
           crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service installation
@@ -549,8 +549,8 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
           crd_list: ${{ steps.upgrade_kafka_service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service upgrade
@@ -671,8 +671,8 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
           crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service upgrade (after migrate)
@@ -821,8 +821,8 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka 3 Service
@@ -889,8 +889,8 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service KRaft
@@ -956,8 +956,8 @@ jobs:
         with:
           check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
-          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts_for_provisioner }}
-          service_ready_retry_interval: ${{ env.kfk_srvc_timeout_for_provisioner }}
+          service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
+          service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service Kafka 4
