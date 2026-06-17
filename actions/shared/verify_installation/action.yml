@@ -178,7 +178,7 @@ runs:
             "$CRD_LIST"
         fi
 
-    - name: Get logs from test pod
+    - name: Check test results
       if: inputs.check_tests == 'true'
       shell: bash
       env:
