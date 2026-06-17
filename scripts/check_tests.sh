@@ -35,11 +35,11 @@ check_tests() {
         echo "Robot results copied successfully"
       fi
 
-      if ! kubectl cp "$test_pod":/tmp/clone artifacts/robot-results/tmp -n "$namespace"; then
-        echo "tmp folder is empty"
-      else
-        echo "Robot results from tmp folder copied successfully"
-      fi
+#      if ! kubectl cp "$test_pod":/tmp/clone artifacts/robot-results/tmp -n "$namespace"; then
+#        echo "tmp folder is empty"
+#      else
+#        echo "Robot results from tmp folder copied successfully"
+#      fi
 
       if [[ "$logs" == *"| FAIL |"* ]]; then
         #Tests failed
