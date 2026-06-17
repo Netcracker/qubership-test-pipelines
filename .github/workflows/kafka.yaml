@@ -44,7 +44,6 @@ on:
         required: false
         default: false
 
-
       verify_timeout_core_minutes:
         description: Maximum time (in minutes) to wait for core component verification
         type: number
@@ -65,6 +64,7 @@ on:
       service_branch:
         required: false
         type: string
+        default: main
       pipeline_branch:
         description: Test pipeline branch name
         type: string

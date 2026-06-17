@@ -41,7 +41,6 @@ on:
         required: false
         default: false
 
-
       verify_timeout_minutes:
         description: Maximum time (in minutes) to wait for each service verification
         type: number

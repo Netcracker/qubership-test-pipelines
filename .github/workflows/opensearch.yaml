@@ -35,7 +35,6 @@ on:
         required: false
         default: false
 
-
       verify_timeout_minutes:
         description: Maximum time (in minutes) to wait for each service verification
         type: number
@@ -51,6 +50,7 @@ on:
       service_branch:
         required: false
         type: string
+        default: main
       pipeline_branch:
         description: Test pipeline branch name
         type: string
@@ -70,6 +70,11 @@ on:
         type: boolean
         required: false
         default: false
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true

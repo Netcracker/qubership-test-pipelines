@@ -36,7 +36,6 @@ on:
         required: false
         default: false
 
-
       verify_timeout_minutes:
         description: Maximum time (in minutes) to wait for each service verification
         type: number
@@ -52,6 +51,7 @@ on:
       service_branch:
         required: false
         type: string
+        default: main
       pipeline_branch:
         description: Test pipeline branch name
         type: string
