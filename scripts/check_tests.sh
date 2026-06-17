@@ -24,15 +24,14 @@ check_tests() {
 
     logs=$(kubectl logs "$test_pod" -n "$namespace")
     if [[ "$logs" =~ Report.*html ]]; then
+      echo "📄 TEST LOGS:"
+      echo "$logs"
       if [[ "$logs" == *"| FAIL |"* ]]; then
-        echo "::error:: ❌ Tests failed"
         exit 2
       else
-        echo "✅ Tests passed successfully"
         exit 0
       fi
     else
-       #echo "⏳ Tests are still running"
        exit 1
     fi
 }
