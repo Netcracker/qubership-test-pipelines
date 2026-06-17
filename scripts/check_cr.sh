@@ -16,13 +16,17 @@ check_cr_conditions() {
 
     conditions_json=$(echo "$cr_json" | jq '.items[0].status.conditions')
 
-    echo "📄 Conditions JSON:"
-    echo "$conditions_json"
-
     if [ -z "$conditions_json" ] || [ "$conditions_json" = "null" ]; then
         echo "::warning:: Conditions not found"
         return 1
     fi
+
+    echo "📋 Conditions:"
+    echo "$conditions_json" | jq -r '.[] |
+      "  \(if .status == "True" then "✅" elif .status == "False" then (if (.type | ascii_downcase | contains("failed")) then "❌" else "⏳" end) else "ℹ️" end) \(.type)
+     Type: \(.type)
+     Status: \(.status)
+     Message: \(.message // "n/a")"'
 
     failed_conditions=$(echo "$conditions_json" | jq -r '.[] |
     select(
