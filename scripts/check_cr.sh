@@ -21,13 +21,6 @@ check_cr_conditions() {
         return 1
     fi
 
-    echo "📋 Conditions:"
-    echo "$conditions_json" | jq -r '.[] |
-      "  \(if .status == "True" then "✅" elif .status == "False" then (if (.type | ascii_downcase | contains("failed")) then "❌" else "⏳" end) else "ℹ️" end) \(.type)
-     Type: \(.type)
-     Status: \(.status)
-     Message: \(.message // "n/a")"'
-
     failed_conditions=$(echo "$conditions_json" | jq -r '.[] |
     select(
         (.type | ascii_downcase | contains("failed"))
@@ -44,10 +37,14 @@ check_cr_conditions() {
     ) | .type' 2>/dev/null)
 
     if [ -n "$failed_conditions" ]; then
+        echo "📄 Conditions JSON:"
+        echo "$conditions_json"
         return 2
     elif [ -n "$in_progress_conditions" ]; then
         return 1
     elif [ -n "$successful_conditions" ]; then
+        echo "📄 Conditions JSON:"
+        echo "$conditions_json"
         return 0
     else
         echo "::warning:: No matching conditions found, considering as in progress"
