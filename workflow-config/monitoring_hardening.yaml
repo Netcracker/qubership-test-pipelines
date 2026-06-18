@@ -2,7 +2,6 @@ jobs:
   - name: Clean [${service_branch}] hardening
     sequence: install
     restricted: false
-    check_tests: true
     install:
       version: ${service_branch}
       template: templates/monitoring/monitoring_hardening.yml

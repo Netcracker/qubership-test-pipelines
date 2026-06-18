@@ -3,7 +3,6 @@ jobs:
   - name: Clean [${service_branch}], Upgrade [${service_branch}] Diff Params
     sequence: clean
     restricted: false
-    check_tests: true
     install:
       version: ${service_branch}
       template: templates/monitoring/vm_with_smoke_and_simple_test.yml

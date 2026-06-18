@@ -239,7 +239,6 @@ jobs:
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-          check_tests: true
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
 
@@ -304,7 +303,6 @@ jobs:
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           crd_list: ${{ steps.upgrade_monitoring_get_crds.outputs.crd_names }}
-          check_tests: true
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
 

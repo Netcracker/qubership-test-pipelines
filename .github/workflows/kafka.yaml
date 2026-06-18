@@ -368,7 +368,6 @@ jobs:
       - name: Verify Kafka installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_namespace }}
           service_ready_max_retries: ${{ env.kfk_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_timeout }}
@@ -411,7 +410,6 @@ jobs:
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
@@ -461,7 +459,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_namespace }}
           service_ready_max_retries: ${{ env.kfk_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_timeout }}
@@ -514,7 +511,6 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
@@ -557,7 +553,6 @@ jobs:
         if: matrix.test.sequence == 'migrate'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_namespace }}
           service_ready_max_retries: ${{ env.kfk_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_timeout }}
@@ -599,7 +594,6 @@ jobs:
         if: matrix.test.sequence == 'migrate'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_namespace }}
           service_ready_max_retries: ${{ env.kfk_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_timeout }}
@@ -636,7 +630,6 @@ jobs:
         if: matrix.test.sequence == 'migrate'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
@@ -750,7 +743,6 @@ jobs:
       - name: Verify Kafka 3 Core
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_namespace }}
           service_ready_max_retries: ${{ env.kfk_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_timeout }}
@@ -786,7 +778,6 @@ jobs:
       - name: Verify Kafka 3 Service
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
@@ -820,7 +811,6 @@ jobs:
       - name: Verify Kafka 3 Core KRaft
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_namespace }}
           service_ready_max_retries: ${{ env.kfk_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_timeout }}
@@ -854,7 +844,6 @@ jobs:
       - name: Verify Kafka 3 Service KRaft
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}
@@ -888,7 +877,6 @@ jobs:
       - name: Verify Kafka Core Kafka 4
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_namespace }}
           service_ready_max_retries: ${{ env.kfk_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_timeout }}
@@ -921,7 +909,6 @@ jobs:
       - name: Verify Kafka Service Kafka 4
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: ${{ env.kfk_srvc_namespace }}
           service_ready_max_retries: ${{ env.kfk_srvc_max_attempts }}
           service_ready_retry_interval: ${{ env.kfk_srvc_timeout }}

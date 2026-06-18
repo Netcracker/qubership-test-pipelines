@@ -275,7 +275,6 @@ jobs:
       - name: Verify Opensearch installation [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: opensearch
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
@@ -344,7 +343,6 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: opensearch
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}

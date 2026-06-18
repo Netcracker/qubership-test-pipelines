@@ -159,7 +159,6 @@ jobs:
     name: ${{ matrix.test.name }}
     env:
       MATRIX_JSON: ${{ toJson(matrix.test) }}
-      CHECK_TESTS: true
       NAMESPACE: consul
       TEST_COMPLETION_MAX_RETRIES: 1
       TEST_COMPLETION_RETRY_INTERVAL: 10s
@@ -192,7 +191,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/install_monitoring
         with:
           artifact_name: ${{ matrix.test.install.artifact_name }}_monitoring
-          check_tests: true
       # == End Monitoring installation =======
 
       # == Start ======= Specific steps for TLS =======
@@ -261,7 +259,6 @@ jobs:
       - name: Verify Consul installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: ${{ env.CHECK_TESTS }}
           namespace: ${{ env.NAMESPACE }}
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
           service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}

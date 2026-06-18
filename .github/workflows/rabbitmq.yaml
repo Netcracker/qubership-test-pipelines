@@ -185,7 +185,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/install_monitoring
         with:
           artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
-          check_tests: true
       # == End Monitoring installation =======
 
       # == Start Install steps ==
@@ -254,7 +253,6 @@ jobs:
       - name: Verify RabbitMQ installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: rabbitmq
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
@@ -306,7 +304,6 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: rabbitmq
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
