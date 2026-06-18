@@ -1,4 +1,4 @@
-name: Zookeeper Tests
+name: Reusable Zookeeper Tests
 
 permissions:
   contents: read
