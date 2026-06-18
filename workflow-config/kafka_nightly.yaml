@@ -3,7 +3,7 @@ jobs:
   - purpose: automation
     name: Clean [${release_version}]. Upgrade to [${service_branch}]
     sequence: upgrade
-    test_tags: kafka
+
     install:
       version: ${release_version}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
@@ -17,7 +17,7 @@ jobs:
 
   - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft
     sequence: upgrade
-    test_tags: kafka
+
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
@@ -31,7 +31,7 @@ jobs:
 
   - name: Clean [${service_branch}] in non-TLS
     sequence: install
-    test_tags: kafka
+
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
@@ -40,7 +40,7 @@ jobs:
 
   - name: Clean [${service_branch}] with Monitoring and Allure
     sequence: install
-    test_tags: kafka
+
     monitoring: true
     install:
       version: ${service_branch}
@@ -51,7 +51,7 @@ jobs:
 
   - name: Clean [${service_branch}] in TLS
     sequence: install
-    test_tags: kafka
+
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
@@ -61,7 +61,7 @@ jobs:
 
   - name: Clean [${service_branch}] on S3 storage
     sequence: install
-    test_tags: kafka
+
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml

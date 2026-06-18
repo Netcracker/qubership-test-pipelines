@@ -62,13 +62,6 @@ inputs:
     type: string
     default: ""
 
-  test_tags:
-    description: |
-      Test tags
-    required: true
-    default: ""
-
-
 runs:
   using: composite
   steps:
@@ -227,49 +220,6 @@ runs:
              echo "✅ Success: Replaced $current_image with $new_image"
           else
              echo "::error::Sed executed but verification failed."; exit 1
-          fi
-        fi
-
-    - name: echo tags
-      shell: bash
-      env:
-        TEST_TAGS: ${{ inputs.test_tags }}
-      run: |
-        # ▶️ Echo tags
-        new_tags="${TEST_TAGS}"
-        echo $new_tags
-
-
-    - name: Update Test Tags
-      if: inputs.test_tags != ''
-      shell: bash
-      env:
-        PATH_TO_TEMPLATE: ${{ inputs.path_to_template }}
-        REPOSITORY_NAME: ${{ inputs.repository_name }}
-        PATH_TO_CHART: ${{ inputs.path_to_chart }}
-        TEST_TAGS: ${{ inputs.test_tags }}
-      run: |
-        # ▶️ Update Test Tags
-        template_name=$(basename "${PATH_TO_TEMPLATE}")
-        echo "Template file: $template_name"
-        cd "${REPOSITORY_NAME}/${PATH_TO_CHART}"
-        file="$template_name"
-        new_tags="${TEST_TAGS}"
-        current_tags=$(grep -E '^[[:space:]]*tags:[[:space:]]*' "$file" | head -n1 | sed -E 's/^[[:space:]]*tags:[[:space:]]*//; s/^"//; s/"$//')
-        if [ -z "$current_tags" ]; then
-          echo "::warning::No 'tags' field found in $file – nothing to update."
-          exit 0
-        fi
-        if [ "$current_tags" = "$new_tags" ]; then
-          echo "ℹ️ $file: tags already set to '$current_tags'. No changes needed."
-        else
-          echo "🔄 $file: replacing '$current_tags' tags -> '$new_tags' tags"
-          sed -i -E 's/^([[:space:]]*tags:[[:space:]]*).*/\1'"$new_tags"'/' "$file"
-          if grep -qE '^[[:space:]]*tags:[[:space:]]*'"$new_tags" "$file"; then
-            echo "✅ $file: successfully updated"
-          else
-            echo "::error::Failed to update $file"
-            exit 1
           fi
         fi
 

@@ -91,4 +91,4 @@ jobs:
       template: templates/consul-service/consul_clean_all_on_sc_monitoring_allure.yml
       artifact_name: consul_clean_current_allure
       allure: true
-      test_tags: crudORalerts
+
