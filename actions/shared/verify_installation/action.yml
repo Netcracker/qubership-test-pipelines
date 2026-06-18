@@ -40,6 +40,14 @@ inputs:
     type: boolean
     default: true
 
+  test_pod_prefix:
+    description: |
+      Prefix of the test pod name to check.
+      If set, checks only pods starting with this prefix.
+      If empty (default), checks the first pod containing 'tests' in name.
+    required: false
+    default: 'tests'
+
   monitoring_pipeline:
     description: |
       Only for Monitoring. Enable monitoring CRs checks (true) or disable them (false)
@@ -183,18 +191,19 @@ runs:
       shell: bash
       env:
         NAMESPACE: ${{ inputs.namespace }}
+        TEST_POD_PREFIX: ${{ inputs.test_pod_prefix }}
         TEST_COMPLETION_MAX_RETRIES: ${{ inputs.test_completion_max_retries }}
         TEST_COMPLETION_RETRY_INTERVAL: ${{ inputs.test_completion_retry_interval }}
       # language=bash
       run: |
-        # ▶️ Get logs from test pod
+        # ▶️ Check test results
         chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
         ls -la ./qubership-test-pipelines/scripts/check_tests.sh
 
         for i in $(seq 1 "$TEST_COMPLETION_MAX_RETRIES"); do
           echo "Test check attempt $i/$TEST_COMPLETION_MAX_RETRIES"
           set +e
-          ./qubership-test-pipelines/scripts/check_tests.sh "$NAMESPACE"
+          ./qubership-test-pipelines/scripts/check_tests.sh "$NAMESPACE" "$TEST_POD_PREFIX"
           tests_exit_code=$?
           set -e
 

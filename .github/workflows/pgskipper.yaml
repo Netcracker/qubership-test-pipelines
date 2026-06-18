@@ -276,6 +276,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           check_tests: ${{ matrix.test.check_core_tests }}
+          test_pod_prefix: integration-robot-tests
           namespace: pgskipper
           service_ready_max_retries: 240
           service_ready_retry_interval: 10s
@@ -313,6 +314,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           check_tests: ${{ matrix.test.check_services_tests }}
+          test_pod_prefix: supplementary-robot-tests
           namespace: pgskipper
           service_ready_max_retries: 240
           service_ready_retry_interval: 10s
@@ -353,6 +355,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           check_tests: ${{ matrix.test.check_core_tests }}
+          test_pod_prefix: integration-robot-tests
           namespace: pgskipper
           service_ready_max_retries: 60
           service_ready_retry_interval: 10s
@@ -400,6 +403,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           check_tests: ${{ matrix.test.check_services_tests }}
+          test_pod_prefix: supplementary-robot-tests
           namespace: pgskipper
           service_ready_max_retries: 60
           service_ready_retry_interval: 10s
