@@ -195,7 +195,7 @@ jobs:
 
       # == Start ======= Specific steps for TLS =======
       - name: Setup TLS
-        if: matrix.test.install.tls == true
+        if: matrix.test.install.tls == true || matrix.test.upgrade.tls == true
         uses: ./qubership-test-pipelines/actions/shared/setup_tls
         # == End ======= Specific steps for TLS =======
 
