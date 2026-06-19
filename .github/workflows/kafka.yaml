@@ -145,9 +145,11 @@ jobs:
           RETRY_INTERVAL=10
           MAX_RETRIES=$(( ${{ inputs.verify_timeout_core_minutes }} * 60 / RETRY_INTERVAL ))
           SRVC_MAX_RETRIES=$(( ${{ inputs.verify_timeout_serv_minutes }} * 60 / RETRY_INTERVAL ))
-          echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
-          echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
-          echo "service_ready_srvc_max_retries=$SRVC_MAX_RETRIES" >> $GITHUB_OUTPUT
+          {
+            echo "service_ready_max_retries=$MAX_RETRIES"
+            echo "service_ready_retry_interval=${RETRY_INTERVAL}s"
+            echo "service_ready_srvc_max_retries=$SRVC_MAX_RETRIES"
+          } >> $GITHUB_OUTPUT
       - name: Get latest tag
         id: get-latest-tag
         env:
