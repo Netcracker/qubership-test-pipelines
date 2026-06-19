@@ -2,9 +2,9 @@ jobs:
   - name: Clean [${service_branch}] hardening
     sequence: install
     restricted: true
+    tls: false
     install:
       version: ${service_branch}
       core_template: templates/pgskipper/patroni-core-hardening.yaml
       services_template: templates/pgskipper/patroni-services-hardening.yaml
       artifact_name: Clean_CURRENT_Hardening
-      tls: false

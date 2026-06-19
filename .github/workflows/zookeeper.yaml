@@ -280,7 +280,7 @@ jobs:
 
       # == Start Spetial TLS Upgrade step =============================
       - name: Setup TLS
-        if: matrix.test.sequence == 'upgrade' && matrix.test.upgrade.tls == true
+        if: matrix.test.sequence == 'upgrade' && matrix.test.tls == true
         uses: ./qubership-test-pipelines/actions/shared/setup_tls
       # == End Spetial TLS Upgrade step =============================
 

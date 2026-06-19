@@ -45,8 +45,8 @@ jobs:
   - name: Clean [${service_branch}] in TLS mode
     sequence: install
     restricted: false
+    tls: true
     install:
       version: ${service_branch}
       template: templates/opensearch-service/opensearch_clean_all_on_sc_tls.yml
       artifact_name: Clean_CURRENT_TLS
-      tls: true

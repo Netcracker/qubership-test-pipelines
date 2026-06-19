@@ -52,11 +52,11 @@ jobs:
   - name: Clean [${service_branch}] in TLS
     sequence: install
 
+    tls: true
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
       kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
-      tls: true
       artifact_name: Clean_CURRENT_TLS
 
   - name: Clean [${service_branch}] on S3 storage

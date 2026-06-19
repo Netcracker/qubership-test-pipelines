@@ -49,6 +49,7 @@ jobs:
   - name: Clean [${service_branch}], Upgrade [${service_branch}] TLS
     sequence: upgrade
     restricted: false
+    tls: true
     install:
       version: ${service_branch}
       template: templates/zookeeper-service/zookeeper_install_APP_k8s.yml
@@ -57,7 +58,6 @@ jobs:
       version: ${service_branch}
       template: templates/zookeeper-service/zookeeper_install_tls_APP_k8s.yml
       artifact_name: Clean_CURRENT_Upgrade_CURRENT_TLS
-      tls: true
 
   - purpose: automation
     name: Clean [${release_version}] Restricted, Upgrade To [${service_branch}] Restricted

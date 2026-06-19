@@ -195,7 +195,7 @@ jobs:
 
       # == Start ======= Specific steps for TLS =======
       - name: Setup TLS
-        if: ${{ matrix.test.install.tls == true || matrix.test.upgrade.tls == true }}
+        if: ${{ matrix.test.tls == true }}
         uses: ./qubership-test-pipelines/actions/shared/setup_tls
       # == End ======= Specific steps for TLS =======
 
@@ -289,7 +289,7 @@ jobs:
           service_branch: ${{ matrix.test.install.version }}
 
       - name: Get Opensearch secrets
-        if: ${{ matrix.test.install.tls == true }}
+        if: ${{ matrix.test.tls == true }}
         run: |
           kubectl get secrets -n opensearch
       # == End ======= Installation steps =======
