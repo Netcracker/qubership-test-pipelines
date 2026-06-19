@@ -3,11 +3,13 @@ jobs:
   - purpose: automation
     name: Clean [${release_version}]. Upgrade to [${service_branch}]
     sequence: upgrade
+    tls: true
     install:
       version: ${release_version}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
       kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
       artifact_name: Clean_${release_version}_Kraft_Upgrade_CURRENT_Kraft
+    tls: true
     upgrade:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
@@ -55,11 +57,13 @@ jobs:
 
   - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft
     sequence: upgrade
+    tls: true
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
       kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
       artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params_Kraft
+    tls: true
     upgrade:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_update_sc_kraft.yml
@@ -68,6 +72,7 @@ jobs:
 
   - name: Clean [${service_branch}] in non-TLS
     sequence: install
+    tls: true
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
@@ -76,15 +81,16 @@ jobs:
 
   - name: Clean [${service_branch}] in TLS
     sequence: install
+    tls: true
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
       kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
-      tls: true
       artifact_name: Clean_CURRENT_TLS
 
   - name: Clean [${service_branch}] on S3 storage
     sequence: install
+    tls: true
     install:
       version: ${service_branch}
       kafka_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml

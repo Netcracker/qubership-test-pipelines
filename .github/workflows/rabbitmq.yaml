@@ -190,7 +190,7 @@ jobs:
       # == Start Install steps ==
       # TLS setup
       - name: Setup TLS
-        if: matrix.test.install.tls == true || matrix.test.upgrade.tls == true
+        if: matrix.test.tls == true
         uses: ./qubership-test-pipelines/actions/shared/setup_tls
 
       # == Start ======= Specific steps for S3 =======
