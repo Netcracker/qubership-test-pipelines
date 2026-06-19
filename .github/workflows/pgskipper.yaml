@@ -1,4 +1,4 @@
-name: Pgskipper Tests
+name: Reusable Pgskipper Tests
 
 permissions:
   contents: read
