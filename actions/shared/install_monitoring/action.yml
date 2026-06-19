@@ -15,25 +15,25 @@ inputs:
     description: |
       Enable test checks in monitoring verification.
     required: false
-    default: 'false'
+    default: false
 
   service_ready_max_retries:
     description: |
       Maximum retries for monitoring verification.
     required: false
-    default: '80'
+    default: 80
 
   service_ready_retry_interval:
     description: |
       Retry interval for monitoring verification.
     required: false
-    default: '10s'
+    default: "10s"
 
   monitoring_branch:
     description: |
       Service branch for monitoring helm deploy.
     required: false
-    default: 'v0.88.0'
+    default: "v0.88.0"
 
 runs:
   using: composite
