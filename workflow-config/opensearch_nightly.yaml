@@ -4,12 +4,10 @@ jobs:
     name: Clean [${release_version}]. Upgrade to [${service_branch}]
     sequence: upgrade
     restricted: false
-    tls: true
     install:
       version: ${release_version}
       template: templates/opensearch-service/opensearch_clean_all_on_sc.yml
       artifact_name: Clean_${release_version}_Upgrade_CURRENT
-    tls: true
     upgrade:
       version: ${service_branch}
       template: templates/opensearch-service/opensearch_clean_all_on_sc.yml
@@ -18,12 +16,10 @@ jobs:
   - name: Clean [${service_branch}]. Update with diff params
     sequence: upgrade
     restricted: false
-    tls: true
     install:
       version: ${service_branch}
       template: templates/opensearch-service/opensearch_clean_all_on_sc.yml
       artifact_name: Clean_CURRENT_Update_Diff_Params
-    tls: true
     upgrade:
       version: ${service_branch}
       template: templates/opensearch-service/opensearch_update_all_on_sc.yml
@@ -32,7 +28,6 @@ jobs:
   - name: Clean [${service_branch}] in Restricted mode
     sequence: install
     restricted: true
-    tls: true
     install:
       version: ${service_branch}
       template: templates/opensearch-service/opensearch_clean_all_on_sc_restricted.yml
@@ -41,7 +36,6 @@ jobs:
   - name: Clean [${service_branch}] on S3 storage
     sequence: install
     restricted: false
-    tls: true
     install:
       version: ${service_branch}
       template: templates/opensearch-service/opensearch_clean_all_on_sc_s3.yml
@@ -51,17 +45,16 @@ jobs:
   - name: Clean [${service_branch}] in TLS mode
     sequence: install
     restricted: false
-    tls: true
     install:
       version: ${service_branch}
       template: templates/opensearch-service/opensearch_clean_all_on_sc_tls.yml
       artifact_name: Clean_CURRENT_TLS
+      tls: true
 
   - name: Clean [${service_branch}] with Monitoring and Allure
     sequence: install
     restricted: false
     monitoring: true
-    tls: true
     install:
       version: ${service_branch}
       template: templates/opensearch-service/opensearch_clean_all_on_sc_monitoring_allure.yml
