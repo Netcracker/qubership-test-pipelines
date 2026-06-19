@@ -138,7 +138,7 @@ jobs:
       namespace: opensearch
       test_completion_max_retries: 1
       test_completion_retry_interval: 10s
-      service_ready_max_retries: 140
+      service_ready_max_retries: 200
       service_ready_retry_interval: 10s
       service_branch: ""
       path_to_chart: operator/charts/helm/opensearch-service

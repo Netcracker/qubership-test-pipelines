@@ -1,0 +1,59 @@
+global:
+  skipNamespaceValidation: true
+  waitForPodsReady: true
+  secrets:
+    kafka:
+      disableSecurity: false
+      adminUsername: admin
+      adminPassword: admin
+      clientUsername: client
+      clientPassword: client
+    akhq:
+      defaultUsername: admin
+      defaultPassword: admin
+    backupDaemon:
+      username: admin
+      password: admin
+operator:
+  kafkaUserConfigurator:
+    enabled: true
+    secretCreatingEnabled: true
+    watchNamespace: kafka-service
+kafka:
+  install: true
+  replicas: 3
+  securityContext:
+    fsGroup: 1000
+  storage:
+    size: 5Gi
+    className:
+      - standard
+  zookeeperConnect: zookeeper.zookeeper:2181
+monitoring:
+  install: false
+  lagExporter:
+    enabled: true
+  serviceMonitor:
+    jmxScrapeTimeout: 30s
+  securityContext:
+    runAsUser: 1000
+akhq:
+  install: true
+  ingress:
+    host: akhq-kafka-service.qubership.com
+  securityContext:
+    runAsUser: 1000
+  kafkaPollTimeout: 10000
+  enableAccessLog: false
+backupDaemon:
+  install: true
+  storage: 1Gi
+  storageClass: standard
+  securityContext:
+    runAsUser: 1000
+    fsGroup: 1000
+integrationTests:
+  install: true
+  waitForResult: true
+  tags: kafka_crudORkafka_images
+  zookeeperOsProject: zookeeper
