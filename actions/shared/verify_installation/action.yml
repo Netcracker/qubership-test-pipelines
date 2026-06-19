@@ -26,7 +26,7 @@ inputs:
     description: |
       Delay between test pod check attempts
     required: false
-    default: "10s"
+    default: 10s
 
   crd_list:
     description: |
@@ -46,7 +46,7 @@ inputs:
       If set, checks only pods starting with this prefix.
       If empty (default), checks the first pod containing 'tests' in name.
     required: false
-    default: 'tests'
+    default: tests
 
   monitoring_pipeline:
     description: |
