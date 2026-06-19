@@ -20,18 +20,18 @@ pod readiness validation, and Robot Framework test result collection.
 
 ## 📌 Inputs
 
-| Name | Description                                                                                                                                                                       | Required | Default |
-| --- |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| --- | --- |
-| `namespace` | Kubernetes namespace where the service is installed.                                                                                                                              | Yes | - |
-| `service_ready_max_retries` | Maximum number of poll attempts for CR and resource readiness checks.                                                                                                             | Yes | - |
-| `service_ready_retry_interval` | Delay in seconds between CR and resource readiness poll attempts.                                                                                                                 | Yes | - |
-| `test_completion_max_retries` | Maximum number of poll attempts for the test pod to complete. Skipped when `check_tests` is `false`.                                                                              | Yes | - |
-| `test_completion_retry_interval` | Delay in seconds between test pod completion poll attempts. Skipped when `check_tests` is `false`.                                                                                | Yes | - |
-| `crd_list` | Space-separated list of Custom Resource names to check (e.g. `consul`). Pass empty to skip CR checks.                                                                             | No | - |
-| `check_tests` | When `true`, waits for the test pod to complete and checks test results. Set to `false` to skip test checks entirely.                                                             | No | `true` |
-| `test_pod_prefix` | Substring of the test pod name to search for (e.g. `integration-robot-tests`). Finds the first pod with this value in its name.                                                   | No | `"tests"` |
+| Name | Description | Required | Default |
+| --- | --- | --- | --- |
+| `namespace` | Kubernetes namespace where the service is installed. | Yes | - |
+| `service_ready_max_retries` | Maximum number of poll attempts for CR and resource readiness checks. | Yes | - |
+| `service_ready_retry_interval` | Delay in seconds between CR and resource readiness poll attempts. | Yes | - |
+| `test_completion_max_retries` | Maximum number of poll attempts for the test pod to complete. Skipped when `check_tests` is `false`. | Yes | - |
+| `test_completion_retry_interval` | Delay in seconds between test pod completion poll attempts. Skipped when `check_tests` is `false`. | Yes | - |
+| `crd_list` | Space-separated list of Custom Resource names to check (e.g. `consul`). Pass empty to skip CR checks. | No | - |
+| `check_tests` | When `true`, waits for the test pod to complete and checks test results. Set to `false` to skip test checks entirely. | No | `true` |
+| `test_pod_prefix` | Substring of the test pod name to search for (e.g. `integration-robot-tests`). Finds the first pod with this value in its name. | No | `"tests"` |
 | `monitoring_pipeline` | When `true`, runs additional VictoriaMetrics CR status checks using `check-vm-cr-statuses.sh`. Requires `repository_name` and the expected-vm-cr-statuses.json file to be present. | No | `false` |
-| `repository_name` | Full `org/repo` checkout path of the service repository. Required when `monitoring_pipeline` is `true` — used to locate `.github/expected-vm-cr-statuses.json`.                   | No | `""` |
+| `repository_name` | Full `org/repo` checkout path of the service repository. Required when `monitoring_pipeline` is `true` — used to locate `.github/expected-vm-cr-statuses.json`. | No | `""` |
 
 ---
 
