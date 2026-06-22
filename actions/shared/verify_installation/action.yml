@@ -181,7 +181,7 @@ runs:
           ./qubership-test-pipelines/scripts/monitoring/check-vm-cr-statuses.sh \
             "$NAMESPACE" \
             "$SERVICE_READY_MAX_RETRIES" \
-            "SERVICE_READY_RETRY_INTERVAL" \
+            "$SERVICE_READY_RETRY_INTERVAL" \
             "$REPOSITORY_NAME/.github/expected-vm-cr-statuses.json" \
             "$CRD_LIST"
         fi
