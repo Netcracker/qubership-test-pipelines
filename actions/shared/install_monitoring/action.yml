@@ -8,7 +8,7 @@ inputs:
   artifact_name:
     description: |
       Artifact name for collect_diagnostics step.
-      Example: Install_Monitoring_${{ matrix.test.install.artifact_name }}
+      Example: Install_Monitoring_<artifact_name>
     required: true
 
   check_tests:
