@@ -2,59 +2,69 @@ jobs:
   ## A special configuration section for generating jobs for installing previous releases on the current version
   - purpose: automation
     name: Clean [${release_version}]. Upgrade to [${service_branch}]
-    kafka_install_version: ${release_version}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_upgrade_version: ${service_branch}
-    kafka_upgrade_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_service_upgrade_template: templates/kafka-service/kafka_clean_sc_kraft.yml
     sequence: upgrade
-    artifact_name: Clean_${release_version}_Kraft_Upgrade_CURRENT_Kraft
-    test_tags: kafka
+
+    install:
+      version: ${release_version}
+      kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+      kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+      artifact_name: Clean_${release_version}_Kraft_Upgrade_CURRENT_Kraft
+    upgrade:
+      version: ${service_branch}
+      kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+      kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+      artifact_name: Clean_${release_version}_Kraft_Upgrade_CURRENT_Kraft
 
   - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params in Kraft
-    kafka_install_version: ${service_branch}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_upgrade_version: ${service_branch}
-    kafka_upgrade_template: templates/kafka-service/kafka_update_sc_kraft.yml
-    kafka_service_upgrade_template: templates/kafka-service/kafka_update_sc_kraft.yml
     sequence: upgrade
-    artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params_Kraft
-    test_tags: kafka
+
+    install:
+      version: ${service_branch}
+      kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+      kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+      artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params_Kraft
+    upgrade:
+      version: ${service_branch}
+      kafka_template: templates/kafka-service/kafka_update_sc_kraft.yml
+      kafka_service_template: templates/kafka-service/kafka_update_sc_kraft.yml
+      artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params_Kraft
 
   - name: Clean [${service_branch}] in non-TLS
-    kafka_install_version: ${service_branch}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
     sequence: install
-    artifact_name: Clean_CURRENT_non-TLS
-    test_tags: kafka
+
+    install:
+      version: ${service_branch}
+      kafka_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+      kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft.yml
+      artifact_name: Clean_CURRENT_non-TLS
 
   - name: Clean [${service_branch}] with Monitoring and Allure
-    kafka_install_version: ${service_branch}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring_allure.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring_allure.yml
     sequence: install
-    artifact_name: Clean_CURRENT_monitoring
-    test_tags: kafka
+
     monitoring: true
-    allure: true
+    install:
+      version: ${service_branch}
+      kafka_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring_allure.yml
+      kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_monitoring_allure.yml
+      artifact_name: Clean_CURRENT_monitoring
+      allure: true
 
   - name: Clean [${service_branch}] in TLS
-    kafka_install_version: ${service_branch}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
     sequence: install
+
     tls: true
-    artifact_name: Clean_CURRENT_TLS
-    test_tags: kafka
+    install:
+      version: ${service_branch}
+      kafka_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
+      kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_tls.yml
+      artifact_name: Clean_CURRENT_TLS
 
   - name: Clean [${service_branch}] on S3 storage
-    kafka_install_version: ${service_branch}
-    kafka_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml
-    kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml
     sequence: install
-    s3: true
-    artifact_name: Clean_CURRENT_S3
-    test_tags: kafka
+
+    install:
+      version: ${service_branch}
+      kafka_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml
+      kafka_service_template: templates/kafka-service/kafka_clean_sc_kraft_s3.yml
+      s3: true
+      artifact_name: Clean_CURRENT_S3

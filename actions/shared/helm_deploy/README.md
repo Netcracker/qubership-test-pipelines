@@ -12,7 +12,6 @@ GitHub Action to install or upgrade Kubernetes services using Helm.
 - Creates or replaces CRDs found in the chart's `crds/` directory
 - Sets up restricted RBAC resources (ServiceAccount, ClusterRoleBinding) when running in restricted mode
 - Patches `values.yaml` to override a specific Docker image tag (`image_replacement`)
-- Updates the `tags` field in the values template for test filtering (`test_tags`)
 - Runs `charts-values-update-action` to propagate the service branch or commit tag into chart values
   (skipped when `service_branch` is a release version)
 - Installs or upgrades the Helm release with a configurable values template
@@ -35,7 +34,7 @@ GitHub Action to install or upgrade Kubernetes services using Helm.
 | `namespace` | Kubernetes namespace for the installation. Created automatically in `install` mode. | Yes | - |
 | `resource_folder` | Path (relative to repo root) to a folder of Kubernetes manifests applied with `kubectl create` before installation. Pass an empty string to skip. | Yes | - |
 | `image_replacement` | Full image name including tag to pin in `values.yaml`, e.g. `pgskipper-docker-patroni-18`. The base name (everything before the last `-`) is used to locate the existing value. Skipped when empty. | No | `""` |
-| `test_tags` | Replacement value for the `tags:` field in the values template. Skipped when empty. | Yes | `""` |
+
 
 ---
 

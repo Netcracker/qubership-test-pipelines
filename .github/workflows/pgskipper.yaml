@@ -1,4 +1,4 @@
-name: Pgskipper Tests
+name: Reusable Pgskipper Tests
 
 permissions:
   contents: read
@@ -46,6 +46,11 @@ on:
         required: false
         default: false
 
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
   workflow_call:
     inputs:
       repository_name:
@@ -87,7 +92,11 @@ on:
         type: boolean
         required: false
         default: false
-
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -102,6 +111,8 @@ jobs:
       versions: ${{ steps.process-versions.outputs.versions }}
       previous_version: ${{ steps.process-versions.outputs.previous_version }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_ready_max_retries: ${{ steps.calc-timeout.outputs.service_ready_max_retries }}
+      service_ready_retry_interval: ${{ steps.calc-timeout.outputs.service_ready_retry_interval }}
       service_images: ${{ steps.parse-matrix.outputs.service_images }}
     steps:
       - name: Checkout repo
@@ -120,6 +131,14 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
+
+      - name: Calculate verify timeout parameters
+        id: calc-timeout
+        run: |
+          RETRY_INTERVAL=10
+          MAX_RETRIES=$(( ${{ inputs.verify_timeout_minutes }} * 60 / RETRY_INTERVAL ))
+          echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
+          echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
       - name: Get latest tag
         id: get-latest-tag
         env:
@@ -204,65 +223,43 @@ jobs:
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == Start TLS certs addition if needed =======
-      - name: TLS setup
-        # language=bash
+      - name: Setup TLS
         if: matrix.test.tls == true
-        run: |
-          echo "::group::Install cert-manager"
-          helm repo add jetstack https://charts.jetstack.io --force-update
-          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
-            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-          echo "::endgroup::"
-          echo "::group::Create cert-manager entities"
-          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-          echo "::endgroup::"
-          echo "::group::Get cert-manager resources"
-          kubectl get pods -n cert-manager
-          kubectl get secrets -n cert-manager
-          kubectl get certificates -A
-          echo "::endgroup::"
-          echo "::group:: Get clusterissuer"
-          kubectl get clusterissuer
-          kubectl get clusterissuer test-clusterissuer -o yaml
-          echo "::endgroup::"
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
       # == End TLS certs addition if needed =======
 
       # == Start ======= Specific steps for Allure report =======
       - name: Add s3 bucket for Allure report
-        if: matrix.test.allure == true
+        if: matrix.test.install.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.core_template }}'
           --path='tests/atpReport/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.core_template }}'
           --path='tests/atpReport/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.services_template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.services_template }}'
           --path='tests/atpReport/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.services_template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.services_template }}'
           --path='tests/atpReport/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for Allure report =======
 
       # == 02 Start ======= Core installation steps =======
       - name: Print install deployment parameters (core)
-        run: cat qubership-test-pipelines/${{ matrix.test.core_template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.core_template }}
 
-      - name: Install Pgskipper Core [${{ matrix.test.install_version }}]
+      - name: Install Pgskipper Core [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: core_install
         with:
-          path_to_template: ${{ matrix.test.core_template }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.core_template }}
+          service_branch: ${{ matrix.test.install.version }}
           deploy_mode: install
           restricted: ${{ matrix.test.restricted }}
           service_name: pgskipper
@@ -279,11 +276,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           check_tests: ${{ matrix.test.check_core_tests }}
+          test_pod_prefix: integration-robot-tests
           namespace: pgskipper
           service_ready_max_retries: 240
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 240
-          test_completion_retry_interval: 10s
           crd_list: patronicores.netcracker.com
 
       - name: Collect Diagnostics Core installation
@@ -291,20 +287,20 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: pgskipper
-          artifact_name: Core_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Core_Installation_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
       # == 02 End ======= Core installation steps =======
 
       # == 03 Start ======= Services installation steps =======
       - name: Print install deployment parameters (services)
-        run: cat qubership-test-pipelines/${{ matrix.test.services_template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.services_template }}
 
-      - name: Install Pgskipper Services [${{ matrix.test.install_version }}]
+      - name: Install Pgskipper Services [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: services_install
         with:
-          path_to_template: ${{ matrix.test.services_template }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.services_template }}
+          service_branch: ${{ matrix.test.install.version }}
           service_name: pgskipper-services
           restricted: ${{ matrix.test.restricted }}
           repository_name: Netcracker/pgskipper-operator
@@ -318,11 +314,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           check_tests: ${{ matrix.test.check_services_tests }}
+          test_pod_prefix: supplementary-robot-tests
           namespace: pgskipper
           service_ready_max_retries: 240
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 240
-          test_completion_retry_interval: 10s
           crd_list: patroniservices.netcracker.com
 
       - name: Collect Diagnostics Services installation
@@ -330,19 +325,19 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: pgskipper
-          artifact_name: Services_Installation_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Services_Installation_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
       # == 03 End ======= Services installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
-      - name: Upgrade Pgskipper Core to [${{ matrix.test.upgrade_version }}]
+      - name: Upgrade Pgskipper Core to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: core_upgrade
         with:
           deploy_mode: upgrade
-          path_to_template: ${{ matrix.test.upgrade_core_template }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          path_to_template: ${{ matrix.test.upgrade.core_template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
           restricted: ${{ matrix.test.restricted }}
           service_name: pgskipper
           repository_name: Netcracker/pgskipper-operator
@@ -360,11 +355,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           check_tests: ${{ matrix.test.check_core_tests }}
+          test_pod_prefix: integration-robot-tests
           namespace: pgskipper
           service_ready_max_retries: 60
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 60
-          test_completion_retry_interval: 10s
           crd_list: patronicores.netcracker.com
 
       - name: Collect Diagnostics Core upgrade
@@ -372,17 +366,17 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: pgskipper
-          artifact_name: Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          artifact_name: Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
 
-      - name: Upgrade Pgskipper Services to [${{ matrix.test.upgrade_version }}]
+      - name: Upgrade Pgskipper Services to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: services_upgrade
         with:
           deploy_mode: upgrade
-          path_to_template: ${{ matrix.test.upgrade_services_template }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          path_to_template: ${{ matrix.test.upgrade.services_template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
           service_name: pgskipper-services
           restricted: ${{ matrix.test.restricted }}
           repository_name: Netcracker/pgskipper-operator
@@ -409,11 +403,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           check_tests: ${{ matrix.test.check_services_tests }}
+          test_pod_prefix: supplementary-robot-tests
           namespace: pgskipper
           service_ready_max_retries: 60
           service_ready_retry_interval: 10s
-          test_completion_max_retries: 60
-          test_completion_retry_interval: 10s
           crd_list: patroniservices.netcracker.com
 
       - name: Collect Diagnostics Services installation
@@ -421,8 +414,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: pgskipper
-          artifact_name: Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          artifact_name: Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
       # == End ======= Specific steps for upgrade tests =======
 
       # == Start ======= Diagnostic steps =======

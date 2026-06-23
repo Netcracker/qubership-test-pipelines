@@ -41,6 +41,11 @@ on:
         required: false
         default: false
 
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
   workflow_call:
     inputs:
       repository_name:
@@ -77,7 +82,11 @@ on:
         type: boolean
         required: false
         default: false
-
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -91,6 +100,8 @@ jobs:
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_ready_max_retries: ${{ steps.calc-timeout.outputs.service_ready_max_retries }}
+      service_ready_retry_interval: ${{ steps.calc-timeout.outputs.service_ready_retry_interval }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -108,6 +119,14 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
+
+      - name: Calculate verify timeout parameters
+        id: calc-timeout
+        run: |
+          RETRY_INTERVAL=10
+          MAX_RETRIES=$(( ${{ inputs.verify_timeout_minutes }} * 60 / RETRY_INTERVAL ))
+          echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
+          echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
       - name: Get latest tag
         id: get-latest-tag
         run: |
@@ -173,14 +192,14 @@ jobs:
 
       # == Start ======= Specific steps for Allure report =======
       - name: Add s3 backet for Allure report
-        if: matrix.test.allure == true
+        if: matrix.test.install.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpReport/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpReport/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for Allure report =======
@@ -190,15 +209,15 @@ jobs:
       # == 01 End ======= Common pre-steps for all tests =======
 
       - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
       # == 02 Start ======= Installation steps =======
-      - name: Install Monitoring [${{ matrix.test.install_version }}]
+      - name: Install Monitoring [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_install
         with:
-          path_to_template: ${{ matrix.test.template }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: charts/qubership-monitoring-operator
@@ -220,7 +239,6 @@ jobs:
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-          check_tests: true
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
 
@@ -229,23 +247,23 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: monitoring
-          artifact_name: Installation_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Installation_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
 
       # == 02 End ======= Installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
       - name: Print upgrade deployment parameters
         if: ${{ matrix.test.sequence == 'upgrade' }}
-        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
 
-      - name: Upgrade Monitoring to [${{ matrix.test.upgrade_version }}]
+      - name: Upgrade Monitoring to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_upgrade
         with:
-          path_to_template: ${{ matrix.test.upgrade_template }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
           deploy_mode: upgrade
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
@@ -285,7 +303,6 @@ jobs:
           test_completion_max_retries: ${{ env.test_completion_max_retries }}
           test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           crd_list: ${{ steps.upgrade_monitoring_get_crds.outputs.crd_names }}
-          check_tests: true
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
 
@@ -294,8 +311,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: monitoring
-          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
 
       # == End ======= Specific steps for upgrade tests =======
 

@@ -35,6 +35,11 @@ on:
         required: false
         default: false
 
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
   workflow_call:
     inputs:
       repository_name:
@@ -45,6 +50,7 @@ on:
       service_branch:
         required: false
         type: string
+        default: main
       pipeline_branch:
         description: Test pipeline branch name
         type: string
@@ -64,6 +70,11 @@ on:
         type: boolean
         required: false
         default: false
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -77,6 +88,8 @@ jobs:
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_ready_max_retries: ${{ steps.calc-timeout.outputs.service_ready_max_retries }}
+      service_ready_retry_interval: ${{ steps.calc-timeout.outputs.service_ready_retry_interval }}
     steps:
       - name: Checkout repo
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -94,6 +107,14 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
+
+      - name: Calculate verify timeout parameters
+        id: calc-timeout
+        run: |
+          RETRY_INTERVAL=10
+          MAX_RETRIES=$(( ${{ inputs.verify_timeout_minutes }} * 60 / RETRY_INTERVAL ))
+          echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
+          echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
       - name: Get latest tag
         id: get-latest-tag
         env:
@@ -136,8 +157,6 @@ jobs:
     name: ${{ matrix.test.name }}
     env:
       namespace: opensearch
-      test_completion_max_retries: 1
-      test_completion_retry_interval: 10s
       service_ready_max_retries: 200
       service_ready_retry_interval: 10s
       service_branch: ""
@@ -175,36 +194,15 @@ jobs:
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == Start ======= Specific steps for TLS =======
-      - name: Install cert-manager
+      - name: Setup TLS
         if: ${{ matrix.test.tls == true }}
-        run: |
-          echo "::group::Install cert-manager"
-          helm repo add jetstack https://charts.jetstack.io --force-update
-          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
-            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-          echo "::endgroup::"
-          echo "::group::Create cert-manager entities"
-          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-          echo "::endgroup::"
-          echo "::group::Get cert-manager resources"
-          kubectl get pods -n cert-manager
-          kubectl get secrets -n cert-manager
-          kubectl get certificates -A
-          echo "::endgroup::"
-          echo "::group::Get clusterissuer"
-          kubectl get clusterissuer
-          kubectl get clusterissuer test-clusterissuer -o yaml
-          echo "::endgroup::"
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
       # == End ======= Specific steps for TLS =======
 
       # == Start ======= Specific steps for S3 =======
       - name: Create S3 bucket
         id: create_bucket
-        if: matrix.test.s3 == true
+        if: matrix.test.install.s3 == true
         uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
@@ -213,89 +211,55 @@ jobs:
           prefix: opensearch
 
       - name: Update YAML secrets
-        if: matrix.test.s3 == true
+        if: matrix.test.install.s3 == true
         # zizmor: ignore[template-injection]
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.template }}' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='opensearch/snapshots/s3/keyId' \
             --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.template }}' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='opensearch/snapshots/s3/keySecret' \
             --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.template }}' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template }}' \
             --path='opensearch/snapshots/s3/bucket' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
 
       # == Start Monitoring installation tests =======
-      - name: Install Monitoring [${{ matrix.test.install_version }}]
+      - name: Install Monitoring
         if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-        id: monitoring_install
+        uses: ./qubership-test-pipelines/actions/shared/install_monitoring
         with:
-          path_to_template: templates/monitoring/vm_without_tests.yml
-          service_branch: v0.88.0
-          service_name: monitoring
-          repository_name: Netcracker/qubership-monitoring-operator
-          path_to_chart: charts/qubership-monitoring-operator
-          namespace: monitoring
-          restricted: false
-
-      - name: Get Installed Monitoring CR name
-        if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
-        id: install_monitoring_get_crds
-        with:
-          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
-
-      - name: Verify Monitoring installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
-        if: matrix.test.monitoring == true
-        with:
-          namespace: monitoring
-          test_completion_max_retries: 40
-          test_completion_retry_interval: 10s
+          artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
           service_ready_max_retries: 500
-          service_ready_retry_interval: 10s
-          monitoring_pipeline: true
-          repository_name: Netcracker/qubership-monitoring-operator
-          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-
-      - name: Collect Diagnostics Monitoring installation
-        if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
-        with:
-          namespace: monitoring
-          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
-          service_branch: main
       # == End Monitoring installation tests =======
 
       # == Start ======= Specific steps for Allure report =======
       - name: Add s3 backet for Allure report
-        if: matrix.test.allure == true
+        if: matrix.test.install.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpReport/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpReport/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for Allure report =======
 
       - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
-      - name: Install Opensearch [${{ matrix.test.install_version }}]
+      - name: Install Opensearch [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: opensearch_install
         with:
-          path_to_template: ${{ matrix.test.template }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
           restricted: ${{ matrix.test.restricted }}
           service_name: opensearch
           repository_name: ${{ inputs.repository_name }}
@@ -308,24 +272,21 @@ jobs:
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
 
-      - name: Verify Opensearch installation [${{ matrix.test.install_version }}]
+      - name: Verify Opensearch installation [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: opensearch
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.install_opensearch_get_crds.outputs.crd_names }}
 
-      - name: Collect Diagnostics Opensearch installation [${{ matrix.test.install_version }}]
+      - name: Collect Diagnostics Opensearch installation [${{ matrix.test.install.version }}]
         if: ${{ !cancelled() && steps.opensearch_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: opensearch
-          artifact_name: Installation_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Installation_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
 
       - name: Get Opensearch secrets
         if: ${{ matrix.test.tls == true }}
@@ -336,19 +297,19 @@ jobs:
       # == Start ===== Upgrade steps ============
       - name: Print upgrade deployment parameters
         if: ${{ matrix.test.sequence == 'upgrade' }}
-        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
 
       - name: Sleep 1m before upgrade
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: sleep 1m
 
-      - name: Upgrade Opensearch to [${{ matrix.test.upgrade_version }}]
+      - name: Upgrade Opensearch to [${{ matrix.test.upgrade.version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: opensearch_upgrade
         with:
-          path_to_template: ${{ matrix.test.upgrade_template }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
           deploy_mode: upgrade
           restricted: ${{ matrix.test.restricted }}
           service_name: opensearch
@@ -378,30 +339,27 @@ jobs:
           fail-on-mandatory-checks: true
           config-file: ${{ inputs.repository_name }}/.github/hardening-config.yaml
 
-      - name: Verify Opensearch upgrade to [${{ matrix.test.upgrade_version }}]
+      - name: Verify Opensearch upgrade to [${{ matrix.test.upgrade.version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          check_tests: true
           namespace: opensearch
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
           service_ready_max_retries: ${{ env.service_ready_max_retries }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.upgrade_opensearch_get_crds.outputs.crd_names }}
 
-      - name: Collect Diagnostics Opensearch upgrade to [${{ matrix.test.upgrade_version }}]
+      - name: Collect Diagnostics Opensearch upgrade to [${{ matrix.test.upgrade.version }}]
         if: ${{ !cancelled() && steps.opensearch_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: opensearch
-          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
       # == End ===== Upgrade steps ============
 
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
-        if: always() && matrix.test.s3 == true
+        if: always() && matrix.test.install.s3 == true
         uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
