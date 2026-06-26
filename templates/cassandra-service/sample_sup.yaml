@@ -23,4 +23,4 @@ dbaas:
 monitoringAgent:
     install: false
 robotTests:
-    install: false
+    install: true
