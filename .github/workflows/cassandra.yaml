@@ -1,0 +1,294 @@
+name: Cassandra Tests
+
+permissions:
+  contents: read
+  actions: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository_name:
+        description: Repository with Cassandra operator
+        required: false
+        type: string
+        default: Netcracker/qubership-cassandra-operator
+      service_branch:
+        description: Branch of qubership-cassandra-operator repository
+        required: false
+        type: string
+        default: main
+      pipeline_branch:
+        description: Branch of qubership-test-pipelines repository
+        type: string
+        required: true
+      runner_type:
+        description: Runner type (self-hosted or ubuntu-latest)
+        type: string
+        required: false
+        default: ubuntu-latest
+      scope:
+        description: Cassandra Test Scope (pro r nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+
+  workflow_call:
+    inputs:
+      repository_name:
+        description: Repository with Cassandra operator
+        required: false
+        type: string
+        default: Netcracker/qubership-cassandra-operator
+      service_branch:
+        description: Branch of qubership-cassandra-operator repository
+        required: false
+        type: string
+        default: main
+      pipeline_branch:
+        description: Branch of qubership-test-pipelines repository
+        type: string
+        required: true
+      runner_type:
+        description: Runner type (self-hosted or ubuntu-latest)
+        type: string
+        required: false
+        default: ubuntu-latest
+      scope:
+        description: Cassandra Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
+
+env:
+  namespace: cassandra
+  path_to_chart_cassandra: cassandra/cassandra-image/deployments/charts/cassandra_5.0.7
+  path_to_chart_operator: operator/charts/helm/cassandra-operator
+  path_to_chart_services: services/service/charts/helm/cassandra-services
+
+jobs:
+  prepare:
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ${{ inputs.runner_type }}
+    outputs:
+      versions: ${{ steps.process-versions.outputs.versions }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-cassandra-operator
+          persist-credentials: false
+
+      - name: Checkout pipeline
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+
+      - name: Get latest tag
+        id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
+        run: |
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Process versions file and matrix generation
+        id: process-versions
+        env:
+          SCOPE: ${{ inputs.scope }}
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
+        run: |
+          chmod +x ./scripts/matrix.sh
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/cassandra_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/cassandra.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'"
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
+
+  Cassandra-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
+    needs: prepare
+    runs-on: ${{ inputs.runner_type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.test.name }}
+    steps:
+      # == 01 Start ======= Common pre-steps for all tests =======
+      - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
+        run: |
+          echo "======== Job parameters ======="
+          echo "$MATRIX_JSON"
+
+      - name: Checkout repo
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-cassandra-operator
+          persist-credentials: false
+
+      - name: Checkout pipeline
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      # == 01 End ======= Common pre-steps for all tests =======
+
+      # == 02 Start ===== Install Cassandra =====
+      - name: Install Cassandra [${{ matrix.test.install_version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_install
+        with:
+          path_to_template: ${{ matrix.test.template }}
+          service_branch: ${{ matrix.test.install_version }}
+          deploy_mode: install
+          service_name: cassandra
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_cassandra }}
+          namespace: ${{ env.namespace }}
+
+      - name: Verify Cassandra installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
+
+      - name: Collect Diagnostics Cassandra installation
+        if: ${{ !cancelled() && steps.cassandra_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Install_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.install_version }}
+      # == 02 End ===== Install Cassandra =====
+
+      # == 03 Start ===== Install Cassandra Operator =====
+      - name: Install Cassandra Operator [${{ matrix.test.install_version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_operator_install
+        with:
+          path_to_template: ${{ matrix.test.template_operator }}
+          service_branch: ${{ matrix.test.install_version }}
+          deploy_mode: install
+          service_name: cassandra-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_operator }}
+          namespace: ${{ env.namespace }}
+
+      - name: Verify Cassandra Operator installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
+
+      - name: Collect Diagnostics Cassandra Operator installation
+        if: ${{ !cancelled() && steps.cassandra_operator_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Operator_Install_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.install_version }}
+      # == 03 End ===== Install Cassandra Operator =====
+
+      # == 04 Start ===== Install Cassandra Services =====
+      - name: Install Cassandra Services [${{ matrix.test.install_version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_services_install
+        with:
+          path_to_template: ${{ matrix.test.template_services }}
+          service_branch: ${{ matrix.test.install_version }}
+          deploy_mode: install
+          service_name: cassandra-services
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_services }}
+          namespace: ${{ env.namespace }}
+
+      - name: Verify Cassandra Services installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
+
+      - name: Collect Diagnostics Cassandra Services installation
+        if: ${{ !cancelled() && steps.cassandra_services_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Services_Install_${{ matrix.test.artifact_name }}
+          service_branch: ${{ matrix.test.install_version }}
+      # == 04 End ===== Install Cassandra Services =====
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Delete S3 bucket
+        if: always() && matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
+      # == End ======= Specific steps for S3 =======
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Cassandra-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Cassandra-Test-Cases.result }}

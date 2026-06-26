@@ -1,0 +1,26 @@
+operator:
+    image: ghcr.io/netcracker/cassandra-supplementary:main
+    initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
+cassandra:
+    install: true
+    deploymentSchema:
+      dataCenters:
+        - name: dc1
+          replicas: 3
+          seeds: 1
+          storage:
+            size: 4Gi
+            storageClasses:
+              - standard
+backupDaemon:
+    install: false
+    storage:
+      size: 4Gi
+      storageClasses:
+        - standard
+dbaas:
+    install: false
+monitoringAgent:
+    install: false
+robotTests:
+    install: false

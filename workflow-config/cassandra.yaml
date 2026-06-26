@@ -1,0 +1,9 @@
+jobs:
+  - name: Clean [${service_branch}] Install
+    install_version: ${service_branch}
+    template: templates/cassandra-service/cassandra_sample.yaml
+    template_operator: templates/cassandra-service/sample.yaml
+    template_services: templates/cassandra-service/sample_sup.yaml
+    sequence: install
+    restricted: false
+    artifact_name: Clean_CURRENT
