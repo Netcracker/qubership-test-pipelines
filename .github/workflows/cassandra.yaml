@@ -191,7 +191,7 @@ jobs:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
           test_completion_retry_interval: 10s
-          service_ready_max_retries: 50
+          service_ready_max_retries: 150
           service_ready_retry_interval: 10s
 
       - name: Collect Diagnostics Cassandra installation
