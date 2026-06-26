@@ -1,4 +1,4 @@
-name: Cassandra Tests
+name: Reusable Cassandra Tests
 
 permissions:
   contents: read
