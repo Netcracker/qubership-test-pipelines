@@ -237,6 +237,9 @@ jobs:
           service_branch: ${{ matrix.test.install_version }}
       # == 03 End ===== Install Cassandra Operator =====
 
+      - name: Print install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template_services }}
+
       # == 04 Start ===== Install Cassandra Services =====
       - name: Install Cassandra Services [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
