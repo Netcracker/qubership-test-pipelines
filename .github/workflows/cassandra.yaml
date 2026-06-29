@@ -201,6 +201,15 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Install_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.install_version }}
+
+      - name: Debug Cassandra resources
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Deployments ==="
+          kubectl get deployment -n ${{ env.namespace }}
+          echo "=== ReplicaSets ==="
+          kubectl get replicaset -n ${{ env.namespace }}
       # == 02 End ===== Install Cassandra =====
 
       # == 03 Start ===== Install Cassandra Operator =====
@@ -235,6 +244,16 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Operator_Install_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.install_version }}
+      - name: Debug Cassandra Operator resources
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Deployments ==="
+          kubectl get deployment -n ${{ env.namespace }}
+          echo "=== ReplicaSets ==="
+          kubectl get replicaset -n ${{ env.namespace }}
+          echo "=== Pods ==="
+          kubectl get pods -n ${{ env.namespace }}
       # == 03 End ===== Install Cassandra Operator =====
 
       - name: Print install deployment parameters
@@ -255,6 +274,17 @@ jobs:
 
       - name: Sleep 3m
         run: sleep 3m
+
+      - name: Debug Cassandra Services resources
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Deployments ==="
+          kubectl get deployment -n ${{ env.namespace }}
+          echo "=== ReplicaSets ==="
+          kubectl get replicaset -n ${{ env.namespace }}
+          echo "=== Pods ==="
+          kubectl get pods -n ${{ env.namespace }}
 
       - name: Verify Cassandra Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
