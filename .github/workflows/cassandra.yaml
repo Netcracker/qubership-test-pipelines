@@ -251,7 +251,7 @@ jobs:
           namespace: ${{ env.namespace }}
 
       - name: Sleep 1m
-        run: sleep 1
+        run: sleep 1m
 
       - name: Verify Cassandra Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
