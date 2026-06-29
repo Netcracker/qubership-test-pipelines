@@ -250,6 +250,9 @@ jobs:
           path_to_chart: ${{ env.path_to_chart_services }}
           namespace: ${{ env.namespace }}
 
+      - name: Sleep 1m
+        run: sleep 1
+
       - name: Verify Cassandra Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
