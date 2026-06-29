@@ -225,8 +225,8 @@ jobs:
           path_to_chart: ${{ env.path_to_chart_operator }}
           namespace: ${{ env.namespace }}
 
-      - name: Sleep 10m
-        run: sleep 10m
+      - name: Sleep 5m
+        run: sleep 5m
 
       - name: Verify Cassandra Operator installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -272,8 +272,8 @@ jobs:
           path_to_chart: ${{ env.path_to_chart_services }}
           namespace: ${{ env.namespace }}
 
-      - name: Sleep 10m
-        run: sleep 10m
+      - name: Sleep 5m
+        run: sleep 5m
 
       - name: Debug Cassandra Services resources
         if: always()
