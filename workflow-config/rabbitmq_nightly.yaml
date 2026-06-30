@@ -52,4 +52,4 @@ jobs:
     sequence: install
     artifact_name: Clean_CURRENT_full_at
     monitoring: true
-    allure: true
+    allure: false
