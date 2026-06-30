@@ -112,7 +112,6 @@ runs:
               1)
                 echo "⏳ CR check in progress"
                 echo -e "Retrying in $SERVICE_READY_RETRY_INTERVAL seconds...\n"
-                sleep "$SERVICE_READY_RETRY_INTERVAL"
                 ;;
               2)
                 echo "::error:: ❌ CR check failed"
@@ -134,9 +133,6 @@ runs:
               resources_success=true
             elif [ $resources_exit_code -eq 1 ]; then
               echo "⏳ Some resources are not ready"
-              #echo "PODS:"
-              #kubectl get pods -n "$NAMESPACE"
-              #sleep "$SERVICE_READY_RETRY_INTERVAL"
             fi
           fi
 
