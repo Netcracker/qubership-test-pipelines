@@ -237,12 +237,20 @@ jobs:
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
           --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
+          --path='tests/atpReport/enabled'
+          --value='true'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
           --path='tests/atpReport/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
           --file='qubership-test-pipelines/${{ matrix.test.core_template }}'
           --path='tests/atpReport/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.services_template }}'
+          --path='tests/atpReport/enabled'
+          --value='true'
           && python qubership-test-pipelines/scripts/update_yaml.py
           --file='qubership-test-pipelines/${{ matrix.test.services_template }}'
           --path='tests/atpReport/atpStorage/username'

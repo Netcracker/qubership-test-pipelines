@@ -82,7 +82,7 @@ integrationTests:
   tags: smokeORauthenticationORprometheusORhaORbackup
   prometheusUrl: http://vmsingle-k8s.monitoring:8429
   atpReport:
-    enabled: true
+    enabled: false
     atpStorage:
       provider: aws
       serverUrl: s3.amazonaws.com
