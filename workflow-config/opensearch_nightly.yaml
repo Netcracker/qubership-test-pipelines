@@ -49,5 +49,5 @@ jobs:
     restricted: false
     monitoring: true
     s3: true
-    allure: true
+    allure: false
     artifact_name: Clean_CURRENT_Monitoring
