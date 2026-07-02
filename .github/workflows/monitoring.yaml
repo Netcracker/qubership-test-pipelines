@@ -186,6 +186,10 @@ jobs:
           kind-layout: ${{ inputs.kind-layout }}
 
       # == Start ======= Specific steps for Allure report =======
+      - name: Check Allure configuration
+        if: matrix.test.allure == true && inputs.allure == false
+        run: echo "::warning::Allure report generation has been forcibly disabled by the calling workflow (inputs.allure = false)"
+
       - name: Add s3 backet for Allure report
         if: matrix.test.allure == true && inputs.allure == true
         run: >-
