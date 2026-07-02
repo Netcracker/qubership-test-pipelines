@@ -60,4 +60,4 @@ jobs:
       template: templates/opensearch-service/opensearch_clean_all_on_sc_monitoring_allure.yml
       artifact_name: Clean_CURRENT_Monitoring
       s3: true
-      allure: true
+      allure: false

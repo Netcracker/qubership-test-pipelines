@@ -35,6 +35,11 @@ on:
         type: boolean
         required: false
         default: false
+      allure:
+        description: Enable Allure report generation
+        type: boolean
+        required: false
+        default: true
 
       verify_timeout_minutes:
         description: Maximum time (in minutes) to wait for each service verification
@@ -75,6 +80,12 @@ on:
         type: number
         required: false
         default: 15
+      allure:
+        description: Enable Allure report generation
+        type: boolean
+        required: false
+        default: true
+
     secrets:
       AWS_S3_ACCESS_KEY_ID:
         required: true
@@ -107,7 +118,6 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
-
       - name: Calculate verify timeout parameters
         id: calc-timeout
         run: |
@@ -115,6 +125,7 @@ jobs:
           MAX_RETRIES=$(( ${{ inputs.verify_timeout_minutes }} * 60 / RETRY_INTERVAL ))
           echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
           echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
+
       - name: Get latest tag
         id: get-latest-tag
         env:
@@ -222,10 +233,18 @@ jobs:
       # == End ======= Specific steps for S3 =======
 
       # == Start ======= Specific steps for Allure report =======
+      - name: Check Allure configuration
+        if: matrix.test.allure == true && inputs.allure == false
+        run: echo "::warning::Allure report generation has been forcibly disabled by the calling workflow (inputs.allure = false)"
+
       - name: Add s3 backet for Allure report
-        if: matrix.test.install.allure == true
+        if: matrix.test.install.allure == true && inputs.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
+          --path='tests/atpReport/enabled'
+          --value='true'
+          && python qubership-test-pipelines/scripts/update_yaml.py
           --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='tests/atpReport/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
