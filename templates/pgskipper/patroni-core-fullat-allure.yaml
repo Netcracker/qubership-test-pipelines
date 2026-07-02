@@ -30,7 +30,7 @@ tests:
   install: true
   runTestScenarios: full
   atpReport:
-    enabled: true
+    enabled: false
     atpStorage:
       provider: aws
       serverUrl: s3.amazonaws.com
