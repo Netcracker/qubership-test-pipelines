@@ -19,6 +19,7 @@ backupDaemon:
       - standard
 dbaas:
   install: true
+  image: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:2.16.1
 monitoringAgent:
     install: false
 robotTests:
