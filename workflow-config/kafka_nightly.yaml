@@ -39,7 +39,7 @@ jobs:
     artifact_name: Clean_CURRENT_monitoring
     test_tags: kafka
     monitoring: true
-    allure: false
+    allure: true
 
   - name: Clean [${service_branch}] in TLS
     kafka_install_version: ${service_branch}

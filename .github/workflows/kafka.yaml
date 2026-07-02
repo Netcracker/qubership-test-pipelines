@@ -43,6 +43,11 @@ on:
         type: boolean
         required: false
         default: false
+      allure:
+        description: Enable Allure report generation
+        type: boolean
+        required: false
+        default: true
 
   workflow_call:
     inputs:
@@ -82,6 +87,11 @@ on:
         type: boolean
         required: false
         default: false
+      allure:
+        description: Enable Allure report generation
+        type: boolean
+        required: false
+        default: true
 
     secrets:
       AWS_S3_ACCESS_KEY_ID:
@@ -114,6 +124,10 @@ jobs:
           repository: netcracker/qubership-test-pipelines
           path: qubership-test-pipelines
           persist-credentials: false
+
+      - name: Check Allure configuration
+        if: inputs.allure == false
+        run: echo "::warning::Allure report generation has been forcibly disabled by the calling workflow (inputs.allure = false)"
 
       - name: Get latest tag
         id: get-latest-tag
@@ -360,7 +374,7 @@ jobs:
 
       # == Start ======= Specific steps for Allure report =======
       - name: Add s3 backet for Allure report
-        if: matrix.test.allure == true
+        if: matrix.test.allure == true && inputs.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
           --file='qubership-test-pipelines/${{ matrix.test.kafka_service_template }}'
