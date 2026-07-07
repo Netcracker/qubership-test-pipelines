@@ -45,12 +45,12 @@ on:
         type: boolean
         required: false
         default: true
-
       verify_timeout_minutes:
         description: Maximum time (in minutes) to wait for each service verification
         type: number
         required: false
         default: 15
+
   workflow_call:
     inputs:
       repository_name:
@@ -176,10 +176,10 @@ jobs:
     name: ${{ matrix.test.name }}
     env:
       path_to_chart: charts/qubership-monitoring-operator
-      test_completion_max_retries: 100
-      test_completion_retry_interval: 5s
-      service_ready_max_retries: 100
-      service_ready_retry_interval: 5s
+      SERVICE_READY_MAX_RETRIES: ${{ needs.prepare.outputs.service_ready_max_retries }}
+      SERVICE_READY_RETRY_INTERVAL: ${{ needs.prepare.outputs.service_ready_retry_interval }}
+      TEST_COMPLETION_MAX_RETRIES: 100
+      TEST_COMPLETION_RETRY_INTERVAL: 5s
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: Print job parameters
@@ -254,10 +254,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: monitoring
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          test_completion_max_retries: ${{ env.TEST_COMPLETION_MAX_RETRIES }}
+          test_completion_retry_interval: ${{ env.TEST_COMPLETION_RETRY_INTERVAL }}
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
@@ -318,10 +318,10 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: monitoring
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          test_completion_max_retries: ${{ env.TEST_COMPLETION_MAX_RETRIES }}
+          test_completion_retry_interval: ${{ env.TEST_COMPLETION_RETRY_INTERVAL }}
           crd_list: ${{ steps.upgrade_monitoring_get_crds.outputs.crd_names }}
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
