@@ -166,8 +166,8 @@ jobs:
       matrix:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     env:
-      service_ready_max_retries: 200
-      service_ready_retry_interval: 10s
+      SERVICE_READY_MAX_RETRIES: ${{ needs.prepare.outputs.service_ready_max_retries }}
+      SERVICE_READY_RETRY_INTERVAL: ${{ needs.prepare.outputs.service_ready_retry_interval }}
     name: ${{ matrix.test.name }}
     steps:
       # == Start Common steps ==
@@ -273,8 +273,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: rabbitmq
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
 
       - name: Collect Diagnostics RabbitMQ installation
         if: ${{ !cancelled() && steps.rabbit_install.conclusion != 'skipped' }}
@@ -324,8 +324,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: rabbitmq
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
 
       - name: Collect Diagnostics RabbitMQ upgrade
         if: ${{ !cancelled() && steps.rabbit_upgrade.conclusion != 'skipped' }}

@@ -175,7 +175,7 @@ jobs:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
     env:
-      path_to_chart: charts/qubership-monitoring-operator
+      PATH_TO_CHART: charts/qubership-monitoring-operator
       SERVICE_READY_MAX_RETRIES: ${{ needs.prepare.outputs.service_ready_max_retries }}
       SERVICE_READY_RETRY_INTERVAL: ${{ needs.prepare.outputs.service_ready_retry_interval }}
       TEST_COMPLETION_MAX_RETRIES: 100
@@ -240,7 +240,7 @@ jobs:
           service_branch: ${{ matrix.test.install.version }}
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: charts/qubership-monitoring-operator
+          PATH_TO_CHART: charts/qubership-monitoring-operator
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 
@@ -248,7 +248,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
-          crd_location: ${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds
+          crd_location: ${{ inputs.repository_name}}/${{ env.PATH_TO_CHART}}/crds
 
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -287,7 +287,7 @@ jobs:
           deploy_mode: upgrade
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: charts/qubership-monitoring-operator
+          PATH_TO_CHART: charts/qubership-monitoring-operator
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 
@@ -311,7 +311,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: upgrade_monitoring_get_crds
         with:
-          crd_location: ${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds
+          crd_location: ${{ inputs.repository_name}}/${{ env.PATH_TO_CHART}}/crds
 
       - name: Verify Monitoring upgrade
         if: matrix.test.sequence == 'upgrade'

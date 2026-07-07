@@ -119,10 +119,6 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
-      - name: Check Allure configuration
-        if: inputs.allure == false
-        run: echo "::warning::Allure report generation has been forcibly disabled by the calling workflow (inputs.allure = false)"
-
       - name: Get latest tag
         id: get-latest-tag
         env:

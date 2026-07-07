@@ -94,10 +94,10 @@ on:
         required: true
 
 env:
-  namespace: zookeeper
-  service_ready_max_retries: 150
-  service_ready_retry_interval: 10s
-  path_to_chart: operator/charts/helm/zookeeper-service
+  NAMESPACE: zookeeper
+  SERVICE_READY_MAX_RETRIES: 150
+  SERVICE_READY_RETRY_INTERVAL: 10s
+  PATH_TO_CHART: operator/charts/helm/zookeeper-service
 
 jobs:
   prepare:
@@ -239,28 +239,28 @@ jobs:
           deploy_mode: install
           service_name: zookeeper-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.path_to_chart }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: zookeeper
 
       - name: Get Installed Zookeeper CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_zoo_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
 
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.namespace }}
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          namespace: ${{ env.NAMESPACE }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.namespace }}
+          namespace: ${{ env.NAMESPACE }}
           artifact_name: Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
       # == 02 End ===== Install Zookeeper [LATEST] =====
@@ -319,14 +319,14 @@ jobs:
           deploy_mode: upgrade
           service_name: zookeeper-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.path_to_chart }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: zookeeper
 
       - name: Get Upgraded Zookeeper CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: upgrade_zoo_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
 
       - name: Sleep 1m
         if: matrix.test.sequence == 'upgrade'
@@ -347,9 +347,9 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.namespace }}
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          namespace: ${{ env.NAMESPACE }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           crd_list: ${{ steps.upgrade_zoo_get_crds.outputs.crd_names }}
 
       # == Start ======= Specific steps for S3 =======
@@ -367,7 +367,7 @@ jobs:
         if: ${{ !cancelled() && steps.zoo_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.namespace }}
+          namespace: ${{ env.NAMESPACE }}
           artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
 
@@ -402,28 +402,28 @@ jobs:
           deploy_mode: install
           service_name: zookeeper-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.path_to_chart }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: zookeeper
 
       - name: Get Installed Zookeeper CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_zoo_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
 
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.namespace }}
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          namespace: ${{ env.NAMESPACE }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install_tls.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.namespace }}
+          namespace: ${{ env.NAMESPACE }}
           artifact_name: Install_tls_${{ inputs.service_branch }}
           service_branch: ${{ inputs.service_branch }}
 
@@ -483,28 +483,28 @@ jobs:
           deploy_mode: install
           service_name: zookeeper-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.path_to_chart }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: zookeeper
 
       - name: Get Installed Zookeeper CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_zoo_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
 
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.namespace }}
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          namespace: ${{ env.NAMESPACE }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install_tls_secrets.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.namespace }}
+          namespace: ${{ env.NAMESPACE }}
           artifact_name: Install_tls_secrets_${{ inputs.service_branch }}
           service_branch: ${{ inputs.service_branch }}
 
@@ -542,28 +542,28 @@ jobs:
           deploy_mode: install
           service_name: zookeeper-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.path_to_chart }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: zookeeper
 
       - name: Get Installed Zookeeper CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_zoo_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
 
       - name: Verify Zookeeper installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.namespace }}
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          namespace: ${{ env.NAMESPACE }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install_tls_cert.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.namespace }}
+          namespace: ${{ env.NAMESPACE }}
           artifact_name: Install_tls_cert_${{ inputs.service_branch }}
           service_branch: ${{ inputs.service_branch }}
 

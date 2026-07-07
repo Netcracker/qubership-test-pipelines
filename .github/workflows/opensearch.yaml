@@ -166,9 +166,9 @@ jobs:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
     env:
-      namespace: opensearch
-      service_ready_max_retries: 200
-      service_ready_retry_interval: 10s
+      NAMESPACE: opensearch
+      SERVICE_READY_MAX_RETRIES: ${{ needs.prepare.outputs.service_ready_max_retries }}
+      SERVICE_READY_RETRY_INTERVAL: ${{ needs.prepare.outputs.service_ready_retry_interval }}
       service_branch: ""
       path_to_chart: operator/charts/helm/opensearch-service
     steps:
@@ -281,20 +281,20 @@ jobs:
           restricted: ${{ matrix.test.restricted }}
           service_name: opensearch
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.path_to_chart }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: opensearch
 
       - name: Get Installed Opensearch CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_opensearch_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
 
       - name: Verify Opensearch installation [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: opensearch
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.install_opensearch_get_crds.outputs.crd_names }}
 
@@ -332,7 +332,7 @@ jobs:
           restricted: ${{ matrix.test.restricted }}
           service_name: opensearch
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.path_to_chart }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: opensearch
 
       - name: Get Upgraded Opensearch CRD name
@@ -340,7 +340,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: upgrade_opensearch_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.path_to_chart }}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
 
       - name: Sleep 1m after upgrade
         if: ${{ matrix.test.sequence == 'upgrade' }}
@@ -362,7 +362,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: opensearch
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
           service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
           crd_list: ${{ steps.upgrade_opensearch_get_crds.outputs.crd_names }}
 
