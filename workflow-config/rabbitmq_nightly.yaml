@@ -59,8 +59,8 @@ jobs:
   - name: Clean [${service_branch}] with Monitoring and Allure
     sequence: install
     monitoring: true
+    allure: true
     install:
       version: ${service_branch}
       template: templates/rabbitmq-service/rabbitmq_clean_sc_monitoring_allure.yml
       artifact_name: Clean_CURRENT_full_at
-      allure: true

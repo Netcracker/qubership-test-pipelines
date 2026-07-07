@@ -76,9 +76,9 @@ jobs:
     sequence: install
     restricted: false
     monitoring: true
+    allure: true
     install:
       version: ${service_branch}
       template: templates/zookeeper-service/zookeeper_install_APP_k8s_monitoring_allure.yml
       artifact_name: Clean_CURRENT_Monitoring
       s3: false
-      allure: true

@@ -350,7 +350,7 @@ jobs:
         run: echo "::warning::Allure report generation has been forcibly disabled by the calling workflow (inputs.allure = false)"
 
       - name: Add s3 backet for Allure report
-        if: matrix.test.install.allure == true && inputs.allure == true
+        if: matrix.test.allure == true && inputs.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
           --file='qubership-test-pipelines/${{ matrix.test.install.kafka_service_template }}'

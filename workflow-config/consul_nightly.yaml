@@ -85,8 +85,8 @@ jobs:
     sequence: install
     restricted: false
     monitoring: true
+    allure: true
     install:
       version: ${service_branch}
       template: templates/consul-service/consul_clean_all_on_sc_monitoring_allure.yml
       artifact_name: consul_clean_current_allure
-      allure: true

@@ -96,9 +96,9 @@ jobs:
     check_core_tests: true
     check_services_tests: true
     tls: false
+    allure: true
     install:
       version: ${service_branch}
       core_template: templates/pgskipper/patroni-core-fullat-allure.yaml
       services_template: templates/pgskipper/patroni-services-fullat-allure.yaml
       artifact_name: Clean_CURRENT_Allure
-      allure: true
