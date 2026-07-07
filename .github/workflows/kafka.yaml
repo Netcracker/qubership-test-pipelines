@@ -686,14 +686,14 @@ jobs:
     if: inputs.scope == 'nightly' && !inputs.skip_tests
     runs-on: ${{ inputs.runner_type }}
     env:
-      kfk_namespace: kafka
-      kfk_max_attempts: ${{ needs.prepare.outputs.service_ready_max_retries }}
-      kfk_timeout: ${{ needs.prepare.outputs.service_ready_retry_interval }}
-      kfk_path_to_chart: operator/charts/helm/kafka
-      kfk_srvc_namespace: kafka
-      kfk_srvc_max_attempts: ${{ needs.prepare.outputs.service_ready_srvc_max_retries }}
-      kfk_srvc_timeout: ${{ needs.prepare.outputs.service_ready_retry_interval }}
-      kfk_srvc_path_to_chart: operator/charts/helm/kafka-service
+      KFK_NAMESPACE: kafka
+      KFK_MAX_ATTEMPTS: ${{ needs.prepare.outputs.service_ready_max_retries }}
+      KFK_TIMEOUT: ${{ needs.prepare.outputs.service_ready_retry_interval }}
+      KFK_PATH_TO_CHART: operator/charts/helm/kafka
+      KFK_SRVC_NAMESPACE: kafka
+      KFK_SRVC_MAX_ATTEMPTS: ${{ needs.prepare.outputs.service_ready_srvc_max_retries }}
+      KFK_SRVC_TIMEOUT: ${{ needs.prepare.outputs.service_ready_retry_interval }}
+      KFK_SRVC_PATH_TO_CHART: operator/charts/helm/kafka-service
       zk_template: templates/zookeeper-service/zookeeper_install_APP_k8s.yml
       kafka_install_template: templates/kafka-service/kafka_clean_migration.yml
       kafka_migrate_template: templates/kafka-service/kafka_clean_migration_kraft.yml
