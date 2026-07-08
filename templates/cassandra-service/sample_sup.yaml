@@ -25,3 +25,4 @@ monitoringAgent:
 robotTests:
     install: true
     dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
+    tags: smoke
