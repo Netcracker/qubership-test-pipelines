@@ -694,10 +694,10 @@ jobs:
       KFK_SRVC_MAX_ATTEMPTS: ${{ needs.prepare.outputs.service_ready_srvc_max_retries }}
       KFK_SRVC_TIMEOUT: ${{ needs.prepare.outputs.service_ready_retry_interval }}
       KFK_SRVC_PATH_TO_CHART: operator/charts/helm/kafka-service
-      zk_template: templates/zookeeper-service/zookeeper_install_APP_k8s.yml
-      kafka_install_template: templates/kafka-service/kafka_clean_migration.yml
-      kafka_migrate_template: templates/kafka-service/kafka_clean_migration_kraft.yml
-      kafka_upgrade_template: templates/kafka-service/kafka_clean_kraft.yml
+      ZK_TEMPLATE: templates/zookeeper-service/zookeeper_install_APP_k8s.yml
+      KAFKA_INSTALL_TEMPLATE: templates/kafka-service/kafka_clean_migration.yml
+      KAFKA_MIGRATE_TEMPLATE: templates/kafka-service/kafka_clean_migration_kraft.yml
+      KAFKA_UPGRADE_TEMPLATE: templates/kafka-service/kafka_clean_kraft.yml
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -715,7 +715,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: zoo_install
         with:
-          path_to_template: ${{ env.zk_template }}
+          path_to_template: ${{ env.ZK_TEMPLATE }}
           service_branch: main
           service_name: zookeeper-service
           repository_name: Netcracker/qubership-zookeeper
@@ -750,7 +750,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_core_install
         with:
-          path_to_template: ${{ env.kafka_install_template }}
+          path_to_template: ${{ env.KAFKA_INSTALL_TEMPLATE }}
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka
           repository_name: ${{ inputs.repository_name }}
@@ -784,7 +784,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_service_install
         with:
-          path_to_template: ${{ env.kafka_install_template }}
+          path_to_template: ${{ env.KAFKA_INSTALL_TEMPLATE }}
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
@@ -820,7 +820,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_core_migrate
         with:
-          path_to_template: ${{ env.kafka_migrate_template }}
+          path_to_template: ${{ env.KAFKA_MIGRATE_TEMPLATE }}
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka
           repository_name: ${{ inputs.repository_name }}
@@ -853,7 +853,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_service_migrate
         with:
-          path_to_template: ${{ env.kafka_migrate_template }}
+          path_to_template: ${{ env.KAFKA_MIGRATE_TEMPLATE }}
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
@@ -886,7 +886,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_core_upgrade
         with:
-          path_to_template: ${{ env.kafka_upgrade_template }}
+          path_to_template: ${{ env.KAFKA_UPGRADE_TEMPLATE }}
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka
           repository_name: ${{ inputs.repository_name }}
@@ -919,7 +919,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: kafka_service_upgrade
         with:
-          path_to_template: ${{ env.kafka_upgrade_template }}
+          path_to_template: ${{ env.KAFKA_UPGRADE_TEMPLATE }}
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
