@@ -421,29 +421,29 @@ jobs:
           service_branch: ${{ matrix.test.install.version }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.KFK_SRVC_path_to_chart }}
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          path_to_chart: ${{ env.KFK_SRVC_PATH_TO_CHART }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
 
 
       - name: Get Installed Kafka-Service CRD name
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_kafka_service_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_path_to_chart}}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_PATH_TO_CHART}}/crds
 
       - name: Verify Kafka Service installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
-          service_ready_max_retries: ${{ env.KFK_SRVC_max_attempts }}
-          service_ready_retry_interval: ${{ env.KFK_SRVC_timeout }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
+          service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
+          service_ready_retry_interval: ${{ env.KFK_SRVC_TIMEOUT }}
           crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service installation
         if: ${{ !cancelled() && steps.kafka_service_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Install_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
       # == End kafka service installation tests =======
@@ -505,8 +505,8 @@ jobs:
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.KFK_SRVC_path_to_chart }}
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          path_to_chart: ${{ env.KFK_SRVC_PATH_TO_CHART }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           deploy_mode: upgrade
 
 
@@ -515,7 +515,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: upgrade_kafka_service_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_path_to_chart}}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_PATH_TO_CHART}}/crds
 
       - name: Sleep 1m after upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -525,7 +525,7 @@ jobs:
         if: inputs.scope == 'hardening'
         uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@cabbb90e9471163cfac84bd50ff0296b2803b44c # v2.3.0
         with:
-          namespaces: ${{ env.KFK_SRVC_namespace }}
+          namespaces: ${{ env.KFK_SRVC_NAMESPACE }}
           output-file: kafka-service-hardening-scan.json
           install-kubescape: true
           execute-trivy-scan: false
@@ -535,16 +535,16 @@ jobs:
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
-          service_ready_max_retries: ${{ env.KFK_SRVC_max_attempts }}
-          service_ready_retry_interval: ${{ env.KFK_SRVC_timeout }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
+          service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
+          service_ready_retry_interval: ${{ env.KFK_SRVC_TIMEOUT }}
           crd_list: ${{ steps.upgrade_kafka_service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service upgrade
         if: ${{ !cancelled() && steps.kafka_service_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Upgrade_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
       # == End kafka upgrade tests =======
@@ -641,8 +641,8 @@ jobs:
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.KFK_SRVC_path_to_chart }}
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          path_to_chart: ${{ env.KFK_SRVC_PATH_TO_CHART }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           deploy_mode: upgrade
 
 
@@ -654,16 +654,16 @@ jobs:
         if: matrix.test.sequence == 'migrate'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
-          service_ready_max_retries: ${{ env.KFK_SRVC_max_attempts }}
-          service_ready_retry_interval: ${{ env.KFK_SRVC_timeout }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
+          service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
+          service_ready_retry_interval: ${{ env.KFK_SRVC_TIMEOUT }}
           crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service upgrade (after migrate)
         if: ${{ !cancelled() && steps.kafka_service_upgrade_migrate.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: ServiceUpgrade_AfterMigrate_${{ matrix.service_image }}_${{ matrix.test.migrate.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
       # == End kafka migrate tests =======
@@ -788,30 +788,30 @@ jobs:
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.KFK_SRVC_path_to_chart }}
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          path_to_chart: ${{ env.KFK_SRVC_PATH_TO_CHART }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           image_replacement: qubership-docker-kafka-3
 
       - name: Get Kafka Service CRDs
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: service_get_crds
         with:
-          crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_path_to_chart }}/crds
+          crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_PATH_TO_CHART }}/crds
 
       # ===== 3. Kafka 3 Service with Zookeeper =====
       - name: Verify Kafka 3 Service
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
-          service_ready_max_retries: ${{ env.KFK_SRVC_max_attempts }}
-          service_ready_retry_interval: ${{ env.KFK_SRVC_timeout }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
+          service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
+          service_ready_retry_interval: ${{ env.KFK_SRVC_TIMEOUT }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka 3 Service
         if: ${{ !cancelled() && steps.kafka_service_install.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka3_Service
           service_branch: ${{ inputs.service_branch }}
 
@@ -857,8 +857,8 @@ jobs:
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.KFK_SRVC_path_to_chart }}
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          path_to_chart: ${{ env.KFK_SRVC_PATH_TO_CHART }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           deploy_mode: upgrade
           image_replacement: qubership-docker-kafka-3
 
@@ -868,16 +868,16 @@ jobs:
       - name: Verify Kafka 3 Service KRaft
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
-          service_ready_max_retries: ${{ env.KFK_SRVC_max_attempts }}
-          service_ready_retry_interval: ${{ env.KFK_SRVC_timeout }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
+          service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
+          service_ready_retry_interval: ${{ env.KFK_SRVC_TIMEOUT }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service KRaft
         if: ${{ !cancelled() && steps.kafka_service_migrate.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka3_Service_KRaft
           service_branch: ${{ inputs.service_branch }}
 
@@ -923,8 +923,8 @@ jobs:
           service_branch: ${{ inputs.service_branch }}
           service_name: kafka-service
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.KFK_SRVC_path_to_chart }}
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          path_to_chart: ${{ env.KFK_SRVC_PATH_TO_CHART }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           deploy_mode: upgrade
 
       - name: Sleep 1m after Kafka 4 upgrade
@@ -933,16 +933,16 @@ jobs:
       - name: Verify Kafka Service Kafka 4
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
-          service_ready_max_retries: ${{ env.KFK_SRVC_max_attempts }}
-          service_ready_retry_interval: ${{ env.KFK_SRVC_timeout }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
+          service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
+          service_ready_retry_interval: ${{ env.KFK_SRVC_TIMEOUT }}
           crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Kafka Service Kafka 4
         if: ${{ !cancelled() && steps.kafka_service_upgrade.conclusion != 'skipped' }}
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
-          namespace: ${{ env.KFK_SRVC_namespace }}
+          namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka4_Service
           service_branch: ${{ inputs.service_branch }}
 
