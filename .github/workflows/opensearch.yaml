@@ -362,7 +362,7 @@ jobs:
         with:
           namespace: opensearch
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           crd_list: ${{ steps.upgrade_opensearch_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Opensearch upgrade to [${{ matrix.test.upgrade.version }}]
