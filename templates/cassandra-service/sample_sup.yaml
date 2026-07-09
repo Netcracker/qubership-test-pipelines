@@ -19,8 +19,7 @@ backupDaemon:
       - standard
 dbaas:
   install: true
-  image: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:2.16.1
-  dockerImage: ghcr.io/netcracker/qubership-cassandra-dbaas-adapter:main
+  dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
 monitoringAgent:
     install: false
 robotTests:
