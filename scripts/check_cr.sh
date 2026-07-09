@@ -16,9 +16,6 @@ check_cr_conditions() {
 
     conditions_json=$(echo "$cr_json" | jq '.items[0].status.conditions')
 
-    echo "📄 Conditions JSON:"
-    echo "$conditions_json"
-
     if [ -z "$conditions_json" ] || [ "$conditions_json" = "null" ]; then
         echo "::warning:: Conditions not found"
         return 1
@@ -40,10 +37,14 @@ check_cr_conditions() {
     ) | .type' 2>/dev/null)
 
     if [ -n "$failed_conditions" ]; then
+        echo "📄 Conditions JSON:"
+        echo "$conditions_json"
         return 2
     elif [ -n "$in_progress_conditions" ]; then
         return 1
     elif [ -n "$successful_conditions" ]; then
+        echo "📄 Conditions JSON:"
+        echo "$conditions_json"
         return 0
     else
         echo "::warning:: No matching conditions found, considering as in progress"

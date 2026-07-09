@@ -215,6 +215,34 @@ runs:
             fi
         done
 
+    - name: Get robot results from test pod
+      shell: bash
+      if: always()
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      run: |
+        # ▶️ Get robot results from test pod
+        set +e
+        IFS=" " read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n "$NAMESPACE" 2>/dev/null | tr "\n" " ")"
+        test_pod=""
+        for pod in "${pods[@]}"; do
+          if [[ "$pod" == *"tests"* ]]; then
+            test_pod="$pod"
+            break
+          fi
+        done
+
+        if [[ -z "$test_pod" ]]; then
+          echo "ℹ️ No test pod found in namespace $NAMESPACE"
+          exit 0
+        fi
+
+        if kubectl cp "$test_pod":/opt/robot/output artifacts/robot-results/opt -n "$NAMESPACE" 2>/dev/null; then
+          echo "✅ Robot results copied successfully"
+        else
+          echo "ℹ️ No robot results to copy"
+        fi
+
     - name: Get All
       shell: bash
       if: always()

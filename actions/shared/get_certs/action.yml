@@ -1,10 +1,6 @@
 name: Get Certs Action
 description: GitHub Action to get certs from secret
 inputs:
-  service_name:
-    description: |
-      Helm release name
-    required: false
   secret_name:
     description: |
       Name of secret with certs

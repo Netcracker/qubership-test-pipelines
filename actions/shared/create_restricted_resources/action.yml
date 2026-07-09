@@ -6,18 +6,6 @@ inputs:
       Helm release name
     required: true
 
-  repository_name:
-    description: |
-      Service repository name (without organization prefix)
-      Example: 'qubership-consul' for https://github.com/Netcracker/qubership-consul
-    required: false
-
-  path_to_chart:
-    description: |
-      Path to helm chart within service repository
-      Example: 'charts/helm/consul-service'
-    required: false
-
   namespace:
     description: |
       Kubernetes namespace for service installation
