@@ -104,7 +104,7 @@ jobs:
       service_ready_retry_interval: ${{ steps.calc-timeout.outputs.service_ready_retry_interval }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -112,7 +112,7 @@ jobs:
           persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: Netcracker/qubership-test-pipelines
@@ -184,7 +184,7 @@ jobs:
           echo "$MATRIX_JSON"
 
       - name: Checkout pipeline
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: Netcracker/qubership-test-pipelines
@@ -386,7 +386,7 @@ jobs:
     needs: [Consul-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: Netcracker/qubership-test-pipelines
