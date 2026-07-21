@@ -100,9 +100,9 @@ on:
 
     secrets:
       AWS_S3_ACCESS_KEY_ID:
-        required: true
+        required: false
       AWS_S3_ACCESS_KEY_SECRET:
-        required: true
+        required: false
 
 jobs:
   prepare:
