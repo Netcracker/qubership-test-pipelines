@@ -19,4 +19,8 @@ jobs:
     steps:
       - name: Create Kubernetes Cluster
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_cluster@main
+        with:
+          enable-owner-references-permission-enforcement: true
 ```
+
+The `enable-owner-references-permission-enforcement` input is disabled by default. When enabled, the action uses a Kind configuration that preserves Kind's `NodeRestriction` admission plugin and adds `OwnerReferencesPermissionEnforcement`.
