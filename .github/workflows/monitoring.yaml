@@ -30,6 +30,11 @@ on:
         type: string
         required: false
         default: multi-node
+      enable-owner-references-permission-enforcement:
+        description: Enable OwnerReferencesPermissionEnforcement in the Kind API server
+        type: boolean
+        required: false
+        default: false
       scope:
         description: Monitoring Test Scope (pr, nightly or hardening)
         type: string
@@ -77,6 +82,11 @@ on:
         type: string
         required: false
         default: multi-node
+      enable-owner-references-permission-enforcement:
+        description: Enable OwnerReferencesPermissionEnforcement in the Kind API server
+        type: boolean
+        required: false
+        default: false
       scope:
         description: Monitoring Test Scope (pr, nightly or hardening)
         type: string
@@ -201,6 +211,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
         with:
           kind-layout: ${{ inputs.kind-layout }}
+          enable-owner-references-permission-enforcement: ${{ inputs.enable-owner-references-permission-enforcement }}
 
       # == Start ======= Specific steps for Allure report =======
       - name: Check Allure configuration
