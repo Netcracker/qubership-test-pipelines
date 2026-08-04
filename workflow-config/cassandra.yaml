@@ -7,3 +7,15 @@ jobs:
     sequence: install
     restricted: false
     artifact_name: Clean_CURRENT
+
+  - purpose: automation
+    name: Clean [${release_version}], Upgrade to [${service_branch}]
+    install_version: ${service_branch} #${release_version}
+    template: templates/cassandra-service/sample.yaml
+    template_operator: templates/cassandra-service/sample.yaml
+    template_services: templates/cassandra-service/sample_sup.yaml
+    upgrade_version: ${service_branch}
+    upgrade_template_services: templates/cassandra-service/sample_sup.yaml
+    sequence: upgrade
+    restricted: false
+    artifact_name: Clean_${release_version}_Upgrade_CURRENT
