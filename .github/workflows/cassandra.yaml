@@ -201,18 +201,12 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Install_${{ matrix.test.artifact_name }}
           service_branch: ${{ matrix.test.install_version }}
-
-      - name: Debug Cassandra resources
-        if: always()
-        shell: bash
-        run: |
-          echo "=== Deployments ==="
-          kubectl get deployment -n ${{ env.namespace }}
-          echo "=== ReplicaSets ==="
-          kubectl get replicaset -n ${{ env.namespace }}
       # == 02 End ===== Install Cassandra =====
 
       # == 03 Start ===== Install Cassandra Operator =====
+      - name: Print operator install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.template_operator }}
+
       - name: Install Cassandra Operator [${{ matrix.test.install_version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_operator_install
@@ -224,9 +218,6 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.path_to_chart_operator }}
           namespace: ${{ env.namespace }}
-
-      - name: Sleep 5m
-        run: sleep 5m
 
       - name: Verify Cassandra Operator installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -256,7 +247,7 @@ jobs:
           kubectl get pods -n ${{ env.namespace }}
       # == 03 End ===== Install Cassandra Operator =====
 
-      - name: Print install deployment parameters
+      - name: Print services install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template_services }}
 
       # == 04 Start ===== Install Cassandra Services =====
@@ -271,20 +262,6 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.path_to_chart_services }}
           namespace: ${{ env.namespace }}
-
-      - name: Sleep 5m
-        run: sleep 5m
-
-      - name: Debug Cassandra Services resources
-        if: always()
-        shell: bash
-        run: |
-          echo "=== Deployments ==="
-          kubectl get deployment -n ${{ env.namespace }}
-          echo "=== ReplicaSets ==="
-          kubectl get replicaset -n ${{ env.namespace }}
-          echo "=== Pods ==="
-          kubectl get pods -n ${{ env.namespace }}
 
       - name: Verify Cassandra Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
