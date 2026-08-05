@@ -119,7 +119,6 @@ jobs:
       - name: Get TLS certificates from secret
         uses: Netcracker/qubership-test-pipelines/actions/shared/get_certs@905b88900dc8c14291eaeff4eddcf4d4f734aee1 # v1.9.0
         with:
-          service_name: consul
           secret_name: consul-tls
           namespace: consul
 

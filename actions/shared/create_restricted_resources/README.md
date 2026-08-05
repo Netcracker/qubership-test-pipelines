@@ -144,8 +144,6 @@ jobs:
         uses: Netcracker/qubership-test-pipelines/actions/shared/create_restricted_resources@905b88900dc8c14291eaeff4eddcf4d4f734aee1 # v1.9.0
         with:
           service_name: consul
-          repository_name: Netcracker/qubership-consul
-          path_to_chart: charts/helm/consul-service
           namespace: consul
 ```
 

@@ -1,0 +1,15 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+kubeadmConfigPatches:
+- |
+  kind: ClusterConfiguration
+  apiServer:
+    extraArgs:
+      # extraArgs replaces the flag rather than merging into it, so
+      # NodeRestriction — Kind's own default — must be repeated here.
+      enable-admission-plugins: NodeRestriction,OwnerReferencesPermissionEnforcement
+nodes:
+- role: control-plane
+- role: worker
+- role: worker
+- role: worker

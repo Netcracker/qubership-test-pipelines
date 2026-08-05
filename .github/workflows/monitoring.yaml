@@ -30,6 +30,11 @@ on:
         type: string
         required: false
         default: multi-node
+      enable-owner-references-permission-enforcement:
+        description: Enable OwnerReferencesPermissionEnforcement in the Kind API server
+        type: boolean
+        required: false
+        default: false
       scope:
         description: Monitoring Test Scope (pr, nightly or hardening)
         type: string
@@ -40,6 +45,16 @@ on:
         type: boolean
         required: false
         default: false
+      allure:
+        description: Enable Allure report generation
+        type: boolean
+        required: false
+        default: true
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
 
   workflow_call:
     inputs:
@@ -67,6 +82,11 @@ on:
         type: string
         required: false
         default: multi-node
+      enable-owner-references-permission-enforcement:
+        description: Enable OwnerReferencesPermissionEnforcement in the Kind API server
+        type: boolean
+        required: false
+        default: false
       scope:
         description: Monitoring Test Scope (pr, nightly or hardening)
         type: string
@@ -77,12 +97,22 @@ on:
         type: boolean
         required: false
         default: false
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
+      allure:
+        description: Enable Allure report generation
+        type: boolean
+        required: false
+        default: true
 
     secrets:
       AWS_S3_ACCESS_KEY_ID:
-        required: true
+        required: false
       AWS_S3_ACCESS_KEY_SECRET:
-        required: true
+        required: false
 
 jobs:
   prepare:
@@ -91,9 +121,11 @@ jobs:
     outputs:
       versions: ${{ steps.process-versions.outputs.versions }}
       matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_ready_max_retries: ${{ steps.calc-timeout.outputs.service_ready_max_retries }}
+      service_ready_retry_interval: ${{ steps.calc-timeout.outputs.service_ready_retry_interval }}
     steps:
       - name: Checkout repo
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
@@ -101,12 +133,21 @@ jobs:
           persist-credentials: false
 
       - name: Checkout pipeline
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: ${{ github.repository_owner }}/qubership-test-pipelines
           path: qubership-test-pipelines
           persist-credentials: false
+
+
+      - name: Calculate verify timeout parameters
+        id: calc-timeout
+        run: |
+          RETRY_INTERVAL=10
+          MAX_RETRIES=$(( ${{ inputs.verify_timeout_minutes }} * 60 / RETRY_INTERVAL ))
+          echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
+          echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
 
       - name: Get latest tag
         id: get-latest-tag
@@ -144,11 +185,11 @@ jobs:
         test: ${{ fromJson(needs.prepare.outputs.matrix) }}
     name: ${{ matrix.test.name }}
     env:
-      path_to_chart: charts/qubership-monitoring-operator
-      test_completion_max_retries: 100
-      test_completion_retry_interval: 5s
-      service_ready_max_retries: 100
-      service_ready_retry_interval: 5s
+      PATH_TO_CHART: charts/qubership-monitoring-operator
+      SERVICE_READY_MAX_RETRIES: ${{ needs.prepare.outputs.service_ready_max_retries }}
+      SERVICE_READY_RETRY_INTERVAL: ${{ needs.prepare.outputs.service_ready_retry_interval }}
+      TEST_COMPLETION_MAX_RETRIES: 100
+      TEST_COMPLETION_RETRY_INTERVAL: 5s
     steps:
       # == 01 Start ======= Common pre-steps for all tests =======
       - name: Print job parameters
@@ -159,7 +200,7 @@ jobs:
           echo "$MATRIX_JSON"
 
       - name: Checkout pipeline
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: ${{ github.repository_owner }}/qubership-test-pipelines
@@ -170,17 +211,26 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
         with:
           kind-layout: ${{ inputs.kind-layout }}
+          enable-owner-references-permission-enforcement: ${{ inputs.enable-owner-references-permission-enforcement }}
 
       # == Start ======= Specific steps for Allure report =======
+      - name: Check Allure configuration
+        if: matrix.test.allure == true && inputs.allure == false
+        run: echo "::warning::Allure report generation has been forcibly disabled by the calling workflow (inputs.allure = false)"
+
       - name: Add s3 backet for Allure report
-        if: matrix.test.allure == true
+        if: matrix.test.allure == true && inputs.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
+          --path='integrationTests/atpReport/enabled'
+          --value='true'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpReport/atpStorage/username'
           --value='${{secrets.AWS_S3_ACCESS_KEY_ID}}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template }}'
           --path='integrationTests/atpReport/atpStorage/password'
           --value='${{secrets.AWS_S3_ACCESS_KEY_SECRET}}'
       # == End ======= Specific steps for Allure report =======
@@ -190,18 +240,18 @@ jobs:
       # == 01 End ======= Common pre-steps for all tests =======
 
       - name: Print clean install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
       # == 02 Start ======= Installation steps =======
-      - name: Install Monitoring [${{ matrix.test.install_version }}]
+      - name: Install Monitoring [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_install
         with:
-          path_to_template: ${{ matrix.test.template }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: charts/qubership-monitoring-operator
+          PATH_TO_CHART: charts/qubership-monitoring-operator
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 
@@ -209,18 +259,17 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
-          crd_location: ${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds
+          crd_location: ${{ inputs.repository_name}}/${{ env.PATH_TO_CHART}}/crds
 
       - name: Verify Monitoring installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: monitoring
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          test_completion_max_retries: ${{ env.TEST_COMPLETION_MAX_RETRIES }}
+          test_completion_retry_interval: ${{ env.TEST_COMPLETION_RETRY_INTERVAL }}
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-          check_tests: true
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
 
@@ -229,27 +278,27 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: monitoring
-          artifact_name: Installation_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Installation_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
 
       # == 02 End ======= Installation steps =======
 
       # == Start ======= Specific steps for upgrade tests =======
       - name: Print upgrade deployment parameters
         if: ${{ matrix.test.sequence == 'upgrade' }}
-        run: cat qubership-test-pipelines/${{ matrix.test.upgrade_template }}
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
 
-      - name: Upgrade Monitoring to [${{ matrix.test.upgrade_version }}]
+      - name: Upgrade Monitoring to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_upgrade
         with:
-          path_to_template: ${{ matrix.test.upgrade_template }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
           deploy_mode: upgrade
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: charts/qubership-monitoring-operator
+          PATH_TO_CHART: charts/qubership-monitoring-operator
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 
@@ -259,7 +308,7 @@ jobs:
 
       - name: Hardening Check
         if: inputs.scope == 'hardening'
-        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@cabbb90e9471163cfac84bd50ff0296b2803b44c # v2.3.0
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@8c6dbeb901920bae9f40d7d7b646d8d9127e1ce7 # v2.4.0
         with:
           namespaces: monitoring
           output-file: monitoring-hardening-scan.json
@@ -273,19 +322,18 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: upgrade_monitoring_get_crds
         with:
-          crd_location: ${{ inputs.repository_name}}/${{ env.path_to_chart}}/crds
+          crd_location: ${{ inputs.repository_name}}/${{ env.PATH_TO_CHART}}/crds
 
       - name: Verify Monitoring upgrade
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: monitoring
-          service_ready_max_retries: ${{ env.service_ready_max_retries }}
-          service_ready_retry_interval: ${{ env.service_ready_retry_interval }}
-          test_completion_max_retries: ${{ env.test_completion_max_retries }}
-          test_completion_retry_interval: ${{ env.test_completion_retry_interval }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          test_completion_max_retries: ${{ env.TEST_COMPLETION_MAX_RETRIES }}
+          test_completion_retry_interval: ${{ env.TEST_COMPLETION_RETRY_INTERVAL }}
           crd_list: ${{ steps.upgrade_monitoring_get_crds.outputs.crd_names }}
-          check_tests: true
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
 
@@ -294,8 +342,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: monitoring
-          artifact_name: Upgrade_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
 
       # == End ======= Specific steps for upgrade tests =======
 
@@ -305,7 +353,7 @@ jobs:
     needs: [Monitoring-Test-Cases]
     steps:
       - name: Checkout pipeline
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           ref: ${{ inputs.pipeline_branch }}
           repository: netcracker/qubership-test-pipelines
