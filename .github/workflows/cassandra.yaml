@@ -77,7 +77,7 @@ on:
 
 env:
   namespace: cassandra
-  path_to_chart_cassandra: cassandra/cassandra-image/deployments/charts/cassandra_5.0.7
+  path_to_chart_cassandra: cassandra/cassandra-image/deployments/charts/cassandra_5.0.8
   path_to_chart_operator: operator/charts/helm/cassandra-operator
   path_to_chart_services: services/service/charts/helm/cassandra-services
 
@@ -172,36 +172,14 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
-      # == Start TLS certs addition if needed =======
-      - name: TLS setup
-        # language=bash
+      # == Start ======= Specific steps for TLS =======
+      - name: Setup TLS
         if: matrix.test.tls == true
-        run: |
-          echo "::group::Install cert-manager"
-          helm repo add jetstack https://charts.jetstack.io --force-update
-          helm upgrade --install cert-manager jetstack/cert-manager --namespace cert-manager \
-            --create-namespace --version v1.16.3 --set prometheus.enabled=true   --set crds.enabled=true
-          echo "::endgroup::"
-          echo "::group::Create cert-manager entities"
-          kubectl apply -f qubership-test-pipelines/resources/test-issuer.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-certificate.yaml
-          sleep 10s
-          kubectl apply -f qubership-test-pipelines/resources/test-clusterissuer.yaml
-          echo "::endgroup::"
-          echo "::group::Get cert-manager resources"
-          kubectl get pods -n cert-manager
-          kubectl get secrets -n cert-manager
-          kubectl get certificates -A
-          echo "::endgroup::"
-          echo "::group:: Get clusterissuer"
-          kubectl get clusterissuer
-          kubectl get clusterissuer test-clusterissuer -o yaml
-          echo "::endgroup::"
-      # == End TLS certs addition if needed =======
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+      # == End ======= Specific steps for TLS =======
 
       # == Start Monitoring installation tests =======
-      - name: Install Monitoring [${{ matrix.test.install_version }}]
+      - name: Install Monitoring [${{ matrix.test.install.version }}]
         if: matrix.test.monitoring == true
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_install
@@ -239,7 +217,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: monitoring
-          artifact_name: Install_Monitoring_${{ matrix.test.artifact_name }}
+          artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
           service_branch: main
       # == End Monitoring installation tests =======
 
@@ -248,22 +226,22 @@ jobs:
         if: matrix.test.allure == true
         run: >-
           python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template_services }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}'
           --path='integrationTests/atpReport/atpStorage/username'
           --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}'
           && python qubership-test-pipelines/scripts/update_yaml.py
-          --file='qubership-test-pipelines/${{ matrix.test.template_services }}'
+          --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}'
           --path='integrationTests/atpReport/atpStorage/password'
           --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}'
       # == End ======= Specific steps for Allure report =======
 
       # == 02 Start ===== Install Cassandra =====
-      - name: Install Cassandra [${{ matrix.test.install_version }}]
+      - name: Install Cassandra [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_install
         with:
-          path_to_template: ${{ matrix.test.template }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
           deploy_mode: install
           service_name: cassandra
           repository_name: ${{ inputs.repository_name }}
@@ -285,20 +263,20 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
-          artifact_name: Cassandra_Install_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Cassandra_Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
       # == 02 End ===== Install Cassandra =====
 
       # == 03 Start ===== Install Cassandra Operator =====
       - name: Print operator install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template_operator }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template_operator }}
 
-      - name: Install Cassandra Operator [${{ matrix.test.install_version }}]
+      - name: Install Cassandra Operator [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_operator_install
         with:
-          path_to_template: ${{ matrix.test.template_operator }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.template_operator }}
+          service_branch: ${{ matrix.test.install.version }}
           deploy_mode: install
           service_name: cassandra-operator
           repository_name: ${{ inputs.repository_name }}
@@ -320,8 +298,8 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
-          artifact_name: Cassandra_Operator_Install_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Cassandra_Operator_Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
       - name: Debug Cassandra Operator resources
         if: always()
         shell: bash
@@ -337,7 +315,7 @@ jobs:
       # == Start ======= Specific steps for S3 =======
       - name: Create S3 bucket
         id: create_bucket
-        if: matrix.test.s3 == true
+        if: matrix.test.install.s3 == true
         uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
@@ -346,33 +324,33 @@ jobs:
           prefix: cassandra
 
       - name: Add S3 secrets to Cassandra services template
-        if: matrix.test.s3 == true
+        if: matrix.test.install.s3 == true
         # zizmor: ignore[template-injection]
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.template_services }}' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
             --path='backupDaemon/s3/keyId' \
             --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.template_services }}' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
             --path='backupDaemon/s3/keySecret' \
             --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.template_services }}' \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
             --path='backupDaemon/s3/bucket' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
 
       - name: Print services install deployment parameters
-        run: cat qubership-test-pipelines/${{ matrix.test.template_services }}
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template_services }}
 
       # == 04 Start ===== Install Cassandra Services =====
-      - name: Install Cassandra Services [${{ matrix.test.install_version }}]
+      - name: Install Cassandra Services [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_services_install
         with:
-          path_to_template: ${{ matrix.test.template_services }}
-          service_branch: ${{ matrix.test.install_version }}
+          path_to_template: ${{ matrix.test.install.template_services }}
+          service_branch: ${{ matrix.test.install.version }}
           deploy_mode: install
           service_name: cassandra-services
           repository_name: ${{ inputs.repository_name }}
@@ -380,8 +358,8 @@ jobs:
           namespace: ${{ env.namespace }}
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Sleep 5m
-        run: sleep 5m
+      - name: Sleep 10m
+        run: sleep 10m
 
       - name: Verify Cassandra Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -397,13 +375,13 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
-          artifact_name: Cassandra_Services_Install_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.install_version }}
+          artifact_name: Cassandra_Services_Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
       # == 04 End ===== Install Cassandra Services =====
 
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
-        if: always() && matrix.test.s3 == true
+        if: always() && matrix.test.install.s3 == true
         uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
@@ -412,21 +390,54 @@ jobs:
           region: us-east-1
       # == End ======= Specific steps for S3 =======
 
-      # == 05 Start ===== Upgrade Cassandra Services =====
-      - name: Upgrade Cassandra Services to [${{ matrix.test.upgrade_version }}]
+      # == 05 Start ===== Upgrade Cassandra Operator =====
+      - name: Upgrade Cassandra Operator to [${{ matrix.test.upgrade.version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_operator_upgrade
+        with:
+          path_to_template: ${{ matrix.test.upgrade.template_operator }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+          deploy_mode: upgrade
+          service_name: cassandra-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_operator }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Verify Cassandra Operator upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
+
+      - name: Collect Diagnostics Cassandra Operator upgrade
+        if: ${{ !cancelled() && steps.cassandra_operator_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+      # == 05 End ===== Upgrade Cassandra Operator =====
+
+      # == 06 Start ===== Upgrade Cassandra Services =====
+      - name: Upgrade Cassandra Services to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_services_upgrade
         with:
-          path_to_template: ${{ matrix.test.upgrade_template_services }}
-          service_branch: ${{ matrix.test.upgrade_version }}
+          path_to_template: ${{ matrix.test.upgrade.template_services }}
+          service_branch: ${{ matrix.test.upgrade.version }}
           deploy_mode: upgrade
           service_name: cassandra-services
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.path_to_chart_services }}
           namespace: ${{ env.namespace }}
           restricted: ${{ matrix.test.restricted }}
-          test_tags: ${{ matrix.test.test_tags }}
 
       - name: Verify Cassandra Services upgrade
         if: matrix.test.sequence == 'upgrade'
@@ -443,9 +454,9 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
-          artifact_name: Cassandra_Services_Upgrade_${{ matrix.test.artifact_name }}
-          service_branch: ${{ matrix.test.upgrade_version }}
-      # == 05 End ===== Upgrade Cassandra Services =====
+          artifact_name: Cassandra_Services_Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+      # == 06 End ===== Upgrade Cassandra Services =====
 
   final-status-check:
     if: ${{ always() }}

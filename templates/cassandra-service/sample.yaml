@@ -19,7 +19,7 @@ backupDaemon:
     storageClasses:
       - standard
 dbaas:
-  install: true
+  install: false
 robotTests:
   install: true
 DEPLOY_W_HELM: "true"

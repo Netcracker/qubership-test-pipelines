@@ -21,11 +21,12 @@ backupDaemon:
       storageClasses:
         - standard
 dbaas:
-    install: true
+    install: false
 monitoringAgent:
     install: true
 robotTests:
     install: true
+    tags: smoke
 integrationTests:
     atpReport:
       atpStorage:

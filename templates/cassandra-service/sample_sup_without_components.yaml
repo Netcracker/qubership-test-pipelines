@@ -1,5 +1,3 @@
-# Cassandra Services W/O Backup and Dbaas values template - placeholder
-# Copy parameters from qubership-cassandra-operator repository samples
 operator:
     image: ghcr.io/netcracker/cassandra-supplementary:main
     initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
@@ -15,14 +13,16 @@ cassandra:
             storageClasses:
               - standard
 backupDaemon:
-    install: false
-    storage:
-      size: 4Gi
-      storageClasses:
-        - standard
+  install: false
+  storage:
+    storageClasses:
+      - standard
 dbaas:
-    install: false
+  install: false
+  dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
 monitoringAgent:
-    install: true
+    install: false
 robotTests:
-    install: true
+    install: false
+    dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
+    tags: smoke

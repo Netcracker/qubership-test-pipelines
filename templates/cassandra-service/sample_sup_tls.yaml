@@ -1,10 +1,9 @@
-# Cassandra Services TLS values template - placeholder
-# Copy TLS parameters from qubership-cassandra-operator repository samples
 operator:
     image: ghcr.io/netcracker/cassandra-supplementary:main
     initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 cassandra:
     install: true
+    tls: true
     deploymentSchema:
       dataCenters:
         - name: dc1
@@ -14,15 +13,22 @@ cassandra:
             size: 4Gi
             storageClasses:
               - standard
+tls:
+    enabled: true
+    generateCerts:
+      enabled: true
+      clusterIssuerName: test-clusterissuer
 backupDaemon:
-    install: true
-    storage:
-      size: 4Gi
-      storageClasses:
-        - standard
+  install: true
+  storage:
+    storageClasses:
+      - standard
 dbaas:
-    install: true
+  install: true
+  dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
 monitoringAgent:
-    install: true
+    install: false
 robotTests:
     install: true
+    dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
+    tags: smoke
