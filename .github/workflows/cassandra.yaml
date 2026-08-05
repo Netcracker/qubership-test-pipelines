@@ -269,6 +269,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.path_to_chart_cassandra }}
           namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
 
       - name: Verify Cassandra installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -303,6 +304,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.path_to_chart_operator }}
           namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
 
       - name: Verify Cassandra Operator installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -332,6 +334,35 @@ jobs:
           kubectl get pods -n ${{ env.namespace }}
       # == 03 End ===== Install Cassandra Operator =====
 
+      # == Start ======= Specific steps for S3 =======
+      - name: Create S3 bucket
+        id: create_bucket
+        if: matrix.test.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: cassandra
+
+      - name: Add S3 secrets to Cassandra services template
+        if: matrix.test.s3 == true
+        # zizmor: ignore[template-injection]
+        run: |
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.template_services }}' \
+            --path='backupDaemon/s3/keyId' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.template_services }}' \
+            --path='backupDaemon/s3/keySecret' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.template_services }}' \
+            --path='backupDaemon/s3/bucket' \
+            --value="${{ steps.create_bucket.outputs.bucket_name }}"
+      # == End ======= Specific steps for S3 =======
+
       - name: Print services install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.template_services }}
 
@@ -347,6 +378,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.path_to_chart_services }}
           namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
 
       - name: Sleep 5m
         run: sleep 5m
@@ -393,6 +425,7 @@ jobs:
           repository_name: ${{ inputs.repository_name }}
           path_to_chart: ${{ env.path_to_chart_services }}
           namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
           test_tags: ${{ matrix.test.test_tags }}
 
       - name: Verify Cassandra Services upgrade

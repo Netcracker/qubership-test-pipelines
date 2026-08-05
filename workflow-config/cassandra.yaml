@@ -1,16 +1,8 @@
 jobs:
-  - name: Clean [${service_branch}] Install
-    install_version: ${service_branch}
-    template: templates/cassandra-service/sample.yaml
-    template_operator: templates/cassandra-service/sample.yaml
-    template_services: templates/cassandra-service/sample_sup.yaml
-    sequence: install
-    restricted: false
-    artifact_name: Clean_CURRENT
-
+  ## A special configuration section for generating jobs for installing previous releases on the current version
   - purpose: automation
     name: Clean [${release_version}], Upgrade to [${service_branch}]
-    install_version: ${service_branch} #${release_version}
+    install_version: ${release_version}
     template: templates/cassandra-service/sample.yaml
     template_operator: templates/cassandra-service/sample.yaml
     template_services: templates/cassandra-service/sample_sup.yaml
@@ -19,3 +11,74 @@ jobs:
     sequence: upgrade
     restricted: false
     artifact_name: Clean_${release_version}_Upgrade_CURRENT
+  ## ===============================================================================
+
+  - name: Clean [${service_branch}], Update [${service_branch}] Diff Params
+    install_version: ${service_branch}
+    template: templates/cassandra-service/sample.yaml
+    template_operator: templates/cassandra-service/sample.yaml
+    template_services: templates/cassandra-service/sample_sup.yaml
+    upgrade_version: ${service_branch}
+    upgrade_template_services: templates/cassandra-service/sample_sup_updated.yaml
+    sequence: upgrade
+    restricted: false
+    artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params
+
+  - name: Clean [${service_branch}] in non-TLS
+    install_version: ${service_branch}
+    template: templates/cassandra-service/sample.yaml
+    template_operator: templates/cassandra-service/sample.yaml
+    template_services: templates/cassandra-service/sample_sup.yaml
+    sequence: install
+    restricted: false
+    artifact_name: Clean_CURRENT_non-TLS
+
+  - name: Clean [${service_branch}] in TLS
+    install_version: ${service_branch}
+    template: templates/cassandra-service/sample_tls.yaml
+    template_operator: templates/cassandra-service/sample_tls.yaml
+    template_services: templates/cassandra-service/sample_sup_tls.yaml
+    sequence: install
+    tls: true
+    restricted: false
+    artifact_name: Clean_CURRENT_TLS
+
+  - name: Clean [${service_branch}] on S3 storage
+    install_version: ${service_branch}
+    template: templates/cassandra-service/sample.yaml
+    template_operator: templates/cassandra-service/sample.yaml
+    template_services: templates/cassandra-service/sample_sup_s3.yaml
+    sequence: install
+    s3: true
+    restricted: false
+    artifact_name: Clean_CURRENT_S3
+
+  - name: Clean [${service_branch}] W/O Backup and Dbaas
+    install_version: ${service_branch}
+    template: templates/cassandra-service/sample.yaml
+    template_operator: templates/cassandra-service/sample.yaml
+    template_services: templates/cassandra-service/sample_sup_without_components.yaml
+    sequence: install
+    restricted: false
+    artifact_name: Clean_CURRENT_WO_Backup_Dbaas
+
+  - name: Clean [${service_branch}] Restricted
+    install_version: ${service_branch}
+    template: templates/cassandra-service/sample.yaml
+    template_operator: templates/cassandra-service/sample.yaml
+    template_services: templates/cassandra-service/sample_sup.yaml
+    sequence: install
+    restricted: true
+    artifact_name: Clean_CURRENT_Restricted
+
+  - purpose: automation
+    name: Clean [${release_version}] Restricted, Upgrade to [${service_branch}] Restricted
+    install_version: ${release_version}
+    template: templates/cassandra-service/sample.yaml
+    template_operator: templates/cassandra-service/sample.yaml
+    template_services: templates/cassandra-service/sample_sup.yaml
+    upgrade_version: ${service_branch}
+    upgrade_template_services: templates/cassandra-service/sample_sup.yaml
+    sequence: upgrade
+    restricted: true
+    artifact_name: Clean_${release_version}_Restricted_Upgrade_CURRENT_Restricted
