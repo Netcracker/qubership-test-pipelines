@@ -27,6 +27,10 @@ monitoringAgent:
 robotTests:
     install: true
     tags: smoke
+    iteration: "1"
+consulRegistration:
+    Enabled: false
+    Port: "8500"
 integrationTests:
     atpReport:
       atpStorage:

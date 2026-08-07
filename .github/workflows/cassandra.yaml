@@ -329,15 +329,15 @@ jobs:
         run: |
           python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
-            --path='backupDaemon/s3/keyId' \
+            --path='backupDaemon/s3/accessKeyId' \
             --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
-            --path='backupDaemon/s3/keySecret' \
+            --path='backupDaemon/s3/accessKeySecret' \
             --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
           && python qubership-test-pipelines/scripts/update_yaml.py \
             --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
-            --path='backupDaemon/s3/bucket' \
+            --path='backupDaemon/s3/bucketName' \
             --value="${{ steps.create_bucket.outputs.bucket_name }}"
       # == End ======= Specific steps for S3 =======
 

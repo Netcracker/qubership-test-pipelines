@@ -19,9 +19,9 @@ backupDaemon:
       storageClasses:
         - standard
     s3:
-      keyId: ""
-      keySecret: ""
-      bucket: ""
+      accessKeyId: ""
+      accessKeySecret: ""
+      bucketName: ""
 dbaas:
   install: true
   dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
@@ -31,3 +31,7 @@ robotTests:
     install: true
     dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
     tags: smoke
+    iteration: "1"
+consulRegistration:
+    Enabled: false
+    Port: "8500"
