@@ -2,6 +2,8 @@ operator:
     image: ghcr.io/netcracker/cassandra-supplementary:main
     initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 cassandra:
+    username: K~9z!dX@_QwRm_pT
+    password: XtR[p%VU4sJj61a!@#:&*-(_K=Nz
     install: true
     resources:
       requests:
@@ -28,15 +30,21 @@ backupDaemon:
       limits:
         cpu: 500m
         memory: 512Mi
+    username: B5^2p|7tY
+    password: R&19wK8q|
     storage:
-      size: 4Gi
       storageClasses:
         - standard
 dbaas:
     install: true
     dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
+    adapter:
+      username: 7dQ5|*k2S
+      password: 9n*3PM07|s
     aggregator:
       dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas-infra:8080
+      username: cluster-dba_7dQ5|*k2S
+      password: Hnmq3344_PQ-9n*3PM07|s
 monitoringAgent:
     install: false
 robotTests:

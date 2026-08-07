@@ -3,6 +3,13 @@ operator:
     initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 cassandra:
     install: true
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
     deploymentSchema:
       dataCenters:
         - name: dc1
@@ -13,20 +20,17 @@ cassandra:
             storageClasses:
               - standard
 backupDaemon:
-  install: false
-  storage:
-    storageClasses:
-      - standard
+    install: false
 dbaas:
-  install: false
-  dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
+    install: false
 monitoringAgent:
     install: false
 robotTests:
-    install: false
+    install: true
     dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
-    tags: smoke
+    tags: check_cassandra_images
     iteration: "1"
 consulRegistration:
     Enabled: false
     Port: "8500"
+waitTimeout: 3000

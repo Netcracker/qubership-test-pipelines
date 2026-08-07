@@ -4,6 +4,13 @@ operator:
 cassandra:
     install: true
     tls: true
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
     deploymentSchema:
       dataCenters:
         - name: dc1
@@ -19,13 +26,23 @@ tls:
       enabled: true
       clusterIssuerName: test-clusterissuer
 backupDaemon:
-  install: true
-  storage:
-    storageClasses:
-      - standard
+    install: true
+    resources:
+      requests:
+        cpu: 250m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    storage:
+      size: 4Gi
+      storageClasses:
+        - standard
 dbaas:
-  install: true
-  dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
+    install: true
+    dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
+    aggregator:
+      dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas-infra:8080
 monitoringAgent:
     install: false
 robotTests:

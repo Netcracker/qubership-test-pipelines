@@ -29,7 +29,6 @@ backupDaemon:
         cpu: 500m
         memory: 512Mi
     storage:
-      size: 4Gi
       storageClasses:
         - standard
 dbaas:

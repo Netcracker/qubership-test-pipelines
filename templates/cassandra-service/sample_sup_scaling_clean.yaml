@@ -13,7 +13,7 @@ cassandra:
     deploymentSchema:
       dataCenters:
         - name: dc1
-          replicas: 3
+          replicas: 2
           seeds: 1
           storage:
             size: 4Gi
@@ -29,7 +29,6 @@ backupDaemon:
         cpu: 500m
         memory: 512Mi
     storage:
-      size: 4Gi
       storageClasses:
         - standard
 dbaas:

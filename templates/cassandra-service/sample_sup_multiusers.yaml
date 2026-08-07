@@ -35,6 +35,7 @@ backupDaemon:
 dbaas:
     install: true
     dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
+    multiUsers: true
     aggregator:
       dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas-infra:8080
 monitoringAgent:
@@ -42,9 +43,10 @@ monitoringAgent:
 robotTests:
     install: true
     dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
-    tags: smoke
+    tags: dbaas_multiple_users
     iteration: "1"
 consulRegistration:
     Enabled: false
     Port: "8500"
-waitTimeout: 3000
+DEPLOY_W_HELM: true
+ESCAPE_SEQUENCE: true

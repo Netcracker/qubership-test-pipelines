@@ -358,8 +358,8 @@ jobs:
           namespace: ${{ env.namespace }}
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Sleep 10m
-        run: sleep 10m
+      - name: Sleep 20m
+        run: sleep 20m
 
       - name: Verify Cassandra Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation

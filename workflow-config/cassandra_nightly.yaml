@@ -75,6 +75,82 @@ jobs:
       template_services: templates/cassandra-service/sample_sup_without_components.yaml
       artifact_name: Clean_CURRENT_WO_Backup_Dbaas
 
+  - name: Clean [${service_branch}] With Not Default Creds
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/cassandra-service/sample.yaml
+      template_operator: templates/cassandra-service/sample.yaml
+      template_services: templates/cassandra-service/sample_sup_not_default_creds.yaml
+      artifact_name: Clean_CURRENT_Not_Default_Creds
+
+  - name: Update [${service_branch}] With Reaper
+    sequence: upgrade
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/cassandra-service/sample.yaml
+      template_operator: templates/cassandra-service/sample.yaml
+      template_services: templates/cassandra-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT_Update_CURRENT_Reaper
+    upgrade:
+      version: ${service_branch}
+      template_operator: templates/cassandra-service/sample.yaml
+      template_services: templates/cassandra-service/sample_sup_reaper.yaml
+      artifact_name: Clean_CURRENT_Update_CURRENT_Reaper
+
+  - name: Clean [${service_branch}] With Custom Configurations
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/cassandra-service/sample.yaml
+      template_operator: templates/cassandra-service/sample.yaml
+      template_services: templates/cassandra-service/sample_sup_custom_configuration.yaml
+      artifact_name: Clean_CURRENT_Custom_Configuration
+
+  - name: Check [${service_branch}] Scaling Case
+    sequence: upgrade
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/cassandra-service/sample.yaml
+      template_operator: templates/cassandra-service/sample.yaml
+      template_services: templates/cassandra-service/sample_sup_scaling_clean.yaml
+      artifact_name: Clean_CURRENT_Scaling_Upgrade
+    upgrade:
+      version: ${service_branch}
+      template_operator: templates/cassandra-service/sample.yaml
+      template_services: templates/cassandra-service/sample_sup_scaling_upgrade.yaml
+      artifact_name: Clean_CURRENT_Scaling_Upgrade
+
+  - name: Upgrade [${service_branch}] From Non-TLS To TLS
+    sequence: upgrade
+    restricted: false
+    tls: true
+    install:
+      version: ${service_branch}
+      template: templates/cassandra-service/sample.yaml
+      template_operator: templates/cassandra-service/sample.yaml
+      template_services: templates/cassandra-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT_Upgrade_TLS
+    upgrade:
+      version: ${service_branch}
+      template_operator: templates/cassandra-service/sample_tls.yaml
+      template_services: templates/cassandra-service/sample_sup_tls.yaml
+      artifact_name: Clean_CURRENT_Upgrade_TLS
+
+  - name: Clean [${service_branch}] multiUsers
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/cassandra-service/sample.yaml
+      template_operator: templates/cassandra-service/sample.yaml
+      template_services: templates/cassandra-service/sample_sup_multiusers.yaml
+      artifact_name: Clean_CURRENT_MultiUsers
+
   - name: Clean [${service_branch}] Restricted
     sequence: install
     restricted: true

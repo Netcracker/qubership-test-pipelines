@@ -3,6 +3,13 @@ operator:
     initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 cassandra:
     install: true
+    resources:
+      requests:
+        cpu: 250m
+        memory: 1Gi
+      limits:
+        cpu: 1000m
+        memory: 3Gi
     deploymentSchema:
       dataCenters:
         - name: dc1
@@ -14,17 +21,26 @@ cassandra:
               - standard
 backupDaemon:
     install: true
+    resources:
+      limits:
+        memory: 1Gi
+        cpu: 250m
     storage:
-      size: 4Gi
+      size: 1Gi
       storageClasses:
         - standard
+    storageDirectory: /cassandra/backup-storage
     s3:
+      enabled: true
+      secretName: cassandra-backup-s3-credentials
+      bucketName: ""
       accessKeyId: ""
       accessKeySecret: ""
-      bucketName: ""
 dbaas:
-  install: true
-  dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
+    install: true
+    dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
+    aggregator:
+      dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas-infra:8080
 monitoringAgent:
     install: false
 robotTests:
@@ -35,3 +51,4 @@ robotTests:
 consulRegistration:
     Enabled: false
     Port: "8500"
+waitTimeout: 3000
