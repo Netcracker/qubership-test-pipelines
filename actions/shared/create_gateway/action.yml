@@ -1,0 +1,169 @@
+name: Create Gateway API Gateway
+description: >
+  A GitHub Action that installs Gateway API CRDs and Istio into an OpenShift/MicroShift
+  cluster, creates a Gateway for the monitoring namespace, and configures CoreDNS with a
+  wildcard *.testdomain.local DNS zone pointing to it.
+inputs:
+  namespace:
+    description: |
+      Namespace the Gateway is created in (also created if missing)
+    required: false
+    default: monitoring
+  gateway-name:
+    description: |
+      Name of the created Gateway resource
+    required: false
+    default: monitoring-gateway
+  tls-secret-name:
+    description: |
+      Name of an existing kubernetes.io/tls Secret (in the same namespace) to terminate
+      HTTPS on the Gateway. When empty, only the HTTP listener is created.
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Install Gateway API CRDs
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Install Gateway API CRDs
+        kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml
+
+    - name: Install Istio
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Install Istio
+        curl -fsSL -o istio.tar.gz \
+          "https://github.com/istio/istio/releases/download/1.24.2/istio-1.24.2-linux-amd64.tar.gz"
+        tar -xzf istio.tar.gz
+        sudo mv istio-1.24.2/bin/istioctl /usr/local/bin/istioctl
+        istioctl install --set profile=minimal -y
+
+    - name: Create namespace
+      shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
+      run: |
+        # ▶️ Create namespace
+        kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Create Gateway
+      shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+        GATEWAY_NAME: ${{ inputs.gateway-name }}
+        TLS_SECRET_NAME: ${{ inputs.tls-secret-name }}
+      # language=bash
+      run: |
+        # ▶️ Create Gateway
+        {
+          echo "apiVersion: gateway.networking.k8s.io/v1"
+          echo "kind: Gateway"
+          echo "metadata:"
+          echo "  name: ${GATEWAY_NAME}"
+          echo "  namespace: ${NAMESPACE}"
+          echo "spec:"
+          echo "  gatewayClassName: istio"
+          echo "  listeners:"
+          echo "  - name: http"
+          echo "    port: 80"
+          echo "    protocol: HTTP"
+          echo "    hostname: \"*.testdomain.local\""
+          echo "    allowedRoutes:"
+          echo "      namespaces:"
+          echo "        from: Same"
+          if [ -n "${TLS_SECRET_NAME}" ]; then
+            echo "  - name: https"
+            echo "    port: 443"
+            echo "    protocol: HTTPS"
+            echo "    hostname: \"*.testdomain.local\""
+            echo "    tls:"
+            echo "      mode: Terminate"
+            echo "      certificateRefs:"
+            echo "        - name: ${TLS_SECRET_NAME}"
+            echo "    allowedRoutes:"
+            echo "      namespaces:"
+            echo "        from: Same"
+          fi
+        } | kubectl apply -f -
+
+    - name: Get cluster IP of Gateway service
+      id: gateway-ip
+      shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+        GATEWAY_NAME: ${{ inputs.gateway-name }}
+      # language=bash
+      run: |
+        # ▶️ Get cluster IP of Gateway service
+        for i in $(seq 1 30); do
+          IP="$(kubectl get svc -n "${NAMESPACE}" "${GATEWAY_NAME}-istio" -o jsonpath='{.spec.clusterIP}' 2>/dev/null || true)"
+          if [ -n "${IP}" ]; then
+            echo "gateway_ip=${IP}" >> "$GITHUB_OUTPUT"
+            echo "Gateway ClusterIP: ${IP}"
+            exit 0
+          fi
+          sleep 5
+        done
+        echo "::error::Timed out waiting for the Gateway service ClusterIP"
+        exit 1
+
+    - name: Patch CoreDNS with wildcard record to testdomain.local zone
+      shell: bash
+      env:
+        GATEWAY_IP: ${{ steps.gateway-ip.outputs.gateway_ip }}
+      # language=bash
+      run: |
+        # ▶️ Patch CoreDNS with wildcard record to testdomain.local zone
+        CURRENT_COREFILE="$(kubectl get configmap dns-default -n openshift-dns -o jsonpath='{.data.Corefile}')"
+        # Drop any testdomain.local zone left over from a previous run of this action,
+        # then append a fresh one pointing at the current Gateway ClusterIP.
+        BASE_COREFILE="$(echo "${CURRENT_COREFILE}" | awk '/^testdomain\.local:5353 \{/{skip=1} skip{if (/^\}/) skip=0; next} {print}')"
+        cat <<EOF | kubectl apply -f -
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: dns-default
+          namespace: openshift-dns
+          labels:
+            dns.operator.openshift.io/owning-dns: default
+        data:
+          Corefile: |
+        $(echo "${BASE_COREFILE}" | sed 's/^/    /')
+            testdomain.local:5353 {
+                template ANY ANY {
+                    match .*\.testdomain\.local\.\$
+                    answer "{{ .Name }} 60 IN A ${GATEWAY_IP}"
+                    fallthrough
+                }
+            }
+        EOF
+
+    - name: Restart CoreDNS pods to apply changes
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Restart CoreDNS pods to apply changes
+        kubectl delete pod -n openshift-dns -l dns.operator.openshift.io/daemonset-dns=default
+
+    - name: Wait for CoreDNS
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Wait for CoreDNS
+        kubectl wait --namespace openshift-dns --for=condition=Ready pods \
+          --selector=dns.operator.openshift.io/daemonset-dns=default --timeout=180s
+
+    - name: Get pods and events
+      shell: bash
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+      # language=bash
+      run: |
+        # ▶️ Get pods and events
+        kubectl get pods -n istio-system
+        kubectl get pods -n "${NAMESPACE}"
+        kubectl get gateway -n "${NAMESPACE}" -o wide

@@ -1,0 +1,49 @@
+name: Provision etcd certs for OpenShift/MicroShift
+description: >
+  A GitHub Action that reads MicroShift's embedded-etcd certificates off the node
+  filesystem and publishes them as the configmap/secret that
+  qubership-monitoring-operator's etcd-certs-to-secret job expects to find on
+  "real" OpenShift (created there by the cluster-etcd-operator, which MicroShift
+  does not run). Without this, the job's post-install Helm hook never succeeds on
+  MicroShift and blocks the whole release.
+runs:
+  using: composite
+  steps:
+    - name: Create openshift-etcd-operator namespace
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Create openshift-etcd-operator namespace
+        kubectl create namespace openshift-etcd-operator --dry-run=client -o yaml | kubectl apply -f -
+
+    - name: Extract etcd certs from the node and publish them
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Extract etcd certs from the node and publish them
+        NODE="$(kubectl get nodes -o jsonpath='{.items[0].metadata.name}')"
+        DEBUG_IMAGE="registry.access.redhat.com/ubi9/ubi-minimal"
+        CERT_DIR="/var/lib/microshift/certs/etcd-signer"
+
+        strip_debug_wrapper() {
+          sed '/^Starting pod\|^To use host\|^Removing debug pod/d'
+        }
+
+        oc debug "node/${NODE}" --image="${DEBUG_IMAGE}" -- chroot /host cat "${CERT_DIR}/ca.crt" \
+          2>/dev/null | strip_debug_wrapper > ca-bundle.crt
+        oc debug "node/${NODE}" --image="${DEBUG_IMAGE}" -- chroot /host cat "${CERT_DIR}/apiserver-etcd-client/client.crt" \
+          2>/dev/null | strip_debug_wrapper > tls.crt
+        oc debug "node/${NODE}" --image="${DEBUG_IMAGE}" -- chroot /host cat "${CERT_DIR}/apiserver-etcd-client/client.key" \
+          2>/dev/null | strip_debug_wrapper > tls.key
+
+        for f in ca-bundle.crt tls.crt; do
+          head -1 "$f" | grep -q "BEGIN CERTIFICATE" || { echo "::error::$f does not look like a PEM certificate"; exit 1; }
+        done
+        head -1 tls.key | grep -qE "BEGIN (RSA )?PRIVATE KEY" || { echo "::error::tls.key does not look like a PEM private key"; exit 1; }
+
+        kubectl create configmap etcd-metric-serving-ca -n openshift-etcd-operator \
+          --from-file=ca-bundle.crt=ca-bundle.crt --dry-run=client -o yaml | kubectl apply -f -
+        kubectl create secret tls etcd-metric-client -n openshift-etcd-operator \
+          --cert=tls.crt --key=tls.key --dry-run=client -o yaml | kubectl apply -f -
+
+        rm -f ca-bundle.crt tls.crt tls.key

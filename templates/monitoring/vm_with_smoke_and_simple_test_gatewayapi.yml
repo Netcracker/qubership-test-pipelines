@@ -1,0 +1,57 @@
+gatewayApi:
+  parentRefs:
+    - name: monitoring-gateway
+      namespace: monitoring
+
+grafana:
+  ingress:
+    install: true
+    host: grafana-monitoring.testdomain.local
+  httpRoute:
+    install: true
+
+integrationTests:
+  install: true
+  tags: grafanaORsmoke
+  timeoutBeforeStart: 60
+  statusWriting:
+    enabled: false
+
+kubernetesMonitors:
+  kubeSchedulerServiceMonitor:
+    install: true
+  kubeControllerManagerServiceMonitor:
+    install: true
+
+victoriametrics:
+  vmAuth:
+    ingress:
+      install: true
+      host: vmauth-monitoring.testdomain.local
+    httpRoute:
+      install: true
+  vmAlert:
+    ingress:
+      install: true
+      host: vmalert-monitoring.testdomain.local
+    httpRoute:
+      install: true
+  vmSingle:
+    ingress:
+      install: true
+      host: vmsingle-monitoring.testdomain.local
+    httpRoute:
+      install: true
+    resources:
+      requests:
+        memory: 768Mi
+        cpu: 100m
+      limits:
+        memory: 2Gi
+        cpu: 1500m
+  vmAlertManager:
+    ingress:
+      install: true
+      host: vmagent-monitoring.testdomain.local
+    httpRoute:
+      install: true
