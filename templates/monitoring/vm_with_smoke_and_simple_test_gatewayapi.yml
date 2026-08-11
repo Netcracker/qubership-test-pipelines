@@ -1,7 +1,7 @@
 gatewayApi:
   parentRefs:
     - name: monitoring-gateway
-      namespace: monitoring
+      namespace: istio-system
 
 grafana:
   ingress:

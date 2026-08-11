@@ -35,11 +35,6 @@ on:
         type: boolean
         required: false
         default: false
-      cluster_engine:
-        description: Cluster engine to run the tests on (kind or microshift)
-        type: string
-        required: false
-        default: kind
       scope:
         description: Monitoring Test Scope (pr, nightly or hardening)
         type: string
@@ -92,11 +87,6 @@ on:
         type: boolean
         required: false
         default: false
-      cluster_engine:
-        description: Cluster engine to run the tests on (kind or microshift)
-        type: string
-        required: false
-        default: kind
       scope:
         description: Monitoring Test Scope (pr, nightly or hardening)
         type: string
@@ -168,17 +158,12 @@ jobs:
         id: process-versions
         env:
           SCOPE: ${{ inputs.scope }}
-          CLUSTER_ENGINE: ${{ inputs.cluster_engine }}
           LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
           SERVICE_BRANCH: ${{ inputs.service_branch }}
         working-directory: ${{ github.workspace }}/qubership-test-pipelines
         run: |
           chmod +x ./scripts/matrix.sh
-          if [[ "$CLUSTER_ENGINE" == "microshift" ]]; then
-            # The OpenShift/MicroShift scenario is a distinct test matrix (Gateway API
-            # instead of Ingress), independent of the pr/nightly/hardening scope split.
-            CONFIG_FILE="./workflow-config/monitoring_openshift.yaml"
-          elif [[ "$SCOPE" == "nightly" ]]; then
+          if [[ "$SCOPE" == "nightly" ]]; then
             CONFIG_FILE="./workflow-config/monitoring_nightly.yaml"
           elif [[ "$SCOPE" == "pr" ]]; then
             CONFIG_FILE="./workflow-config/monitoring.yaml"
@@ -223,14 +208,14 @@ jobs:
           persist-credentials: false
 
       - name: Create cluster (Kind)
-        if: inputs.cluster_engine != 'microshift'
+        if: matrix.test.engine != 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
         with:
           kind-layout: ${{ inputs.kind-layout }}
           enable-owner-references-permission-enforcement: ${{ inputs.enable-owner-references-permission-enforcement }}
 
       - name: Create cluster (OpenShift/MicroShift)
-        if: inputs.cluster_engine == 'microshift'
+        if: matrix.test.engine == 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/create_cluster_openshift
 
       # == Start ======= Specific steps for Allure report =======
@@ -256,27 +241,29 @@ jobs:
       # == End ======= Specific steps for Allure report =======
 
       - name: Install Ingress Controller (Kind)
-        if: inputs.cluster_engine != 'microshift'
+        if: matrix.test.engine != 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
 
       # == Start ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
       - name: Setup TLS (cert-manager + self-signed ClusterIssuer)
-        if: inputs.cluster_engine == 'microshift'
+        if: matrix.test.engine == 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/setup_tls
 
-      - name: Create monitoring namespace
-        if: inputs.cluster_engine == 'microshift'
-        run: kubectl create namespace monitoring --dry-run=client -o yaml | kubectl apply -f -
+      - name: Install Gateway API Gateway (OpenShift/MicroShift)
+        if: matrix.test.engine == 'microshift'
+        uses: ./qubership-test-pipelines/actions/shared/create_gateway
+        with:
+          tls-secret-name: monitoring-gateway-tls
 
       - name: Request wildcard certificate for the Gateway
-        if: inputs.cluster_engine == 'microshift'
+        if: matrix.test.engine == 'microshift'
         run: |
           cat <<EOF | kubectl apply -f -
           apiVersion: cert-manager.io/v1
           kind: Certificate
           metadata:
             name: monitoring-gateway-tls
-            namespace: monitoring
+            namespace: istio-system
           spec:
             secretName: monitoring-gateway-tls
             dnsNames:
@@ -286,16 +273,10 @@ jobs:
               kind: ClusterIssuer
               group: cert-manager.io
           EOF
-          kubectl wait --for=condition=Ready certificate/monitoring-gateway-tls -n monitoring --timeout=60s
-
-      - name: Install Gateway API Gateway (OpenShift/MicroShift)
-        if: inputs.cluster_engine == 'microshift'
-        uses: ./qubership-test-pipelines/actions/shared/create_gateway
-        with:
-          tls-secret-name: monitoring-gateway-tls
+          kubectl wait --for=condition=Ready certificate/monitoring-gateway-tls -n istio-system --timeout=60s
 
       - name: Provision etcd certs for OpenShift/MicroShift
-        if: inputs.cluster_engine == 'microshift'
+        if: matrix.test.engine == 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/provision_etcd_certs_openshift
       # == End ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
       # == 01 End ======= Common pre-steps for all tests =======

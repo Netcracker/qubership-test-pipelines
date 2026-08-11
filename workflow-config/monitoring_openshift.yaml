@@ -1,8 +1,0 @@
-jobs:
-  - name: Clean [${service_branch}] on OpenShift (MicroShift) via Gateway API
-    sequence: install
-    restricted: false
-    install:
-      version: ${service_branch}
-      template: templates/monitoring/vm_with_smoke_and_simple_test_gatewayapi.yml
-      artifact_name: Clean_${service_branch}_OpenShift_GatewayAPI

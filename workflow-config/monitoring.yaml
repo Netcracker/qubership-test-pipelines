@@ -1,6 +1,7 @@
 jobs:
   ## Upgrade from previous releases to current
   - name: Clean [${service_branch}], Upgrade [${service_branch}] Diff Params
+    engine: kind
     sequence: clean
     restricted: false
     install:
@@ -11,3 +12,13 @@ jobs:
       version: ${service_branch}
       template: templates/monitoring/values_test.yml
       artifact_name: Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params
+
+  ## OpenShift/MicroShift: same clean install, but via Gateway API instead of Ingress
+  - name: Clean [${service_branch}] on OpenShift (MicroShift) via Gateway API
+    engine: microshift
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/monitoring/vm_with_smoke_and_simple_test_gatewayapi.yml
+      artifact_name: Clean_${service_branch}_OpenShift_GatewayAPI

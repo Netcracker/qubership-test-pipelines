@@ -1,14 +1,15 @@
 name: Create Gateway API Gateway
 description: >
   A GitHub Action that installs Gateway API CRDs and Istio into an OpenShift/MicroShift
-  cluster, creates a Gateway for the monitoring namespace, and configures CoreDNS with a
-  wildcard *.testdomain.local DNS zone pointing to it.
+  cluster, creates a Gateway, and configures CoreDNS with a wildcard *.testdomain.local
+  DNS zone pointing to it. Listeners allow HTTPRoutes from any namespace, so a single
+  Gateway can be shared across releases under test.
 inputs:
   namespace:
     description: |
       Namespace the Gateway is created in (also created if missing)
     required: false
-    default: monitoring
+    default: istio-system
   gateway-name:
     description: |
       Name of the created Gateway resource
@@ -74,7 +75,7 @@ runs:
           echo "    hostname: \"*.testdomain.local\""
           echo "    allowedRoutes:"
           echo "      namespaces:"
-          echo "        from: Same"
+          echo "        from: All"
           if [ -n "${TLS_SECRET_NAME}" ]; then
             echo "  - name: https"
             echo "    port: 443"
@@ -86,7 +87,7 @@ runs:
             echo "        - name: ${TLS_SECRET_NAME}"
             echo "    allowedRoutes:"
             echo "      namespaces:"
-            echo "        from: Same"
+            echo "        from: All"
           fi
         } | kubectl apply -f -
 
@@ -164,6 +165,5 @@ runs:
       # language=bash
       run: |
         # ▶️ Get pods and events
-        kubectl get pods -n istio-system
         kubectl get pods -n "${NAMESPACE}"
         kubectl get gateway -n "${NAMESPACE}" -o wide
