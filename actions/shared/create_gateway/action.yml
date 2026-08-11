@@ -31,25 +31,18 @@ runs:
         # ▶️ Install Gateway API CRDs
         kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.2.1/standard-install.yaml
 
-    - name: Install Istio
-      shell: bash
-      # language=bash
-      run: |
-        # ▶️ Install Istio
-        curl -fsSL -o istio.tar.gz \
-          "https://github.com/istio/istio/releases/download/1.24.2/istio-1.24.2-linux-amd64.tar.gz"
-        tar -xzf istio.tar.gz
-        sudo mv istio-1.24.2/bin/istioctl /usr/local/bin/istioctl
-        istioctl install --set profile=minimal -y
-
-    - name: Create namespace
+    - name: Install Istio (Helm)
       shell: bash
       env:
         NAMESPACE: ${{ inputs.namespace }}
       # language=bash
       run: |
-        # ▶️ Create namespace
-        kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f -
+        # ▶️ Install Istio (Helm)
+        helm repo add istio https://istio-release.storage.googleapis.com/charts
+        helm repo update
+
+        helm install istio-base istio/base -n "${NAMESPACE}" --create-namespace --version 1.24.2 --wait
+        helm install istiod istio/istiod -n "${NAMESPACE}" --version 1.24.2 --wait
 
     - name: Create Gateway
       shell: bash
