@@ -284,14 +284,21 @@ jobs:
           namespace: ${{ env.namespace }}
           restricted: ${{ matrix.test.restricted }}
 
+      - name: Get Installed Cassandra Operator CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_cassandra_operator_get_crds
+        with:
+          crd_location: Netcracker/qubership-cassandra-operator/operator/charts/helm/cassandra-operator/crds
+
       - name: Verify Cassandra Operator installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
           test_completion_retry_interval: 10s
-          service_ready_max_retries: 50
+          service_ready_max_retries: 150
           service_ready_retry_interval: 10s
+          crd_list: ${{ steps.install_cassandra_operator_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Cassandra Operator installation
         if: ${{ !cancelled() && steps.cassandra_operator_install.conclusion != 'skipped' }}
@@ -358,8 +365,14 @@ jobs:
           namespace: ${{ env.namespace }}
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Sleep 20m
-        run: sleep 20m
+#      - name: Sleep 20m
+#        run: sleep 20m
+
+      - name: Get Installed Cassandra Services CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_cassandra_services_get_crds
+        with:
+          crd_location: Netcracker/qubership-cassandra-operator/services/service/charts/helm/cassandra-services/crds
 
       - name: Verify Cassandra Services installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
@@ -369,6 +382,7 @@ jobs:
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
+          crd_list: ${{ steps.install_cassandra_services_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Cassandra Services installation
         if: ${{ !cancelled() && steps.cassandra_services_install.conclusion != 'skipped' }}
@@ -418,6 +432,7 @@ jobs:
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
+          crd_list: ${{ steps.install_cassandra_operator_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Cassandra Operator upgrade
         if: ${{ !cancelled() && steps.cassandra_operator_upgrade.conclusion != 'skipped' }}
@@ -452,6 +467,7 @@ jobs:
           test_completion_retry_interval: 10s
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
+          crd_list: ${{ steps.install_cassandra_services_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Cassandra Services upgrade
         if: ${{ !cancelled() && steps.cassandra_services_upgrade.conclusion != 'skipped' }}

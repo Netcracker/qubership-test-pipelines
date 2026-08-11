@@ -43,10 +43,10 @@ monitoringAgent:
 robotTests:
     install: true
     dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
-    tags: dbaas_multiple_users
+    tags: smoke
+    #tags: dbaas_multiple_users
     iteration: "1"
 consulRegistration:
     Enabled: false
     Port: "8500"
-DEPLOY_W_HELM: true
-ESCAPE_SEQUENCE: true
+waitTimeout: 3000
