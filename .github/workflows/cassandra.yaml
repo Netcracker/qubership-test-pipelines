@@ -391,6 +391,10 @@ jobs:
       # == End ======= Specific steps for S3 =======
 
       # == 05 Start ===== Upgrade Cassandra Operator =====
+      - name: Sleep 10m before upgrade
+        if: matrix.test.sequence == 'upgrade'
+        run: sleep 10m
+
       - name: Upgrade Cassandra Operator to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
