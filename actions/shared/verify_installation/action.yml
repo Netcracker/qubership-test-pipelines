@@ -48,6 +48,13 @@ inputs:
     required: false
     default: tests
 
+  test_retry_max:
+    description: |
+      Number of times to restart tests on failure by deleting and recreating the test pod.
+      0 disables the retry (default). Temporary debugging option.
+    required: false
+    default: "0"
+
   monitoring_pipeline:
     description: |
       Only for Monitoring. Enable monitoring CRs checks (true) or disable them (false)
@@ -190,14 +197,18 @@ runs:
         TEST_POD_PREFIX: ${{ inputs.test_pod_prefix }}
         TEST_COMPLETION_MAX_RETRIES: ${{ inputs.test_completion_max_retries }}
         TEST_COMPLETION_RETRY_INTERVAL: ${{ inputs.test_completion_retry_interval }}
+        TEST_RETRY_MAX: ${{ inputs.test_retry_max }}
       # language=bash
       run: |
         # ▶️ Check test results
         chmod +x ./qubership-test-pipelines/scripts/check_tests.sh
         ls -la ./qubership-test-pipelines/scripts/check_tests.sh
 
-        for i in $(seq 1 "$TEST_COMPLETION_MAX_RETRIES"); do
-          echo "Test check attempt $i/$TEST_COMPLETION_MAX_RETRIES"
+        retry_count=0
+        attempt=0
+        while [ "$attempt" -lt "$TEST_COMPLETION_MAX_RETRIES" ]; do
+          attempt=$((attempt + 1))
+          echo "Test check attempt $attempt/$TEST_COMPLETION_MAX_RETRIES"
           set +e
           ./qubership-test-pipelines/scripts/check_tests.sh "$NAMESPACE" "$TEST_POD_PREFIX"
           tests_exit_code=$?
@@ -212,13 +223,36 @@ runs:
               echo "⏳ Tests still in progress"
               ;;
             2)
-              echo "::error:: ❌ Tests failed"
-              echo "ERROR_FLAG=true" >> $GITHUB_ENV
-              break
+              echo "❌ Tests failed"
+              if [ "$TEST_RETRY_MAX" -gt 0 ] && [ "$retry_count" -lt "$TEST_RETRY_MAX" ]; then
+                retry_count=$((retry_count + 1))
+                echo "🔄 Tests failed. Restarting tests by deleting the test pod (retry $retry_count/$TEST_RETRY_MAX)"
+                test_pod=$(kubectl get pods -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" | grep "$TEST_POD_PREFIX" | head -n 1)
+                if [ -n "$test_pod" ]; then
+                  echo "Deleting test pod: $test_pod"
+                  kubectl delete pod "$test_pod" -n "$NAMESPACE" --wait=false || true
+                  # Wait until the old test pod is fully gone
+                  while kubectl get pod "$test_pod" -n "$NAMESPACE" >/dev/null 2>&1; do
+                    sleep 5
+                  done
+                fi
+                # Wait until a new test pod is created (Deployment recreates and reruns it)
+                while ! kubectl get pods -n "$NAMESPACE" --no-headers -o custom-columns=":metadata.name" | grep -q "$TEST_POD_PREFIX"; do
+                  sleep 5
+                done
+                echo "🔄 New test pod detected, re-checking test results"
+                # Reset the attempt window so the rerun gets enough time
+                attempt=0
+                continue
+              else
+                echo "::error:: ❌ Tests failed"
+                echo "ERROR_FLAG=true" >> $GITHUB_ENV
+                break
+              fi
               ;;
           esac
 
-          if [ "$i" -eq "$TEST_COMPLETION_MAX_RETRIES" ]; then
+          if [ "$attempt" -ge "$TEST_COMPLETION_MAX_RETRIES" ]; then
             echo "::warning:: ⚠️ Tests not completed after $TEST_COMPLETION_MAX_RETRIES retries"
             echo "ERROR_FLAG=true" >> $GITHUB_ENV
           else

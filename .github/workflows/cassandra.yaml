@@ -383,6 +383,7 @@ jobs:
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
           crd_list: ${{ steps.install_cassandra_services_get_crds.outputs.crd_names }}
+          test_retry_max: 1
 
       - name: Collect Diagnostics Cassandra Services installation
         if: ${{ !cancelled() && steps.cassandra_services_install.conclusion != 'skipped' }}
@@ -468,6 +469,7 @@ jobs:
           service_ready_max_retries: 50
           service_ready_retry_interval: 10s
           crd_list: ${{ steps.install_cassandra_services_get_crds.outputs.crd_names }}
+          test_retry_max: 1
 
       - name: Collect Diagnostics Cassandra Services upgrade
         if: ${{ !cancelled() && steps.cassandra_services_upgrade.conclusion != 'skipped' }}
