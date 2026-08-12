@@ -135,7 +135,8 @@ runs:
             fi
           done
         else
-          echo "::warning::Directory with CRDs not found!"
+          echo "::error::Directory with CRDs not found!"
+          exit 1
         fi
 
     - name: Create restricted resources
