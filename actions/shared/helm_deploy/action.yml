@@ -111,33 +111,33 @@ runs:
       # language=bash
       run: |
         # ▶️ Replace CRDs
-        cd "${REPOSITORY_NAME}/${PATH_TO_CHART}"
-        if [ -d "./crds" ]; then
-          echo "CRDs directory exists"
-          for file in ./crds/*; do
-            if [ -f "$file" ]; then
-              echo "Processing file: $file"
-              CRD_NAME=$(yq e '.metadata.name' "$file" 2>/dev/null)
-
-              if [ -z "$CRD_NAME" ]; then
-                echo "::error::Could not extract CRD name from $file"
-                exit 1
-              fi
-
-              echo "Found CRD: $CRD_NAME"
-              if kubectl get crd "$CRD_NAME" > /dev/null 2>&1; then
-                  echo "CRD $CRD_NAME already exists. Updating..."
-                  kubectl replace -f $file
-              else
-                  echo "CRD $CRD_NAME doesn't exist. Creating..."
-                  kubectl create -f $file
-              fi
-            fi
-          done
-        else
-          echo "::error::Directory with CRDs not found!"
-          exit 1
+        crds_dir="${REPOSITORY_NAME}/${PATH_TO_CHART}/crds"
+        if [ ! -d "${crds_dir}" ]; then
+          echo "::warning::Directory with CRDs not found (${crds_dir}). Skipping CRD replacement."
+          exit 0
         fi
+        cd "${REPOSITORY_NAME}/${PATH_TO_CHART}"
+        echo "CRDs directory exists"
+        for file in ./crds/*; do
+          if [ -f "$file" ]; then
+            echo "Processing file: $file"
+            CRD_NAME=$(yq e '.metadata.name' "$file" 2>/dev/null)
+
+            if [ -z "$CRD_NAME" ]; then
+              echo "::error::Could not extract CRD name from $file"
+              exit 1
+            fi
+
+            echo "Found CRD: $CRD_NAME"
+            if kubectl get crd "$CRD_NAME" > /dev/null 2>&1; then
+                echo "CRD $CRD_NAME already exists. Updating..."
+                kubectl replace -f $file
+            else
+                echo "CRD $CRD_NAME doesn't exist. Creating..."
+                kubectl create -f $file
+            fi
+          fi
+        done
 
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'

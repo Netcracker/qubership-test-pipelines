@@ -23,6 +23,11 @@ runs:
         CRD_LOCATION: ${{ inputs.crd_location }}
       run: |
         # ▶️ Get CRDs
+        if [ ! -d "${CRD_LOCATION}" ]; then
+          echo "::warning::CRD location not found (${CRD_LOCATION}). Skipping CRD name extraction."
+          echo "crd_names=" >> $GITHUB_OUTPUT
+          exit 0
+        fi
         yamls=$(find "${CRD_LOCATION}" -type f -name "*.yaml" -or -name "*.yml")
         CRDS_ARRAY=()
         for yaml in ${yamls}; do
