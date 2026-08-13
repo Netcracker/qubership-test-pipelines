@@ -1,6 +1,6 @@
 operator:
-    image: ghcr.io/netcracker/qubership-cassandra-operator:main
-    initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
+  image: ghcr.io/netcracker/qubership-cassandra-operator:main
+  initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 cassandra:
   install: true
   tls: true

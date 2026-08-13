@@ -1,58 +1,58 @@
 operator:
-    image: ghcr.io/netcracker/cassandra-supplementary:main
-    initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
+  image: ghcr.io/netcracker/cassandra-supplementary:main
+  initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 cassandra:
-    username: K~9z!dX@_QwRm_pT
-    password: XtR[p%VU4sJj61a!@#:&*-(_K=Nz
-    install: true
-    resources:
-      requests:
-        cpu: 250m
-        memory: 1Gi
-      limits:
-        cpu: 1000m
-        memory: 3Gi
-    deploymentSchema:
-      dataCenters:
-        - name: dc1
-          replicas: 3
-          seeds: 1
-          storage:
-            size: 4Gi
-            storageClasses:
-              - standard
+  username: K~9z!dX@_QwRm_pT
+  password: XtR[p%VU4sJj61a!@#:&*-(_K=Nz
+  install: true
+  resources:
+    requests:
+      cpu: 250m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 3Gi
+  deploymentSchema:
+    dataCenters:
+      - name: dc1
+        replicas: 3
+        seeds: 1
+        storage:
+          size: 4Gi
+          storageClasses:
+            - standard
 backupDaemon:
-    install: true
-    resources:
-      requests:
-        cpu: 250m
-        memory: 128Mi
-      limits:
-        cpu: 500m
-        memory: 512Mi
-    username: B5^2p|7tY
-    password: R&19wK8q|
-    storage:
-      storageClasses:
-        - standard
+  install: true
+  resources:
+    requests:
+      cpu: 250m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  username: B5^2p|7tY
+  password: R&19wK8q|
+  storage:
+    storageClasses:
+      - standard
 dbaas:
-    install: true
-    dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
-    adapter:
-      username: 7dQ5|*k2S
-      password: 9n*3PM07|s
-    aggregator:
-      dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas-infra:8080
-      username: cluster-dba_7dQ5|*k2S
-      password: Hnmq3344_PQ-9n*3PM07|s
+  install: true
+  dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
+  adapter:
+    username: 7dQ5|*k2S
+    password: 9n*3PM07|s
+  aggregator:
+    dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas-infra:8080
+    username: cluster-dba_7dQ5|*k2S
+    password: Hnmq3344_PQ-9n*3PM07|s
 monitoringAgent:
-    install: false
+  install: false
 robotTests:
-    install: true
-    dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
-    tags: smoke
-    iteration: "1"
+  install: true
+  dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
+  tags: smoke
+  iteration: "1"
 consulRegistration:
-    Enabled: false
-    Port: "8500"
+  Enabled: false
+  Port: "8500"
 waitTimeout: 3000
