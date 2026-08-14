@@ -15,7 +15,6 @@ jobs:
       template_operator: templates/cassandra-service/sample.yaml
       template_services: templates/cassandra-service/sample_sup.yaml
       artifact_name: Clean_${release_version}_Upgrade_CURRENT
-  ## ===============================================================================
 
   - name: Clean [${service_branch}], Update [${service_branch}] Diff Params
     sequence: upgrade

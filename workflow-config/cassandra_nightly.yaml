@@ -31,18 +31,6 @@ jobs:
       template_services: templates/cassandra-service/sample_sup_updated.yaml
       artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params
 
-  - name: Clean [${service_branch}] with Monitoring and Allure
-    sequence: install
-    restricted: false
-    monitoring: true
-    allure: true
-    install:
-      version: ${service_branch}
-      template: templates/cassandra-service/sample.yaml
-      template_operator: templates/cassandra-service/sample.yaml
-      template_services: templates/cassandra-service/sample_sup_monitoring_allure.yaml
-      artifact_name: Clean_CURRENT_monitoring
-
   - name: Clean [${service_branch}] in TLS
     sequence: install
     restricted: false
