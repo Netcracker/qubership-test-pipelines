@@ -1,0 +1,490 @@
+name: Reusable Cassandra Tests
+
+permissions:
+  contents: read
+  actions: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository_name:
+        description: Repository with Cassandra operator
+        required: false
+        type: string
+        default: Netcracker/qubership-cassandra-operator
+      service_branch:
+        description: Branch of qubership-cassandra-operator repository
+        required: false
+        type: string
+        default: main
+      pipeline_branch:
+        description: Branch of qubership-test-pipelines repository
+        type: string
+        required: true
+      runner_type:
+        description: Runner type (self-hosted or ubuntu-latest)
+        type: string
+        required: false
+        default: ubuntu-latest
+      scope:
+        description: Cassandra Test Scope (pro r nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+
+  workflow_call:
+    inputs:
+      repository_name:
+        description: Repository with Cassandra operator
+        required: false
+        type: string
+        default: Netcracker/qubership-cassandra-operator
+      service_branch:
+        description: Branch of qubership-cassandra-operator repository
+        required: false
+        type: string
+        default: main
+      pipeline_branch:
+        description: Branch of qubership-test-pipelines repository
+        type: string
+        required: true
+      runner_type:
+        description: Runner type (self-hosted or ubuntu-latest)
+        type: string
+        required: false
+        default: ubuntu-latest
+      scope:
+        description: Cassandra Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
+
+env:
+  namespace: cassandra
+  path_to_chart_cassandra: cassandra/cassandra-image/deployments/charts/cassandra_5.0.8
+  path_to_chart_operator: operator/charts/helm/cassandra-operator
+  path_to_chart_services: services/service/charts/helm/cassandra-services
+
+jobs:
+  prepare:
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ${{ inputs.runner_type }}
+    outputs:
+      versions: ${{ steps.process-versions.outputs.versions }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-cassandra-operator
+          persist-credentials: false
+
+      - name: Checkout pipeline
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+
+      - name: Get latest tag
+        id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
+        run: |
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Process versions file and matrix generation
+        id: process-versions
+        env:
+          SCOPE: ${{ inputs.scope }}
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
+        run: |
+          chmod +x ./scripts/matrix.sh
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/cassandra_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/cassandra.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'"
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
+
+  Cassandra-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
+    needs: prepare
+    runs-on: ${{ inputs.runner_type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.test.name }}
+    steps:
+      # == 01 Start ======= Common pre-steps for all tests =======
+      - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
+        run: |
+          echo "======== Job parameters ======="
+          echo "$MATRIX_JSON"
+
+      - name: Checkout repo
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-cassandra-operator
+          persist-credentials: false
+
+      - name: Checkout pipeline
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      # == 01 End ======= Common pre-steps for all tests =======
+
+      # == Start ======= Specific steps for TLS =======
+      - name: Setup TLS
+        if: matrix.test.tls == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+      # == End ======= Specific steps for TLS =======
+
+      # == Start Monitoring installation tests =======
+      - name: Install Monitoring [${{ matrix.test.install.version }}]
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: monitoring_install
+        with:
+          path_to_template: templates/monitoring/vm_without_tests.yml
+          service_branch: v0.88.0
+          service_name: monitoring
+          repository_name: Netcracker/qubership-monitoring-operator
+          path_to_chart: charts/qubership-monitoring-operator
+          namespace: monitoring
+          restricted: false
+
+      - name: Get Installed Monitoring CR name
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_monitoring_get_crds
+        with:
+          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
+
+      - name: Verify Monitoring installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        if: matrix.test.monitoring == true
+        with:
+          namespace: monitoring
+          test_completion_max_retries: 40
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 80
+          service_ready_retry_interval: 10s
+          monitoring_pipeline: true
+          repository_name: Netcracker/qubership-monitoring-operator
+          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Monitoring installation
+        if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: monitoring
+          artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
+          service_branch: main
+      # == End Monitoring installation tests =======
+
+      # == Start ======= Specific steps for Allure report =======
+      - name: Add s3 bucket for Allure report
+        if: matrix.test.allure == true
+        run: >-
+          python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}'
+          --path='integrationTests/atpReport/atpStorage/username'
+          --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}'
+          && python qubership-test-pipelines/scripts/update_yaml.py
+          --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}'
+          --path='integrationTests/atpReport/atpStorage/password'
+          --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}'
+      # == End ======= Specific steps for Allure report =======
+
+      # == 02 Start ===== Install Cassandra =====
+      - name: Install Cassandra [${{ matrix.test.install.version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_install
+        with:
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
+          deploy_mode: install
+          service_name: cassandra
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_cassandra }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Verify Cassandra installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 150
+          service_ready_retry_interval: 10s
+
+      - name: Collect Diagnostics Cassandra installation
+        if: ${{ !cancelled() && steps.cassandra_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
+      # == 02 End ===== Install Cassandra =====
+
+      # == 03 Start ===== Install Cassandra Operator =====
+      - name: Print operator install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template_operator }}
+
+      - name: Install Cassandra Operator [${{ matrix.test.install.version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_operator_install
+        with:
+          path_to_template: ${{ matrix.test.install.template_operator }}
+          service_branch: ${{ matrix.test.install.version }}
+          deploy_mode: install
+          service_name: cassandra-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_operator }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Get Installed Cassandra Operator CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_cassandra_operator_get_crds
+        with:
+          crd_location: Netcracker/qubership-cassandra-operator/operator/charts/helm/cassandra-operator/crds
+
+      - name: Verify Cassandra Operator installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 150
+          service_ready_retry_interval: 10s
+          crd_list: ${{ steps.install_cassandra_operator_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Cassandra Operator installation
+        if: ${{ !cancelled() && steps.cassandra_operator_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Operator_Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
+      - name: Debug Cassandra Operator resources
+        if: always()
+        shell: bash
+        run: |
+          echo "=== Deployments ==="
+          kubectl get deployment -n ${{ env.namespace }}
+          echo "=== ReplicaSets ==="
+          kubectl get replicaset -n ${{ env.namespace }}
+          echo "=== Pods ==="
+          kubectl get pods -n ${{ env.namespace }}
+      # == 03 End ===== Install Cassandra Operator =====
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Create S3 bucket
+        id: create_bucket
+        if: matrix.test.install.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: cassandra
+
+      - name: Add S3 secrets to Cassandra services template
+        if: matrix.test.install.s3 == true
+        # zizmor: ignore[template-injection]
+        run: |
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
+            --path='backupDaemon/s3/accessKeyId' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
+            --path='backupDaemon/s3/accessKeySecret' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
+            --path='backupDaemon/s3/bucketName' \
+            --value="${{ steps.create_bucket.outputs.bucket_name }}"
+      # == End ======= Specific steps for S3 =======
+
+      - name: Print services install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template_services }}
+
+      # == 04 Start ===== Install Cassandra Services =====
+      - name: Install Cassandra Services [${{ matrix.test.install.version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_services_install
+        with:
+          path_to_template: ${{ matrix.test.install.template_services }}
+          service_branch: ${{ matrix.test.install.version }}
+          deploy_mode: install
+          service_name: cassandra-services
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_services }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Get Installed Cassandra Services CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_cassandra_services_get_crds
+        with:
+          crd_location: Netcracker/qubership-cassandra-operator/services/service/charts/helm/cassandra-services/crds
+
+      - name: Verify Cassandra Services installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
+          crd_list: ${{ steps.install_cassandra_services_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Cassandra Services installation
+        if: ${{ !cancelled() && steps.cassandra_services_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Services_Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
+      # == 04 End ===== Install Cassandra Services =====
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Delete S3 bucket
+        if: always() && matrix.test.install.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
+      # == End ======= Specific steps for S3 =======
+
+      # == 05 Start ===== Upgrade Cassandra Operator =====
+
+      - name: Upgrade Cassandra Operator to [${{ matrix.test.upgrade.version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_operator_upgrade
+        with:
+          path_to_template: ${{ matrix.test.upgrade.template_operator }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+          deploy_mode: upgrade
+          service_name: cassandra-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_operator }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Verify Cassandra Operator upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
+          crd_list: ${{ steps.install_cassandra_operator_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Cassandra Operator upgrade
+        if: ${{ !cancelled() && steps.cassandra_operator_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+      # == 05 End ===== Upgrade Cassandra Operator =====
+
+      # == 06 Start ===== Upgrade Cassandra Services =====
+      - name: Upgrade Cassandra Services to [${{ matrix.test.upgrade.version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: cassandra_services_upgrade
+        with:
+          path_to_template: ${{ matrix.test.upgrade.template_services }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+          deploy_mode: upgrade
+          service_name: cassandra-services
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_services }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Verify Cassandra Services upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: 50
+          test_completion_retry_interval: 10s
+          service_ready_max_retries: 50
+          service_ready_retry_interval: 10s
+          crd_list: ${{ steps.install_cassandra_services_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Cassandra Services upgrade
+        if: ${{ !cancelled() && steps.cassandra_services_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: Cassandra_Services_Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+      # == 06 End ===== Upgrade Cassandra Services =====
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Cassandra-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Cassandra-Test-Cases.result }}
