@@ -1,0 +1,66 @@
+name: Create OpenShift (MicroShift) cluster Action
+description: A GitHub Action that creates a single-node OpenShift cluster using CRC's microshift preset
+inputs:
+  cpus:
+    description: |
+      Number of CPUs allocated to the CRC instance
+    required: false
+    default: "4"
+  memory:
+    description: |
+      Memory in MiB allocated to the CRC instance
+    required: false
+    default: "10240"
+  disk-size:
+    description: |
+      Disk size in GiB allocated to the CRC instance
+    required: false
+    default: "40"
+runs:
+  using: composite
+  steps:
+    - name: Get info
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Get info
+        free -h
+        echo '================================================================================'
+        lscpu
+        echo '================================================================================'
+        lsblk
+        echo '================================================================================'
+        sysctl vm.max_map_count
+
+    - name: Free up disk space
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Free up disk space
+        # CRC needs more disk than the runner reports as "free" by default; the standard
+        # runner image ships with several large toolchains that this workflow does not use.
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /usr/local/lib/android
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf /opt/hostedtoolcache/CodeQL
+        sudo docker image prune --all --force
+        sudo swapoff -a
+        sudo rm -f /mnt/swapfile
+        df -h /
+
+    - name: Run CRC (microshift preset)
+      uses: crc-org/crc-github-action@466b8741bd91b9ee59f37db92b69f285cacada41 # v1.0.1
+      with:
+        preset: microshift
+        cpus: ${{ inputs.cpus }}
+        memory: ${{ inputs.memory }}
+        disk: ${{ inputs.disk-size }}
+
+    - name: Verify cluster is ready
+      shell: bash
+      # language=bash
+      run: |
+        # ▶️ Verify cluster is ready
+        kubectl wait --for=condition=Ready node --all --timeout=120s
+        kubectl get nodes -o wide
