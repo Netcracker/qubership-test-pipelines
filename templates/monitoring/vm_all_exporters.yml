@@ -1,0 +1,63 @@
+grafana:
+  ingress:
+    host: grafana-monitoring.testdomain.local
+    install: true
+integrationTests:
+  install: true
+  tags: grafanaORsmoke
+  timeoutBeforeStart: 60
+  statusWriting:
+    enabled: false
+kubernetesMonitors:
+  kubeSchedulerServiceMonitor:
+    install: true
+  kubeControllerManagerServiceMonitor:
+    install: true
+victoriametrics:
+  vmAuth:
+    ingress:
+      install: true
+      host: vmauth-monitoring.testdomain.local
+  vmAlert:
+    ingress:
+      install: true
+      host: vmalert-monitoring.testdomain.local
+  vmSingle:
+    ingress:
+      install: true
+      host: vmsingle-monitoring.testdomain.local
+    resources:
+      requests:
+        memory: 768Mi
+        cpu: 100m
+      limits:
+        memory: 2Gi
+        cpu: 1500m
+  vmAlertManager:
+    ingress:
+      install: true
+      host: vmagent-monitoring.testdomain.local
+
+# All self-hosted exporters enabled
+pushgateway:
+  install: true
+graphite_remote_adapter:
+  install: true
+blackboxExporter:
+  install: true
+# jsonExporter is enabled without the "config" key because the chart is
+# inconsistent: values.schema.json requires config to be an object, while the
+# configmap template renders it via `nindent` (requires a string). Omitting it
+# makes the schema use the default {} and the template render an empty config.
+jsonExporter:
+  install: true
+networkLatencyExporter:
+  install: true
+versionExporter:
+  install: true
+cloudEventsExporter:
+  install: true
+goldpingerExporter:
+  install: true
+sslExporter:
+  install: true
