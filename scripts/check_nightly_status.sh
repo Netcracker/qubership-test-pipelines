@@ -27,6 +27,23 @@ fi
 
 NOW_EPOCH=$(date +%s)
 
+# Format a duration in seconds as "Xh Ym Zs" (omits zero units)
+format_duration() {
+    local seconds="$1"
+    local hours=$((seconds / 3600))
+    local minutes=$(((seconds % 3600) / 60))
+    local secs=$((seconds % 60))
+    local out=""
+    if [[ "${hours}" -gt 0 ]]; then
+        out="${hours}h "
+    fi
+    if [[ "${minutes}" -gt 0 || -n "${out}" ]]; then
+        out="${out}${minutes}m "
+    fi
+    out="${out}${secs}s"
+    echo "${out}"
+}
+
 # Build the filter set (lowercased) from the optional components input
 FILTER_SET=()
 if [[ -n "${COMPONENTS_FILTER}" ]]; then
@@ -44,8 +61,8 @@ component_count=$(yq -o=json '.components' "${CONFIG_FILE}" | jq 'length')
     echo ""
     echo "_Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
     echo ""
-    echo "| Component | Status | Run | Started (UTC) | Link |"
-    echo "|-----------|--------|-----|----------------|------|"
+    echo "| Component | Status | Run | Started (UTC) | Duration | Link |"
+    echo "|-----------|--------|-----|----------------|----------|------|"
 } > "${REPORT_FILE}"
 
 passed_count=0
@@ -94,6 +111,7 @@ for ((i = 0; i < component_count; i++)); do
         emoji=":grey_question:"
         run_cell="-"
         started_cell="-"
+        duration_cell="-"
         link_cell="-"
         no_run_count=$((no_run_count + 1))
     else
@@ -104,6 +122,22 @@ for ((i = 0; i < component_count; i++)); do
         created_at=$(echo "${run_json}" | jq -r '.created_at')
         created_epoch=$(date -d "${created_at}" +%s 2>/dev/null || echo "0")
         age_hours=$(((NOW_EPOCH - created_epoch) / 3600))
+
+        # Compute the run duration from run_started_at to updated_at
+        run_started_at=$(echo "${run_json}" | jq -r '.run_started_at // empty')
+        updated_at=$(echo "${run_json}" | jq -r '.updated_at // empty')
+        if [[ -n "${run_started_at}" && -n "${updated_at}" ]]; then
+            started_epoch=$(date -d "${run_started_at}" +%s 2>/dev/null || echo "0")
+            updated_epoch=$(date -d "${updated_at}" +%s 2>/dev/null || echo "0")
+            if [[ "${started_epoch}" -gt 0 && "${updated_epoch}" -ge "${started_epoch}" ]]; then
+                duration_seconds=$((updated_epoch - started_epoch))
+                duration_cell=$(format_duration "${duration_seconds}")
+            else
+                duration_cell="-"
+            fi
+        else
+            duration_cell="-"
+        fi
 
         if [[ "${created_epoch}" == "0" || "${age_hours}" -gt "${lookback_hours}" ]]; then
             status_text="no runs in the last ${lookback_hours} h"
@@ -132,7 +166,7 @@ for ((i = 0; i < component_count; i++)); do
     echo "::endgroup::"
 
     {
-        echo "| ${name} | ${emoji} ${status_text} | ${run_cell} | ${started_cell} | ${link_cell} |"
+        echo "| ${name} | ${emoji} ${status_text} | ${run_cell} | ${started_cell} | ${duration_cell} | ${link_cell} |"
     } >> "${REPORT_FILE}"
 done
 

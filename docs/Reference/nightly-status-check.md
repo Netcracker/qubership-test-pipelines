@@ -32,14 +32,17 @@ To add a new component, append an entry to the config file.
 ## Report
 The workflow generates `nightly-status-report.md` with a table:
 
-| Component | Status | Run | Started (UTC) | Link |
-|-----------|--------|-----|----------------|------|
+| Component | Status | Run | Started (UTC) | Duration | Link |
+|-----------|--------|-----|----------------|----------|------|
 
 Statuses:
 - :white_check_mark: **passed**
 - :x: **failed**
 - :hourglass_flowing_sand: **in progress**
 - :grey_question: **no runs** (no runs in the lookback window)
+
+`Duration` is the run duration in `Xh Ym Zs` format, computed from the run's
+`run_started_at` and `updated_at` timestamps. It is shown as `-` when no run is found.
 
 The report is published to the job summary and uploaded as the `nightly-status-report` artifact.
 
