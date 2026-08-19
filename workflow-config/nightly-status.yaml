@@ -36,6 +36,12 @@ components:
     branch: main
     lookback_hours: 24
 
+  - name: OpenSearch
+    repository: Netcracker/qubership-opensearch
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24
+
   - name: Monitoring
     repository: Netcracker/qubership-monitoring-operator
     workflow_file: test-nightly-integration.yaml
