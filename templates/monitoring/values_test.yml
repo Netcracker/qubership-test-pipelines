@@ -407,7 +407,7 @@ pushgateway:
     metricRelabelings: []
     relabelings: []
   ingress: {
-    install: "true",
+    install: true,
     host: pushgateway.testdomain.local
   }
   # nodeSelector: {}
@@ -446,44 +446,11 @@ graphite_remote_adapter:
 blackboxExporter:
   install: false
 # Exporter to request JSON from any URL, parse the response and expose it as metrics
+# NOTE: jsonExporter is disabled because the chart is inconsistent:
+# values.schema.json requires config to be an object, but the configmap template
+# renders it via `nindent` (requires a string), so neither form passes.
 jsonExporter:
-  install: true
-  config: >
-    modules:
-      tsdbstatus:
-        metrics:
-          - name: "tsdb_series_count_by_metric"
-            type: object
-            help: "General vmsingle tsdb status of the series count by metric name"
-            path: '{.data.seriesCountByMetricName[*]}'
-            labels:
-              name: '{.name}'
-            values:
-              value: '{.value}'
-          - name: "tsdb_series_count_by_label"
-            type: object
-            help: "General vmsingle tsdb status of the series count by label name"
-            path: '{.data.seriesCountByLabelName[*]}'
-            labels:
-              name: '{.name}'
-            values:
-              value: '{.value}'
-          - name: "tsdb_series_count_by_label_value_pair"
-            type: object
-            help: "General vmsingle tsdb status of the series count by label value pair"
-            path: '{.data.seriesCountByLabelValuePair[*]}'
-            labels:
-              name: '{.name}'
-            values:
-              value: '{.value}'
-          - name: "tsdb_label_value_count_by_label_name"
-            type: object
-            help: "General vmsingle tsdb status of the label value count by label name"
-            path: '{.data.labelValueCountByLabelName[*]}'
-            labels:
-              name: '{.name}'
-            values:
-              value: '{.value}'
+  install: false
 networkLatencyExporter:
   install: true
 versionExporter:
