@@ -38,3 +38,7 @@ Added workflow for the following services:
 - [Qubership RabbitMQ Service](https://github.com/Netcracker/qubership-rabbitmq)
 - [Qubership PGgskipper Operator](https://github.com/Netcracker/pgskipper-operator)
 - [Qubership Monitoring Operator](https://github.com/Netcracker/qubership-monitoring-operator)
+
+## Nightly status check
+- [Nightly Status Check](docs/Reference/nightly-status-check.md) - monitors the status of nightly
+  test workflows of the platform services (runs daily at 09:00 MSK, manual trigger supported).

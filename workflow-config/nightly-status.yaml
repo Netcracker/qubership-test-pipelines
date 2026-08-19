@@ -1,0 +1,19 @@
+# Configuration for the Nightly Status Check workflow.
+#
+# Lists the platform service components and their nightly test workflows
+# that should be monitored. The nightly workflows are reusable workflows from
+# this repository, triggered by a caller workflow in the service repository
+# (e.g. https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml).
+#
+# To add a new component, append a new entry:
+#   - name:              component name as it will appear in the report
+#   - repository:        GitHub repository that hosts the nightly workflow (owner/repo)
+#   - workflow_file:     file name of the nightly workflow in the service repository
+#   - branch:            branch to check (default: main)
+#   - lookback_hours:    consider only runs not older than this many hours (default: 24)
+components:
+  - name: Consul
+    repository: Netcracker/qubership-consul
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24
