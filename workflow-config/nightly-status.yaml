@@ -17,3 +17,33 @@ components:
     workflow_file: run_nightly_tests.yaml
     branch: main
     lookback_hours: 24
+
+  - name: ZooKeeper
+    repository: Netcracker/qubership-zookeeper
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24
+
+  - name: Kafka
+    repository: Netcracker/qubership-kafka
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24
+
+  - name: RabbitMQ
+    repository: Netcracker/qubership-rabbitmq
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24
+
+  - name: Monitoring
+    repository: Netcracker/qubership-monitoring-operator
+    workflow_file: test-nightly-integration.yaml
+    branch: main
+    lookback_hours: 24
+
+  - name: PG skipper
+    repository: Netcracker/pgskipper-operator
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24
