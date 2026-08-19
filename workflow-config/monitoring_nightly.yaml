@@ -1,4 +1,19 @@
 jobs:
+  ## A special configuration section for generating jobs for installing previous releases on the current version
+  - purpose: automation
+    name: Clean [${release_version}], Upgrade to [${service_branch}]
+    sequence: upgrade
+    restricted: false
+    install:
+      version: ${release_version}
+      template: templates/monitoring/vm_with_smoke_and_simple_test.yml
+      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
+    upgrade:
+      version: ${service_branch}
+      template: templates/monitoring/values_test.yml
+      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
+  ## ===============================================================================
+
   ## Upgrade from previous releases to current
   - name: Clean [${service_branch}]
     engine: kind
