@@ -1,24 +1,9 @@
 jobs:
-  ## A special configuration section for generating jobs for installing previous releases and upgrading to the current version
-  - purpose: automation
-    name: Clean [${release_version}], Upgrade to [${service_branch}]
-    sequence: upgrade
-    restricted: false
-    install:
-      version: ${release_version}
-      template: templates/monitoring/vm_with_smoke_and_simple_test.yml
-      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
-    upgrade:
-      version: ${service_branch}
-      template: templates/monitoring/values_test.yml
-      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
-  ## ===============================================================================
-
-  ## Clean install and upgrade to the same current version with different params
+  ## Upgrade from previous releases to current
   - name: Clean [${service_branch}], Upgrade [${service_branch}] Diff Params
-    sequence: upgrade
+    engine: kind
+    sequence: clean
     restricted: false
-    #allure: true
     install:
       version: ${service_branch}
       template: templates/monitoring/vm_with_smoke_and_simple_test.yml
@@ -27,3 +12,13 @@ jobs:
       version: ${service_branch}
       template: templates/monitoring/values_test.yml
       artifact_name: Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params
+
+  ## OpenShift/MicroShift: same clean install, but via Gateway API instead of Ingress
+  - name: Clean [${service_branch}] on OpenShift (MicroShift) via Gateway API
+    engine: microshift
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/monitoring/vm_with_smoke_and_simple_test_gatewayapi.yml
+      artifact_name: Clean_${service_branch}_OpenShift_GatewayAPI
