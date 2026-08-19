@@ -151,8 +151,13 @@ jobs:
 
       - name: Get latest tag
         id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
         run: |
-          echo "latest_tag=main" >> $GITHUB_OUTPUT
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
 
       - name: Process versions file and matrix generation
         id: process-versions

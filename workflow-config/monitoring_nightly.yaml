@@ -1,12 +1,27 @@
 jobs:
-  ## Upgrade from previous releases to current
-  - name: Clean [${service_branch}], Upgrade [${service_branch}] Diff Params
-    sequence: clean
+  ## A special configuration section for generating jobs for installing previous releases and upgrading to the current version
+  - purpose: automation
+    name: Clean [${release_version}], Upgrade to [${service_branch}]
+    sequence: upgrade
     restricted: false
-    allure: true
+    install:
+      version: ${release_version}
+      template: templates/monitoring/vm_with_smoke_and_simple_test.yml
+      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
+    upgrade:
+      version: ${service_branch}
+      template: templates/monitoring/values_test.yml
+      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
+  ## ===============================================================================
+
+  ## Clean install and upgrade to the same current version with different params
+  - name: Clean [${service_branch}], Upgrade [${service_branch}] Diff Params
+    sequence: upgrade
+    restricted: false
+    #allure: true
     install:
       version: ${service_branch}
-      template: templates/monitoring/vm_with_smoke_and_simple_test_allure.yml
+      template: templates/monitoring/vm_with_smoke_and_simple_test.yml
       artifact_name: Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params
     upgrade:
       version: ${service_branch}
