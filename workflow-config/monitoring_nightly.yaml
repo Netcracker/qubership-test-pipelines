@@ -10,7 +10,7 @@ jobs:
       artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
     upgrade:
       version: ${service_branch}
-      template: templates/monitoring/values_test.yml
+      template: templates/monitoring/vm_with_smoke_and_simple_test.yml
       artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
   ## ===============================================================================
 
