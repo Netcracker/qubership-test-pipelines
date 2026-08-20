@@ -61,8 +61,8 @@ component_count=$(yq -o=json '.components' "${CONFIG_FILE}" | jq 'length')
     echo ""
     echo "_Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
     echo ""
-    echo "| Component | Status | Run | Started (UTC) | Duration | Failed jobs | Link |"
-    echo "|-----------|--------|-----|----------------|----------|-------------|------|"
+    echo "| Component | Status | Run | Started (UTC) | Duration | Link | Failed jobs |"
+    echo "|-----------|--------|-----|----------------|----------|------|-------------|"
 } > "${REPORT_FILE}"
 
 passed_count=0
@@ -125,14 +125,15 @@ for ((i = 0; i < component_count; i++)); do
         created_epoch=$(date -d "${created_at}" +%s 2>/dev/null || echo "0")
         age_hours=$(((NOW_EPOCH - created_epoch) / 3600))
 
-        # Collect the failed job names for this run (if any)
+        # Collect the failed job names for this run (if any).
+        # Escape "|" (used in matrix job names) so it does not break the markdown table.
         failed_jobs_cell="-"
         if [[ -n "${run_id}" && "${run_id}" != "null" ]]; then
             failed_jobs=$(gh api "repos/${repo}/actions/runs/${run_id}/jobs" \
                 --jq '[.jobs[] | select(.status == "completed" and .conclusion == "failure") | .name] | join(", ")' \
                 2>/dev/null || echo "")
             if [[ -n "${failed_jobs}" ]]; then
-                failed_jobs_cell="${failed_jobs}"
+                failed_jobs_cell="${failed_jobs//|/\\|}"
             fi
         fi
 
@@ -179,7 +180,7 @@ for ((i = 0; i < component_count; i++)); do
     echo "::endgroup::"
 
     {
-        echo "| ${name} | ${emoji} ${status_text} | ${run_cell} | ${started_cell} | ${duration_cell} | ${failed_jobs_cell} | ${link_cell} |"
+        echo "| ${name} | ${emoji} ${status_text} | ${run_cell} | ${started_cell} | ${duration_cell} | ${link_cell} | ${failed_jobs_cell} |"
     } >> "${REPORT_FILE}"
 done
 
