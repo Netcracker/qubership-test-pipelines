@@ -126,11 +126,12 @@ for ((i = 0; i < component_count; i++)); do
         age_hours=$(((NOW_EPOCH - created_epoch) / 3600))
 
         # Collect the failed job names for this run (if any).
+        # Each job is placed on its own line inside the cell (rendered with <br> in markdown).
         # Escape "|" (used in matrix job names) so it does not break the markdown table.
         failed_jobs_cell="-"
         if [[ -n "${run_id}" && "${run_id}" != "null" ]]; then
             failed_jobs=$(gh api "repos/${repo}/actions/runs/${run_id}/jobs" \
-                --jq '[.jobs[] | select(.status == "completed" and .conclusion == "failure") | .name] | join(", ")' \
+                --jq '[.jobs[] | select(.status == "completed" and .conclusion == "failure") | .name] | join("<br>")' \
                 2>/dev/null || echo "")
             if [[ -n "${failed_jobs}" ]]; then
                 failed_jobs_cell="${failed_jobs//|/\\|}"

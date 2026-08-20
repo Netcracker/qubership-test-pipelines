@@ -45,9 +45,9 @@ Statuses:
 `run_started_at` and `updated_at` timestamps. It is shown as `-` when no run is found.
 
 `Failed jobs` lists the names of the jobs that finished with the `failure` conclusion,
-comma-separated in a single cell. It is shown as `-` when there are no failed jobs or
-no run is found. Note: a literal `|` in matrix job names is escaped (`\|`) so it does
-not break the markdown table.
+each job on its own line inside the cell (rendered with `<br>`). It is shown as `-`
+when there are no failed jobs or no run is found. Note: a literal `|` in matrix job
+names is escaped (`\|`) so it does not break the markdown table.
 
 The report is published to the job summary and uploaded as the `nightly-status-report` artifact.
 
