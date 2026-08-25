@@ -31,6 +31,13 @@ inputs:
     type: boolean
     default: false
 
+  crd_list:
+    description: |
+      Space-separated list of Custom Resource names to save to artifacts
+      (e.g. `kafkaservices.netcracker.com`). Pass empty to skip CR collection.
+    required: false
+    default: ""
+
 runs:
   using: composite
   steps:
@@ -38,6 +45,27 @@ runs:
       shell: bash
       # language=bash
       run: mkdir -p artifacts
+
+    - name: Get Custom Resources JSON
+      shell: bash
+      if: always() && inputs.crd_list != ''
+      env:
+        NAMESPACE: ${{ inputs.namespace }}
+        CRD_LIST: ${{ inputs.crd_list }}
+      # language=bash
+      run: |
+        # ▶️ Save the JSON of every checked Custom Resource to artifacts/cr
+        set +e
+        echo "Getting Custom Resources JSON..."
+        mkdir -p artifacts/cr
+        for crd_name in $CRD_LIST; do
+          if cr_json=$(kubectl get "$crd_name" -n "$NAMESPACE" -o json 2>/dev/null); then
+            echo "$cr_json" > "artifacts/cr/${crd_name}.json"
+            echo "✅ CR JSON saved to artifacts/cr/${crd_name}.json"
+          else
+            echo "⚠️ Failed to get CR '$crd_name'"
+          fi
+        done
 
     - name: Get monitoring specific resources
       if: always() && inputs.monitoring_pipeline == 'true'

@@ -310,6 +310,7 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: pgskipper
+          crd_list: patronicores.netcracker.com
           artifact_name: Core_Installation_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
       # == 02 End ======= Core installation steps =======
@@ -349,6 +350,7 @@ jobs:
         with:
           namespace: pgskipper
           artifact_name: Services_Installation_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
+          crd_list: patroniservices.netcracker.com
           service_branch: ${{ matrix.test.install.version }}
       # == 03 End ======= Services installation steps =======
 
@@ -390,6 +392,7 @@ jobs:
         with:
           namespace: pgskipper
           artifact_name: Core_Upgrade_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
+          crd_list: patronicores.netcracker.com
           service_branch: ${{ matrix.test.upgrade.version }}
 
       - name: Upgrade Pgskipper Services to [${{ matrix.test.upgrade.version }}]
@@ -438,6 +441,7 @@ jobs:
         with:
           namespace: pgskipper
           artifact_name: Services_Upgrade_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
+          crd_list: patroniservices.netcracker.com
           service_branch: ${{ matrix.test.upgrade.version }}
       # == End ======= Specific steps for upgrade tests =======
 

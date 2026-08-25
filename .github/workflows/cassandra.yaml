@@ -219,6 +219,7 @@ jobs:
           namespace: monitoring
           artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
           service_branch: main
+          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
       # == End Monitoring installation tests =======
 
       # == Start ======= Specific steps for Allure report =======
@@ -307,6 +308,7 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Operator_Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
+          crd_list: ${{ steps.install_cassandra_operator_get_crds.outputs.crd_names }}
       - name: Debug Cassandra Operator resources
         if: always()
         shell: bash
@@ -388,6 +390,7 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Services_Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
+          crd_list: ${{ steps.install_cassandra_services_get_crds.outputs.crd_names }}
       # == 04 End ===== Install Cassandra Services =====
 
       # == Start ======= Specific steps for S3 =======
@@ -435,6 +438,7 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
+          crd_list: ${{ steps.install_cassandra_operator_get_crds.outputs.crd_names }}
       # == 05 End ===== Upgrade Cassandra Operator =====
 
       # == 06 Start ===== Upgrade Cassandra Services =====
@@ -470,6 +474,7 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Services_Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
+          crd_list: ${{ steps.install_cassandra_services_get_crds.outputs.crd_names }}
       # == 06 End ===== Upgrade Cassandra Services =====
 
   final-status-check:
