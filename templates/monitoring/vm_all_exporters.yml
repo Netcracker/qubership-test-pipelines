@@ -4,7 +4,8 @@ grafana:
     install: true
 integrationTests:
   install: true
-  tags: grafanaORsmoke
+  #tags: grafanaORsmoke
+  tags: smoke
   timeoutBeforeStart: 60
   statusWriting:
     enabled: false
@@ -58,8 +59,6 @@ versionExporter:
 cloudEventsExporter:
   install: true
 goldpingerExporter:
-  install: true
-certExporter:
   install: true
 sslExporter:
   install: true
