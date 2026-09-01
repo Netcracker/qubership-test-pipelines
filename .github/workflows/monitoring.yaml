@@ -369,6 +369,46 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
 
+      - name: Clean up operator-managed ServiceMonitors before Helm upgrade
+        if: matrix.test.sequence == 'upgrade'
+        shell: bash
+        env:
+          NAMESPACE: monitoring
+        run: |
+          # Old monitoring operator versions create ServiceMonitors/PodMonitors with
+          # app.kubernetes.io/managed-by=monitoring-operator. Newer charts render them
+          # via Helm, and `helm upgrade` refuses to adopt resources lacking Helm
+          # ownership metadata ("invalid ownership metadata" error).
+          # The old operator keeps reconciling and re-creating these resources right
+          # after they are deleted, so first scale the operator down (same selector used
+          # by the chart's own grafana-cleanup-job), then delete the operator-managed
+          # ServiceMonitors/PodMonitors. After `helm upgrade` the new operator comes up
+          # and recreates everything with correct ownership.
+          # NOTE: only ServiceMonitors/PodMonitors are deleted - NOT the Grafana/VM CRs
+          # or operator-created Deployments (deleting those breaks the operator reconcile
+          # cycle, e.g. "Grafana reconcile cycle failed").
+          echo "> Scaling down old monitoring-operator..."
+          kubectl scale deployment -n "${NAMESPACE}" \
+            --replicas=0 \
+            --selector app.kubernetes.io/component=qubership-monitoring-operator || true
+          # Fallback: scale by the operator's default name if the selector matched nothing.
+          if kubectl get deployment monitoring-operator -n "${NAMESPACE}" >/dev/null 2>&1; then
+            replicas=$(kubectl get deployment monitoring-operator -n "${NAMESPACE}" \
+              -o jsonpath='{.spec.replicas}')
+            if [ "${replicas}" != "0" ]; then
+              echo "  Scaling deployment/monitoring-operator to 0"
+              kubectl scale deployment monitoring-operator -n "${NAMESPACE}" --replicas=0
+            fi
+          fi
+          sleep 10
+
+          echo "> Deleting operator-managed ServiceMonitors/PodMonitors..."
+          kubectl delete servicemonitors,podmonitors -n "${NAMESPACE}" \
+            -l app.kubernetes.io/managed-by=monitoring-operator --ignore-not-found
+
+          echo "> Remaining ServiceMonitors/PodMonitors:"
+          kubectl get servicemonitors,podmonitors -n "${NAMESPACE}" || true
+
       - name: Upgrade Monitoring to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
