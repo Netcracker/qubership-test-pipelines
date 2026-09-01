@@ -212,6 +212,14 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
+      - name: Checkout Monitoring operator
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-monitoring-operator
+          persist-credentials: false
+
       - name: Create cluster (Kind)
         if: matrix.test.engine != 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -285,6 +293,32 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/provision_etcd_certs_openshift
       # == End ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
       # == 01 End ======= Common pre-steps for all tests =======
+
+      - name: Apply monitoring CRDs
+        shell: bash
+        run: |
+          # ▶️ Apply monitoring CRDs before installing the chart.
+          # Server-side apply is used because the platformmonitorings CRD is very large
+          # and client-side apply stores the whole manifest in the
+          # kubectl.kubernetes.io/last-applied-configuration annotation, which exceeds
+          # the 262144-byte annotation limit ("metadata.annotations: Too long").
+          crd_dirs=(
+            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/grafana-operator/crds"
+            "qubership-monitoring-operator/charts/qubership-monitoring-crds/crds"
+          )
+          for crd_dir in "${crd_dirs[@]}"; do
+            if [ -d "${crd_dir}" ]; then
+              echo "Applying CRDs from ${crd_dir}"
+              for file in "${crd_dir}"/*.yaml "${crd_dir}"/*.yml; do
+                if [ -f "$file" ]; then
+                  echo "Applying $file"
+                  kubectl apply --server-side=true -f "$file"
+                fi
+              done
+            else
+              echo "::warning::CRD directory not found: ${crd_dir}"
+            fi
+          done
 
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
