@@ -263,6 +263,7 @@ jobs:
           namespace: ${{ env.NAMESPACE }}
           artifact_name: Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
       # == 02 End ===== Install Zookeeper [LATEST] =====
 
       # == Start ======= Specific steps for S3 =======
@@ -370,6 +371,7 @@ jobs:
           namespace: ${{ env.NAMESPACE }}
           artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
+          crd_list: ${{ steps.upgrade_zoo_get_crds.outputs.crd_names }}
 
       # == 03 End === Upgrade Zookeeper [LATEST] =====
 
@@ -426,6 +428,7 @@ jobs:
           namespace: ${{ env.NAMESPACE }}
           artifact_name: Install_tls_${{ inputs.service_branch }}
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
       - name: Get Zookeeper Certs
         uses: ./qubership-test-pipelines/actions/shared/get_certs
@@ -507,6 +510,7 @@ jobs:
           namespace: ${{ env.NAMESPACE }}
           artifact_name: Install_tls_secrets_${{ inputs.service_branch }}
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
   # 17-Upgrade [LATEST] TLS Certificates -> Clean [LATEST] TLS Certificates
   Clean-Latest-TLS-Certificates:
@@ -566,6 +570,7 @@ jobs:
           namespace: ${{ env.NAMESPACE }}
           artifact_name: Install_tls_cert_${{ inputs.service_branch }}
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
 
   final-status-check:
     if: ${{ always() }}

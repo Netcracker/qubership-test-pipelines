@@ -303,6 +303,7 @@ jobs:
         with:
           namespace: opensearch
           artifact_name: Installation_${{ matrix.test.install.artifact_name }}
+          crd_list: ${{ steps.install_opensearch_get_crds.outputs.crd_names }}
           service_branch: ${{ matrix.test.install.version }}
 
       - name: Get Opensearch secrets
@@ -371,6 +372,7 @@ jobs:
         with:
           namespace: opensearch
           artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          crd_list: ${{ steps.upgrade_opensearch_get_crds.outputs.crd_names }}
           service_branch: ${{ matrix.test.upgrade.version }}
       # == End ===== Upgrade steps ============
 
