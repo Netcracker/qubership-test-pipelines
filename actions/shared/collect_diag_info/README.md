@@ -13,6 +13,8 @@ and upload them as a workflow artifact for post-deploy or post-failure investiga
   (up to 300 seconds) for containers that are not yet running or terminated
 - Captures previous-run logs for containers that have restarted at least once
 - Lists all resources (`kubectl get all`) and secret names in the namespace
+- Saves the full JSON of every checked Custom Resource (`crd_list`) to `artifacts/cr/`
+  so a failing CR can be identified from the uploaded artifacts
 - Optionally collects VictoriaMetrics Custom Resource YAML files for monitoring pipelines
 - Generates a timestamped artifact name automatically, or uses a caller-supplied name
 - Uploads all collected files as a single GitHub Actions artifact
@@ -28,6 +30,7 @@ and upload them as a workflow artifact for post-deploy or post-failure investiga
 | `artifact_name` | Custom base name for the uploaded artifact. When provided, the final name is `<artifact_name>_<timestamp>`. When empty, the name is generated as `<job>_<namespace>_<branch>_<version>_artifacts_<timestamp>`. | No | `""` |
 | `version` | Matrix dimension value (e.g. `${{ matrix.service_image }}`) appended as a suffix in the auto-generated artifact name. Has no effect when `artifact_name` is provided. | No | `""` |
 | `monitoring_pipeline` | When `true`, dumps VictoriaMetrics CRs (`VMAlertManager`, `VMAlert`, `VMAgent`, `VMSingle`, `VMAuth`, `PlatformMonitoring`) as YAML files into `artifacts/`. | No | `false` |
+| `crd_list` | Space-separated list of Custom Resource names (e.g. `kafkaservices.netcracker.com`) whose full JSON is saved to `artifacts/cr/<cr_name>.json`. Pass empty to skip CR collection. | No | `""` |
 
 ---
 
@@ -43,26 +46,28 @@ whose name is derived from the inputs (see Additional Information).
 The action gathers diagnostics in the following order, with most steps running under
 `if: always()` so they execute even when previous steps failed:
 
-1. **Monitoring resources** (only when `monitoring_pipeline: true`, runs under `if: always()`): exports six
+1. **Custom Resources JSON** (only when `crd_list` is non-empty, runs under `if: always()`):
+   for every CR in the list, saves its full JSON to `artifacts/cr/<cr_name>.json`.
+2. **Monitoring resources** (only when `monitoring_pipeline: true`, runs under `if: always()`): exports six
    VictoriaMetrics and `PlatformMonitoring` CRs as YAML files into `artifacts/`.
-2. **Pod list**: runs `kubectl get pods` and saves output to
+3. **Pod list**: runs `kubectl get pods` and saves output to
    `artifacts/<namespace>_get_pods.txt`.
-3. **Pod YAML manifests**: saves each pod's full YAML to
+4. **Pod YAML manifests**: saves each pod's full YAML to
    `artifacts/pod_yamls/<pod-name>.yaml`. Failures write a `_FAILED.txt` marker instead.
-4. **Namespace events**: saves `kubectl events` output to
+5. **Namespace events**: saves `kubectl events` output to
    `artifacts/<namespace>_get_events.txt`.
-5. **PVC YAML**: saves all PersistentVolumeClaim manifests to
+6. **PVC YAML**: saves all PersistentVolumeClaim manifests to
    `artifacts/<namespace>_get_pvc_yaml.yaml`.
-6. **PV list**: filters cluster-wide PVs for those bound to the namespace and saves to
+7. **PV list**: filters cluster-wide PVs for those bound to the namespace and saves to
    `artifacts/<namespace>_get_pv.txt`.
-7. **Container logs**: for every container in every pod, collects current logs to
+8. **Container logs**: for every container in every pod, collects current logs to
    `artifacts/logs/<pod>__<container>.log`. Containers not yet in `running` or `terminated`
    state are queued and retried every 5 seconds until ready or the 300-second hard timeout
    is reached. Containers with `restartCount > 0` also get their previous logs saved to
    `artifacts/logs/<pod>__<container>__previous.log`.
-8. **All resources**: prints `kubectl get all` to the workflow log (not saved to a file).
-9. **Secrets list**: prints `kubectl get secrets` to the log (names only, not values).
-10. **Artifact upload**: generates a timestamped artifact name and uploads the entire
+9. **All resources**: prints `kubectl get all` to the workflow log (not saved to a file).
+10. **Secrets list**: prints `kubectl get secrets` to the log (names only, not values).
+11. **Artifact upload**: generates a timestamped artifact name and uploads the entire
     `artifacts/` folder via `actions/upload-artifact@v4`.
 
 ---
@@ -101,6 +106,13 @@ The log-collection step uses a two-pass approach:
 
 Log files for the first pass use a double-underscore separator (`pod__container.log`).
 Log files collected in the retry loop use a single-underscore separator (`pod_container.log`).
+
+### Custom Resource JSON files
+
+When `crd_list` is non-empty, the full JSON of every checked Custom Resource is saved to
+`artifacts/cr/<cr_name>.json` (e.g. `artifacts/cr/kafkaservices.netcracker.com.json`). This
+makes it easy to identify a failing CR from the uploaded artifacts. Missing CRs are reported
+as a warning and do not fail the step.
 
 ### Monitoring YAML files
 
@@ -144,6 +156,7 @@ jobs:
         with:
           namespace: consul
           service_branch: ${{ github.ref_name }}
+          crd_list: consul
 ```
 
 ---

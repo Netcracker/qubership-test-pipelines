@@ -298,6 +298,7 @@ jobs:
           namespace: zookeeper
           artifact_name: Install_Zookeeper_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
           service_branch: main
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
       # == End Zookeeper installation tests =======
 
       # == Start ======= Specific steps for S3 =======
@@ -404,6 +405,7 @@ jobs:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Install_Kafka_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
+          crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
       # == End kafka installation tests =======
 
       - name: Get Kafka secrets
@@ -446,6 +448,7 @@ jobs:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Install_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
+          crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
       # == End kafka service installation tests =======
 
       # == Start kafka upgrade tests =======
@@ -495,6 +498,7 @@ jobs:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Upgrade_Kafka_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
+          crd_list: ${{ steps.upgrade_kafka_get_crds.outputs.crd_names }}
 
       - name: Upgrade Kafka Service to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
@@ -547,6 +551,7 @@ jobs:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Upgrade_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
+          crd_list: ${{ steps.upgrade_kafka_service_get_crds.outputs.crd_names }}
       # == End kafka upgrade tests =======
 
       # == Start kafka migrate tests =======
@@ -589,6 +594,7 @@ jobs:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Migrate_${{ matrix.service_image }}_${{ matrix.test.migrate.artifact_name }}
           service_branch: ${{ matrix.test.migrate.version }}
+          crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
 
       # Upgrade after migration (Kafka 4)
       - name: Print upgrade deployment parameters (after migrate)
@@ -630,6 +636,7 @@ jobs:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Upgrade_AfterMigrate_${{ matrix.service_image }}_${{ matrix.test.migrate.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
+          crd_list: ${{ steps.install_kafka_get_crds.outputs.crd_names }}
 
       # Kafka Service after migration
       - name: Upgrade Kafka Service to [${{ matrix.test.upgrade.version }}] (after migrate)
@@ -666,6 +673,7 @@ jobs:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: ServiceUpgrade_AfterMigrate_${{ matrix.service_image }}_${{ matrix.test.migrate.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
+          crd_list: ${{ steps.install_kafka_service_get_crds.outputs.crd_names }}
       # == End kafka migrate tests =======
 
       # == Start ======= Specific steps for S3 =======
@@ -744,6 +752,7 @@ jobs:
           namespace: zookeeper
           artifact_name: Migration_ZooKeeper_Install
           service_branch: main
+          crd_list: ${{ steps.zoo_get_crds.outputs.crd_names }}
 
       # ===== 2. Kafka 3 Core with Zookeeper =====
       - name: Install [${{ inputs.service_branch }}] Kafka 3 Core
@@ -779,6 +788,7 @@ jobs:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Migration_Kafka3_Core
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
 
       - name: Install [${{ inputs.service_branch }}] Kafka 3 Service
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -814,6 +824,7 @@ jobs:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka3_Service
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
       # ===== 4. Migration to Kafka 3 Core KRaft =====
       - name: Migrate [${{ inputs.service_branch }}] Kafka Core to KRaft
@@ -847,6 +858,7 @@ jobs:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Migration_Kafka3_Core_KRaft
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
 
       # ===== 5. Migration to Kafka 3 Service KRaft =====
       - name: Migrate [${{ inputs.service_branch }}] Kafka 3 Service to KRaft
@@ -880,6 +892,7 @@ jobs:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka3_Service_KRaft
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
       # ===== 6. Upgrade to Kafka 4 Core =====
       - name: Upgrade Kafka 3 Core to [${{ inputs.service_branch }}] Kafka 4 Core
@@ -913,6 +926,7 @@ jobs:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Migration_Kafka4_Core
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
 
       # ===== 7. Upgrade to Kafka 4 Service =====
       - name: Upgrade Kafka 3 Service to [${{ inputs.service_branch }}] Kafka 4 Service
@@ -945,6 +959,7 @@ jobs:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka4_Service
           service_branch: ${{ inputs.service_branch }}
+          crd_list: ${{ steps.service_get_crds.outputs.crd_names }}
 
   final-status-check:
     if: ${{ always() }}
