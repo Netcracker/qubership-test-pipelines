@@ -1,6 +1,11 @@
 check_cr_conditions() {
     local crd_name="$1"
     local namespace="$2"
+    # Whether a 'failed' condition should fail immediately (true, default) or be
+    # treated as in-progress and keep polling (false). Used by monitoring where the
+    # PlatformMonitoring CR can transiently report 'Failed' reconcile conditions
+    # (e.g. ReconcileCycleStatus / ReconcileGrafanaStatus) before becoming successful.
+    local fail_on_failed="${3:-true}"
 
     if [ -z "$crd_name" ]; then
         echo "CRD name not specified"
@@ -39,6 +44,13 @@ check_cr_conditions() {
     if [ -n "$failed_conditions" ]; then
         echo "📄 Conditions JSON:"
         echo "$conditions_json"
+        if [ "$fail_on_failed" = "false" ]; then
+            # Monitoring CRs may transiently report 'Failed' conditions before
+            # becoming successful (known operator bug), so keep polling instead of
+            # failing on the first occurrence of a failed condition.
+            echo "::warning:: ❌ CR '$crd_name' has failed conditions but fail_on_failed=false; treating as in-progress and continuing to poll"
+            return 1
+        fi
         return 2
     elif [ -n "$in_progress_conditions" ]; then
         return 1

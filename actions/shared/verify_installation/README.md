@@ -32,6 +32,7 @@ pod readiness validation, and Robot Framework test result collection.
 | `test_pod_prefix` | Substring of the test pod name to search for (e.g. `integration-robot-tests`). Finds the first pod with this value in its name. | No | `"tests"` |
 | `monitoring_pipeline` | When `true`, runs additional VictoriaMetrics CR status checks using `check-vm-cr-statuses.sh`. Requires `repository_name` and the expected-vm-cr-statuses.json file to be present. | No | `false` |
 | `repository_name` | Full `org/repo` checkout path of the service repository. Required when `monitoring_pipeline` is `true` — used to locate `.github/expected-vm-cr-statuses.json`. | No | `""` |
+| `fail_on_cr_failed` | When `true` (default), a CR reporting a `failed` condition fails the check immediately. When `false`, a `failed` condition is treated like `in-progress` and the action keeps polling until the CR becomes successful or `service_ready_max_retries` is exhausted. Used by monitoring, where the PlatformMonitoring CR can transiently report `Failed` reconcile conditions before becoming successful. | No | `true` |
 
 ---
 
@@ -89,12 +90,20 @@ The action runs three sequential verification phases, collecting failures into a
 `check_cr.sh` reads `.status.conditions[]` and classifies by matching condition `type`
 (case-insensitive substring):
 
-- Contains `failed` → exit 2 (hard failure, stops retrying)
+- Contains `failed` → exit 2 (hard failure, stops retrying). When the `fail_on_cr_failed`
+  input is `false`, a `failed` condition instead returns exit 1 and the action keeps
+  polling until the CR becomes successful (or `service_ready_max_retries` is exhausted).
 - Contains `progress` → exit 1 (still running, retry)
 - Contains `success` → exit 0 (done)
 - No matching condition → treated as in-progress (exit 1)
 
 If `crd_list` is empty, `check_cr.sh` returns exit 0 immediately and CR checking is skipped.
+
+> **Why `fail_on_cr_failed: false` for monitoring:** the PlatformMonitoring CR can
+> transiently report `Failed` conditions (e.g. `reason: ReconcileCycleStatus` or
+> `reason: ReconcileGrafanaStatus`) for ~40 seconds during reconcile before becoming
+> successful. That is a known operator bug, so monitoring workflows set this flag to
+> `false` to avoid failing the pipeline on the first transient `failed` condition.
 
 ### Resource readiness check
 

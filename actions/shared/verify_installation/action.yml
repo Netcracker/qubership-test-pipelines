@@ -61,6 +61,17 @@ inputs:
     required: false
     default: ""
 
+  fail_on_cr_failed:
+    description: |
+      Fail immediately when a CR reports a 'failed' condition (true, default).
+      Set to false to treat a 'failed' condition as in-progress and keep polling
+      instead of failing on the first occurrence. Used for monitoring, where the
+      PlatformMonitoring CR can transiently report 'Failed' reconcile conditions
+      (e.g. ReconcileCycleStatus / ReconcileGrafanaStatus) before becoming successful.
+    required: false
+    type: boolean
+    default: true
+
 runs:
   using: composite
   steps:
@@ -85,6 +96,7 @@ runs:
         CRD_LIST: ${{ inputs.crd_list }}
         MONITORING_PIPELINE: ${{ inputs.monitoring_pipeline }}
         REPOSITORY_NAME: ${{ inputs.repository_name }}
+        FAIL_ON_CR_FAILED: ${{ inputs.fail_on_cr_failed }}
       # language=bash
       run: |
         # ▶️ Check service is ready
@@ -100,7 +112,7 @@ runs:
 
           if [ "$cr_success" = "false" ]; then
             set +e
-            ./qubership-test-pipelines/scripts/check_cr.sh "$CRD_LIST" "$NAMESPACE"
+            ./qubership-test-pipelines/scripts/check_cr.sh "$CRD_LIST" "$NAMESPACE" "$FAIL_ON_CR_FAILED"
             cr_exit_code=$?
             set -e
 
