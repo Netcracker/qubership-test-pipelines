@@ -454,9 +454,9 @@ jobs:
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Sleep 1m
-        if: matrix.test.sequence == 'upgrade'
-        run: sleep 1m
+#      - name: Sleep 1m
+#        if: matrix.test.sequence == 'upgrade'
+#        run: sleep 1m
 
       - name: Hardening Check
         if: inputs.scope == 'hardening'
