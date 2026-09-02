@@ -297,53 +297,27 @@ jobs:
       - name: Apply monitoring CRDs
         shell: bash
         run: |
-          # ▶️ Apply/replace monitoring CRDs before installing the chart.
-          # The monitoring stack consists of several operators that own their own CRDs:
-          #   - monitoring-operator      -> monitoring.netcracker.com (PlatformMonitoring)
-          #   - grafana-operator        -> grafana.integreatly.org
-          #   - victoriametrics-operator-> operator.victoriametrics.com + monitoring.coreos.com
-          # helm installs CRDs only on install and does NOT update them on upgrade, and
-          # helm_deploy's "Replace CRDs" step covers only the chart's root crds dir.
-          # Therefore CRDs from ALL crds dirs below are explicitly created/replaced here,
-          # so operator version upgrades pick up the new CRD schemas.
-          # `kubectl replace` (not client-side apply) is used: it reliably updates an
-          # existing CRD's schema and does not store the whole (huge platformmonitorings)
-          # manifest in the kubectl.kubernetes.io/last-applied-configuration annotation,
-          # which would exceed the 262144-byte annotation limit.
+          # ▶️ Apply monitoring CRDs before installing the chart.
+          # Server-side apply is used because the platformmonitorings CRD is very large
+          # and client-side apply stores the whole manifest in the
+          # kubectl.kubernetes.io/last-applied-configuration annotation, which exceeds
+          # the 262144-byte annotation limit ("metadata.annotations: Too long").
           crd_dirs=(
-            "qubership-monitoring-operator/charts/qubership-monitoring-operator/crds"
-            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/grafana/crds"
-            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/victoriametrics/crds"
+            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/grafana-operator/crds"
             "qubership-monitoring-operator/charts/qubership-monitoring-crds/crds"
           )
-          # Deduplicate by CRD name: the qubership-monitoring-crds chart overlaps with the
-          # sub-chart crds dirs, so process each CRD only once (first dir wins).
-          declare -A seen
           for crd_dir in "${crd_dirs[@]}"; do
-            if [ ! -d "${crd_dir}" ]; then
+            if [ -d "${crd_dir}" ]; then
+              echo "Applying CRDs from ${crd_dir}"
+              for file in "${crd_dir}"/*.yaml "${crd_dir}"/*.yml; do
+                if [ -f "$file" ]; then
+                  echo "Applying $file"
+                  kubectl apply --server-side=true -f "$file"
+                fi
+              done
+            else
               echo "::warning::CRD directory not found: ${crd_dir}"
-              continue
             fi
-            for file in "${crd_dir}"/*.yaml "${crd_dir}"/*.yml; do
-              [ -f "$file" ] || continue
-              crd_name=$(yq e '.metadata.name' "$file" 2>/dev/null)
-              if [ -z "${crd_name}" ] || [ "${crd_name}" = "null" ]; then
-                echo "::warning::Could not read CRD name from $file"
-                continue
-              fi
-              if [[ -n "${seen[${crd_name}]+x}" ]]; then
-                echo "  Skipping duplicate CRD ${crd_name} ($file)"
-                continue
-              fi
-              seen["${crd_name}"]=1
-              if kubectl get crd "${crd_name}" >/dev/null 2>&1; then
-                echo "  Replacing CRD ${crd_name} ($file)"
-                kubectl replace -f "$file"
-              else
-                echo "  Creating CRD ${crd_name} ($file)"
-                kubectl create -f "$file"
-              fi
-            done
           done
 
       - name: Print clean install deployment parameters
