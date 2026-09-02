@@ -59,7 +59,5 @@ cloudEventsExporter:
   install: true
 goldpingerExporter:
   install: true
-certExporter:
-  install: true
 sslExporter:
   install: true
