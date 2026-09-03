@@ -1,17 +1,19 @@
 jobs:
   ## A special configuration section for generating jobs for installing previous releases on the current version
+  ## Upgrade between releases: install the previous release with regular parameters,
+  ## then upgrade to the current branch with (almost) all exporters enabled.
   - purpose: automation
-    name: Clean [${release_version}], Upgrade to [${service_branch}]
+    name: Clean [${release_version}], Upgrade to [${service_branch}] all exporters
     sequence: upgrade
     restricted: false
     install:
       version: ${release_version}
       template: templates/monitoring/vm_with_smoke_and_simple_test.yml
-      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
+      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}_All_Exporters
     upgrade:
       version: ${service_branch}
-      template: templates/monitoring/vm_with_smoke_and_simple_test.yml
-      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}
+      template: templates/monitoring/vm_all_exporters.yml
+      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}_All_Exporters
   ## ===============================================================================
 
   ## Upgrade from previous releases to current
@@ -33,13 +35,3 @@ jobs:
       version: ${service_branch}
       template: templates/monitoring/vm_with_smoke_and_simple_test_gatewayapi.yml
       artifact_name: Clean_${service_branch}_OpenShift_GatewayAPI
-
-  ## Clean install of the current version with all exporters enabled
-  - name: Clean [${service_branch}] all exporters
-    engine: kind
-    sequence: clean
-    restricted: false
-    install:
-      version: ${service_branch}
-      template: templates/monitoring/vm_all_exporters.yml
-      artifact_name: Clean_${service_branch}_All_Exporters
