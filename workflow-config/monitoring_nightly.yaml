@@ -35,3 +35,14 @@ jobs:
       version: ${service_branch}
       template: templates/monitoring/vm_with_smoke_and_simple_test_gatewayapi.yml
       artifact_name: Clean_${service_branch}_OpenShift_GatewayAPI
+
+  ## Clean install of the current version with TLS enabled for VictoriaMetrics (cert-manager)
+  - name: Clean [${service_branch}] TLS
+    engine: kind
+    sequence: install
+    restricted: false
+    tls: true
+    install:
+      version: ${service_branch}
+      template: templates/monitoring/vm_with_smoke_and_simple_test_tls.yml
+      artifact_name: Clean_${service_branch}_TLS
