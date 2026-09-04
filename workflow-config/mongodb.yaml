@@ -1,0 +1,9 @@
+jobs:
+  - name: Clean [${service_branch}]
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template_operator: templates/mongodb-service/sample.yaml
+      template_services: templates/mongodb-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT
