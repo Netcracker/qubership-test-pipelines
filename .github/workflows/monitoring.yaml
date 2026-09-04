@@ -257,6 +257,12 @@ jobs:
         if: matrix.test.engine != 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
 
+      # == Start TLS certs addition if needed =======
+      - name: Setup TLS
+        if: matrix.test.tls == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+      # == End TLS certs addition if needed =======
+
       # == Start ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
       - name: Setup TLS (cert-manager + self-signed ClusterIssuer)
         if: matrix.test.engine == 'microshift'
