@@ -44,6 +44,19 @@ robotTests:
   dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
   tags: smoke
   iteration: "1"
+  atpReport:
+    enabled: false
+    atpStorage:
+      provider: aws
+      serverUrl: https://s3.amazonaws.com
+      serverUiUrl: ""
+      bucket: qstp-results
+      region: us-east-1
+      username: ""
+      password: ""
+  atpReportViewUiUrl: https://test.com
+  environmentName: cassandra
+  enableJiraIntegration: false
 consulRegistration:
   Enabled: false
   Port: "8500"

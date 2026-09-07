@@ -3,6 +3,15 @@ import sys
 
 import yaml
 
+_LITERALS = {"true": True, "false": False, "null": None, "~": None}
+
+
+def parse_value(value: str):
+    """Coerce boolean/null literals; keep secrets and other values as plain strings."""
+    if not value:
+        return ""
+    return _LITERALS.get(value.lower(), value)
+
 
 def set_new_value(data, path, value):
     keys = path.split("/")
@@ -27,8 +36,7 @@ def main(args_):
     except FileNotFoundError:
         print(f"File not found: {path_to_file}")
         sys.exit(1)
-        sys.exit(1)
-    set_new_value(data_, args_.path, args_.value)
+    set_new_value(data_, args_.path, parse_value(args_.value))
     with open(path_to_file, "w") as f:
         yaml.dump(data_, f, default_flow_style=False, sort_keys=False)
 

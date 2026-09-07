@@ -1,0 +1,10 @@
+operator:
+  image: ghcr.io/netcracker/qubership-mongodb-operator:main
+  initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
+mongodb:
+  install: true
+  storage:
+    size: 4Gi
+    storageClasses:
+      - standard
+DEPLOY_W_HELM: true
