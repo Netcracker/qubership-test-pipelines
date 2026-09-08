@@ -23,7 +23,9 @@ jobs:
     name: Check nightly workflow statuses
     runs-on: ubuntu-latest
     env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # NIGHTLY_STATUS_TOKEN (PAT with access to the service repos) is required to download
+      # their Actions logs; falls back to the repo-scoped GITHUB_TOKEN otherwise.
+      GH_TOKEN: ${{ secrets.NIGHTLY_STATUS_TOKEN || secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
