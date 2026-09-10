@@ -3,13 +3,18 @@ operator:
   initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 backup:
   install: true
+  backupUser: "I09^0k|9lH"
+  backupPassword: "O&881lP1g|"
   storage:
     size: 4Gi
     storageClasses:
       - standard
 dbaas:
   install: true
-  dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
+  dbaasUser: "0c3O2|%l1R"
+  dbaasPassword: "DbAa5P!w7#kL2@mQ9^rT"
+  dbaasAggregatorUser: "XE8.iu4fg1=8QpHmkMok"
+  dbaasAggregatorPassword: "WEutev!KQi>0x}+8M^^e"
 prometheusExporter:
   install: false
 robotTests:

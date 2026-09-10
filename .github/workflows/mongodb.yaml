@@ -283,6 +283,35 @@ jobs:
           artifact_name: MongoDB_Operator_Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
 
+      # == Start ======= Specific steps for S3 =======
+      - name: Create S3 bucket
+        id: create_bucket
+        if: matrix.test.install.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: mongodb
+
+      - name: Add S3 secrets to MongoDB services template
+        if: matrix.test.install.s3 == true
+        # zizmor: ignore[template-injection]
+        run: |
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
+            --path='backup/s3/accessKeyId' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
+            --path='backup/s3/accessKeySecret' \
+            --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
+          && python qubership-test-pipelines/scripts/update_yaml.py \
+            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
+            --path='backup/s3/bucketName' \
+            --value="${{ steps.create_bucket.outputs.bucket_name }}"
+      # == End ======= Specific steps for S3 =======
+
       - name: Print services install deployment parameters
         # zizmor: ignore[template-injection]
         run: cat qubership-test-pipelines/${{ matrix.test.install.template_services }}
@@ -323,6 +352,17 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: MongoDB_Services_Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Delete S3 bucket
+        if: always() && matrix.test.install.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
+      # == End ======= Specific steps for S3 =======
 
       - name: Upgrade MongoDB Operator to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'

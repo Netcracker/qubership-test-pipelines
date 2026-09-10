@@ -9,10 +9,10 @@ backup:
       - standard
 dbaas:
   install: true
-  dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
+  multiUsers: true
 prometheusExporter:
   install: false
 robotTests:
   install: true
   dockerImage: ghcr.io/netcracker/mongodb-docker-tests:main
-  tags: smoke
+  tags: dbaas_multi_users

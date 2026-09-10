@@ -2,14 +2,13 @@ operator:
   image: ghcr.io/netcracker/mongodb-supplementary:main
   initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 backup:
-  install: true
+  install: false
   storage:
     size: 4Gi
     storageClasses:
       - standard
 dbaas:
-  install: true
-  dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
+  install: false
 prometheusExporter:
   install: false
 robotTests:

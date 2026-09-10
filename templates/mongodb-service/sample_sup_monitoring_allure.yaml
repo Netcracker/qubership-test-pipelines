@@ -11,7 +11,7 @@ dbaas:
   install: true
   dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
 prometheusExporter:
-  install: false
+  install: true
 robotTests:
   install: true
   dockerImage: ghcr.io/netcracker/mongodb-docker-tests:main

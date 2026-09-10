@@ -3,6 +3,8 @@ operator:
   initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 mongodb:
   install: true
+  rootUser: "M~!ch=EB@_DaDzm_uN"
+  rootPassword: "MAn[P%UG5qQh76b!@#:&*-(_G=Xd"
   storage:
     size: 4Gi
     storageClasses:
