@@ -1,0 +1,31 @@
+operator:
+  image: ghcr.io/netcracker/mongodb-supplementary:main
+  initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
+backup:
+  install: true
+  storage:
+    size: 4Gi
+    storageClasses:
+      - standard
+dbaas:
+  install: true
+  dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
+prometheusExporter:
+  install: false
+robotTests:
+  install: true
+  dockerImage: ghcr.io/netcracker/mongodb-docker-tests:main
+  tags: smoke
+  atpReport:
+    enabled: false
+    atpStorage:
+      provider: aws
+      serverUrl: https://s3.amazonaws.com
+      serverUiUrl: ""
+      bucket: qstp-results
+      region: us-east-1
+      username: ""
+      password: ""
+  atpReportViewUiUrl: https://test.com
+  environmentName: mongodb
+  enableJiraIntegration: false
