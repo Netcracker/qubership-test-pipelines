@@ -16,7 +16,7 @@ backup:
     accessKeySecret: ""
     endpointUrl: https://s3.amazonaws.com
 dbaas:
-  install: true
+  install: false
   dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
 prometheusExporter:
   install: false

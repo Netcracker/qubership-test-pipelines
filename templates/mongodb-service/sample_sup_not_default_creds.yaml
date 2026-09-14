@@ -10,7 +10,7 @@ backup:
     storageClasses:
       - standard
 dbaas:
-  install: true
+  install: false
   dbaasUser: "0c3O2|%l1R"
   dbaasPassword: "DbAa5P!w7#kL2@mQ9^rT"
   dbaasAggregatorUser: "XE8.iu4fg1=8QpHmkMok"
