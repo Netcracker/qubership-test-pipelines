@@ -40,7 +40,7 @@ To add a new component, append an entry to the config file.
 The workflow generates `nightly-status-report.md` with a table:
 
 | Component | Status | Run | Started (UTC) | Duration | Link | Failed jobs |
-|-----------|--------|-----|----------------|----------|------|-------------|
+|-----------|--------|-----|---------------|----------|------|-------------|
 
 Statuses:
 
