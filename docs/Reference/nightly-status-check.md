@@ -5,18 +5,24 @@
 The Nightly Status Check workflow monitors the status of nightly test workflows of the platform services.
 It does not run the tests itself — it only checks the latest runs of the caller workflows in the service
 repositories (e.g. [`run_nightly_tests.yaml`](https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml)
-in `Netcracker/qubership-consul`) and produces a summary table.
+in `Netcracker/qubership-consul`) and produces a summary table. It is a reporting workflow:
+failed nightly runs are reported there, but they do not fail this workflow itself.
 
 ## Triggers
 
 - **Schedule**: every day at **09:00 MSK (UTC+3)** — `0 6 * * *` UTC
 - **Manual**: via `workflow_dispatch`
 
+The workflow is not triggered by pushes or pull requests.
+
 ## Manual run inputs
 
 | Parameter    | Type   | Required | Description                                                                   |
 |--------------|--------|----------|-------------------------------------------------------------------------------|
 | components   | string | No       | Comma-separated list of component names to check. Empty = all from the config |
+
+Component names are compared **case-insensitively** with the `name` field of the config entries
+(exact match, not a substring); components that do not match are skipped.
 
 ## Configuration
 
@@ -47,7 +53,10 @@ Statuses:
 - :white_check_mark: **passed**
 - :x: **failed**
 - :hourglass_flowing_sand: **in progress**
-- :grey_question: **no runs** (no runs in the lookback window)
+- :grey_question: **no runs** (no run in the lookback window, rendered as `no runs in the last <N> h`)
+
+After the table the report contains a `## Summary` section with the number of passed, failed,
+in-progress and "no runs" components.
 
 `Duration` is the run duration in `Xh Ym Zs` format, computed from the run's
 `run_started_at` and `updated_at` timestamps. It is shown as `-` when no run is found.
@@ -70,10 +79,10 @@ component with the failure reason beneath it:
 - below it a bold `Failing step:` line (the top-level step is shown in parentheses when an
   inner step was found) and the reason inside a `text` code block.
 
-The `Failed step(s)` line names the top-level steps of the job that ended with the
-`failure` conclusion (from the `/jobs` API). GitHub's `/jobs` API only exposes top-level
-steps, so to find which inner step of a composite `uses:` action actually failed the script
-parses the **raw log structure** — it does not guess by matching words like `error`:
+The `Failing step:` line names the step of the job that ended with the `failure` conclusion
+(from the `/jobs` API). GitHub's `/jobs` API only exposes top-level steps, so to find which
+inner step of a composite `uses:` action actually failed the script parses the **raw log
+structure** — it does not guess by matching words like `error`:
 
 1. GitHub appends `##[error]Process completed with exit code N.` right after the output of
    the step that failed. The failing step is the run-group whose header
@@ -92,9 +101,11 @@ preview and `shell:`/`env:` metadata are stripped, and only the last real output
 that step are kept. Because the window is bounded to the failing step, follow-on steps (e.g.
 an `if: always()` artifact-upload) cannot pollute the snippet, and real errors such as a
 Helm `INSTALLATION FAILED: ... got string, want boolean` message are shown instead of a
-generic exit code. If the log cannot be read, the job's **check-run annotations** are used
-as a fallback; otherwise the generic `No details available` message is shown. Reasons are
-truncated to 800 characters and rendered inside a `text` code block.
+generic exit code. If the log cannot be read — see [Authentication](#authentication) — the
+job's **check-run annotations** are used as a fallback and the `Failing step:` name comes
+from the `/jobs` API; when there are no annotations either, the generic
+`No details available (see the run log)` message is shown. Reasons are truncated to 800
+characters and rendered inside a `text` code block.
 
 Example:
 
@@ -141,16 +152,42 @@ Error: INSTALLATION FAILED: ... got string, want boolean
 ```
 ````
 
-The report is published to the job summary and uploaded as the `nightly-status-report` artifact.
+The report is written to the job summary by the script (`$GITHUB_STEP_SUMMARY`), printed to the
+workflow log and uploaded as the `nightly-status-report` artifact (kept for 7 days).
 
-## Secret
+## Authentication
 
-The workflow uses `NIGHTLY_STATUS_TOKEN` (set as `GH_TOKEN` in the job, falling back to the
-default `GITHUB_TOKEN`) to query the GitHub API and download the logs of the service
-repositories. **Important:** GitHub only allows downloading a repository's Actions logs to a
-token that has admin rights on that repository. The repo-scoped `GITHUB_TOKEN` of this
-repository therefore returns `403` for logs of other repos, so without `NIGHTLY_STATUS_TOKEN`
-the `Inner step(s)` line and the real error text cannot be retrieved (the report falls back
-to the generic check-run annotation). Configure a PAT with at least `repo`/`actions:read`
-scopes **and admin access to each monitored service repository** as the
-`NIGHTLY_STATUS_TOKEN` repository secret.
+The job runs the script with `GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}` and `contents: read`
+permissions — no additional secret or personal access token is required, and none is used.
+
+The token is used for the GitHub API calls (`gh api`, and `curl` with an `Authorization: Bearer`
+header when downloading a job log):
+
+- reading the runs, jobs and check-run annotations of the monitored repositories works with the
+  default token;
+- downloading an Actions **log** of another repository requires admin rights on that repository,
+  so the repository-scoped `GITHUB_TOKEN` gets `403` for the logs of the service repositories.
+
+That means the failure reason usually comes from the check-run annotations (see
+[Failure Details](#failure-details-section)) rather than from the raw log. To get the
+log-derived reasons, run the script with a token that has admin access to the monitored
+repositories (see below).
+
+## Running locally
+
+The script can be run manually; `gh`, `jq`, `yq` and `curl` must be installed.
+
+```bash
+GH_TOKEN=<token> ./scripts/check_nightly_status.sh \
+  workflow-config/nightly-status.yaml \
+  nightly-status-report.md \
+  "Consul,Kafka"
+```
+
+Arguments:
+
+- `CONFIG_FILE` — path to the component config (default: `workflow-config/nightly-status.yaml`);
+- `REPORT_FILE` — path of the generated markdown report (default: `nightly-status-report.md`);
+- `COMPONENTS_FILTER` — optional comma-separated component filter (default: empty, all components).
+
+Without `GH_TOKEN` the API is queried anonymously, which is rate limited and cannot read the logs.

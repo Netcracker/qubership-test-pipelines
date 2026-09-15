@@ -237,7 +237,7 @@ component_count=$(yq -o=json '.components' "${CONFIG_FILE}" | jq 'length')
     echo "_Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
     echo ""
     echo "| Component | Status | Run | Started (UTC) | Duration | Link | Failed jobs |"
-    echo "|-----------|--------|-----|----------------|----------|------|-------------|"
+    echo "|-----------|--------|-----|---------------|----------|------|-------------|"
 } > "${REPORT_FILE}"
 
 passed_count=0
@@ -466,7 +466,7 @@ if [[ -n "${failure_section}" ]]; then
         echo ""
         echo "## Failure Details"
         echo ""
-        echo "_Per-workflow list of failed jobs with a failure reason extracted from the check-run annotations (fallback: failing step name when no annotation exists)._"
+        echo "_Per-workflow list of failed jobs with the failing step and a failure reason extracted from the job log (check-run annotations when the log cannot be read)._"
         echo ""
         printf '%s' "${failure_section}"
     } >> "${REPORT_FILE}"
