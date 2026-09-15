@@ -3,7 +3,6 @@ name: Nightly Status Check
 on:
   push
 #  schedule:
-#    # Runs every day at 09:00 MSK (UTC+3) = 06:00 UTC
 #    - cron: "0 6 * * *"
 #  workflow_dispatch:
 #    inputs:
@@ -23,9 +22,7 @@ jobs:
     name: Check nightly workflow statuses
     runs-on: ubuntu-latest
     env:
-      # NIGHTLY_STATUS_TOKEN (PAT with access to the service repos) is required to download
-      # their Actions logs; falls back to the repo-scoped GITHUB_TOKEN otherwise.
-      GH_TOKEN: ${{ secrets.NIGHTLY_STATUS_TOKEN || secrets.GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -35,7 +32,6 @@ jobs:
       - name: Check nightly workflow statuses
         id: check-status
         env:
-          # Empty for schedule-triggered runs (inputs are only available on workflow_dispatch)
           COMPONENTS_FILTER: ${{ inputs.components || '' }}
         run: |
           chmod +x scripts/check_nightly_status.sh
