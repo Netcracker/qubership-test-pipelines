@@ -1,24 +1,30 @@
 # Nightly Status Check
 
 ## Overview
+
 The Nightly Status Check workflow monitors the status of nightly test workflows of the platform services.
 It does not run the tests itself — it only checks the latest runs of the caller workflows in the service
 repositories (e.g. [`run_nightly_tests.yaml`](https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml)
 in `Netcracker/qubership-consul`) and produces a summary table.
 
 ## Triggers
+
 - **Schedule**: every day at **09:00 MSK (UTC+3)** — `0 6 * * *` UTC
 - **Manual**: via `workflow_dispatch`
 
 ## Manual run inputs
+
 | Parameter    | Type   | Required | Description                                                                   |
 |--------------|--------|----------|-------------------------------------------------------------------------------|
 | components   | string | No       | Comma-separated list of component names to check. Empty = all from the config |
 
 ## Configuration
-The list of monitored components is stored in [`workflow-config/nightly-status.yaml`](../../workflow-config/nightly-status.yaml).
+
+The list of monitored components is stored in
+[`workflow-config/nightly-status.yaml`](../../workflow-config/nightly-status.yaml).
 
 Each component entry:
+
 | Field            | Description                                                    |
 |------------------|----------------------------------------------------------------|
 | `name`           | Component name as it appears in the report                     |
@@ -30,12 +36,14 @@ Each component entry:
 To add a new component, append an entry to the config file.
 
 ## Report
+
 The workflow generates `nightly-status-report.md` with a table:
 
 | Component | Status | Run | Started (UTC) | Duration | Link | Failed jobs |
 |-----------|--------|-----|----------------|----------|------|-------------|
 
 Statuses:
+
 - :white_check_mark: **passed**
 - :x: **failed**
 - :hourglass_flowing_sand: **in progress**
@@ -50,6 +58,7 @@ when there are no failed jobs or no run is found. Note: a literal `|` in matrix 
 names is escaped (`\|`) so it does not break the markdown table.
 
 ### Failure Details section
+
 When at least one workflow run contains failed jobs, the report is extended (right after
 the `## Summary`) with a **`## Failure Details`** block. It lists every failed job per
 component with the failure reason beneath it:
@@ -135,6 +144,7 @@ Error: INSTALLATION FAILED: ... got string, want boolean
 The report is published to the job summary and uploaded as the `nightly-status-report` artifact.
 
 ## Secret
+
 The workflow uses `NIGHTLY_STATUS_TOKEN` (set as `GH_TOKEN` in the job, falling back to the
 default `GITHUB_TOKEN`) to query the GitHub API and download the logs of the service
 repositories. **Important:** GitHub only allows downloading a repository's Actions logs to a

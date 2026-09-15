@@ -1,18 +1,17 @@
 name: Nightly Status Check
 
 on:
-  push
-#  schedule:
-#    - cron: "0 6 * * *"
-#  workflow_dispatch:
-#    inputs:
-#      components:
-#        description: >-
-#          Comma-separated list of component names to check (case-insensitive).
-#          Empty means check all components from the config.
-#        required: false
-#        type: string
-#        default: ""
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+    inputs:
+      components:
+        description: >-
+          Comma-separated list of component names to check (case-insensitive).
+          Empty means check all components from the config.
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
