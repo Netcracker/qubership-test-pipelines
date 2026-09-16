@@ -47,3 +47,8 @@ Added workflow for the following services:
 
 - [Nightly Status Check](docs/Reference/nightly-status-check.md) - monitors the status of nightly
   test workflows of the platform services (runs daily at 09:00 MSK, manual trigger supported).
+
+## Service status report
+
+- [Service Status Report](docs/Reference/service-status.md) - manually started report with the state
+  of the nightly runs of the services (test pipeline version, state, failed runs and reasons).

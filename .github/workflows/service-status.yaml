@@ -1,0 +1,45 @@
+name: Service Status
+
+on:
+  workflow_dispatch:
+    inputs:
+      services:
+        description: >-
+          Comma-separated list of service names to include in the report
+          (case-insensitive). Empty means all services from the config.
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  service-status:
+    name: Build service status report
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build service status report
+        id: build-report
+        env:
+          SERVICES_FILTER: ${{ inputs.services || '' }}
+        run: |
+          chmod +x scripts/service_status_report.sh
+          ./scripts/service_status_report.sh \
+            workflow-config/service-status.yaml \
+            service-status-report.md \
+            "${SERVICES_FILTER}"
+
+      - name: Upload status report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: service-status-report
+          path: service-status-report.md
+          retention-days: 7

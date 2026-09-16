@@ -1,0 +1,29 @@
+# Configuration for the Service Status report workflow (manual run only).
+#
+# Lists the services that are shown in the report and how many of their most recent
+# nightly runs are analysed when the state is calculated.
+#
+# The analysed workflow is the caller nightly workflow of the service repository
+# (e.g. https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml):
+# the report reads the version of the test pipeline from its `uses:` line
+# (`uses: Netcracker/qubership-test-pipelines/.github/workflows/consul.yaml@<sha> # v1.16.0`)
+# and queries the runs of that workflow.
+#
+# To add a new service, append a new entry:
+#   - name:              service name as it appears in the report
+#   - repository:        GitHub repository that hosts the nightly workflow (owner/repo)
+#   - workflow_file:     file name of the caller nightly workflow in the service repository
+#   - branch:            branch to analyse (default: main)
+#   - runs_count:        how many recent runs to analyse (default: 10)
+#   - comment:           free-form note shown in the service row
+
+# Number of the most recent runs analysed for every service
+runs_count: 10
+
+services:
+  - name: Консул
+    repository: Netcracker/qubership-consul
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    runs_count: 10
+    comment: сборка имаджей - до 4 мин, тесты - до 12 мин
