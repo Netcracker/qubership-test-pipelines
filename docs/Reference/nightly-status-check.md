@@ -10,7 +10,7 @@ failed nightly runs are reported there, but they do not fail this workflow itsel
 
 ## Triggers
 
-- **Schedule**: every day at **09:00 MSK (UTC+3)** — `0 6 * * *` UTC
+- **Schedule**: every day at `0 6 * * *` UTC
 - **Manual**: via `workflow_dispatch`
 
 The workflow is not triggered by pushes or pull requests.
@@ -82,7 +82,7 @@ component with the failure reason beneath it:
 The `Failing step:` line names the step of the job that ended with the `failure` conclusion
 (from the `/jobs` API). GitHub's `/jobs` API only exposes top-level steps, so to find which
 inner step of a composite `uses:` action actually failed the script parses the **raw log
-structure** — it does not guess by matching words like `error`:
+structure**:
 
 1. GitHub appends `##[error]Process completed with exit code N.` right after the output of
    the step that failed. The failing step is the run-group whose header
