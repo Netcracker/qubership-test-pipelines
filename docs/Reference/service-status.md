@@ -17,9 +17,9 @@ failed runs, the failure reasons and the durations.
 
 ## Manual run inputs
 
-| Parameter    | Type   | Required | Description                                                                             |
-|--------------|--------|----------|-----------------------------------------------------------------------------------------|
-| `services`   | string | No       | Comma-separated list of service names to include (case-insensitive). Empty = all from the config |
+| Parameter  | Type   | Required | Description                                                                                      |
+|------------|--------|----------|--------------------------------------------------------------------------------------------------|
+| `services` | string | No       | Comma-separated list of service names to include (case-insensitive). Empty = all from the config |
 
 Service names are compared case-insensitively with the `name` field of the config entries
 (exact match, not a substring); services that do not match are skipped.
@@ -32,11 +32,11 @@ The list of reported services is stored in
 | Field           | Description                                                                   |
 |-----------------|-------------------------------------------------------------------------------|
 | `name`          | Service name as it appears in the report                                      |
-| `repository`    | GitHub repository hosting the nightly workflow (`owner/repo`)                  |
-| `workflow_file` | File name of the caller nightly workflow in the service repository             |
+| `repository`    | GitHub repository hosting the nightly workflow (`owner/repo`)                 |
+| `workflow_file` | File name of the caller nightly workflow in the service repository            |
 | `branch`        | Branch to analyse (default: `main`)                                           |
-| `runs_count`    | How many recent runs to analyse (default: 10, can also be set for all services) |
-| `comment`       | Free-form note shown in the service row (for example the expected durations)    |
+| `runs_count`    | How many recent runs to analyse (default: 10, also settable for all services) |
+| `comment`       | Free-form note shown in the service row (for example the expected durations)  |
 
 The `uses:` line of the caller workflow is read to get the version of the test pipeline, so the
 service entry must point to the workflow that calls a reusable workflow of this repository:
