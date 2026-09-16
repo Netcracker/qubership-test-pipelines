@@ -1,0 +1,47 @@
+name: Nightly Status Check
+
+on:
+  schedule:
+    - cron: 0 6 * * *
+  workflow_dispatch:
+    inputs:
+      components:
+        description: >-
+          Comma-separated list of component names to check (case-insensitive).
+          Empty means check all components from the config.
+        required: false
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  check-nightly-status:
+    name: Check nightly workflow statuses
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Check nightly workflow statuses
+        id: check-status
+        env:
+          COMPONENTS_FILTER: ${{ inputs.components || '' }}
+        run: |
+          chmod +x scripts/check_nightly_status.sh
+          ./scripts/check_nightly_status.sh \
+            workflow-config/nightly-status.yaml \
+            nightly-status-report.md \
+            "${COMPONENTS_FILTER}"
+
+      - name: Upload status report
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: nightly-status-report
+          path: nightly-status-report.md
+          retention-days: 7
