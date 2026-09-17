@@ -60,9 +60,9 @@ fetch_job_log() {
     return 1
 }
 
-# Print a cleaned snippet from lines [start,end] of a raw Actions log: strips timestamps and
-# ANSI colors, drops ##[ markers, the `shell:`/`env:` header of the step and the colored
-# command echo, then prints the FIRST error of the step together with a few context lines.
+# Print a cleaned snippet from lines [start,end] of a raw Actions log: strip the timestamps and
+# the ANSI colors, drop the ##[ markers, the `shell:`/`env:` header of the step and the colored
+# command echo, then print the first error of the step with a few context lines around it.
 # The first error is used on purpose: the last lines of a step are usually the summary printed
 # by the wrapping composite action (for example "Service was installed with errors!"), while
 # the real cause (for example "Resources not ready after 180 retries") comes before it.
