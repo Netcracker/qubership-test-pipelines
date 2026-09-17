@@ -106,7 +106,8 @@ recognizable error, the last lines of its window are printed instead. Because th
 bounded to the failing step, follow-on steps (e.g. an `if: always()` artifact-upload) cannot
 pollute the snippet, and real errors such as a Helm
 `INSTALLATION FAILED: ... got string, want boolean` message are shown instead of a generic exit
-code. If the log cannot be read — see [Authentication](#authentication) — the job's **check-run
+code. Only the failing step is included, so the output of the earlier steps is not repeated. If the
+log cannot be read — see [Authentication](#authentication) — the job's **check-run
 annotations** are used as a fallback and the `Failing step:` name comes from the `/jobs` API;
 when there are no annotations either, the generic `No details available (see the run log)`
 message is shown. Reasons are truncated to 800 characters and rendered inside a `text` code
