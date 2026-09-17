@@ -61,8 +61,12 @@ fetch_job_log() {
 }
 
 # Print a cleaned snippet from lines [start,end] of a raw Actions log: strips timestamps and
-# ANSI colors, drops ##[ markers/metadata and the colored command echo, keeps only the real
-# step output, then prints the last <tail> lines.
+# ANSI colors, drops ##[ markers, the `shell:`/`env:` header of the step and the colored
+# command echo, then prints the FIRST error of the step together with a few context lines.
+# The first error is used on purpose: the last lines of a step are usually the summary printed
+# by the wrapping composite action (for example "Service was installed with errors!"), while
+# the real cause (for example "Resources not ready after 180 retries") comes before it.
+# When the step produced no recognizable error, the last <tail> lines are printed instead.
 # Usage: clean_window_snippet <raw_file> <start> <end> <tail>
 clean_window_snippet() {
     local raw_file="$1"
@@ -73,6 +77,10 @@ clean_window_snippet() {
         BEGIN {
             esc = sprintf("%c", 27)
             ansi = esc "\\[[0-9;]*m"
+            errpat = "Error|ERROR|❌|Exception|Traceback|panic|fatal|FAILED|Failed to"
+            ctx_before = 2
+            ctx_after = 3
+            in_env = 0
         }
         NR < s || NR > e { next }
         {
@@ -82,15 +90,38 @@ clean_window_snippet() {
             gsub(ansi, "", line)
             if (had_ansi) next
             if (line ~ /^##\[/) next
-            if (line ~ /^shell: / || line == "env:") next
-            if (line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*:/) next
+            if (line ~ /^shell: / || line == "env:") {
+                in_env = (line == "env:")
+                next
+            }
+            # Only the variables of the step env header are dropped, not the step output.
+            if (in_env) {
+                if (line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*: /) next
+                in_env = 0
+            }
             if (line == "") next
             kept[++n] = line
         }
         END {
-            first = n - t + 1
-            if (first < 1) first = 1
-            for (i = first; i <= n; i++) print kept[i]
+            if (n == 0) exit
+            first = 0
+            for (i = 1; i <= n; i++) {
+                if (kept[i] ~ errpat) {
+                    first = i
+                    break
+                }
+            }
+            if (first > 0) {
+                from = first - ctx_before
+                if (from < 1) from = 1
+                to = first + ctx_after
+                if (to > n) to = n
+            } else {
+                from = n - t + 1
+                if (from < 1) from = 1
+                to = n
+            }
+            for (i = from; i <= to; i++) print kept[i]
         }
     ' "${raw_file}"
 }

@@ -95,17 +95,22 @@ structure**:
 3. As a last resort (log not readable), it reports the top-level step from the `/jobs` API
    plus the job's check-run annotation.
 
-The `Reason:` text is the **tail of the failing step's own log window** (from its run-group
+The `Reason:` text is taken from the **log window of the failing step** (from its run-group
 header to the failure marker). Timestamps, ANSI colors, `##[` markers, the colored command
-preview and `shell:`/`env:` metadata are stripped, and only the last real output lines of
-that step are kept. Because the window is bounded to the failing step, follow-on steps (e.g.
-an `if: always()` artifact-upload) cannot pollute the snippet, and real errors such as a
-Helm `INSTALLATION FAILED: ... got string, want boolean` message are shown instead of a
-generic exit code. If the log cannot be read — see [Authentication](#authentication) — the
-job's **check-run annotations** are used as a fallback and the `Failing step:` name comes
-from the `/jobs` API; when there are no annotations either, the generic
-`No details available (see the run log)` message is shown. Reasons are truncated to 800
-characters and rendered inside a `text` code block.
+preview and the `shell:`/`env:` header of the step are stripped, and then the **first error of
+the step is printed with two lines of context before and three lines after it**. The first error
+is used on purpose: the last lines of a step are usually the summary of the wrapping composite
+action (for example `Service was installed with errors!`), while the real cause (for example
+`Resources not ready after 180 retries`) appears earlier in the log. When the step produced no
+recognizable error, the last lines of its window are printed instead. Because the window is
+bounded to the failing step, follow-on steps (e.g. an `if: always()` artifact-upload) cannot
+pollute the snippet, and real errors such as a Helm
+`INSTALLATION FAILED: ... got string, want boolean` message are shown instead of a generic exit
+code. If the log cannot be read — see [Authentication](#authentication) — the job's **check-run
+annotations** are used as a fallback and the `Failing step:` name comes from the `/jobs` API;
+when there are no annotations either, the generic `No details available (see the run log)`
+message is shown. Reasons are truncated to 800 characters and rendered inside a `text` code
+block.
 
 Example:
 
