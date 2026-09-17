@@ -5,15 +5,19 @@
 The Service Status Report is a **manually started** workflow that builds the status table of the
 services listed in [`workflow-config/service-status.yaml`](../../workflow-config/service-status.yaml).
 It does not run any tests: for every service it analyses the last nightly runs of the service
-nightly workflow (the caller workflow of the service repository, e.g.
+nightly workflow (the caller workflow in the service repository, e.g.
 [`run_nightly_tests.yaml`](https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml)
-in `Netcracker/qubership-consul`) and reports the test pipeline version, the state, the links to the
-failed runs, the failure reasons and the durations.
+in `Netcracker/qubership-consul`) and reports the state of those runs and every failed job with its
+failing step and reason.
 
 ## Triggers
 
-- **Manual only**: via `workflow_dispatch`. The workflow has no schedule and is not triggered by
-  pushes or pull requests.
+- **Manual**: via `workflow_dispatch`, with the optional `services` input.
+- **Push**: so the report can be produced for a branch before the workflow is available on the
+  default branch — a `workflow_dispatch`-only workflow cannot be started from the Actions UI before
+  that.
+
+The workflow has no schedule.
 
 ## Manual run inputs
 
@@ -29,57 +33,51 @@ Service names are compared case-insensitively with the `name` field of the confi
 The list of reported services is stored in
 [`workflow-config/service-status.yaml`](../../workflow-config/service-status.yaml).
 
-| Field           | Description                                                                   |
-|-----------------|-------------------------------------------------------------------------------|
-| `name`          | Service name as it appears in the report                                      |
-| `repository`    | GitHub repository hosting the nightly workflow (`owner/repo`)                 |
-| `workflow_file` | File name of the caller nightly workflow in the service repository            |
-| `branch`        | Branch to analyse (default: `main`)                                           |
-| `runs_count`    | How many recent runs to analyse (default: 10, also settable for all services) |
-| `comment`       | Free-form note shown in the service row (for example the expected durations)  |
-
-The `uses:` line of the caller workflow is read to get the version of the test pipeline, so the
-service entry must point to the workflow that calls a reusable workflow of this repository:
-
-```yaml
-jobs:
-  Nightly-Consul-Pipeline:
-    uses: Netcracker/qubership-test-pipelines/.github/workflows/consul.yaml@e1905f040398e9ae733b0cefa7e7793b6204ecfe # v1.16.0
-```
+| Field           | Description                                                                     |
+|-----------------|---------------------------------------------------------------------------------|
+| `name`          | Service name as it appears in the report                                        |
+| `repository`    | GitHub repository hosting the nightly workflow (`owner/repo`)                   |
+| `workflow_file` | File name of the caller nightly workflow in the service repository              |
+| `branch`        | Branch to analyse (default: `main`)                                             |
+| `runs_count`    | How many recent runs to analyse (default: 10, can also be set for all services) |
+| `note`          | Free-form note shown in the service row (for example the expected durations)    |
 
 ## Report
 
 The workflow generates `service-status-report.md`, publishes it to the job summary and uploads it as
 the `service-status-report` artifact (kept for 7 days). The report contains one row per service plus
-one row per failed run of the analysed window:
+one row per failed job of the analysed window:
 
 ```text
-# Статус nightly-запусков сервисов
+# Service Status Report
 
-_Сформировано: 2026-01-05 13:02:12 UTC_
+_Generated at: 2026-01-05 06:10:12 UTC_
 
-| Сервис | Версия тестового пайпа | Состояние | Ссылки на запуски | Issue | Комментарий | Длительность запуска |
-|--------|------------------------|-----------|-------------------|-------|-------------|----------------------|
-| Консул | v1.16.0 | 9/10 | [run_nightly_tests.yaml](https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml) | | сборка имаджей - до 4 мин, тесты - до 12 мин | 1h 12m 0s |
-| | | | <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82619842405">Clean [main] &#124; Monitoring</a><br>[#27922954156](https://github.com/Netcracker/qubership-consul/actions/runs/27922954156) | | Error: INSTALLATION FAILED: ... got string, want boolean | 30m 0s |
+| Service | State | Links to failed jobs | Issue | Failing step | Reason | Duration |
+|---------|-------|----------------------|-------|--------------|--------|----------|
+| [Consul](https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml) | 9/10 | | | | image build up to 4 min, tests up to 12 min | 1h 12m 0s |
+| | | <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82619842405">Clean [main] &#124; Monitoring</a><br>[#27922954156](https://github.com/Netcracker/qubership-consul/actions/runs/27922954156) | | `Install/update service with Helm` _(top-level: `Clean Install Consul main`)_ | Error: INSTALLATION FAILED: ... got string, want boolean | 30m 0s |
+| | | <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27855021514/job/82440795283">final-status-check</a><br>[#27855021514](https://github.com/Netcracker/qubership-consul/actions/runs/27855021514) | | `Check job status` | Job status: failure | 28m 12s |
 ```
 
 ### Columns
 
-- **Сервис** — the service name from the config.
-- **Версия тестового пайпа** — the version of `qubership-test-pipelines` taken from the comment of
-  the `uses:` line of the caller workflow (for example `# v1.16.0`). It is empty when the workflow
-  file or the comment cannot be read.
-- **Состояние** — `<passed>/<analysed>` completed nightly runs of the analysed window:
-  `10/10` means stable, `1..9/10` unstable and `0/10` not working. Runs that are still in progress
-  are not counted, so the denominator can be smaller than `runs_count`.
-- **Ссылки на запуски** — in the service row the link to the nightly workflow; in the rows of the
-  failed runs the links to the failed jobs and to the run itself.
+- **Service** — the service name from the config; it links to the nightly workflow of the service.
+- **State** — `<passed>/<analysed>` completed nightly runs of the analysed window: `10/10` means
+  stable, `1..9/10` unstable and `0/10` not working. Runs that are still in progress are not
+  counted, so the denominator can be smaller than the configured number of runs.
+- **Links to failed jobs** — one row per failed job of the analysed window contains the link to the
+  job and the link to its run. Failed jobs of different runs are always in different rows, so runs
+  with failures are separated.
 - **Issue** — not filled in yet.
-- **Комментарий** — in the service row the note from the config; in the rows of the failed runs the
-  failure reason (from the job log, see [Nightly Status Check](nightly-status-check.md#failure-details-section)).
-- **Длительность запуска** — in the service row the duration of the latest run; in the rows of the
-  failed runs the duration of that run. Durations are rendered as `Xh Ym Zs`.
+- **Failing step** — the step of the job that failed. The script detects the inner step in the job
+  log and shows the top-level step from the API in parentheses when the two differ.
+- **Reason** — the error snippet of the failing step: the tail of that step's log window (see
+  [Nightly Status Check](nightly-status-check.md#failure-details-section) for how it is extracted),
+  with the check-run annotations as a fallback when the log cannot be read. In the service row this
+  column shows the `note` from the config.
+- **Duration** — in the service row the duration of the latest run, in the failed job rows the
+  duration of the run the job belongs to. Durations are rendered as `Xh Ym Zs`.
 
 ## Authentication
 
@@ -98,7 +96,7 @@ from the check-run annotations instead of the raw log.
 GH_TOKEN=<token> ./scripts/service_status_report.sh \
   workflow-config/service-status.yaml \
   service-status-report.md \
-  "Консул"
+  "Consul"
 ```
 
 Arguments:

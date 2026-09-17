@@ -51,4 +51,4 @@ Added workflow for the following services:
 ## Service status report
 
 - [Service Status Report](docs/Reference/service-status.md) - manually started report with the state
-  of the nightly runs of the services (test pipeline version, state, failed runs and reasons).
+  of the nightly runs of the services and the failed jobs with their failing step and reason.

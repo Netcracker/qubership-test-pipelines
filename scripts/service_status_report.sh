@@ -1,13 +1,11 @@
 #!/usr/bin/env bash
 # This script builds the service status report: for every service from the config it analyses
-# the last N runs of the service nightly workflow and generates a markdown table with the test
-# pipeline version, the state, the links to the failed runs, the failure reasons and the
-# durations of the runs.
+# the last N runs of the service nightly workflow and generates a markdown table with the state
+# of those runs, the links to the failed jobs and, for every failed job, the failing step and
+# the reason taken from the job log (the same way the nightly status check does).
 #
 # The analysed nightly workflow is the caller workflow of the service repository, e.g.
 #   https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml
-# The test pipeline version is read from the `uses:` line of that workflow:
-#   uses: Netcracker/qubership-test-pipelines/.github/workflows/consul.yaml@<sha> # v1.16.0
 #
 # Usage:
 #   service_status_report.sh [CONFIG_FILE] [REPORT_FILE] [SERVICES_FILTER]
@@ -31,27 +29,6 @@ if [[ ! -f "${CONFIG_FILE}" ]]; then
     exit 1
 fi
 
-# Read the test pipeline version from the caller workflow of the service repository:
-#   uses: Netcracker/qubership-test-pipelines/.github/workflows/consul.yaml@<sha> # v1.16.0
-# Prints the version from the trailing comment (e.g. "v1.16.0"), or nothing when the
-# workflow file or the comment cannot be read.
-# Usage: fetch_pipeline_version <repo> <workflow_file> <branch>
-fetch_pipeline_version() {
-    local repo="$1"
-    local workflow_file="$2"
-    local branch="$3"
-    local content version=""
-
-    content=$(gh api -H "Accept: application/vnd.github.raw" \
-        "repos/${repo}/contents/${workflow_file}?ref=${branch}" 2>/dev/null || true)
-    if [[ -n "${content}" ]]; then
-        version=$(printf '%s\n' "${content}" \
-            | grep -m1 -oE 'qubership-test-pipelines/\.github/workflows/[^@[:space:]]+@[0-9a-fA-F]+[[:space:]]*#[[:space:]]*[^[:space:]]+' \
-            | sed -E 's/.*#[[:space:]]*//' || true)
-    fi
-    printf '%s' "${version}"
-}
-
 # Format the duration of a run (run_started_at -> updated_at) as "Xh Ym Zs".
 # Usage: run_duration <run_json_object>
 run_duration() {
@@ -73,35 +50,39 @@ run_duration() {
     fi
 }
 
-# Build the links to the failed jobs of a run (one <a> element per failed job).
-# Usage: failed_job_links <repo> <run_id> <jobs_json>
-failed_job_links() {
+# Append one row per failed job of a run: the link to the job (and to its run), the failing
+# step and the reason. Failed jobs of different runs end up in different rows, so runs with
+# failed jobs are always separated.
+# Usage: emit_failed_job_rows <repo> <run_id> <run_number> <run_url> <run_duration> <jobs_json>
+emit_failed_job_rows() {
     local repo="$1"
     local run_id="$2"
-    local jobs_json="$3"
+    local run_number="$3"
+    local run_url="$4"
+    local run_dur="$5"
+    local jobs_json="$6"
+    local job_name job_id check_run_url job_link failed_steps inner_step step_cell
+    local reason reason_file
 
-    echo "${jobs_json}" | jq -r \
-        --arg base "https://github.com/${repo}/actions/runs/${run_id}/job" \
-        '[.jobs[] | select(.status == "completed" and .conclusion == "failure") | "<a href=\"" + $base + "/" + (.id|tostring) + "\">" + (.name | gsub("[|]"; "&#124;")) + "</a>"] | join("<br>")' \
-        2>/dev/null || true
-}
-
-# Collect the failure reasons of the failed jobs of a run: the error snippet from the job log,
-# with the check-run annotations as a fallback (see analyze_failed_job for the log parsing).
-# Reasons are joined with <br> and are safe to place inside a markdown table cell.
-# Usage: failure_reasons <repo> <jobs_json>
-failure_reasons() {
-    local repo="$1"
-    local jobs_json="$2"
-    local job_id check_run_url reason reason_file reasons=""
-
-    while IFS=$'\t' read -r job_id check_run_url; do
+    while IFS=$'\t' read -r job_name job_id check_run_url; do
         if [[ -z "${job_id}" || "${job_id}" == "null" ]]; then
             continue
         fi
+        job_link="<a href=\"https://github.com/${repo}/actions/runs/${run_id}/job/${job_id}\">${job_name//|/\&#124;}</a>"
+        # Top-level steps of the job that failed (from the /jobs API), used as a fallback.
+        failed_steps=$(echo "${jobs_json}" | jq -r --arg jid "${job_id}" \
+            '[.jobs[] | select((.id|tostring) == $jid) | .steps[]? | select(.conclusion == "failure") | .name] | join(", ")' \
+            2>/dev/null || true)
+
+        # The reason comes from the job log, with the check-run annotations as a fallback.
+        # analyze_failed_job also sets JOB_FAIL_PATH to the inner step detected in the log; it
+        # runs in the CURRENT shell (not in a subshell) so that JOB_FAIL_PATH survives, and the
+        # printed snippet is captured through a temp file instead.
         reason=""
+        inner_step=""
         reason_file=$(mktemp)
         analyze_failed_job "${repo}" "${job_id}" > "${reason_file}" 2>/dev/null || true
+        inner_step="${JOB_FAIL_PATH}"
         reason=$(<"${reason_file}")
         rm -f "${reason_file}"
         if [[ -z "${reason}" && -n "${check_run_url}" && "${check_run_url}" != "null" ]]; then
@@ -112,21 +93,31 @@ failure_reasons() {
         if [[ -z "${reason}" ]]; then
             reason="No details available (see the run log)"
         fi
-        # Keep the report compact and escape the table separators.
+        # Keep the report compact and make the text safe for a markdown table cell.
         if [[ ${#reason} -gt 800 ]]; then
             reason="${reason:0:800}…"
         fi
         reason="${reason//$'\n'/<br>}"
-        reason="${reason//|/&#124;}"
-        if [[ -n "${reasons}" ]]; then
-            reasons+="<br>"
-        fi
-        reasons+="${reason}"
-    done < <(echo "${jobs_json}" | jq -r \
-        '.jobs[] | select(.status == "completed" and .conclusion == "failure") | [(.id|tostring), (.check_run_url // "")] | @tsv' \
-        2>/dev/null || true)
+        reason="${reason//|/\&#124;}"
 
-    printf '%s' "${reasons}"
+        step_cell="${inner_step}"
+        if [[ -z "${step_cell}" ]]; then
+            step_cell="${failed_steps}"
+        fi
+        if [[ -z "${step_cell}" ]]; then
+            step_cell="unknown"
+        fi
+        step_cell="\`${step_cell//|/\&#124;}\`"
+        if [[ -n "${inner_step}" && -n "${failed_steps}" && "${inner_step}" != "${failed_steps}" ]]; then
+            step_cell+=" _(top-level: \`${failed_steps//|/\&#124;}\`)_"
+        fi
+
+        printf '| | | %s<br>[#%s](%s) | | %s | %s | %s |\n' \
+            "${job_link}" "${run_number}" "${run_url}" "${step_cell}" "${reason}" "${run_dur}" \
+            >> "${REPORT_FILE}"
+    done < <(echo "${jobs_json}" | jq -r \
+        '.jobs[] | select(.status == "completed" and .conclusion == "failure") | [.name, (.id|tostring), (.check_run_url // "")] | @tsv' \
+        2>/dev/null || true)
 }
 
 # Build the filter set (lowercased) from the optional services input
@@ -143,12 +134,12 @@ service_count=$(yq -o=json '.services' "${CONFIG_FILE}" | jq 'length')
 
 # Initialize the report
 {
-    echo "# Статус nightly-запусков сервисов"
+    echo "# Service Status Report"
     echo ""
-    echo "_Сформировано: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
+    echo "_Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
     echo ""
-    echo "| Сервис | Версия тестового пайпа | Состояние | Ссылки на запуски | Issue | Комментарий | Длительность запуска |"
-    echo "|--------|------------------------|-----------|-------------------|-------|-------------|----------------------|"
+    echo "| Service | State | Links to failed jobs | Issue | Failing step | Reason | Duration |"
+    echo "|---------|-------|----------------------|-------|--------------|--------|----------|"
 } > "${REPORT_FILE}"
 
 for ((i = 0; i < service_count; i++)); do
@@ -157,8 +148,9 @@ for ((i = 0; i < service_count; i++)); do
     workflow_file=$(yq -r ".services[${i}].workflow_file" "${CONFIG_FILE}")
     branch=$(yq -r ".services[${i}].branch // \"main\"" "${CONFIG_FILE}")
     runs_count=$(yq -r ".services[${i}].runs_count // ${default_runs_count}" "${CONFIG_FILE}")
-    comment=$(yq -r ".services[${i}].comment // \"\"" "${CONFIG_FILE}")
-    comment="${comment//|/&#124;}"
+    note=$(yq -r ".services[${i}].note // \"\"" "${CONFIG_FILE}")
+    note="${note//|/\&#124;}"
+    note="${note//$'\n'/<br>}"
 
     # Apply the optional filter
     if [[ ${#FILTER_SET[@]} -gt 0 ]]; then
@@ -182,7 +174,6 @@ for ((i = 0; i < service_count; i++)); do
     echo "Branch: ${branch}"
     echo "Runs analysed: ${runs_count}"
 
-    pipeline_version=$(fetch_pipeline_version "${repo}" "${workflow_file}" "${branch}")
     workflow_url="https://github.com/${repo}/actions/workflows/${workflow_file}"
 
     runs_json=""
@@ -208,15 +199,15 @@ for ((i = 0; i < service_count; i++)); do
 
     latest_duration=$(run_duration "$(echo "${runs_json}" | jq '.[0] // {}')")
 
-    echo "Pipeline version: ${pipeline_version:-unknown}"
     echo "State: ${state_cell}"
 
+    # The service row: the service name links to the nightly workflow, the note comes from the
+    # config and the duration is the duration of the latest run.
     {
-        echo "| ${name} | ${pipeline_version} | ${state_cell} | [${workflow_file}](${workflow_url}) | | ${comment} | ${latest_duration} |"
+        echo "| [${name}](${workflow_url}) | ${state_cell} | | | | ${note} | ${latest_duration} |"
     } >> "${REPORT_FILE}"
 
-    # One extra row per failed run of the analysed window: links to the failed jobs, the
-    # failure reasons and the duration of that run.
+    # One extra row per failed job of every failed run of the analysed window.
     while IFS= read -r failed_run; do
         if [[ -z "${failed_run}" ]]; then
             continue
@@ -226,24 +217,14 @@ for ((i = 0; i < service_count; i++)); do
         run_url=$(echo "${failed_run}" | jq -r '.html_url')
         run_dur=$(run_duration "${failed_run}")
 
-        job_links=""
-        reasons=""
         jobs_json=$(gh api "repos/${repo}/actions/runs/${run_id}/jobs" 2>/dev/null || true)
         if [[ -n "${jobs_json}" && "${jobs_json}" != "null" ]]; then
-            job_links=$(failed_job_links "${repo}" "${run_id}" "${jobs_json}")
-            reasons=$(failure_reasons "${repo}" "${jobs_json}")
-        fi
-        if [[ -z "${job_links}" ]]; then
-            job_links="[#${run_number}](${run_url})"
+            emit_failed_job_rows "${repo}" "${run_id}" "${run_number}" "${run_url}" "${run_dur}" "${jobs_json}"
         else
-            job_links="${job_links}<br>[#${run_number}](${run_url})"
+            echo "::warning::Failed to fetch jobs of run #${run_number} for ${name}"
+            printf '| | | [#%s](%s) | | unknown | No details available (see the run log) | %s |\n' \
+                "${run_number}" "${run_url}" "${run_dur}" >> "${REPORT_FILE}"
         fi
-        if [[ -z "${reasons}" ]]; then
-            reasons="No details available (see the run log)"
-        fi
-        {
-            echo "| | | | ${job_links} | | ${reasons} | ${run_dur} |"
-        } >> "${REPORT_FILE}"
         echo "Failed run #${run_number}: ${run_url}"
     done < <(echo "${runs_json}" | jq -c '.[] | select(.status == "completed" and .conclusion != "success")' 2>/dev/null || true)
 
@@ -253,20 +234,22 @@ done
 # Append the legend that explains how the table is filled
 cat >> "${REPORT_FILE}" <<'LEGEND'
 
-## Как читать отчёт
+## How to read the report
 
-- **Состояние** — `<прошедших>/<проанализированных>` завершённых запусков nightly-пайплайна
-  за последние запуски (количество задаётся в конфиге, по умолчанию 10):
-  `10/10` — стабильный, `1..9/10` — нестабильный, `0/10` — не работает.
-- **Версия тестового пайпа** — версия `qubership-test-pipelines` из комментария к строке `uses:`
-  в caller-воркфлоу сервиса (например `...@<sha> # v1.16.0`); пусто, если прочитать не удалось.
-- **Ссылки на запуски** — в строке сервиса ссылка на nightly-воркфлоу, в строках запусков —
-  ссылки на упавшие jobs и на сам запуск.
-- **Issue** — пока не заполняется.
-- **Комментарий** — в строке сервиса примечание из конфига, в строках запусков — причина
-  падения (из лога job, при недоступности лога — из аннотаций check-run).
-- **Длительность запуска** — в строке сервиса длительность последнего запуска,
-  в строках запусков — длительность этого запуска.
+- **Service** — the service name from the config; it links to the nightly workflow of the service.
+- **State** — `<passed>/<analysed>` completed nightly runs of the analysed window (the number of
+  runs is set in the config, 10 by default): `10/10` is stable, `1..9/10` unstable and `0/10`
+  not working. Runs that are still in progress are not counted, so the denominator can be smaller
+  than the configured number of runs.
+- **Links to failed jobs** — one row per failed job of the analysed window: the link to the job
+  and to its run. Failed jobs of different runs are always in different rows.
+- **Issue** — not filled in yet.
+- **Failing step** — the step of the job that failed (the inner step detected in the log, with the
+  top-level step from the API in parentheses when they differ).
+- **Reason** — the error snippet of the failed step (from the job log, with the check-run
+  annotations as a fallback). In the service row the reason column shows the note from the config.
+- **Duration** — in the service row the duration of the latest run, in the failed job rows the
+  duration of the run that job belongs to. Durations are rendered as `Xh Ym Zs`.
 LEGEND
 
 echo "::group::Report"
