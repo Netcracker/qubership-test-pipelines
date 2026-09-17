@@ -1,15 +1,16 @@
 name: Service Status
 
 on:
-  workflow_dispatch:
-    inputs:
-      services:
-        description: >-
-          Comma-separated list of service names to include in the report
-          (case-insensitive). Empty means all services from the config.
-        required: false
-        type: string
-        default: ""
+  push
+#  workflow_dispatch:
+#    inputs:
+#      services:
+#        description: >-
+#          Comma-separated list of service names to include in the report
+#          (case-insensitive). Empty means all services from the config.
+#        required: false
+#        type: string
+#        default: ""
 
 permissions:
   contents: read
