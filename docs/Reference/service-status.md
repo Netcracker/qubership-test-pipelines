@@ -45,8 +45,8 @@ The list of reported services is stored in
 ## Report
 
 The workflow generates `service-status-report.md`, publishes it to the job summary and uploads it as
-the `service-status-report` artifact (kept for 7 days). The report contains one row per service plus
-one row per failed job of the analysed window:
+the `service-status-report` artifact (kept for 7 days). The report is rebuilt on every run and
+contains one row per service plus one row per failed job of the analysed window:
 
 ```text
 # Service Status Report
