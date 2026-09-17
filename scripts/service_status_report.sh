@@ -53,22 +53,23 @@ run_duration() {
 # Append one row per failed job of a run: the link to the job (and to its run), the failing
 # step and the reason. Failed jobs of different runs end up in different rows, so runs with
 # failed jobs are always separated.
-# Usage: emit_failed_job_rows <repo> <run_id> <run_number> <run_url> <run_duration> <jobs_json>
+# Usage: emit_failed_job_rows <repo> <run_link> <run_duration> <jobs_json>
 emit_failed_job_rows() {
     local repo="$1"
-    local run_id="$2"
-    local run_number="$3"
-    local run_url="$4"
-    local run_dur="$5"
-    local jobs_json="$6"
-    local job_name job_id check_run_url job_link failed_steps inner_step step_cell
+    local run_link="$2"
+    local run_dur="$3"
+    local jobs_json="$4"
+    local job_name job_id job_url check_run_url job_link failed_steps inner_step step_cell
     local reason reason_file
 
-    while IFS=$'\t' read -r job_name job_id check_run_url; do
+    while IFS=$'\t' read -r job_name job_id job_url check_run_url; do
         if [[ -z "${job_id}" || "${job_id}" == "null" ]]; then
             continue
         fi
-        job_link="<a href=\"https://github.com/${repo}/actions/runs/${run_id}/job/${job_id}\">${job_name//|/\&#124;}</a>"
+        if [[ -z "${job_url}" || "${job_url}" == "null" ]]; then
+            job_url="https://github.com/${repo}/actions/jobs/${job_id}"
+        fi
+        job_link="<a href=\"${job_url}\">${job_name//|/\&#124;}</a>"
         # Top-level steps of the job that failed (from the /jobs API), used as a fallback.
         failed_steps=$(echo "${jobs_json}" | jq -r --arg jid "${job_id}" \
             '[.jobs[] | select((.id|tostring) == $jid) | .steps[]? | select(.conclusion == "failure") | .name] | join(", ")' \
@@ -112,11 +113,11 @@ emit_failed_job_rows() {
             step_cell+=" _(top-level: \`${failed_steps//|/\&#124;}\`)_"
         fi
 
-        printf '| | | %s<br>[#%s](%s) | | %s | %s | %s |\n' \
-            "${job_link}" "${run_number}" "${run_url}" "${step_cell}" "${reason}" "${run_dur}" \
+        printf '| | | %s<br>%s | | %s | %s | %s |\n' \
+            "${job_link}" "${run_link}" "${step_cell}" "${reason}" "${run_dur}" \
             >> "${REPORT_FILE}"
     done < <(echo "${jobs_json}" | jq -r \
-        '.jobs[] | select(.status == "completed" and .conclusion == "failure") | [.name, (.id|tostring), (.check_run_url // "")] | @tsv' \
+        '.jobs[] | select(.status == "completed" and .conclusion == "failure") | [.name, (.id|tostring), (.html_url // ""), (.check_run_url // "")] | @tsv' \
         2>/dev/null || true)
 }
 
@@ -130,6 +131,7 @@ if [[ -n "${SERVICES_FILTER}" ]]; then
 fi
 
 default_runs_count=$(yq -r '.runs_count // 10' "${CONFIG_FILE}")
+default_lookback_days=$(yq -r '.lookback_days // 10' "${CONFIG_FILE}")
 service_count=$(yq -o=json '.services' "${CONFIG_FILE}" | jq 'length')
 
 # Initialize the report
@@ -148,6 +150,7 @@ for ((i = 0; i < service_count; i++)); do
     workflow_file=$(yq -r ".services[${i}].workflow_file" "${CONFIG_FILE}")
     branch=$(yq -r ".services[${i}].branch // \"main\"" "${CONFIG_FILE}")
     runs_count=$(yq -r ".services[${i}].runs_count // ${default_runs_count}" "${CONFIG_FILE}")
+    lookback_days=$(yq -r ".services[${i}].lookback_days // ${default_lookback_days}" "${CONFIG_FILE}")
     note=$(yq -r ".services[${i}].note // \"\"" "${CONFIG_FILE}")
     note="${note//|/\&#124;}"
     note="${note//$'\n'/<br>}"
@@ -172,9 +175,13 @@ for ((i = 0; i < service_count; i++)); do
     echo "Repository: ${repo}"
     echo "Workflow file: ${workflow_file}"
     echo "Branch: ${branch}"
-    echo "Runs analysed: ${runs_count}"
+    echo "Runs analysed: up to ${runs_count} runs of the last ${lookback_days} days"
 
     workflow_url="https://github.com/${repo}/actions/workflows/${workflow_file}"
+
+    # Only the most recent runs are requested and anything older than the lookback window is
+    # dropped, so the report can never show a failure of an old run.
+    window_start=$(date -u -d "${lookback_days} days ago" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null || echo "")
 
     runs_json=""
     if output=$(gh api \
@@ -186,6 +193,11 @@ for ((i = 0; i < service_count; i++)); do
     fi
     if [[ -z "${runs_json}" || "${runs_json}" == "null" ]]; then
         runs_json="[]"
+    elif [[ -n "${window_start}" ]]; then
+        runs_json=$(echo "${runs_json}" | jq --arg since "${window_start}" '[.[] | select(.created_at >= $since)]')
+    fi
+    if [[ "$(echo "${runs_json}" | jq 'length')" -eq 0 ]]; then
+        echo "::warning::No nightly runs in the last ${lookback_days} days for ${name}"
     fi
 
     # State: passed runs out of the completed runs of the analysed window
@@ -215,17 +227,21 @@ for ((i = 0; i < service_count; i++)); do
         run_id=$(echo "${failed_run}" | jq -r '.id')
         run_number=$(echo "${failed_run}" | jq -r '.run_number')
         run_url=$(echo "${failed_run}" | jq -r '.html_url')
+        run_date=$(echo "${failed_run}" | jq -r '.created_at' | cut -dT -f1)
         run_dur=$(run_duration "${failed_run}")
+        # The run link carries the run number and the date, so every failed job row shows which
+        # run of the analysed window it comes from.
+        run_link="[#${run_number} (${run_date})](${run_url})"
 
         jobs_json=$(gh api "repos/${repo}/actions/runs/${run_id}/jobs" 2>/dev/null || true)
         if [[ -n "${jobs_json}" && "${jobs_json}" != "null" ]]; then
-            emit_failed_job_rows "${repo}" "${run_id}" "${run_number}" "${run_url}" "${run_dur}" "${jobs_json}"
+            emit_failed_job_rows "${repo}" "${run_link}" "${run_dur}" "${jobs_json}"
         else
             echo "::warning::Failed to fetch jobs of run #${run_number} for ${name}"
-            printf '| | | [#%s](%s) | | unknown | No details available (see the run log) | %s |\n' \
-                "${run_number}" "${run_url}" "${run_dur}" >> "${REPORT_FILE}"
+            printf '| | | %s | | unknown | No details available (see the run log) | %s |\n' \
+                "${run_link}" "${run_dur}" >> "${REPORT_FILE}"
         fi
-        echo "Failed run #${run_number}: ${run_url}"
+        echo "Failed run #${run_number} (${run_date}): ${run_url}"
     done < <(echo "${runs_json}" | jq -c '.[] | select(.status == "completed" and .conclusion != "success")' 2>/dev/null || true)
 
     echo "::endgroup::"

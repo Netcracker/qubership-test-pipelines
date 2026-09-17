@@ -13,10 +13,13 @@
 #   - workflow_file:     file name of the caller nightly workflow in the service repository
 #   - branch:            branch to analyse (default: main)
 #   - runs_count:        how many recent runs to analyse (default: 10)
+#   - lookback_days:     ignore runs older than this many days (default: 10)
 #   - note:              free-form note shown in the service row (for example expected durations)
 
-# Number of the most recent runs analysed for every service
+# Analysis window: the most recent runs of the nightly workflow; runs older than
+# lookback_days are ignored, so the report never shows an old failure
 runs_count: 10
+lookback_days: 10
 
 services:
   - name: Consul
@@ -24,4 +27,5 @@ services:
     workflow_file: run_nightly_tests.yaml
     branch: main
     runs_count: 10
+    lookback_days: 10
     note: image build up to 4 min, tests up to 12 min
