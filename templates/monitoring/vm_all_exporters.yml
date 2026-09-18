@@ -1,3 +1,6 @@
+global:
+  privilegedRights: true
+  profile: "small"
 grafana:
   ingress:
     host: grafana-monitoring.testdomain.local
