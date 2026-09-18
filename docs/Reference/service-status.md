@@ -41,51 +41,61 @@ The list of reported services is stored in
 | `branch`        | Branch to analyse (default: `main`)                                             |
 | `runs_count`    | How many recent runs to analyse (default: 10, can also be set for all services) |
 | `lookback_days` | Runs older than this many days are ignored (default: 10)                        |
-| `note`          | Free-form note shown in the service row (for example the expected durations)    |
+| `note`          | Free-form note printed below the service line (for example expected durations)  |
 
 ## Report
 
 The workflow generates `service-status-report.md`, publishes it to the job summary and uploads it as
-the `service-status-report` artifact (kept for 7 days). The report is rebuilt on every run and
-contains one row per service plus one row per failed job of the analysed window:
+the `service-status-report` artifact (kept for 7 days). The report is rebuilt on every run. Above its
+table every service has one line with the state of the analysed window; the table itself starts with
+a group row per failed run (the link to the run with its date) and lists the failed jobs of that run
+below it. A service without failed runs has no table at all:
 
 ```text
 # Service Status Report
 
 _Generated at: 2026-01-05 06:10:12 UTC_
 
-| Service | State | Links to failed jobs | Issue | Failing step | Reason | Duration |
-|---------|-------|----------------------|-------|--------------|--------|----------|
-| [Consul](https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml) | 9/10 | | | | image build up to 4 min, tests up to 12 min | 1h 12m 0s |
-| | | <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82619842405">Clean [main] &#124; Monitoring</a><br>[#192 (2026-09-12)](https://github.com/Netcracker/qubership-consul/actions/runs/27922954156) | | `Verify resources` _(top-level: `Clean Install Consul main`)_ | Error: ❌ Resources not ready after 180 retries<br>ERROR_FLAG: true | 30m 0s |
-| | | <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27855021514/job/82440795283">final-status-check</a><br>[#186 (2026-09-06)](https://github.com/Netcracker/qubership-consul/actions/runs/27855021514) | | `Check job status` | Job status: failure | 28m 12s |
+## [Consul](https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml): 9/10
+
+_image build up to 4 min, tests up to 12 min_
+
+| Links to failed jobs | Failing step | Reason | Duration |
+|----------------------|--------------|--------|----------|
+| [#192 (2026-09-12)](https://github.com/Netcracker/qubership-consul/actions/runs/27922954156) | | | |
+| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82619842405">Nightly-Consul-Pipeline / Clean [0.13.5], Upgrade to [main]</a> | `Verify resources` _(top-level: `Clean Install Consul main`)_ | Error: ❌ Resources not ready after 180 retries | 30m 0s |
+| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82620967634">Nightly-Consul-Pipeline / final-status-check</a> | `Check job status` | Job status: failure | 28m 12s |
+| [#186 (2026-09-06)](https://github.com/Netcracker/qubership-consul/actions/runs/27855021514) | | | |
+| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27855021514/job/82440795283">Nightly-Consul-Pipeline / final-status-check</a> | `Check job status` | Job status: failure | 28m 12s |
 ```
 
 ### Columns
 
-- **Service** — the service name from the config; it links to the nightly workflow of the service.
-- **State** — `<passed>/<analysed>` completed nightly runs of the analysed window: `10/10` means
-  stable, `1..9/10` unstable and `0/10` not working. The window is the most recent `runs_count`
-  runs of the last `lookback_days` days; runs that are still in progress are not counted, so the
-  denominator can be smaller than the configured number of runs.
-- **Links to failed jobs** — one row per failed job of the analysed window contains the link to the
-  job and the link to its run; the run link shows the run number and the date of the run, so it is
-  always clear which run a row belongs to. Failed jobs of different runs are always in different
-  rows, so runs with failures are separated. Runs older than `lookback_days` are not analysed at all.
-- **Issue** — not filled in yet.
+- **Service line** — the line above the table: the service name from the config (it links to the
+  nightly workflow of the service) and `<passed>/<analysed>` completed nightly runs of the analysed
+  window, where `10/10` means stable, `1..9/10` unstable and `0/10` not working. The window is the
+  most recent `runs_count` runs of the last `lookback_days` days; runs that are still in progress are
+  not counted, so the denominator can be smaller than the configured number of runs, and runs older
+  than `lookback_days` are not analysed at all. The `note` from the config is printed in italics
+  below the line.
+- **Links to failed jobs** — the first row of a group is the link to the failed run
+  (`#<number> (<date>)`, so it is always clear which run the rows below belong to), and the rows
+  below it are the failed jobs of that run, every job linked to its own job page. A run with failures
+  always starts its own group, so the failed jobs of different runs are separated. Markdown tables
+  have no merged cells, so the run link is written into the first cell of the group row and the other
+  cells of that row stay empty.
 - **Failing step** — the step of the job that failed. The script detects the inner step in the job
   log and shows the top-level step from the API in parentheses when the two differ.
 - **Reason** — the error snippet of the failing step: the first error of that step's log window with
   a few context lines before and after it (see
   [Nightly Status Check](nightly-status-check.md#failure-details-section) for how it is extracted),
-  with the check-run annotations as a fallback when the log cannot be read. In the service row this
-  column shows the `note` from the config. The snippet of the example above is trimmed to keep the
-  table row short; in a real report it contains the whole window with `<br>` as the line separator.
+  with the check-run annotations as a fallback when the log cannot be read. The snippet of the
+  example above is trimmed to keep the table row short; in a real report it contains the whole window
+  with `<br>` as the line separator.
 - Jobs such as `Check job status` / `final-status-check` only repeat the result of the pipeline, so
   their reason is the generic `Job status: failure` — the real cause is in the row of the job that
   actually failed (for example `Verify resources` above).
-- **Duration** — in the service row the duration of the latest run, in the failed job rows the
-  duration of the run the job belongs to. Durations are rendered as `Xh Ym Zs`.
+- **Duration** — the duration of the run the failed job belongs to, rendered as `Xh Ym Zs`.
 
 ## Authentication
 

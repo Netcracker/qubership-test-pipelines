@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # This script builds the service status report: for every service from the config it analyses
-# the last N runs of the service nightly workflow and generates a markdown table with the state
-# of those runs, the links to the failed jobs and, for every failed job, the failing step and
-# the reason taken from the job log (the same way the nightly status check does).
+# the last N runs of the service nightly workflow, writes the state of those runs on a line above
+# the table and then, for every failed run, a group row with the link to the run followed by one
+# row per failed job with the link to the job, the failing step, the reason taken from the job log
+# (the same way the nightly status check does) and the duration of the run.
 #
 # The analysed nightly workflow is the caller workflow of the service repository, e.g.
 #   https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml
@@ -50,15 +51,14 @@ run_duration() {
     fi
 }
 
-# Append one row per failed job of a run: the link to the job (and to its run), the failing
-# step and the reason. Failed jobs of different runs end up in different rows, so runs with
-# failed jobs are always separated.
-# Usage: emit_failed_job_rows <repo> <run_link> <run_duration> <jobs_json>
+# Append one row per failed job of a run: the link to the job, the failing step, the reason and
+# the duration of the run the job belongs to. The rows of a run always follow the group row with
+# the link to that run, so the failed jobs of different runs are separated.
+# Usage: emit_failed_job_rows <repo> <run_duration> <jobs_json>
 emit_failed_job_rows() {
     local repo="$1"
-    local run_link="$2"
-    local run_dur="$3"
-    local jobs_json="$4"
+    local run_dur="$2"
+    local jobs_json="$3"
     local job_name job_id job_url check_run_url job_link failed_steps inner_step step_cell
     local reason reason_file
 
@@ -113,8 +113,8 @@ emit_failed_job_rows() {
             step_cell+=" _(top-level: \`${failed_steps//|/\&#124;}\`)_"
         fi
 
-        printf '| | | %s<br>%s | | %s | %s | %s |\n' \
-            "${job_link}" "${run_link}" "${step_cell}" "${reason}" "${run_dur}" \
+        printf '| %s | %s | %s | %s |\n' \
+            "${job_link}" "${step_cell}" "${reason}" "${run_dur}" \
             >> "${REPORT_FILE}"
     done < <(echo "${jobs_json}" | jq -r \
         '.jobs[] | select(.status == "completed" and .conclusion == "failure") | [.name, (.id|tostring), (.html_url // ""), (.check_run_url // "")] | @tsv' \
@@ -140,8 +140,6 @@ service_count=$(yq -o=json '.services' "${CONFIG_FILE}" | jq 'length')
     echo ""
     echo "_Generated at: $(date -u '+%Y-%m-%d %H:%M:%S UTC')_"
     echo ""
-    echo "| Service | State | Links to failed jobs | Issue | Failing step | Reason | Duration |"
-    echo "|---------|-------|----------------------|-------|--------------|--------|----------|"
 } > "${REPORT_FILE}"
 
 for ((i = 0; i < service_count; i++)); do
@@ -209,17 +207,27 @@ for ((i = 0; i < service_count; i++)); do
         state_cell="${passed_count}/${completed_count}"
     fi
 
-    latest_duration=$(run_duration "$(echo "${runs_json}" | jq '.[0] // {}')")
-
     echo "State: ${state_cell}"
 
-    # The service row: the service name links to the nightly workflow, the note comes from the
-    # config and the duration is the duration of the latest run.
+    # The service line goes above the table: the service name links to the nightly workflow and
+    # the state of the analysed window is written next to it.
     {
-        echo "| [${name}](${workflow_url}) | ${state_cell} | | | | ${note} | ${latest_duration} |"
+        echo "## [${name}](${workflow_url}): ${state_cell}"
+        echo ""
     } >> "${REPORT_FILE}"
+    if [[ -n "${note}" ]]; then
+        {
+            echo "_${note}_"
+            echo ""
+        } >> "${REPORT_FILE}"
+    fi
 
-    # One extra row per failed job of every failed run of the analysed window.
+    # The table is written only when the analysed window has failed runs; its header is written
+    # once per service, before the first group row.
+    table_started=false
+
+    # One group row per failed run of the analysed window, every group row followed by the rows
+    # of the failed jobs of that run.
     while IFS= read -r failed_run; do
         if [[ -z "${failed_run}" ]]; then
             continue
@@ -229,43 +237,57 @@ for ((i = 0; i < service_count; i++)); do
         run_url=$(echo "${failed_run}" | jq -r '.html_url')
         run_date=$(echo "${failed_run}" | jq -r '.created_at' | cut -dT -f1)
         run_dur=$(run_duration "${failed_run}")
-        # The run link carries the run number and the date, so every failed job row shows which
-        # run of the analysed window it comes from.
+        # The run link carries the run number and the date of the run.
         run_link="[#${run_number} (${run_date})](${run_url})"
+
+        if [[ "${table_started}" == "false" ]]; then
+            {
+                echo "| Links to failed jobs | Failing step | Reason | Duration |"
+                echo "|----------------------|--------------|--------|----------|"
+            } >> "${REPORT_FILE}"
+            table_started=true
+        fi
+        # The group row with the link to the failed run: a markdown table has no merged cells, so
+        # the link goes into the first cell and the other cells stay empty.
+        printf '| %s | | | |\n' "${run_link}" >> "${REPORT_FILE}"
 
         jobs_json=$(gh api "repos/${repo}/actions/runs/${run_id}/jobs" 2>/dev/null || true)
         if [[ -n "${jobs_json}" && "${jobs_json}" != "null" ]]; then
-            emit_failed_job_rows "${repo}" "${run_link}" "${run_dur}" "${jobs_json}"
+            emit_failed_job_rows "${repo}" "${run_dur}" "${jobs_json}"
         else
             echo "::warning::Failed to fetch jobs of run #${run_number} for ${name}"
-            printf '| | | %s | | unknown | No details available (see the run log) | %s |\n' \
-                "${run_link}" "${run_dur}" >> "${REPORT_FILE}"
+            printf '| | unknown | No details available (see the run log) | %s |\n' \
+                "${run_dur}" >> "${REPORT_FILE}"
         fi
         echo "Failed run #${run_number} (${run_date}): ${run_url}"
     done < <(echo "${runs_json}" | jq -c '.[] | select(.status == "completed" and .conclusion != "success")' 2>/dev/null || true)
 
+    # Keep a blank line between the block of a service and the heading of the next one.
+    echo "" >> "${REPORT_FILE}"
+
     echo "::endgroup::"
 done
 
-# Append the legend that explains how the table is filled
+# Append the legend that explains how the report is filled
 cat >> "${REPORT_FILE}" <<'LEGEND'
-
 ## How to read the report
 
-- **Service** — the service name from the config; it links to the nightly workflow of the service.
-- **State** — `<passed>/<analysed>` completed nightly runs of the analysed window (the number of
-  runs is set in the config, 10 by default): `10/10` is stable, `1..9/10` unstable and `0/10`
-  not working. Runs that are still in progress are not counted, so the denominator can be smaller
-  than the configured number of runs.
-- **Links to failed jobs** — one row per failed job of the analysed window: the link to the job
-  and to its run. Failed jobs of different runs are always in different rows.
-- **Issue** — not filled in yet.
+Every service has a line above its table with the state of the analysed window:
+`<passed>/<analysed>` completed nightly runs (the number of runs is set in the config, 10 by
+default), where `10/10` is stable, `1..9/10` unstable and `0/10` not working. The service name
+links to the nightly workflow and the note from the config is printed below it. Runs that are
+still in progress are not counted, so the denominator can be smaller than the configured number
+of runs. A service without failed runs has no table at all.
+
+- **Links to failed jobs** — the first row of a group is the link to the failed run
+  (`#<number> (<date>)`); the rows below it are the failed jobs of that run, every job linked to
+  its job page. Failed jobs of different runs are always in different groups. Markdown tables have
+  no merged cells, so the run link is written into the first cell of the group row.
 - **Failing step** — the step of the job that failed (the inner step detected in the log, with the
   top-level step from the API in parentheses when they differ).
 - **Reason** — the error snippet of the failed step (from the job log, with the check-run
-  annotations as a fallback). In the service row the reason column shows the note from the config.
-- **Duration** — in the service row the duration of the latest run, in the failed job rows the
-  duration of the run that job belongs to. Durations are rendered as `Xh Ym Zs`.
+  annotations as a fallback).
+- **Duration** — the duration of the run the failed job belongs to, rendered as `Xh Ym Zs`.
 LEGEND
 
 echo "::group::Report"
