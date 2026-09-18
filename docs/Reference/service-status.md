@@ -21,9 +21,16 @@ The workflow has no schedule.
 
 ## Manual run inputs
 
-| Parameter  | Type   | Required | Description                                                                                      |
-|------------|--------|----------|--------------------------------------------------------------------------------------------------|
-| `services` | string | No       | Comma-separated list of service names to include (case-insensitive). Empty = all from the config |
+| Parameter  | Type   | Required | Description                                                                                  |
+|------------|--------|----------|----------------------------------------------------------------------------------------------|
+| `services` | string | No       | Services to analyse, comma-separated (case-insensitive); `all` = every service of the config |
+
+The default value of the input is `all` and it expands to the `ALL_SERVICES` environment variable of
+[`service-status.yaml`](../../.github/workflows/service-status.yaml), which lists every service that
+exists at the moment: `Consul, ZooKeeper, Kafka, RabbitMQ, OpenSearch, Monitoring, PG skipper`. Keep
+that variable in sync with the config when a service is added or removed. The push trigger (kept to
+test the workflow before it is available on the default branch) has no inputs, so it analyses every
+service as well.
 
 Service names are compared case-insensitively with the `name` field of the config entries
 (exact match, not a substring); services that do not match are skipped.
@@ -31,7 +38,9 @@ Service names are compared case-insensitively with the `name` field of the confi
 ## Configuration
 
 The list of reported services is stored in
-[`workflow-config/service-status.yaml`](../../workflow-config/service-status.yaml).
+[`workflow-config/service-status.yaml`](../../workflow-config/service-status.yaml); at the moment it
+contains Consul, ZooKeeper, Kafka, RabbitMQ, OpenSearch, Monitoring and PG skipper, the same
+components as [`workflow-config/nightly-status.yaml`](../../workflow-config/nightly-status.yaml).
 
 | Field           | Description                                                                     |
 |-----------------|---------------------------------------------------------------------------------|
@@ -48,8 +57,8 @@ The list of reported services is stored in
 The workflow generates `service-status-report.md`, publishes it to the job summary and uploads it as
 the `service-status-report` artifact (kept for 7 days). The report is rebuilt on every run. Above its
 table every service has one line with the state of the analysed window; the table itself starts with
-a group row per failed run (the link to the run with its date) and lists the failed jobs of that run
-below it. A service without failed runs has no table at all:
+a group row per failed run (the link to the run with its date and the duration of that run) and lists
+the failed jobs of that run below it. A service without failed runs has no table at all:
 
 ```text
 # Service Status Report
@@ -62,11 +71,11 @@ _image build up to 4 min, tests up to 12 min_
 
 | Links to failed jobs | Failing step | Reason | Duration |
 |----------------------|--------------|--------|----------|
-| [#192 (2026-09-12)](https://github.com/Netcracker/qubership-consul/actions/runs/27922954156) | | | |
-| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82619842405">Nightly-Consul-Pipeline / Clean [0.13.5], Upgrade to [main]</a> | `Verify resources` _(top-level: `Clean Install Consul main`)_ | Error: ❌ Resources not ready after 180 retries | 30m 0s |
-| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82620967634">Nightly-Consul-Pipeline / final-status-check</a> | `Check job status` | Job status: failure | 28m 12s |
-| [#186 (2026-09-06)](https://github.com/Netcracker/qubership-consul/actions/runs/27855021514) | | | |
-| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27855021514/job/82440795283">Nightly-Consul-Pipeline / final-status-check</a> | `Check job status` | Job status: failure | 28m 12s |
+| [#108 (2026-06-22)](https://github.com/Netcracker/qubership-consul/actions/runs/27922954156) | | | 16m 12s |
+| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82619842405">Nightly-Consul-Pipeline / Clean [0.13.5], Upgrade to [main]</a> | `Verify resources` _(top-level: `Clean Install Consul main`)_ | Error: ❌ Resources not ready after 180 retries | |
+| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82620967634">Nightly-Consul-Pipeline / final-status-check</a> | `Check job status` | Job status: failure | |
+| [#106 (2026-06-20)](https://github.com/Netcracker/qubership-consul/actions/runs/27855021514) | | | 17m 45s |
+| <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27855021514/job/82441933723">Nightly-Consul-Pipeline / final-status-check</a> | `Check job status` | Job status: failure | |
 ```
 
 ### Columns
@@ -82,8 +91,7 @@ _image build up to 4 min, tests up to 12 min_
   (`#<number> (<date>)`, so it is always clear which run the rows below belong to), and the rows
   below it are the failed jobs of that run, every job linked to its own job page. A run with failures
   always starts its own group, so the failed jobs of different runs are separated. Markdown tables
-  have no merged cells, so the run link is written into the first cell of the group row and the other
-  cells of that row stay empty.
+  have no merged cells, so the run link is written into the first cell of the group row.
 - **Failing step** — the step of the job that failed. The script detects the inner step in the job
   log and shows the top-level step from the API in parentheses when the two differ.
 - **Reason** — the error snippet of the failing step: the first error of that step's log window with
@@ -95,7 +103,8 @@ _image build up to 4 min, tests up to 12 min_
 - Jobs such as `Check job status` / `final-status-check` only repeat the result of the pipeline, so
   their reason is the generic `Job status: failure` — the real cause is in the row of the job that
   actually failed (for example `Verify resources` above).
-- **Duration** — the duration of the run the failed job belongs to, rendered as `Xh Ym Zs`.
+- **Duration** — filled in only in the group row of a run, because it is the duration of the whole
+  run and not of a single job; the job rows leave the column empty. Rendered as `Xh Ym Zs`.
 
 ## Authentication
 

@@ -6,14 +6,21 @@ on:
     inputs:
       services:
         description: >-
-          Comma-separated list of service names to include in the report
-          (case-insensitive). Empty means all services from the config.
+          Comma-separated list of service names to analyse (case-insensitive), or "all" to analyse
+          every service of workflow-config/service-status.yaml
         required: false
         type: string
-        default: ""
+        default: all
 
 permissions:
   contents: read
+
+env:
+  # The services that are analysed by default (all services of workflow-config/service-status.yaml
+  # at the moment). Keep the list in sync with that config: a service that is missing here is not
+  # analysed when the `services` input keeps its default value.
+  ALL_SERVICES: >-
+    Consul, ZooKeeper, Kafka, RabbitMQ, OpenSearch, Monitoring, PG skipper
 
 jobs:
   service-status:
@@ -30,7 +37,9 @@ jobs:
       - name: Build service status report
         id: build-report
         env:
-          SERVICES_FILTER: ${{ inputs.services || '' }}
+          # "all" (the default of the input) selects every service; an empty value comes from the
+          # push trigger, which has no inputs, so it also analyses every service.
+          SERVICES_FILTER: ${{ inputs.services == 'all' && env.ALL_SERVICES || inputs.services }}
         run: |
           chmod +x scripts/service_status_report.sh
           ./scripts/service_status_report.sh \

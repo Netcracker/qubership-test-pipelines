@@ -1,7 +1,8 @@
 # Configuration for the Service Status report workflow (manual run only).
 #
 # Lists the services that are shown in the report and how many of their most recent
-# nightly runs are analysed when the state is calculated.
+# nightly runs are analysed when the state is calculated. The list matches the components of
+# workflow-config/nightly-status.yaml.
 #
 # The analysed workflow is the caller nightly workflow of the service repository, e.g.
 # https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml:
@@ -14,7 +15,7 @@
 #   - branch:            branch to analyse (default: main)
 #   - runs_count:        how many recent runs to analyse (default: 10)
 #   - lookback_days:     ignore runs older than this many days (default: 10)
-#   - note:              free-form note shown in the service row (for example expected durations)
+#   - note:              free-form note printed below the service line in the report
 
 # Analysis window: the most recent runs of the nightly workflow; runs older than
 # lookback_days are ignored, so the report never shows an old failure
@@ -29,3 +30,33 @@ services:
     runs_count: 10
     lookback_days: 10
     note: image build up to 4 min, tests up to 12 min
+
+  - name: ZooKeeper
+    repository: Netcracker/qubership-zookeeper
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+
+  - name: Kafka
+    repository: Netcracker/qubership-kafka
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+
+  - name: RabbitMQ
+    repository: Netcracker/qubership-rabbitmq
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+
+  - name: OpenSearch
+    repository: Netcracker/qubership-opensearch
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+
+  - name: Monitoring
+    repository: Netcracker/qubership-monitoring-operator
+    workflow_file: test-nightly-integration.yaml
+    branch: main
+
+  - name: PG skipper
+    repository: Netcracker/pgskipper-operator
+    workflow_file: run_nightly_tests.yaml
+    branch: main
