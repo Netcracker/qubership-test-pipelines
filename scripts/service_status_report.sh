@@ -75,9 +75,7 @@ emit_failed_job_rows() {
             '[.jobs[] | select((.id|tostring) == $jid) | .steps[]? | select(.conclusion == "failure") | .name] | join(", ")' \
             2>/dev/null || true)
 
-        # The reason comes from the job log, with the check-run annotations as a fallback: the
-        # annotations are the "::error::" messages of the steps in chronological order, so the
-        # first one that is not the "Process completed" marker is the real cause.
+        # The reason comes from the job log, with the check-run annotations as a fallback.
         # analyze_failed_job also sets JOB_FAIL_PATH to the inner step detected in the log; it
         # runs in the CURRENT shell (not in a subshell) so that JOB_FAIL_PATH survives, and the
         # printed snippet is captured through a temp file instead.
@@ -90,8 +88,7 @@ emit_failed_job_rows() {
         rm -f "${reason_file}"
         if [[ -z "${reason}" && -n "${check_run_url}" && "${check_run_url}" != "null" ]]; then
             reason=$(gh api "${check_run_url}/annotations" \
-                --jq '[.[] | select(.annotation_level == "failure") | .message
-                       | select(test("Process completed with exit code") | not)] | .[0] // ""' \
+                --jq '[.[] | select(.annotation_level == "failure") | .message] | unique | join(" | ")' \
                 2>/dev/null || true)
         fi
         if [[ -z "${reason}" ]]; then
@@ -290,12 +287,9 @@ of runs. A service without failed runs has no table at all.
   its job page. Failed jobs of different runs are always in different groups. Markdown tables have
   no merged cells, so the run link is written into the first cell of the group row.
 - **Failing step** — the step of the job that failed (the inner step detected in the log, with the
-  top-level step from the API in parentheses when they differ). When the job fails in a step that
-  only summarises the pipeline (`Check job status`, `final-status-check`), the step that caused the
-  failure is reported instead (`Check service is ready`, `Get logs from test pod`).
-- **Reason** — the error snippet of that step: the first meaningful error with its continuation
-  lines, or the state of the last attempt when the step retried and gave up. The first check-run
-  annotation is the fallback when the log cannot be read.
+  top-level step from the API in parentheses when they differ).
+- **Reason** — the error snippet of the failed step (from the job log, with the check-run
+  annotations as a fallback).
 - **Duration** — filled in only in the group row of a run, because it is the duration of the whole
   run and not of a single job; the job rows leave the column empty. Rendered as `Xh Ym Zs`.
 LEGEND

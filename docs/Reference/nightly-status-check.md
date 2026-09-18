@@ -87,50 +87,31 @@ structure**:
 1. GitHub appends `##[error]Process completed with exit code N.` right after the output of
    the step that failed. The failing step is the run-group whose header
    (`##[group]Run # ▶️ <name>`) directly precedes that marker. The script takes the **first**
-   such marker in the log (the root failure), e.g. `Install/update service with Helm`. Later
-   markers produced by follow-on `if: always()` steps (artifact upload, diagnostics) are ignored.
-2. **Summary steps.** The composite actions of this repository report the real problems with
-   `::error::` in earlier steps and only fail at the very end: `Check job status`,
-   `final-status-check` and `Check pipeline status` add nothing new and just summarise the steps
-   above them. When such a step is the one that failed (or when its own output contains no error
-   at all), the script looks for the reason in the steps **above** it — first in
-   `Check service is ready` and `Get logs from test pod`, then in the nearest step that has an
-   error — and reports **that** step as the failing one. This is what makes a Consul-style failure
-   report `Check service is ready` with `❌ Resources not ready after 180 retries` instead of
-   `Check job status` with its generic message.
-3. If no such marker exists, it uses the first `##[end-action` with `outcome=failure` and the
+   such marker in the log (the root failure) and names that step, e.g.
+   `Install/update service with Helm`. Later markers produced by follow-on `if: always()`
+   steps (artifact upload, diagnostics) are ignored.
+2. If no such marker exists, it uses the first `##[end-action` with `outcome=failure` and the
    display of its paired `##[start-action`.
-4. As a last resort (log not readable), it reports the top-level step from the `/jobs` API
+3. As a last resort (log not readable), it reports the top-level step from the `/jobs` API
    plus the job's check-run annotation.
 
-The `Reason:` text is taken from the **log of the selected step**. Timestamps, ANSI colors,
-`##[` markers, the colored command preview, the `shell:`/`env:` header of the step and the
-`Process completed with exit code N` marker are stripped. Then:
-
-1. the first line matching a meaningful error pattern is used — `UPGRADE FAILED`,
-   `INSTALLATION FAILED`, `Resources not ready after …`, `CR check failed`, `Tests failed`,
-   `timed out waiting for` — together with its continuation lines (indented/bulleted lines, lines
-   without a timestamp and YAML-style `key:` lines of a dumped value). A Helm upgrade failure is
-   therefore reported as `Error: UPGRADE FAILED: post-upgrade hooks failed: 1 error occurred:`
-   plus `* timed out waiting for the condition`, and a schema error keeps its
-   `zookeeper-service: - at '...': got string, want boolean` part;
-2. if that line belongs to a retry loop (resources/CR/tests readiness), the whole state of the
-   **last attempt** is printed, starting at the last `Attempt N/M` line, so the Consul case shows
-   `Attempt 180/180`, `Deployment ... is not ready: 0/1`, `⏳ Some resources are not ready` and
-   `❌ Resources not ready after 180 retries`;
-3. otherwise the first generic error line (`Error`, `ERROR`, `❌`, `FAILED`, `panic`, …) is
-   printed with two lines of context before and three lines after it; when the step produced no
-   recognizable error, its last lines are printed instead.
-
-Only the selected step is used, so follow-on steps (e.g. an `if: always()` artifact-upload) cannot
-pollute the snippet and the summary messages of the wrapper (`Service was installed with errors!`,
-`Job status: failure`) are never reported as the reason. If the log cannot be read — see
-[Authentication](#authentication) — the **first check-run annotation** that is not the
-`Process completed with exit code N` marker is used as the fallback (annotations are the
-`::error::` messages of the steps in chronological order) and the `Failing step:` name comes from
-the `/jobs` API; when there are no annotations either, the generic
-`No details available (see the run log)` message is shown. Reasons are truncated to 800 characters
-and rendered inside a `text` code block.
+The `Reason:` text is taken from the **log window of the failing step** (from its run-group
+header to the failure marker). Timestamps, ANSI colors, `##[` markers, the colored command
+preview and the `shell:`/`env:` header of the step are stripped, and then the **first error of
+the step is printed with two lines of context before and three lines after it**. The first error
+is used on purpose: the last lines of a step are usually the summary of the wrapping composite
+action (for example `Service was installed with errors!`), while the real cause (for example
+`Resources not ready after 180 retries`) appears earlier in the log. When the step produced no
+recognizable error, the last lines of its window are printed instead. Because the window is
+bounded to the failing step, follow-on steps (e.g. an `if: always()` artifact-upload) cannot
+pollute the snippet, and real errors such as a Helm
+`INSTALLATION FAILED: ... got string, want boolean` message are shown instead of a generic exit
+code. Only the failing step is included, so the output of the earlier steps is not repeated. If the
+log cannot be read — see [Authentication](#authentication) — the job's **check-run
+annotations** are used as a fallback and the `Failing step:` name comes from the `/jobs` API;
+when there are no annotations either, the generic `No details available (see the run log)`
+message is shown. Reasons are truncated to 800 characters and rendered inside a `text` code
+block.
 
 Example:
 
