@@ -42,10 +42,6 @@ RETRY_REASON_REGEX="${RETRY_REASON_REGEX:-Resources not ready after|CR check not
 # Lines that must never be reported as the reason.
 IGNORE_REASON_REGEX="${IGNORE_REASON_REGEX:-Process completed with exit code}"
 
-# Summary messages printed by the wrapping actions: they come from the step that fails, but the
-# real cause is reported elsewhere (an earlier step or a check-run annotation).
-GENERIC_REASON_REGEX="${GENERIC_REASON_REGEX:-Service was installed with errors!|Job status: failure}"
-
 # Generic error patterns, used when no meaningful pattern matched.
 GENERIC_ERROR_REGEX="${GENERIC_ERROR_REGEX:-Error|ERROR|❌|Exception|Traceback|panic|fatal|FAILED|Failed to}"
 
@@ -94,37 +90,6 @@ fetch_job_log() {
             return 0
         fi
     fi
-    return 1
-}
-
-# Print the first check-run annotation that can be used as a reason and return 1 when there is no
-# such annotation. The annotations are the "::error::" messages of the steps in chronological
-# order, so the first message that is neither the "Process completed with exit code N" marker nor
-# a summary message of the wrapper is the real cause.
-# Usage: fetch_reason_from_annotations <check_run_url>
-fetch_reason_from_annotations() {
-    local check_run_url="$1"
-    local ignore_re="${IGNORE_REASON_REGEX:-Process completed with exit code}"
-    local generic_re="${GENERIC_REASON_REGEX:-}"
-    local messages message
-
-    [[ -n "${check_run_url}" && "${check_run_url}" != "null" ]] || return 1
-    command -v gh >/dev/null 2>&1 || return 1
-
-    messages=$(gh api "${check_run_url}/annotations" \
-        --jq '.[] | select(.annotation_level == "failure") | .message' 2>/dev/null || true)
-    [[ -n "${messages}" ]] || return 1
-
-    while IFS= read -r message; do
-        message="${message#"${message%%[![:space:]]*}"}"
-        [[ -z "${message}" ]] && continue
-        [[ "${message}" =~ ${ignore_re} ]] && continue
-        if [[ -n "${generic_re}" ]] && [[ "${message}" =~ ${generic_re} ]]; then
-            continue
-        fi
-        printf '%s\n' "${message}"
-        return 0
-    done <<< "${messages}"
     return 1
 }
 
@@ -321,13 +286,11 @@ log_region() {
 #   3. Otherwise the first generic error with a few context lines, or the tail of the step.
 #
 # On success it sets the global JOB_FAIL_PATH to the failing step display and prints a concise
-# error snippet (the "reason") on stdout. When the reason would be only a summary message of the
-# wrapper, the check-run annotations are used instead.
-# Usage: analyze_failed_job <repo> <job_id> [check_run_url]
+# error snippet (the "reason") on stdout.
+# Usage: analyze_failed_job <repo> <job_id>
 analyze_failed_job() {
     local repo="$1"
     local job_id="$2"
-    local check_run_url="${3:-}"
     local raw_file index_file
     local tag f1 f2 f3
     local -a g_lines=() g_names=() e_lines=() p_lines=()
@@ -390,27 +353,6 @@ analyze_failed_job() {
         return 1
     }
 
-    # Does a group contain a *diagnostic* error: an ##[error] message or a line matching the
-    # meaningful patterns? This is used to look for the cause in the steps above the failing one,
-    # so unrelated output of other steps (git checkout, helm status, ...) is never picked up.
-    group_has_detail_error() {
-        local idx="$1"
-        local start="${g_lines[idx]}"
-        local end="${g_end[idx]}"
-        local k line
-        for ((k = 0; k < ${#e_lines[@]}; k++)); do
-            if [[ "${e_lines[k]}" -ge "${start}" && "${e_lines[k]}" -le "${end}" ]]; then
-                return 0
-            fi
-        done
-        line=$(log_find_line "${raw_file}" "${start}" "${end}" \
-            "${REASON_PATTERNS_REGEX}" "${IGNORE_REASON_REGEX}")
-        if [[ -n "${line}" && "${line}" -gt 0 ]]; then
-            return 0
-        fi
-        return 1
-    }
-
     # The step in which the job actually fails
     local fail_idx=-1
     if [[ -n "${marker_line}" ]]; then
@@ -434,7 +376,7 @@ analyze_failed_job() {
             read -r -a detail_pats <<< "${DETAIL_STEPS_REGEX,,}"
             for pat in "${detail_pats[@]}"; do
                 for ((i = fail_idx - 1; i >= 0; i--)); do
-                    if [[ "${g_names[i],,}" =~ ${pat} ]] && group_has_detail_error "${i}"; then
+                    if [[ "${g_names[i],,}" =~ ${pat} ]] && group_has_error "${i}"; then
                         selected_idx="${i}"
                         break
                     fi
@@ -443,6 +385,14 @@ analyze_failed_job() {
                     break
                 fi
             done
+            if [[ "${selected_idx}" -lt 0 ]]; then
+                for ((i = fail_idx - 1; i >= 0; i--)); do
+                    if group_has_error "${i}"; then
+                        selected_idx="${i}"
+                        break
+                    fi
+                done
+            fi
         fi
         if [[ "${selected_idx}" -lt 0 ]]; then
             selected_idx="${fail_idx}"
@@ -463,7 +413,7 @@ analyze_failed_job() {
         [[ "${sel_start}" -lt 1 ]] && sel_start=1
     fi
 
-    local reason_line attempt_line generic_line reason_text reason=""
+    local reason_line attempt_line generic_line reason_text
     reason_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
         "${REASON_PATTERNS_REGEX}" "${IGNORE_REASON_REGEX}")
 
@@ -475,37 +425,25 @@ analyze_failed_job() {
             attempt_line=$(log_find_line "${raw_file}" "${sel_start}" "${reason_line}" \
                 "${RETRY_ATTEMPT_REGEX}" "${IGNORE_REASON_REGEX}" last)
             if [[ -n "${attempt_line}" && "${attempt_line}" -gt 0 ]]; then
-                reason=$(log_region "${raw_file}" "${attempt_line}" "${reason_line}")
+                log_region "${raw_file}" "${attempt_line}" "${reason_line}"
             else
-                reason=$(log_region "${raw_file}" "${reason_line}" "${reason_line}" continue)
+                log_region "${raw_file}" "${reason_line}" "${reason_line}" continue
             fi
         else
             # Multi-line errors (for example "Error: UPGRADE FAILED: ..." of helm)
-            reason=$(log_region "${raw_file}" "${reason_line}" "${reason_line}" continue)
+            log_region "${raw_file}" "${reason_line}" "${reason_line}" continue
         fi
+        rm -f "${raw_file}" "${index_file}"
+        return 0
+    fi
+
+    generic_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
+        "${GENERIC_ERROR_REGEX}" "${IGNORE_REASON_REGEX}")
+    if [[ -n "${generic_line}" && "${generic_line}" -gt 0 ]]; then
+        log_region "${raw_file}" "$((generic_line - REASON_CONTEXT_BEFORE))" \
+            "$((generic_line + REASON_CONTEXT_AFTER))"
     else
-        generic_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
-            "${GENERIC_ERROR_REGEX}" "${IGNORE_REASON_REGEX}")
-        if [[ -n "${generic_line}" && "${generic_line}" -gt 0 ]]; then
-            reason=$(log_region "${raw_file}" "$((generic_line - REASON_CONTEXT_BEFORE))" \
-                "$((generic_line + REASON_CONTEXT_AFTER))")
-        else
-            reason=$(log_region "${raw_file}" "$((sel_end - REASON_TAIL_LINES + 1))" "${sel_end}")
-        fi
-    fi
-
-    # A summary message of the wrapper is not a useful reason: the check-run annotations hold the
-    # "::error::" messages of the steps in chronological order, so the first meaningful one is used.
-    local annotation_reason
-    if [[ -z "${reason}" ]] || { [[ -n "${GENERIC_REASON_REGEX}" ]] && [[ "${reason}" =~ ${GENERIC_REASON_REGEX} ]]; }; then
-        annotation_reason=$(fetch_reason_from_annotations "${check_run_url}" || true)
-        if [[ -n "${annotation_reason}" ]]; then
-            reason="${annotation_reason}"
-        fi
-    fi
-
-    if [[ -n "${reason}" ]]; then
-        printf '%s\n' "${reason}"
+        log_region "${raw_file}" "$((sel_end - REASON_TAIL_LINES + 1))" "${sel_end}"
     fi
 
     rm -f "${raw_file}" "${index_file}"
