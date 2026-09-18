@@ -145,10 +145,11 @@ for ((i = 0; i < component_count; i++)); do
                     failed_steps=$(echo "${jobs_json}" | jq -r --arg jid "${job_id}" \
                         '[.jobs[] | select((.id|tostring) == $jid) | .steps[]? | select(.conclusion == "failure") | .name] | join(", ")' \
                         2>/dev/null || echo "")
-                    # Failure reason (the "why"): prefer the real error snippet from the
-                    # failed job's log; fall back to check-run annotations when unavailable.
-                    # analyze_failed_job also sets JOB_FAIL_PATH to the INNER "##[group]"
-                    # steps (outer -> inner) that were open when the error occurred.
+                    # Failure reason (the "why"): the real error snippet from the failed job's
+                    # log; analyze_failed_job falls back to the check-run annotations (the
+                    # "::error::" messages of the steps) when the log only holds a summary
+                    # message of the wrapper. It also sets JOB_FAIL_PATH to the step that
+                    # carries the cause, which may be an earlier step than the one that failed.
                     reason=""
                     inner_steps=""
                     if [[ -n "${job_id}" && "${job_id}" != "null" ]]; then
@@ -156,19 +157,10 @@ for ((i = 0; i < component_count; i++)); do
                         # JOB_FAIL_PATH set inside analyze_failed_job survives; capture the
                         # printed snippet through a temp file instead.
                         reason_file=$(mktemp)
-                        analyze_failed_job "${repo}" "${job_id}" > "${reason_file}" 2>/dev/null || true
+                        analyze_failed_job "${repo}" "${job_id}" "${check_run_url}" > "${reason_file}" 2>/dev/null || true
                         inner_steps="${JOB_FAIL_PATH}"
                         reason=$(<"${reason_file}")
                         rm -f "${reason_file}"
-                    fi
-                    # The annotations are the "::error::" messages of the steps in chronological
-                    # order, so the first one that is not the "Process completed" marker is the
-                    # real cause (the failing step itself often only summarises the pipeline).
-                    if [[ -z "${reason}" ]] && [[ -n "${check_run_url}" && "${check_run_url}" != "null" ]]; then
-                        reason=$(gh api "${check_run_url}/annotations" \
-                            --jq '[.[] | select(.annotation_level == "failure") | .message
-                                   | select(test("Process completed with exit code") | not)] | .[0] // ""' \
-                            2>/dev/null || echo "")
                     fi
                     if [[ -z "${reason}" ]]; then
                         reason="No details available (see the run log)"

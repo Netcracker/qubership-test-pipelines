@@ -123,12 +123,14 @@ The `Reason:` text is taken from the **log of the selected step**. Timestamps, A
    recognizable error, its last lines are printed instead.
 
 Only the selected step is used, so follow-on steps (e.g. an `if: always()` artifact-upload) cannot
-pollute the snippet and the summary messages of the wrapper (`Service was installed with errors!`,
-`Job status: failure`) are never reported as the reason. If the log cannot be read — see
-[Authentication](#authentication) — the **first check-run annotation** that is not the
-`Process completed with exit code N` marker is used as the fallback (annotations are the
-`::error::` messages of the steps in chronological order) and the `Failing step:` name comes from
-the `/jobs` API; when there are no annotations either, the generic
+pollute the snippet, and the steps above the failing one are searched **only** for the diagnostic
+steps (`Check service is ready`, `Get logs from test pod`) so unrelated output (git checkout, helm
+status, …) is never picked up. If the log cannot be read — see [Authentication](#authentication) —
+or when it would only yield a summary message of the wrapper (`Service was installed with errors!`,
+`Job status: failure`), the **first check-run annotation** that is not the
+`Process completed with exit code N` marker is used instead (annotations are the `::error::`
+messages of the steps in chronological order) and the `Failing step:` name comes from the
+`/jobs` API; when there are no usable annotations either, the generic
 `No details available (see the run log)` message is shown. Reasons are truncated to 800 characters
 and rendered inside a `text` code block.
 

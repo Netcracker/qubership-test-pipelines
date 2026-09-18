@@ -75,25 +75,19 @@ emit_failed_job_rows() {
             '[.jobs[] | select((.id|tostring) == $jid) | .steps[]? | select(.conclusion == "failure") | .name] | join(", ")' \
             2>/dev/null || true)
 
-        # The reason comes from the job log, with the check-run annotations as a fallback: the
-        # annotations are the "::error::" messages of the steps in chronological order, so the
-        # first one that is not the "Process completed" marker is the real cause.
-        # analyze_failed_job also sets JOB_FAIL_PATH to the inner step detected in the log; it
-        # runs in the CURRENT shell (not in a subshell) so that JOB_FAIL_PATH survives, and the
-        # printed snippet is captured through a temp file instead.
+        # The reason comes from the job log; analyze_failed_job also falls back to the check-run
+        # annotations (the "::error::" messages of the steps in chronological order) when the log
+        # only holds a summary message. It sets JOB_FAIL_PATH to the step that carries the cause,
+        # which may be an earlier step than the one that failed; it runs in the CURRENT shell (not
+        # in a subshell) so that JOB_FAIL_PATH survives, and the printed snippet is captured
+        # through a temp file instead.
         reason=""
         inner_step=""
         reason_file=$(mktemp)
-        analyze_failed_job "${repo}" "${job_id}" > "${reason_file}" 2>/dev/null || true
+        analyze_failed_job "${repo}" "${job_id}" "${check_run_url}" > "${reason_file}" 2>/dev/null || true
         inner_step="${JOB_FAIL_PATH}"
         reason=$(<"${reason_file}")
         rm -f "${reason_file}"
-        if [[ -z "${reason}" && -n "${check_run_url}" && "${check_run_url}" != "null" ]]; then
-            reason=$(gh api "${check_run_url}/annotations" \
-                --jq '[.[] | select(.annotation_level == "failure") | .message
-                       | select(test("Process completed with exit code") | not)] | .[0] // ""' \
-                2>/dev/null || true)
-        fi
         if [[ -z "${reason}" ]]; then
             reason="No details available (see the run log)"
         fi
