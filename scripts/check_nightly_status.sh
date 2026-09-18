@@ -161,9 +161,13 @@ for ((i = 0; i < component_count; i++)); do
                         reason=$(<"${reason_file}")
                         rm -f "${reason_file}"
                     fi
+                    # The annotations are the "::error::" messages of the steps in chronological
+                    # order, so the first one that is not the "Process completed" marker is the
+                    # real cause (the failing step itself often only summarises the pipeline).
                     if [[ -z "${reason}" ]] && [[ -n "${check_run_url}" && "${check_run_url}" != "null" ]]; then
                         reason=$(gh api "${check_run_url}/annotations" \
-                            --jq '[.[] | select(.annotation_level == "failure") | .message] | unique | join(" | ")' \
+                            --jq '[.[] | select(.annotation_level == "failure") | .message
+                                   | select(test("Process completed with exit code") | not)] | .[0] // ""' \
                             2>/dev/null || echo "")
                     fi
                     if [[ -z "${reason}" ]]; then

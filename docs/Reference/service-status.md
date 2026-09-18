@@ -93,16 +93,20 @@ _image build up to 4 min, tests up to 12 min_
   always starts its own group, so the failed jobs of different runs are separated. Markdown tables
   have no merged cells, so the run link is written into the first cell of the group row.
 - **Failing step** — the step of the job that failed. The script detects the inner step in the job
-  log and shows the top-level step from the API in parentheses when the two differ.
-- **Reason** — the error snippet of the failing step: the first error of that step's log window with
-  a few context lines before and after it (see
-  [Nightly Status Check](nightly-status-check.md#failure-details-section) for how it is extracted),
-  with the check-run annotations as a fallback when the log cannot be read. The snippet of the
-  example above is trimmed to keep the table row short; in a real report it contains the whole window
-  with `<br>` as the line separator.
+  log and shows the top-level step from the API in parentheses when the two differ. When the job
+  fails in a step that only summarises the pipeline (`Check job status`, `final-status-check`), the
+  script reports the step that actually caused the failure (`Check service is ready`,
+  `Get logs from test pod`).
+- **Reason** — the error snippet of that step: the first meaningful error with its continuation
+  lines (for example `Error: UPGRADE FAILED: ...` of helm), or the state of the last attempt when
+  the step retried and gave up (`Attempt 180/180` and `❌ Resources not ready after 180 retries`).
+  See [Nightly Status Check](nightly-status-check.md#failure-details-section) for the exact rules;
+  the first check-run annotation is used as a fallback when the log cannot be read. The snippet of
+  the example above is trimmed to keep the table row short; in a real report the lines of the
+  snippet are separated with `<br>`.
 - Jobs such as `Check job status` / `final-status-check` only repeat the result of the pipeline, so
-  their reason is the generic `Job status: failure` — the real cause is in the row of the job that
-  actually failed (for example `Verify resources` above).
+  their own message (`Job status: failure`) is never reported as the reason: the row points to the
+  step that failed for real (for example `Verify resources` above).
 - **Duration** — filled in only in the group row of a run, because it is the duration of the whole
   run and not of a single job; the job rows leave the column empty. Rendered as `Xh Ym Zs`.
 

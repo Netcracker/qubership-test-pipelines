@@ -8,14 +8,47 @@
 # Provided functions:
 #   format_duration      - format seconds as "Xh Ym Zs" (omits zero units)
 #   fetch_job_log        - download a job's raw log (curl first, gh api as fallback)
-#   clean_window_snippet - strip timestamps/ANSI colors/##[ markers from a log window
+#   build_log_index      - index a raw log: run groups, ##[error] messages, retry markers
+#   log_find_line        - find the first/last line of a log region matching a regex
+#   log_region           - print a cleaned log region (whole range, error + continuations, window)
 #   analyze_failed_job   - detect the failing step and its error snippet
 #
 # fetch_job_log() and analyze_failed_job() use the GH_TOKEN environment variable.
 #
 # analyze_failed_job() returns the failing step through the JOB_FAIL_PATH variable, which is
 # read by the calling script after the function returns (hence SC2034 is disabled here).
+#
+# The rules below can be overridden from the environment (they are all extended regular
+# expressions). They encode the conventions of the composite actions of this repository:
+# a step such as "Check job status" only fails at the very end and only summarises the errors
+# that earlier steps already reported ("Check service is ready", "Get logs from test pod").
 # shellcheck disable=SC2034
+
+# Steps whose output never contains the real cause, only a summary of the steps above them.
+SUMMARY_STEPS_REGEX="${SUMMARY_STEPS_REGEX:-Check job status|final-status-check|final status check|Check pipeline status}"
+
+# Steps that carry the diagnostic output, in priority order (the first match wins).
+DETAIL_STEPS_REGEX="${DETAIL_STEPS_REGEX:-Check service is ready|Get logs from test pod}"
+
+# Meaningful error lines, in priority order: when one of them is found, only this line (with its
+# continuation lines) is reported instead of the first generic error of the step.
+REASON_PATTERNS_REGEX="${REASON_PATTERNS_REGEX:-UPGRADE FAILED|INSTALLATION FAILED|Resources not ready after|CR check failed|CR check not successful|Tests failed|Tests not completed|timed out waiting for}"
+
+# A step that is stuck in a retry loop reports the state of the last attempt: the block starts at
+# the last "Attempt N/M" line and ends at the error itself.
+RETRY_ATTEMPT_REGEX="${RETRY_ATTEMPT_REGEX:-^Attempt [0-9]+/[0-9]+([[:space:]]|$)}"
+RETRY_REASON_REGEX="${RETRY_REASON_REGEX:-Resources not ready after|CR check not ready|CR check not successful|Tests not completed}"
+
+# Lines that must never be reported as the reason.
+IGNORE_REASON_REGEX="${IGNORE_REASON_REGEX:-Process completed with exit code}"
+
+# Generic error patterns, used when no meaningful pattern matched.
+GENERIC_ERROR_REGEX="${GENERIC_ERROR_REGEX:-Error|ERROR|❌|Exception|Traceback|panic|fatal|FAILED|Failed to}"
+
+# Context lines around a generic error, and the number of lines printed when nothing matched.
+REASON_CONTEXT_BEFORE="${REASON_CONTEXT_BEFORE:-2}"
+REASON_CONTEXT_AFTER="${REASON_CONTEXT_AFTER:-3}"
+REASON_TAIL_LINES="${REASON_TAIL_LINES:-12}"
 
 # Format a duration in seconds as "Xh Ym Zs" (omits zero units)
 format_duration() {
@@ -60,83 +93,197 @@ fetch_job_log() {
     return 1
 }
 
-# Print a cleaned snippet from lines [start,end] of a raw Actions log: strip the timestamps and
-# the ANSI colors, drop the ##[ markers, the `shell:`/`env:` header of the step and the colored
-# command echo, then print the first error of the step with a few context lines around it.
-# The first error is used on purpose: the last lines of a step are usually the summary printed
-# by the wrapping composite action (for example "Service was installed with errors!"), while
-# the real cause (for example "Resources not ready after 180 retries") comes before it.
-# When the step produced no recognizable error, the last <tail> lines are printed instead.
-# Usage: clean_window_snippet <raw_file> <start> <end> <tail>
-clean_window_snippet() {
-    local raw_file="$1"
-    local start="$2"
-    local end="$3"
-    local tail_n="$4"
-    awk -v s="${start}" -v e="${end}" -v t="${tail_n}" '
+# Index a raw Actions log. Every index line is "<TAG><TAB>...":
+#   GROUP <line> <name>       - "##[group]Run ..." header of a step (name without the markers)
+#   ERROR <line> <message>    - "##[error]<message>" line (the message is also an annotation)
+#   MARKER <line>             - "##[error]Process completed with exit code N." of the failed step
+#   PLAIN <line>              - plain log line that looks like an error
+#   ATTEMPT <line>            - "Attempt N/M" line of a retry loop
+#   ACTION <start> <stop> <display> - first failing "##[start-action]/##[end-action]" pair
+# Usage: build_log_index <raw_file>
+build_log_index() {
+    awk -v gen_re="${GENERIC_ERROR_REGEX}" -v ignore_re="${IGNORE_REASON_REGEX}" \
+        -v attempt_re="${RETRY_ATTEMPT_REGEX}" '
         BEGIN {
             esc = sprintf("%c", 27)
             ansi = esc "\\[[0-9;]*m"
-            errpat = "Error|ERROR|❌|Exception|Traceback|panic|fatal|FAILED|Failed to"
-            ctx_before = 2
-            ctx_after = 3
-            in_env = 0
+            startFail = 0
         }
-        NR < s || NR > e { next }
         {
             line = $0
-            sub(/^[^ ]+ /, "", line)
-            had_ansi = (line ~ ansi)
-            gsub(ansi, "", line)
-            if (had_ansi) next
-            if (line ~ /^##\[/) next
-            if (line ~ /^shell: / || line == "env:") {
-                in_env = (line == "env:")
+            # Strip only the "2026-01-01T00:00:00.0000000Z " prefix of the log line, so that the
+            # indentation of the continuation lines of a multi-line error is preserved.
+            if (match(line, /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[^ ]* /) > 0) {
+                line = substr(line, RLENGTH + 1)
+            }
+            if (line ~ ansi) next
+            if (line ~ /^##\[group\]Run /) {
+                name = line
+                sub(/^##\[group\]Run /, "", name)
+                sub(/^[^A-Za-z0-9_]+/, "", name)
+                printf "GROUP\t%d\t%s\n", NR, name
                 next
             }
-            # Only the variables of the step env header are dropped, not the step output.
-            if (in_env) {
-                if (line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*: /) next
-                in_env = 0
+            if (line ~ /^##\[start-action /) {
+                id = ""; disp = ""
+                if (match(line, /id=[^;]*/)) id = substr(line, RSTART + 3, RLENGTH - 3)
+                if (match(line, /display=[^;]*/)) disp = substr(line, RSTART + 8, RLENGTH - 8)
+                if (id != "" && !(id in seenStart)) {
+                    seenStart[id] = 1
+                    dispOf[id] = disp
+                    startOf[id] = NR
+                }
+                next
             }
-            if (line == "") next
-            kept[++n] = line
+            if (line ~ /^##\[end-action / && !startFail) {
+                id = ""
+                if (match(line, /id=[^;]*/)) id = substr(line, RSTART + 3, RLENGTH - 3)
+                if ((line ~ /outcome=failure/ || line ~ /conclusion=failure/) && (id in dispOf)) {
+                    startFail = 1
+                    printf "ACTION\t%d\t%d\t%s\n", startOf[id], NR - 1, dispOf[id]
+                }
+                next
+            }
+            if (line ~ /^##\[error\]/) {
+                msg = line
+                sub(/^##\[error\]/, "", msg)
+                sub(/^ /, "", msg)
+                if (msg ~ ignore_re) {
+                    printf "MARKER\t%d\n", NR
+                } else {
+                    printf "ERROR\t%d\t%s\n", NR, msg
+                }
+                next
+            }
+            if (line ~ /^##\[/) next
+            if (line ~ attempt_re) {
+                printf "ATTEMPT\t%d\n", NR
+            }
+            if (line ~ gen_re && line !~ ignore_re) {
+                printf "PLAIN\t%d\n", NR
+            }
         }
-        END {
-            if (n == 0) exit
-            first = 0
-            for (i = 1; i <= n; i++) {
-                if (kept[i] ~ errpat) {
-                    first = i
-                    break
+    ' "$1"
+}
+
+# Print the number of the first (or last) line of [start,end] whose cleaned text matches a regex.
+# The "##[error]" prefix is stripped before matching, so the messages of the steps are matched
+# like any other text; lines that must never be a reason are skipped.
+# Usage: log_find_line <raw_file> <start> <end> <regex> <ignore_regex> [first|last]
+log_find_line() {
+    local raw_file="$1" start="$2" end="$3" re="$4" ignore_re="$5" order="${6:-first}"
+    ignore_re="${ignore_re:-Process completed with exit code}"
+    [[ "${start}" -lt 1 ]] && start=1
+    [[ "${end}" -lt "${start}" ]] && return 0
+    sed -n "${start},${end}p" "${raw_file}" | awk -v off="$((start - 1))" -v re="${re}" \
+        -v ignore_re="${ignore_re}" -v order="${order}" '
+        BEGIN { esc = sprintf("%c", 27); ansi = esc "\\[[0-9;]*m"; found = 0; printed = 0 }
+        {
+            line = $0
+            if (match(line, /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[^ ]* /) > 0) {
+                line = substr(line, RLENGTH + 1)
+            }
+            if (line ~ ansi) next
+            if (line ~ /^##\[error\]/) {
+                line = substr(line, 10)
+                sub(/^ /, "", line)
+            } else if (line ~ /^##\[/) next
+            if (line ~ ignore_re) next
+            if (line ~ re) {
+                found = NR + off
+                if (order == "first" && printed == 0) {
+                    print found
+                    printed = 1
                 }
             }
-            if (first > 0) {
-                from = first - ctx_before
-                if (from < 1) from = 1
-                to = first + ctx_after
-                if (to > n) to = n
-            } else {
-                from = n - t + 1
-                if (from < 1) from = 1
-                to = n
-            }
-            for (i = from; i <= to; i++) print kept[i]
         }
-    ' "${raw_file}"
+        END { if (order == "last" && found > 0 && printed == 0) print found }
+    '
+}
+
+# Print a cleaned region of a raw log:
+#   range    - every line of [start,end] (used for the last attempt of a retry loop, and for the
+#              generic error with its context lines)
+#   continue - the line <start> and the continuation lines that follow it (multi-line errors)
+# Timestamps, ANSI colors, "##[" markers and the `shell:`/`env:` header of a step are stripped.
+# Usage: log_region <raw_file> <start> <end> [continue]
+log_region() {
+    local raw_file="$1" start="$2" end="$3" mode="${4:-range}"
+    local ignore_re="${IGNORE_REASON_REGEX:-Process completed with exit code}"
+    [[ "${start}" -lt 1 ]] && start=1
+    [[ "${end}" -lt "${start}" ]] && return 0
+    if [[ "${mode}" == "continue" ]]; then
+        end=$((start + 5))
+    fi
+    sed -n "${start},${end}p" "${raw_file}" | awk -v mode="${mode}" -v ignore_re="${ignore_re}" '
+        BEGIN {
+            esc = sprintf("%c", 27)
+            ansi = esc "\\[[0-9;]*m"
+            in_env = 0
+            seen = 0
+            stop = 0
+        }
+        {
+            line = $0
+            had_ts = (match(line, /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[^ ]* /) > 0)
+            if (had_ts) {
+                line = substr(line, RLENGTH + 1)
+            }
+            if (line ~ ansi) next
+            if (line ~ /^##\[error\]/) {
+                line = substr(line, 10)
+                sub(/^ /, "", line)
+            } else if (line ~ /^##\[/) next
+            if (line ~ /^shell: / || line == "env:") {
+                in_env = 1
+                next
+            }
+            # Values of the `env:` header of a step ("  NAME: value") are never part of a reason
+            if (line ~ /^[ \t]+[A-Za-z_][A-Za-z0-9_]*: /) next
+            in_env = 0
+            if (line ~ ignore_re) next
+            if (line == "") next
+            if (mode == "continue") {
+                if (seen == 0) {
+                    print line
+                    seen = 1
+                    next
+                }
+                if (stop == 0) {
+                    # Continuation lines of a multi-line error: indented or bulleted lines, lines
+                    # without a timestamp (multi-line output of a command) and YAML-style keys of
+                    # a dumped value ("zookeeper-service:").
+                    if (line ~ /^[ \t]/ || line ~ /^[-*]/ || line ~ /^[A-Za-z0-9_.-]+:$/ || !had_ts) {
+                        print line
+                    } else {
+                        stop = 1
+                    }
+                }
+                next
+            }
+            print line
+        }
+    '
 }
 
 # Analyze a failed job's raw log and produce an error snippet.
 #
-# Reliability order (structural, no text guessing):
-#   1. GitHub appends `##[error]Process completed with exit code N.` right after the output of
-#      the step that failed. That step is the run-group whose header
-#      (`##[group]Run ...`, typically `##[group]Run # ▶️ <name>`) directly precedes the
-#      marker. The FIRST such marker in the log is the root failure; later markers from
-#      follow-on `if: always()` steps (e.g. artifact upload, diagnostics) are ignored.
-#   2. If no such marker exists, use the first `##[end-action ...outcome=failure` and the
-#      display of its paired `##[start-action`.
-#   3. Otherwise nothing usable -> the caller falls back to /jobs API + check-run annotations.
+# Step selection (structure of the log, no text guessing):
+#   1. The failing step is the run group that directly precedes the first
+#      `##[error]Process completed with exit code N.` marker.
+#   2. When that step only summarises the pipeline (SUMMARY_STEPS_REGEX) or its own output has no
+#      error at all, the reason is looked up in the groups ABOVE it, following the priority of
+#      DETAIL_STEPS_REGEX and, as a fallback, the nearest group that has an error. This is what
+#      makes a job that fails in "Check job status" report the real cause of "Check service is
+#      ready" or "Get logs from test pod". The selected group is also the reported failing step.
+#   3. If no such marker exists, the first failing `##[start-action]/##[end-action]` pair is used.
+#
+# Reason selection (inside the selected step):
+#   1. The first line matching REASON_PATTERNS_REGEX (for example "Error: UPGRADE FAILED: ..."),
+#      printed with its continuation lines.
+#   2. If that line belongs to a retry loop (RETRY_REASON_REGEX), the whole state of the last
+#      attempt is printed, starting at the last "Attempt N/M" line.
+#   3. Otherwise the first generic error with a few context lines, or the tail of the step.
 #
 # On success it sets the global JOB_FAIL_PATH to the failing step display and prints a concise
 # error snippet (the "reason") on stdout.
@@ -144,8 +291,11 @@ clean_window_snippet() {
 analyze_failed_job() {
     local repo="$1"
     local job_id="$2"
-    local raw_file info mode
-    local display_val start_line end_line
+    local raw_file index_file
+    local tag f1 f2 f3
+    local -a g_lines=() g_names=() e_lines=() p_lines=()
+    local marker_line="" action_display=""
+    local total_lines group_count
 
     JOB_FAIL_PATH=""
     raw_file=$(mktemp)
@@ -154,88 +304,147 @@ analyze_failed_job() {
         return 1
     fi
 
-    # Pass A: find the failing run-group via the first "Process completed" marker, and also
-    # record the first failing start/end-action as a fallback.
-    info=$(awk '
-        {
-            line = $0
-            sub(/^[^ ]+ /, "", line)
-        }
-        line ~ /^##\[group\]Run / {
-            cur = line
-            sub(/^##\[group\]Run /, "", cur)
-            sub(/^[^A-Za-z0-9_]+/, "", cur)   # drop leading "# ▶️ " / emoji markers
-            curName = cur
-            curRunLine = NR
-            next
-        }
-        line ~ /^##\[start-action / {
-            id = ""; disp = ""
-            if (match(line, /id=[^;]*/)) id = substr(line, RSTART + 3, RLENGTH - 3)
-            if (match(line, /display=[^;]*/)) disp = substr(line, RSTART + 8, RLENGTH - 8)
-            if (id != "" && !(id in seenStart)) {
-                seenStart[id] = 1
-                dispOf[id] = disp
-                startOf[id] = NR
-            }
-            next
-        }
-        line ~ /^##\[end-action / && !endFail {
-            id = ""
-            if (match(line, /id=[^;]*/)) id = substr(line, RSTART + 3, RLENGTH - 3)
-            if (line ~ /outcome=failure/ || line ~ /conclusion=failure/) {
-                if (id in dispOf) {
-                    endFail = 1
-                    endDisp = dispOf[id]
-                    endStart = startOf[id]
-                    endStop = NR - 1
-                }
-            }
-            next
-        }
-        line ~ /^##\[error\]Process completed with exit code/ && !markerHit {
-            markerHit = 1
-            markerStop = NR - 1
-            markName = curName
-            markRunLine = curRunLine
-        }
-        END {
-            if (markerHit && markRunLine > 0) {
-                print "MODE=marker"
-                print "DISPLAY=" markName
-                print "START=" markRunLine
-                print "END=" markerStop
-            } else if (markerHit) {
-                print "MODE=marker"
-                print "DISPLAY=" markName
-                print "START=0"
-                print "END=" markerStop
-            } else if (endFail) {
-                print "MODE=action"
-                print "DISPLAY=" endDisp
-                print "START=" endStart
-                print "END=" endStop
-            } else {
-                print "MODE=none"
-            }
-        }
-    ' "${raw_file}")
+    index_file=$(mktemp)
+    build_log_index "${raw_file}" > "${index_file}"
 
-    mode=$(echo "${info}" | sed -n 's/^MODE=//p')
-    if [[ "${mode}" == "marker" || "${mode}" == "action" ]]; then
-        display_val=$(echo "${info}" | sed -n 's/^DISPLAY=//p')
-        start_line=$(echo "${info}" | sed -n 's/^START=//p')
-        end_line=$(echo "${info}" | sed -n 's/^END=//p')
-        JOB_FAIL_PATH="${display_val}"
-        if [[ "${start_line}" -gt 0 ]]; then
-            clean_window_snippet "${raw_file}" "${start_line}" "${end_line}" 12
+    while IFS=$'\t' read -r tag f1 f2 f3; do
+        case "${tag}" in
+            GROUP)
+                g_lines+=("${f1}")
+                g_names+=("${f2}")
+                ;;
+            ERROR) e_lines+=("${f1}") ;;
+            PLAIN) p_lines+=("${f1}") ;;
+            MARKER) marker_line="${f1}" ;;
+            ACTION) action_display="${f3}" ;;
+        esac
+    done < "${index_file}"
+
+    total_lines=$(wc -l < "${raw_file}")
+    group_count=${#g_lines[@]}
+
+    # Line ranges of every group (from its header to the line before the next header)
+    local -a g_end=()
+    local i j
+    for ((i = 0; i < group_count; i++)); do
+        if [[ "$((i + 1))" -lt "${group_count}" ]]; then
+            g_end+=("$((g_lines[i + 1] - 1))")
         else
-            # No run-group header known; fall back to the tail before the marker.
-            start_line=$((end_line - 40))
-            [[ "${start_line}" -lt 1 ]] && start_line=1
-            clean_window_snippet "${raw_file}" "${start_line}" "${end_line}" 12
+            g_end+=("${total_lines}")
         fi
+    done
+
+    # Does a group contain an error of its own (an ##[error] message or an error line)?
+    group_has_error() {
+        local idx="$1"
+        local start="${g_lines[idx]}"
+        local end="${g_end[idx]}"
+        local k
+        for ((k = 0; k < ${#e_lines[@]}; k++)); do
+            if [[ "${e_lines[k]}" -ge "${start}" && "${e_lines[k]}" -le "${end}" ]]; then
+                return 0
+            fi
+        done
+        for ((k = 0; k < ${#p_lines[@]}; k++)); do
+            if [[ "${p_lines[k]}" -ge "${start}" && "${p_lines[k]}" -le "${end}" ]]; then
+                return 0
+            fi
+        done
+        return 1
+    }
+
+    # The step in which the job actually fails
+    local fail_idx=-1
+    if [[ -n "${marker_line}" ]]; then
+        for ((i = 0; i < group_count; i++)); do
+            if [[ "${g_lines[i]}" -lt "${marker_line}" ]]; then
+                fail_idx="${i}"
+            else
+                break
+            fi
+        done
     fi
 
-    rm -f "${raw_file}"
+    # Selection of the step that carries the reason
+    local selected_idx=-1
+    if [[ "${fail_idx}" -ge 0 ]]; then
+        local fail_name="${g_names[fail_idx],,}" summary_re="${SUMMARY_STEPS_REGEX,,}"
+        if [[ "${fail_name}" =~ ${summary_re} ]] || ! group_has_error "${fail_idx}"; then
+            local -a detail_pats=()
+            local pat
+            local IFS='|'
+            read -r -a detail_pats <<< "${DETAIL_STEPS_REGEX,,}"
+            for pat in "${detail_pats[@]}"; do
+                for ((i = fail_idx - 1; i >= 0; i--)); do
+                    if [[ "${g_names[i],,}" =~ ${pat} ]] && group_has_error "${i}"; then
+                        selected_idx="${i}"
+                        break
+                    fi
+                done
+                if [[ "${selected_idx}" -ge 0 ]]; then
+                    break
+                fi
+            done
+            if [[ "${selected_idx}" -lt 0 ]]; then
+                for ((i = fail_idx - 1; i >= 0; i--)); do
+                    if group_has_error "${i}"; then
+                        selected_idx="${i}"
+                        break
+                    fi
+                done
+            fi
+        fi
+        if [[ "${selected_idx}" -lt 0 ]]; then
+            selected_idx="${fail_idx}"
+        fi
+        JOB_FAIL_PATH="${g_names[selected_idx]}"
+    elif [[ -n "${action_display}" ]]; then
+        JOB_FAIL_PATH="${action_display}"
+    fi
+
+    # Region in which the reason is searched
+    local sel_start=1 sel_end="${total_lines}"
+    if [[ "${selected_idx}" -ge 0 ]]; then
+        sel_start="${g_lines[selected_idx]}"
+        sel_end="${g_end[selected_idx]}"
+    elif [[ -n "${marker_line}" ]]; then
+        sel_end=$((marker_line - 1))
+        sel_start=$((sel_end - 40))
+        [[ "${sel_start}" -lt 1 ]] && sel_start=1
+    fi
+
+    local reason_line attempt_line generic_line reason_text
+    reason_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
+        "${REASON_PATTERNS_REGEX}" "${IGNORE_REASON_REGEX}")
+
+    if [[ -n "${reason_line}" && "${reason_line}" -gt 0 ]]; then
+        reason_text=$(log_find_line "${raw_file}" "${reason_line}" "${reason_line}" \
+            "${RETRY_REASON_REGEX}" "${IGNORE_REASON_REGEX}" first)
+        if [[ -n "${reason_text}" ]]; then
+            # The step retried and finally gave up: show the state of the last attempt
+            attempt_line=$(log_find_line "${raw_file}" "${sel_start}" "${reason_line}" \
+                "${RETRY_ATTEMPT_REGEX}" "${IGNORE_REASON_REGEX}" last)
+            if [[ -n "${attempt_line}" && "${attempt_line}" -gt 0 ]]; then
+                log_region "${raw_file}" "${attempt_line}" "${reason_line}"
+            else
+                log_region "${raw_file}" "${reason_line}" "${reason_line}" continue
+            fi
+        else
+            # Multi-line errors (for example "Error: UPGRADE FAILED: ..." of helm)
+            log_region "${raw_file}" "${reason_line}" "${reason_line}" continue
+        fi
+        rm -f "${raw_file}" "${index_file}"
+        return 0
+    fi
+
+    generic_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
+        "${GENERIC_ERROR_REGEX}" "${IGNORE_REASON_REGEX}")
+    if [[ -n "${generic_line}" && "${generic_line}" -gt 0 ]]; then
+        log_region "${raw_file}" "$((generic_line - REASON_CONTEXT_BEFORE))" \
+            "$((generic_line + REASON_CONTEXT_AFTER))"
+    else
+        log_region "${raw_file}" "$((sel_end - REASON_TAIL_LINES + 1))" "${sel_end}"
+    fi
+
+    rm -f "${raw_file}" "${index_file}"
 }
