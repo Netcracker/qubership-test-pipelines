@@ -57,7 +57,7 @@ _Generated at: 2026-01-05 06:10:12 UTC_
 | Service | State | Links to failed jobs | Issue | Failing step | Reason | Duration |
 |---------|-------|----------------------|-------|--------------|--------|----------|
 | [Consul](https://github.com/Netcracker/qubership-consul/actions/workflows/run_nightly_tests.yaml) | 9/10 | | | | image build up to 4 min, tests up to 12 min | 1h 12m 0s |
-| | | <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82619842405">Clean [main] &#124; Monitoring</a><br>[#192 (2026-09-12)](https://github.com/Netcracker/qubership-consul/actions/runs/27922954156) | | `Verify resources` _(top-level: `Clean Install Consul main`)_ | Deployment consul-integration-tests-runner is not ready: 0/1<br>⏳ Some resources are not ready<br>Error: ❌ Resources not ready after 180 retries<br>ERROR_FLAG: true<br>Error: ❌ Service was installed with errors!<br>Error: Process completed with exit code 1. | 30m 0s |
+| | | <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27922954156/job/82619842405">Clean [main] &#124; Monitoring</a><br>[#192 (2026-09-12)](https://github.com/Netcracker/qubership-consul/actions/runs/27922954156) | | `Verify resources` _(top-level: `Clean Install Consul main`)_ | Error: ❌ Resources not ready after 180 retries<br>ERROR_FLAG: true | 30m 0s |
 | | | <a href="https://github.com/Netcracker/qubership-consul/actions/runs/27855021514/job/82440795283">final-status-check</a><br>[#186 (2026-09-06)](https://github.com/Netcracker/qubership-consul/actions/runs/27855021514) | | `Check job status` | Job status: failure | 28m 12s |
 ```
 
@@ -79,7 +79,8 @@ _Generated at: 2026-01-05 06:10:12 UTC_
   a few context lines before and after it (see
   [Nightly Status Check](nightly-status-check.md#failure-details-section) for how it is extracted),
   with the check-run annotations as a fallback when the log cannot be read. In the service row this
-  column shows the `note` from the config.
+  column shows the `note` from the config. The snippet of the example above is trimmed to keep the
+  table row short; in a real report it contains the whole window with `<br>` as the line separator.
 - Jobs such as `Check job status` / `final-status-check` only repeat the result of the pipeline, so
   their reason is the generic `Job status: failure` — the real cause is in the row of the job that
   actually failed (for example `Verify resources` above).
