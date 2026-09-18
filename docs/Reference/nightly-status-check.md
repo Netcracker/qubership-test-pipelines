@@ -92,13 +92,27 @@ structure**:
    steps (artifact upload, diagnostics) are ignored.
 2. If no such marker exists, it uses the first `##[end-action` with `outcome=failure` and the
    display of its paired `##[start-action`.
-3. As a last resort (log not readable), it reports the top-level step from the `/jobs` API
+3. When that step has nothing to report — it prints only its own environment (the
+   `SERVICE_READY_MAX_RETRIES: 180` / `ERROR_FLAG: true` block of `Check deploy status`) — the
+   `Failing step:` line and the reason are taken from the last **diagnostic step** above it,
+   `Check service is ready` or `Get logs from test pod`. A Consul-style failure is therefore
+   reported as `Check service is ready` with `Attempt 180/180`,
+   `Deployment … is not ready: 0/1`, `⏳ Some resources are not ready` and
+   `Error: ❌ Resources not ready after 180 retries`, instead of the environment variables of the
+   wrapping step.
+4. As a last resort (log not readable), it reports the top-level step from the `/jobs` API
    plus the job's check-run annotation.
 
 The `Reason:` text is taken from the **log window of the failing step** (from its run-group
-header to the failure marker). Timestamps, ANSI colors, `##[` markers, the colored command
-preview and the `shell:`/`env:` header of the step are stripped, and then the **first error of
-the step is printed with two lines of context before and three lines after it**. The first error
+header to the failure marker); when the fallback of rule 3 applied, it comes from the diagnostic
+step instead. Timestamps, ANSI colors, `##[` markers, the colored command preview and the
+`shell:`/`env:` header of the step are stripped — including the leading environment block
+(`KEY: value` lines, which GitHub prints for a step of a composite action without the `env:`
+marker), so the environment of a step can never become the reason. Then the **first error of
+the step is printed with two lines of context before and three lines after it**. In the
+diagnostic-step snippet a `##[error]<message>` line is rendered as the `Error: <message>` line
+GitHub displays, and a retry loop is reported from its last `Attempt N/M` line up to the error,
+because that is where the final state is visible. The first error
 is used on purpose: the last lines of a step are usually the summary of the wrapping composite
 action (for example `Service was installed with errors!`), while the real cause (for example
 `Resources not ready after 180 retries`) appears earlier in the log. When the step produced no

@@ -287,9 +287,12 @@ of runs. A service without failed runs has no table at all.
   its job page. Failed jobs of different runs are always in different groups. Markdown tables have
   no merged cells, so the run link is written into the first cell of the group row.
 - **Failing step** — the step of the job that failed (the inner step detected in the log, with the
-  top-level step from the API in parentheses when they differ).
-- **Reason** — the error snippet of the failed step (from the job log, with the check-run
-  annotations as a fallback).
+  top-level step from the API in parentheses when they differ). A step that prints nothing but its
+  own environment (`Check deploy status`) is replaced by the diagnostic step that reported the
+  problem (`Check service is ready`, `Get logs from test pod`).
+- **Reason** — the error snippet of that step (from the job log, with the check-run annotations as
+  a fallback); a retry loop is reported from its last attempt, so a Consul failure reads
+  "Attempt 180/180 ... Error: Resources not ready after 180 retries".
 - **Duration** — filled in only in the group row of a run, because it is the duration of the whole
   run and not of a single job; the job rows leave the column empty. Rendered as `Xh Ym Zs`.
 LEGEND
