@@ -103,36 +103,38 @@ structure**:
 4. As a last resort (log not readable), it reports the top-level step from the `/jobs` API
    plus the job's check-run annotation.
 
-The `Reason:` text is taken from the **log of the selected step**. Timestamps, ANSI colors,
-`##[` markers, the colored command preview, the `shell:`/`env:` header of the step and the
-`Process completed with exit code N` marker are stripped. Then:
+The `Reason:` text is taken from the **log of the selected step**. Timestamps, ANSI colors, `##[`
+markers, the colored command preview and the `shell:`/`env:` header of the step are stripped, and
+the `::error::` messages are rendered the way GitHub shows them in the log (`Error: <message>`).
+The length of the step then decides how much of it is reported:
 
-1. the first line matching a meaningful error pattern is used — `UPGRADE FAILED`,
-   `INSTALLATION FAILED`, `Resources not ready after …`, `CR check failed`, `Tests failed`,
-   `timed out waiting for` — together with its continuation lines (indented/bulleted lines, lines
+1. **Short step** (at most `REASON_SHORT_STEP_LINES`, 10 lines) — the **whole** log of the step is
+   printed. This is what keeps a summarising job readable: the reason is then exactly its own
+   output, `Job status: failure` and `Error: Process completed with exit code 1.`
+2. **Long step** — only the error with its context is printed: the first line matching a meaningful
+   error pattern (`UPGRADE FAILED`, `INSTALLATION FAILED`, `Resources not ready after …`,
+   `CR check failed`, `Tests failed`, `timed out waiting for`), otherwise the first `Error: …` line,
+   otherwise the first generic error line (`❌`, `FAILED`, `panic`, …). `REASON_CONTEXT_LINES`
+   (5) lines before the error are kept, plus its continuation lines (indented/bulleted lines, lines
    without a timestamp and YAML-style `key:` lines of a dumped value). A Helm upgrade failure is
    therefore reported as `Error: UPGRADE FAILED: post-upgrade hooks failed: 1 error occurred:`
    plus `* timed out waiting for the condition`, and a schema error keeps its
-   `zookeeper-service: - at '...': got string, want boolean` part;
-2. if that line belongs to a retry loop (resources/CR/tests readiness), the whole state of the
-   **last attempt** is printed, starting at the last `Attempt N/M` line, so the Consul case shows
-   `Attempt 180/180`, `Deployment ... is not ready: 0/1`, `⏳ Some resources are not ready` and
-   `❌ Resources not ready after 180 retries`;
-3. otherwise the first generic error line (`Error`, `ERROR`, `❌`, `FAILED`, `panic`, …) is
-   printed with two lines of context before and three lines after it; when the step produced no
-   recognizable error, its last lines are printed instead.
+   `zookeeper-service: - at '...': got string, want boolean` part.
+3. When the error comes from a retry loop (resources/CR/tests readiness), the block starts at the
+   last `Attempt N/M` line before the error, so the Consul case shows `Attempt 180/180`,
+   `Deployment ... is not ready: 0/1`, `⏳ Some resources are not ready` and
+   `Error: ❌ Resources not ready after 180 retries`.
+4. When the step produced no recognizable error, its last lines are printed instead.
 
 Only the selected step is used, so follow-on steps (e.g. an `if: always()` artifact-upload) cannot
 pollute the snippet, and the steps above the failing one are searched **only** for the diagnostic
 steps (`Check service is ready`, `Get logs from test pod`) so unrelated output (git checkout, helm
 status, …) is never picked up. If the log cannot be read — see [Authentication](#authentication) —
-or when it would only yield a summary message of the wrapper (`Service was installed with errors!`,
-`Job status: failure`), the **first check-run annotation** that is not the
-`Process completed with exit code N` marker is used instead (annotations are the `::error::`
-messages of the steps in chronological order) and the `Failing step:` name comes from the
-`/jobs` API; when there are no usable annotations either, the generic
-`No details available (see the run log)` message is shown. Reasons are truncated to 800 characters
-and rendered inside a `text` code block.
+the **first check-run annotation** that is not the `Process completed with exit code N` marker is
+used instead (annotations are the `::error::` messages of the steps in chronological order) and the
+`Failing step:` name comes from the `/jobs` API; when there are no usable annotations either, the
+generic `No details available (see the run log)` message is shown. Reasons are truncated to 800
+characters and rendered inside a `text` code block.
 
 Example:
 

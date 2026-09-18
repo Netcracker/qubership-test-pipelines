@@ -97,16 +97,19 @@ _image build up to 4 min, tests up to 12 min_
   fails in a step that only summarises the pipeline (`Check job status`, `final-status-check`), the
   script reports the step that actually caused the failure (`Check service is ready`,
   `Get logs from test pod`).
-- **Reason** — the error snippet of that step: the first meaningful error with its continuation
-  lines (for example `Error: UPGRADE FAILED: ...` of helm), or the state of the last attempt when
-  the step retried and gave up (`Attempt 180/180` and `❌ Resources not ready after 180 retries`).
+- **Reason** — the error snippet of that step. A short step (at most 10 lines) is reproduced in
+  full, so a summarising job keeps its own output (`Job status: failure`); a longer step is reduced
+  to its error plus the 5 lines before it (for example `Error: UPGRADE FAILED: ...` of helm), or to
+  the state of the last attempt when the step retried and gave up (`Attempt 180/180` and
+  `Error: ❌ Resources not ready after 180 retries`).
   See [Nightly Status Check](nightly-status-check.md#failure-details-section) for the exact rules;
   the first check-run annotation is used as a fallback when the log cannot be read. The snippet of
   the example above is trimmed to keep the table row short; in a real report the lines of the
   snippet are separated with `<br>`.
 - Jobs such as `Check job status` / `final-status-check` only repeat the result of the pipeline, so
-  their own message (`Job status: failure`) is never reported as the reason: the row points to the
-  step that failed for real (for example `Verify resources` above).
+  the row points to the step that failed for real (for example `Verify resources` above) whenever
+  such a step exists; only when nothing else is available does the report quote the summary of the
+  pipeline itself.
 - **Duration** — filled in only in the group row of a run, because it is the duration of the whole
   run and not of a single job; the job rows leave the column empty. Rendered as `Xh Ym Zs`.
 

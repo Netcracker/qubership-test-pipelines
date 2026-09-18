@@ -287,9 +287,10 @@ of runs. A service without failed runs has no table at all.
   top-level step from the API in parentheses when they differ). When the job fails in a step that
   only summarises the pipeline (`Check job status`, `final-status-check`), the step that caused the
   failure is reported instead (`Check service is ready`, `Get logs from test pod`).
-- **Reason** — the error snippet of that step: the first meaningful error with its continuation
-  lines, or the state of the last attempt when the step retried and gave up. The first check-run
-  annotation is the fallback when the log cannot be read.
+- **Reason** — the error snippet of that step: a short step (at most 10 lines) is reproduced in
+  full, a longer one is reduced to its error with the 5 lines before it, or to the state of the
+  last attempt when the step retried and gave up. The first check-run annotation is the fallback
+  when the log cannot be read.
 - **Duration** — filled in only in the group row of a run, because it is the duration of the whole
   run and not of a single job; the job rows leave the column empty. Rendered as `Xh Ym Zs`.
 LEGEND

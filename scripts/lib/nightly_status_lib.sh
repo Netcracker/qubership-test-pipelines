@@ -10,7 +10,7 @@
 #   fetch_job_log        - download a job's raw log (curl first, gh api as fallback)
 #   build_log_index      - index a raw log: run groups, ##[error] messages, retry markers
 #   log_find_line        - find the first/last line of a log region matching a regex
-#   log_region           - print a cleaned log region (whole range, error + continuations, window)
+#   log_clean_lines      - print a cleaned log region as "<line number><TAB><text>" entries
 #   analyze_failed_job   - detect the failing step and its error snippet
 #
 # fetch_job_log() and analyze_failed_job() use the GH_TOKEN environment variable.
@@ -49,10 +49,14 @@ GENERIC_REASON_REGEX="${GENERIC_REASON_REGEX:-Service was installed with errors!
 # Generic error patterns, used when no meaningful pattern matched.
 GENERIC_ERROR_REGEX="${GENERIC_ERROR_REGEX:-Error|ERROR|❌|Exception|Traceback|panic|fatal|FAILED|Failed to}"
 
-# Context lines around a generic error, and the number of lines printed when nothing matched.
-REASON_CONTEXT_BEFORE="${REASON_CONTEXT_BEFORE:-2}"
-REASON_CONTEXT_AFTER="${REASON_CONTEXT_AFTER:-3}"
-REASON_TAIL_LINES="${REASON_TAIL_LINES:-12}"
+# A step whose log is not longer than this many lines is reported as a whole; a longer step is
+# reduced to the error itself plus the lines before it (see REASON_CONTEXT_LINES).
+REASON_SHORT_STEP_LINES="${REASON_SHORT_STEP_LINES:-10}"
+
+# How many lines before the error are printed for a long step, and how many continuation lines are
+# kept after the error line (multi-line messages such as "Error: UPGRADE FAILED: ..." of helm).
+REASON_CONTEXT_LINES="${REASON_CONTEXT_LINES:-5}"
+REASON_CONTINUATION_LINES="${REASON_CONTINUATION_LINES:-5}"
 
 # Format a duration in seconds as "Xh Ym Zs" (omits zero units)
 format_duration() {
@@ -236,67 +240,36 @@ log_find_line() {
     '
 }
 
-# Print a cleaned region of a raw log:
-#   range    - every line of [start,end] (used for the last attempt of a retry loop, and for the
-#              generic error with its context lines)
-#   continue - the line <start> and the continuation lines that follow it (multi-line errors)
-# Timestamps, ANSI colors, "##[" markers and the `shell:`/`env:` header of a step are stripped.
-# Usage: log_region <raw_file> <start> <end> [continue]
-log_region() {
-    local raw_file="$1" start="$2" end="$3" mode="${4:-range}"
-    local ignore_re="${IGNORE_REASON_REGEX:-Process completed with exit code}"
+# Print the cleaned lines of [start,end] as "<line number><TAB><text>", so that the caller can
+# select a part of the region and still print the text only. Timestamps, ANSI colors, the "##["
+# markers, the `shell:`/`env:` header of a step and the values of that header are stripped (the
+# "##[error]" prefix is removed, so the messages of the steps are printed as plain text) and empty
+# lines are dropped.
+# Usage: log_clean_lines <raw_file> <start> <end>
+log_clean_lines() {
+    local raw_file="$1" start="$2" end="$3"
     [[ "${start}" -lt 1 ]] && start=1
     [[ "${end}" -lt "${start}" ]] && return 0
-    if [[ "${mode}" == "continue" ]]; then
-        end=$((start + 5))
-    fi
-    sed -n "${start},${end}p" "${raw_file}" | awk -v mode="${mode}" -v ignore_re="${ignore_re}" '
-        BEGIN {
-            esc = sprintf("%c", 27)
-            ansi = esc "\\[[0-9;]*m"
-            in_env = 0
-            seen = 0
-            stop = 0
-        }
+    sed -n "${start},${end}p" "${raw_file}" | awk -v off="$((start - 1))" '
+        BEGIN { esc = sprintf("%c", 27); ansi = esc "\\[[0-9;]*m"; in_env = 0 }
         {
             line = $0
-            had_ts = (match(line, /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[^ ]* /) > 0)
-            if (had_ts) {
+            if (match(line, /^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[^ ]* /) > 0) {
                 line = substr(line, RLENGTH + 1)
             }
             if (line ~ ansi) next
             if (line ~ /^##\[error\]/) {
-                line = substr(line, 10)
-                sub(/^ /, "", line)
+                # GitHub shows the "::error::" messages as "Error: <message>" in the log
+                line = "Error: " substr(line, 10)
             } else if (line ~ /^##\[/) next
             if (line ~ /^shell: / || line == "env:") {
                 in_env = 1
                 next
             }
-            # Values of the `env:` header of a step ("  NAME: value") are never part of a reason
             if (line ~ /^[ \t]+[A-Za-z_][A-Za-z0-9_]*: /) next
             in_env = 0
-            if (line ~ ignore_re) next
             if (line == "") next
-            if (mode == "continue") {
-                if (seen == 0) {
-                    print line
-                    seen = 1
-                    next
-                }
-                if (stop == 0) {
-                    # Continuation lines of a multi-line error: indented or bulleted lines, lines
-                    # without a timestamp (multi-line output of a command) and YAML-style keys of
-                    # a dumped value ("zookeeper-service:").
-                    if (line ~ /^[ \t]/ || line ~ /^[-*]/ || line ~ /^[A-Za-z0-9_.-]+:$/ || !had_ts) {
-                        print line
-                    } else {
-                        stop = 1
-                    }
-                }
-                next
-            }
-            print line
+            printf "%d\t%s\n", NR + off, line
         }
     '
 }
@@ -314,15 +287,18 @@ log_region() {
 #   3. If no such marker exists, the first failing `##[start-action]/##[end-action]` pair is used.
 #
 # Reason selection (inside the selected step):
-#   1. The first line matching REASON_PATTERNS_REGEX (for example "Error: UPGRADE FAILED: ..."),
-#      printed with its continuation lines.
-#   2. If that line belongs to a retry loop (RETRY_REASON_REGEX), the whole state of the last
-#      attempt is printed, starting at the last "Attempt N/M" line.
-#   3. Otherwise the first generic error with a few context lines, or the tail of the step.
+#   1. A step whose log is not longer than REASON_SHORT_STEP_LINES lines is reported as a whole:
+#      a summarising job then prints its complete output ("Job status: failure" and the exit code
+#      of the step).
+#   2. A longer step is reduced to the error itself — the first line matching
+#      REASON_PATTERNS_REGEX, otherwise the first ##[error] message, otherwise the first generic
+#      error — plus the REASON_CONTEXT_LINES lines before it. When the error comes from a retry
+#      loop, the block starts at the last "Attempt N/M" line; the continuation lines of a
+#      multi-line error (for example "Error: UPGRADE FAILED: ..." of helm) are kept.
 #
 # On success it sets the global JOB_FAIL_PATH to the failing step display and prints a concise
-# error snippet (the "reason") on stdout. When the reason would be only a summary message of the
-# wrapper, the check-run annotations are used instead.
+# error snippet (the "reason") on stdout. When the log cannot be read, the check-run annotations
+# are used instead.
 # Usage: analyze_failed_job <repo> <job_id> [check_run_url]
 analyze_failed_job() {
     local repo="$1"
@@ -463,41 +439,89 @@ analyze_failed_job() {
         [[ "${sel_start}" -lt 1 ]] && sel_start=1
     fi
 
-    local reason_line attempt_line generic_line reason_text reason=""
-    reason_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
-        "${REASON_PATTERNS_REGEX}" "${IGNORE_REASON_REGEX}")
+    # The cleaned log of the selected step, every entry prefixed with its line number
+    local -a step_lines=()
+    local entry num text
+    mapfile -t step_lines < <(log_clean_lines "${raw_file}" "${sel_start}" "${sel_end}")
+    local step_count=${#step_lines[@]}
+    local reason=""
 
-    if [[ -n "${reason_line}" && "${reason_line}" -gt 0 ]]; then
-        reason_text=$(log_find_line "${raw_file}" "${reason_line}" "${reason_line}" \
+    if [[ "${step_count}" -gt 0 && "${step_count}" -le "${REASON_SHORT_STEP_LINES}" ]]; then
+        # A short step is reported as a whole: this is what makes a summarising job print its own
+        # output ("Job status: failure" and the exit code of the step)
+        for entry in "${step_lines[@]}"; do
+            reason+="${entry#*$'\t'}"$'\n'
+        done
+    elif [[ "${step_count}" -gt 0 ]]; then
+        # A long step is reduced to the error itself plus the lines before it
+        local error_line
+        error_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
+            "${REASON_PATTERNS_REGEX}" "${IGNORE_REASON_REGEX}")
+        if [[ -z "${error_line}" ]]; then
+            local k
+            for ((k = 0; k < ${#e_lines[@]}; k++)); do
+                if [[ "${e_lines[k]}" -ge "${sel_start}" && "${e_lines[k]}" -le "${sel_end}" ]]; then
+                    error_line="${e_lines[k]}"
+                    break
+                fi
+            done
+        fi
+        if [[ -z "${error_line}" ]]; then
+            error_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
+                "${GENERIC_ERROR_REGEX}" "${IGNORE_REASON_REGEX}")
+        fi
+        if [[ -z "${error_line}" ]]; then
+            error_line="${sel_end}"
+        fi
+
+        local start_line=$((error_line - REASON_CONTEXT_LINES))
+        [[ "${start_line}" -lt "${sel_start}" ]] && start_line="${sel_start}"
+
+        local is_retry=""
+        is_retry=$(log_find_line "${raw_file}" "${error_line}" "${error_line}" \
             "${RETRY_REASON_REGEX}" "${IGNORE_REASON_REGEX}" first)
-        if [[ -n "${reason_text}" ]]; then
-            # The step retried and finally gave up: show the state of the last attempt
-            attempt_line=$(log_find_line "${raw_file}" "${sel_start}" "${reason_line}" \
+
+        local end_line="${error_line}"
+        if [[ -n "${is_retry}" ]]; then
+            # The step retried and finally gave up: start at the last attempt that is still inside
+            # the printed window, so the state of that attempt is visible
+            local attempt_line
+            attempt_line=$(log_find_line "${raw_file}" "${sel_start}" "${error_line}" \
                 "${RETRY_ATTEMPT_REGEX}" "${IGNORE_REASON_REGEX}" last)
-            if [[ -n "${attempt_line}" && "${attempt_line}" -gt 0 ]]; then
-                reason=$(log_region "${raw_file}" "${attempt_line}" "${reason_line}")
-            else
-                reason=$(log_region "${raw_file}" "${reason_line}" "${reason_line}" continue)
+            if [[ -n "${attempt_line}" && "${attempt_line}" -gt "${start_line}" ]]; then
+                start_line="${attempt_line}"
             fi
         else
-            # Multi-line errors (for example "Error: UPGRADE FAILED: ..." of helm)
-            reason=$(log_region "${raw_file}" "${reason_line}" "${reason_line}" continue)
+            # Multi-line errors (for example "Error: UPGRADE FAILED: ..." of helm): keep the
+            # continuation lines that follow the error line
+            local next_line next_text
+            for ((k = 0; k < REASON_CONTINUATION_LINES; k++)); do
+                next_line=$((error_line + k + 1))
+                [[ "${next_line}" -gt "${sel_end}" ]] && break
+                next_text=$(log_clean_lines "${raw_file}" "${next_line}" "${next_line}")
+                [[ -z "${next_text}" ]] && break
+                next_text="${next_text#*$'\t'}"
+                if [[ "${next_text}" =~ ^[[:space:]] || "${next_text}" =~ ^[-*] || "${next_text}" =~ ^[A-Za-z0-9_.-]+:$ ]]; then
+                    end_line="${next_line}"
+                else
+                    break
+                fi
+            done
         fi
-    else
-        generic_line=$(log_find_line "${raw_file}" "${sel_start}" "${sel_end}" \
-            "${GENERIC_ERROR_REGEX}" "${IGNORE_REASON_REGEX}")
-        if [[ -n "${generic_line}" && "${generic_line}" -gt 0 ]]; then
-            reason=$(log_region "${raw_file}" "$((generic_line - REASON_CONTEXT_BEFORE))" \
-                "$((generic_line + REASON_CONTEXT_AFTER))")
-        else
-            reason=$(log_region "${raw_file}" "$((sel_end - REASON_TAIL_LINES + 1))" "${sel_end}")
-        fi
-    fi
 
-    # A summary message of the wrapper is not a useful reason: the check-run annotations hold the
-    # "::error::" messages of the steps in chronological order, so the first meaningful one is used.
-    local annotation_reason
-    if [[ -z "${reason}" ]] || { [[ -n "${GENERIC_REASON_REGEX}" ]] && [[ "${reason}" =~ ${GENERIC_REASON_REGEX} ]]; }; then
+        for entry in "${step_lines[@]}"; do
+            num="${entry%%$'\t'*}"
+            if [[ "${num}" -ge "${start_line}" && "${num}" -le "${end_line}" ]]; then
+                reason+="${entry#*$'\t'}"$'\n'
+            fi
+        done
+    fi
+    reason="${reason%$'\n'}"
+
+    # The log could not be read (or holds nothing usable): the check-run annotations are the
+    # "::error::" messages of the steps, so the first meaningful one is used as the reason
+    if [[ -z "${reason}" ]]; then
+        local annotation_reason
         annotation_reason=$(fetch_reason_from_annotations "${check_run_url}" || true)
         if [[ -n "${annotation_reason}" ]]; then
             reason="${annotation_reason}"
