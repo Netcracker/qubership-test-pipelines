@@ -10,9 +10,8 @@ backup:
 dbaas:
   install: true
   dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
-  dbaasAggregatorRegistrationAddress: "http://dbaas-aggregator.dbaas-infra:8080"
 prometheusExporter:
-  install: false
+  install: true
 robotTests:
   install: true
   dockerImage: ghcr.io/netcracker/mongodb-docker-tests:main
