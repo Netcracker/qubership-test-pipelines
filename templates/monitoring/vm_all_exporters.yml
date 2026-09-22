@@ -41,17 +41,12 @@ victoriametrics:
       install: true
       host: vmagent-monitoring.testdomain.local
 
-# All self-hosted exporters enabled
 pushgateway:
   install: true
 graphite_remote_adapter:
   install: true
 blackboxExporter:
   install: true
-# jsonExporter is enabled without the "config" key because the chart is
-# inconsistent: values.schema.json requires config to be an object, while the
-# configmap template renders it via `nindent` (requires a string). Omitting it
-# makes the schema use the default {} and the template render an empty config.
 jsonExporter:
   install: true
 networkLatencyExporter:
