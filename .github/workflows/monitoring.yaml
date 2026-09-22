@@ -462,7 +462,7 @@ jobs:
           # PlatformMonitoring CR can transiently report 'Failed' reconcile conditions
           # (e.g. ReconcileCycleStatus / ReconcileGrafanaStatus) before becoming successful,
           # so do not fail on the first 'failed' condition - keep polling instead.
-          fail_on_cr_failed: false
+          fail_on_cr_failed: true
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_upgrade.conclusion != 'skipped' }}
