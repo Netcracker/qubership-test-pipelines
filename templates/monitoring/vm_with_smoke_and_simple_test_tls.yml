@@ -27,7 +27,7 @@ victoriametrics:
       enabled: true
       duration: 365
       renewBefore: 15
-      secretName: "victoriametrics-tls"
+      secretName: victoriametrics-tls
 
   vmAuth:
     ingress:
