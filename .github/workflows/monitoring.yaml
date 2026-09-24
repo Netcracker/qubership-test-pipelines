@@ -385,10 +385,11 @@ jobs:
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
-          # PlatformMonitoring CR can transiently report 'Failed' reconcile conditions
-          # (e.g. ReconcileCycleStatus / ReconcileGrafanaStatus) before becoming successful,
-          # so do not fail on the first 'failed' condition - keep polling instead.
-          fail_on_cr_failed: true
+          # PlatformMonitoring CR can report 'Failed' reconcile conditions
+          # before becoming successful.
+          # This issue has not been fixed in version v0.88.1.
+          # It has been fixed in later versions.
+          fail_on_cr_failed: ${{ matrix.test.install.version != 'v0.88.1' }}
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
