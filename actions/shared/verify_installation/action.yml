@@ -65,9 +65,7 @@ inputs:
     description: |
       Fail immediately when a CR reports a 'failed' condition (true, default).
       Set to false to treat a 'failed' condition as in-progress and keep polling
-      instead of failing on the first occurrence. Used for monitoring, where the
-      PlatformMonitoring CR can transiently report 'Failed' reconcile conditions
-      (e.g. ReconcileCycleStatus / ReconcileGrafanaStatus) before becoming successful.
+      instead of failing on the first occurrence
     required: false
     type: boolean
     default: true

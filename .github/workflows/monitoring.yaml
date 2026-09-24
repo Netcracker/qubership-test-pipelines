@@ -304,26 +304,12 @@ jobs:
         shell: bash
         run: |
           # ▶️ Apply/replace monitoring CRDs before installing the chart.
-          # The monitoring stack consists of several operators that own their own CRDs:
-          #   - monitoring-operator      -> monitoring.netcracker.com (PlatformMonitoring)
-          #   - grafana-operator        -> grafana.integreatly.org
-          #   - victoriametrics-operator-> operator.victoriametrics.com + monitoring.coreos.com
-          # helm installs CRDs only on install and does NOT update them on upgrade, and
-          # helm_deploy's "Replace CRDs" step covers only the chart's root crds dir.
-          # Therefore CRDs from ALL crds dirs below are explicitly created/replaced here,
-          # so operator version upgrades pick up the new CRD schemas.
-          # `kubectl replace` (not client-side apply) is used: it reliably updates an
-          # existing CRD's schema and does not store the whole (huge platformmonitorings)
-          # manifest in the kubectl.kubernetes.io/last-applied-configuration annotation,
-          # which would exceed the 262144-byte annotation limit.
           crd_dirs=(
             "qubership-monitoring-operator/charts/qubership-monitoring-operator/crds"
             "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/grafana/crds"
             "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/victoriametrics/crds"
             "qubership-monitoring-operator/charts/qubership-monitoring-crds/crds"
           )
-          # Deduplicate by CRD name: the qubership-monitoring-crds chart overlaps with the
-          # sub-chart crds dirs, so process each CRD only once (first dir wins).
           declare -A seen
           for crd_dir in "${crd_dirs[@]}"; do
             if [ ! -d "${crd_dir}" ]; then
@@ -413,23 +399,10 @@ jobs:
         env:
           NAMESPACE: monitoring
         run: |
-          # Old monitoring operator versions create ServiceMonitors/PodMonitors with
-          # app.kubernetes.io/managed-by=monitoring-operator. Newer charts render them
-          # via Helm, and `helm upgrade` refuses to adopt resources lacking Helm
-          # ownership metadata ("invalid ownership metadata" error).
-          # The old operator keeps reconciling and re-creating these resources right
-          # after they are deleted, so first scale the operator down (same selector used
-          # by the chart's own grafana-cleanup-job), then delete the operator-managed
-          # ServiceMonitors/PodMonitors. After `helm upgrade` the new operator comes up
-          # and recreates everything with correct ownership.
-          # NOTE: only ServiceMonitors/PodMonitors are deleted - NOT the Grafana/VM CRs
-          # or operator-created Deployments (deleting those breaks the operator reconcile
-          # cycle, e.g. "Grafana reconcile cycle failed").
           echo "> Scaling down old monitoring-operator..."
           kubectl scale deployment -n "${NAMESPACE}" \
             --replicas=0 \
             --selector app.kubernetes.io/component=qubership-monitoring-operator || true
-          # Fallback: scale by the operator's default name if the selector matched nothing.
           if kubectl get deployment monitoring-operator -n "${NAMESPACE}" >/dev/null 2>&1; then
             replicas=$(kubectl get deployment monitoring-operator -n "${NAMESPACE}" \
               -o jsonpath='{.spec.replicas}')
@@ -460,10 +433,6 @@ jobs:
           PATH_TO_CHART: charts/qubership-monitoring-operator
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
-
-#      - name: Sleep 1m
-#        if: matrix.test.sequence == 'upgrade'
-#        run: sleep 1m
 
       - name: Hardening Check
         if: inputs.scope == 'hardening'
@@ -498,7 +467,7 @@ jobs:
           # PlatformMonitoring CR can transiently report 'Failed' reconcile conditions
           # (e.g. ReconcileCycleStatus / ReconcileGrafanaStatus) before becoming successful,
           # so do not fail on the first 'failed' condition - keep polling instead.
-          fail_on_cr_failed: false
+          fail_on_cr_failed: true
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_upgrade.conclusion != 'skipped' }}
