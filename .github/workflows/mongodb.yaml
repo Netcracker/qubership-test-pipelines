@@ -18,9 +18,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Branch of qubership-test-pipelines repository
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -55,9 +55,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Branch of qubership-test-pipelines repository
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -109,8 +109,8 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
@@ -171,17 +171,17 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
       - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        uses: $/actions/shared/create_cluster
 
       - name: Install Monitoring [${{ matrix.test.install.version }}]
         if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: monitoring_install
         with:
           path_to_template: templates/monitoring/vm_without_tests.yml
@@ -194,13 +194,13 @@ jobs:
 
       - name: Get Installed Monitoring CR name
         if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
           crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
 
       - name: Verify Monitoring installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         if: matrix.test.monitoring == true
         with:
           namespace: monitoring
@@ -214,7 +214,7 @@ jobs:
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: monitoring
           artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
@@ -247,7 +247,7 @@ jobs:
         run: cat qubership-test-pipelines/${{ matrix.test.install.template_operator }}
 
       - name: Install MongoDB Operator [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: mongodb_operator_install
         with:
           path_to_template: ${{ matrix.test.install.template_operator }}
@@ -260,13 +260,13 @@ jobs:
           restricted: ${{ matrix.test.restricted }}
 
       - name: Get Installed MongoDB Operator CRD name
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: install_mongodb_operator_get_crds
         with:
           crd_location: Netcracker/qubership-mongodb-operator/operator/charts/helm/mongodb-operator/crds
 
       - name: Verify MongoDB Operator installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -277,7 +277,7 @@ jobs:
 
       - name: Collect Diagnostics MongoDB Operator installation
         if: ${{ !cancelled() && steps.mongodb_operator_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: MongoDB_Operator_Install_${{ matrix.test.install.artifact_name }}
@@ -288,7 +288,7 @@ jobs:
         run: cat qubership-test-pipelines/${{ matrix.test.install.template_services }}
 
       - name: Install MongoDB Services [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: mongodb_services_install
         with:
           path_to_template: ${{ matrix.test.install.template_services }}
@@ -301,13 +301,13 @@ jobs:
           restricted: ${{ matrix.test.restricted }}
 
       - name: Get Installed MongoDB Services CRD name
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: install_mongodb_services_get_crds
         with:
           crd_location: Netcracker/qubership-mongodb-operator/services/service/charts/helm/mongodb-services/crds
 
       - name: Verify MongoDB Services installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -318,7 +318,7 @@ jobs:
 
       - name: Collect Diagnostics MongoDB Services installation
         if: ${{ !cancelled() && steps.mongodb_services_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: MongoDB_Services_Install_${{ matrix.test.install.artifact_name }}
@@ -326,7 +326,7 @@ jobs:
 
       - name: Upgrade MongoDB Operator to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: mongodb_operator_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.template_operator }}
@@ -340,7 +340,7 @@ jobs:
 
       - name: Verify MongoDB Operator upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -351,7 +351,7 @@ jobs:
 
       - name: Collect Diagnostics MongoDB Operator upgrade
         if: ${{ !cancelled() && steps.mongodb_operator_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: MongoDB_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
@@ -359,7 +359,7 @@ jobs:
 
       - name: Upgrade MongoDB Services to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: mongodb_services_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.template_services }}
@@ -373,7 +373,7 @@ jobs:
 
       - name: Verify MongoDB Services upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -384,7 +384,7 @@ jobs:
 
       - name: Collect Diagnostics MongoDB Services upgrade
         if: ${{ !cancelled() && steps.mongodb_services_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: MongoDB_Services_Upgrade_${{ matrix.test.upgrade.artifact_name }}
@@ -395,14 +395,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [MongoDB-Test-Cases]
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
-          path: qubership-test-pipelines
-          persist-credentials: false
       - name: Check job status
-        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        uses: $/actions/shared/check_job_status
         with:
           job_result: ${{ needs.MongoDB-Test-Cases.result }}

@@ -16,9 +16,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Test pipeline branch name
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -57,9 +57,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Test pipeline branch name
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -112,8 +112,8 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
@@ -193,26 +193,26 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
       - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        uses: $/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == Start ======= Specific steps for TLS =======
       - name: Setup TLS
         if: ${{ matrix.test.tls == true }}
-        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+        uses: $/actions/shared/setup_tls
       # == End ======= Specific steps for TLS =======
 
       # == Start ======= Specific steps for S3 =======
       - name: Create S3 bucket
         id: create_bucket
         if: matrix.test.install.s3 == true
-        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        uses: $/actions/shared/setup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -240,7 +240,7 @@ jobs:
       # == Start Monitoring installation tests =======
       - name: Install Monitoring
         if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/install_monitoring
+        uses: $/actions/shared/install_monitoring
         with:
           artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
           service_ready_max_retries: 500
@@ -272,7 +272,7 @@ jobs:
         run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
       - name: Install Opensearch [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: opensearch_install
         with:
           path_to_template: ${{ matrix.test.install.template }}
@@ -284,13 +284,13 @@ jobs:
           namespace: opensearch
 
       - name: Get Installed Opensearch CRD name
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: install_opensearch_get_crds
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
 
       - name: Verify Opensearch installation [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: opensearch
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
@@ -299,7 +299,7 @@ jobs:
 
       - name: Collect Diagnostics Opensearch installation [${{ matrix.test.install.version }}]
         if: ${{ !cancelled() && steps.opensearch_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: opensearch
           artifact_name: Installation_${{ matrix.test.install.artifact_name }}
@@ -323,7 +323,7 @@ jobs:
 
       - name: Upgrade Opensearch to [${{ matrix.test.upgrade.version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: opensearch_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.template }}
@@ -337,7 +337,7 @@ jobs:
 
       - name: Get Upgraded Opensearch CRD name
         if: ${{ matrix.test.sequence == 'upgrade' }}
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: upgrade_opensearch_get_crds
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
@@ -359,7 +359,7 @@ jobs:
 
       - name: Verify Opensearch upgrade to [${{ matrix.test.upgrade.version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: opensearch
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
@@ -368,7 +368,7 @@ jobs:
 
       - name: Collect Diagnostics Opensearch upgrade to [${{ matrix.test.upgrade.version }}]
         if: ${{ !cancelled() && steps.opensearch_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: opensearch
           artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
@@ -379,7 +379,7 @@ jobs:
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
         if: always() && matrix.test.install.s3 == true
-        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        uses: $/actions/shared/cleanup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -393,14 +393,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [Opensearch-Test-Cases]
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
-          path: qubership-test-pipelines
-          persist-credentials: false
       - name: Check job status
-        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        uses: $/actions/shared/check_job_status
         with:
           job_result: ${{ needs.Opensearch-Test-Cases.result }}

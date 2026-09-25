@@ -14,8 +14,7 @@ inputs:
       - 'true': helm installation by user with restricted rights
       - 'false': helm installation by cluster admin user
     required: true
-    default: false
-    type: boolean
+    default: 'false'
 
   path_to_template:
     description: |
@@ -51,15 +50,15 @@ inputs:
     required: true
 
   resource_folder:
+    default: ""
     description: |
       Folder with resources for creating before installation
-    required: true
+    required: false
 
   image_replacement:
     description: |
       Value for change version of service in chart(example - pgskipper-docker-patroni-18)
     required: false
-    type: string
     default: ""
 
 runs:
@@ -141,7 +140,7 @@ runs:
 
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
-      uses: ./qubership-test-pipelines/actions/shared/create_restricted_resources
+      uses: $/actions/shared/create_restricted_resources
       with:
         service_name: ${{inputs.service_name}}
         namespace: ${{inputs.namespace}}

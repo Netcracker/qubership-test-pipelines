@@ -17,9 +17,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Branch of qubership-test-pipelines repository
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -69,9 +69,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Branch of qubership-test-pipelines repository
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -135,7 +135,7 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
+          ref: ${{ job.workflow_sha }}
           repository: ${{ github.repository_owner }}/qubership-test-pipelines
           path: qubership-test-pipelines
           persist-credentials: false
@@ -202,21 +202,21 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
+          ref: ${{ job.workflow_sha }}
           repository: ${{ github.repository_owner }}/qubership-test-pipelines
           path: qubership-test-pipelines
           persist-credentials: false
 
       - name: Create cluster (Kind)
         if: matrix.test.engine != 'microshift'
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        uses: $/actions/shared/create_cluster
         with:
           kind-layout: ${{ inputs.kind-layout }}
           enable-owner-references-permission-enforcement: ${{ inputs.enable-owner-references-permission-enforcement }}
 
       - name: Create cluster (OpenShift/MicroShift)
         if: matrix.test.engine == 'microshift'
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster_openshift
+        uses: $/actions/shared/create_cluster_openshift
 
       # == Start ======= Specific steps for Allure report =======
       - name: Check Allure configuration
@@ -242,16 +242,16 @@ jobs:
 
       - name: Install Ingress Controller (Kind)
         if: matrix.test.engine != 'microshift'
-        uses: ./qubership-test-pipelines/actions/shared/create_ingress
+        uses: $/actions/shared/create_ingress
 
       # == Start ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
       - name: Setup TLS (cert-manager + self-signed ClusterIssuer)
         if: matrix.test.engine == 'microshift'
-        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+        uses: $/actions/shared/setup_tls
 
       - name: Install Gateway API Gateway (OpenShift/MicroShift)
         if: matrix.test.engine == 'microshift'
-        uses: ./qubership-test-pipelines/actions/shared/create_gateway
+        uses: $/actions/shared/create_gateway
         with:
           tls-secret-name: monitoring-gateway-tls
 
@@ -277,7 +277,7 @@ jobs:
 
       - name: Provision etcd certs for OpenShift/MicroShift
         if: matrix.test.engine == 'microshift'
-        uses: ./qubership-test-pipelines/actions/shared/provision_etcd_certs_openshift
+        uses: $/actions/shared/provision_etcd_certs_openshift
       # == End ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
       # == 01 End ======= Common pre-steps for all tests =======
 
@@ -286,25 +286,25 @@ jobs:
 
       # == 02 Start ======= Installation steps =======
       - name: Install Monitoring [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: monitoring_install
         with:
           path_to_template: ${{ matrix.test.install.template }}
           service_branch: ${{ matrix.test.install.version }}
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
-          PATH_TO_CHART: charts/qubership-monitoring-operator
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 
       - name: Get Installed Monitoring CR name
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
           crd_location: ${{ inputs.repository_name}}/${{ env.PATH_TO_CHART}}/crds
 
       - name: Verify Monitoring installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: monitoring
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
@@ -317,7 +317,7 @@ jobs:
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: monitoring
           artifact_name: Installation_${{ matrix.test.install.artifact_name }}
@@ -333,7 +333,7 @@ jobs:
 
       - name: Upgrade Monitoring to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: monitoring_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.template }}
@@ -341,7 +341,7 @@ jobs:
           deploy_mode: upgrade
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
-          PATH_TO_CHART: charts/qubership-monitoring-operator
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 
@@ -362,14 +362,14 @@ jobs:
 
       - name: Get Upgraded Monitoring CR name
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: upgrade_monitoring_get_crds
         with:
           crd_location: ${{ inputs.repository_name}}/${{ env.PATH_TO_CHART}}/crds
 
       - name: Verify Monitoring upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: monitoring
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
@@ -382,7 +382,7 @@ jobs:
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: monitoring
           artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
@@ -396,14 +396,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [Monitoring-Test-Cases]
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
-          path: qubership-test-pipelines
-          persist-credentials: false
       - name: Check job status
-        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        uses: $/actions/shared/check_job_status
         with:
           job_result: ${{ needs.Monitoring-Test-Cases.result }}
