@@ -151,8 +151,13 @@ jobs:
 
       - name: Get latest tag
         id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
         run: |
-          echo "latest_tag=main" >> $GITHUB_OUTPUT
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
 
       - name: Process versions file and matrix generation
         id: process-versions
@@ -244,6 +249,12 @@ jobs:
         if: matrix.test.engine != 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/create_ingress
 
+      # == Start TLS certs addition if needed =======
+      - name: Setup TLS
+        if: matrix.test.tls == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+      # == End TLS certs addition if needed =======
+
       # == Start ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
       - name: Setup TLS (cert-manager + self-signed ClusterIssuer)
         if: matrix.test.engine == 'microshift'
@@ -314,6 +325,11 @@ jobs:
           crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
+          # PlatformMonitoring CR can report 'Failed' reconcile conditions
+          # before becoming successful.
+          # This issue has not been fixed in version v0.88.1.
+          # It has been fixed in later versions.
+          fail_on_cr_failed: ${{ matrix.test.install.version != 'v0.88.1' }}
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
@@ -331,6 +347,38 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
 
+      # Workaround for qubership-monitoring-operator#549: the operator recreates
+      # operator-managed ServiceMonitors/PodMonitors during a release->main upgrade.
+      # Remove this step once the issue is fixed:
+      # https://github.com/Netcracker/qubership-monitoring-operator/issues/549
+      - name: Clean up operator-managed ServiceMonitors before Helm upgrade
+        if: matrix.test.sequence == 'upgrade'
+        shell: bash
+        env:
+          NAMESPACE: monitoring
+          OPERATOR_SELECTOR: app.kubernetes.io/component=qubership-monitoring-operator
+        run: |
+          echo "> Scaling down old monitoring-operator..."
+          # The operator Deployment is named 'monitoring-operator' and carries the
+          # app.kubernetes.io/component label, so this selector already covers it.
+          kubectl scale deployment -n "${NAMESPACE}" \
+            --replicas=0 \
+            --selector "${OPERATOR_SELECTOR}" || true
+
+          # 'kubectl scale' only patches the Deployment spec and returns before the
+          # pod is gone. Wait for the operator pods to actually terminate, otherwise
+          # a still-running operator could recreate the ServiceMonitors right after
+          # they are deleted below.
+          kubectl wait --for=delete pod -n "${NAMESPACE}" \
+            -l "${OPERATOR_SELECTOR}" --timeout=120s || true
+
+          echo "> Deleting operator-managed ServiceMonitors/PodMonitors..."
+          kubectl delete servicemonitors,podmonitors -n "${NAMESPACE}" \
+            -l app.kubernetes.io/managed-by=monitoring-operator --ignore-not-found
+
+          echo "> Remaining ServiceMonitors/PodMonitors:"
+          kubectl get servicemonitors,podmonitors -n "${NAMESPACE}" || true
+
       - name: Upgrade Monitoring to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -344,10 +392,6 @@ jobs:
           PATH_TO_CHART: charts/qubership-monitoring-operator
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
-
-      - name: Sleep 2m
-        if: matrix.test.sequence == 'upgrade'
-        run: sleep 2m
 
       - name: Hardening Check
         if: inputs.scope == 'hardening'
@@ -379,6 +423,10 @@ jobs:
           crd_list: ${{ steps.upgrade_monitoring_get_crds.outputs.crd_names }}
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
+          # PlatformMonitoring CR can transiently report 'Failed' reconcile conditions
+          # (e.g. ReconcileCycleStatus / ReconcileGrafanaStatus) before becoming successful,
+          # so do not fail on the first 'failed' condition - keep polling instead.
+          fail_on_cr_failed: true
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_upgrade.conclusion != 'skipped' }}

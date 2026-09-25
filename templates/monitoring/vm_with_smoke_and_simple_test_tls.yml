@@ -1,39 +1,44 @@
-global:
-  privilegedRights: true
-  profile: small
+tlsEnabled: true
+clusterIssuerName: test-clusterissuer
+
 grafana:
   ingress:
     host: grafana-monitoring.testdomain.local
     install: true
+
 integrationTests:
   install: true
   tags: grafanaORsmoke
   timeoutBeforeStart: 60
   statusWriting:
     enabled: false
-  atpReport:
-    enabled: false
-    atpStorage:
-      provider: aws
-      serverUrl: s3.amazonaws.com
-      bucket: qstp-results
-      region: us-east-1
-      username: ""
-      password: ""
+
 kubernetesMonitors:
   kubeSchedulerServiceMonitor:
     install: true
   kubeControllerManagerServiceMonitor:
     install: true
+
 victoriametrics:
+  tlsEnabled: true
+  clusterIssuerName: test-clusterissuer
+  tlsConfig:
+    generateCerts:
+      enabled: true
+      duration: 365
+      renewBefore: 15
+      secretName: victoriametrics-tls
+
   vmAuth:
     ingress:
       install: true
       host: vmauth-monitoring.testdomain.local
+
   vmAlert:
     ingress:
       install: true
       host: vmalert-monitoring.testdomain.local
+
   vmSingle:
     ingress:
       install: true
@@ -45,6 +50,7 @@ victoriametrics:
       limits:
         memory: 2Gi
         cpu: 1500m
+
   vmAlertManager:
     ingress:
       install: true
