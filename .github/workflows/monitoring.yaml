@@ -293,7 +293,7 @@ jobs:
           service_branch: ${{ matrix.test.install.version }}
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
-          PATH_TO_CHART: charts/qubership-monitoring-operator
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 
@@ -341,7 +341,7 @@ jobs:
           deploy_mode: upgrade
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
-          PATH_TO_CHART: charts/qubership-monitoring-operator
+          path_to_chart: ${{ env.PATH_TO_CHART }}
           namespace: monitoring
           restricted: ${{ matrix.test.restricted }}
 

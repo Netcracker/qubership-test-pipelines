@@ -14,8 +14,7 @@ inputs:
       - 'true': helm installation by user with restricted rights
       - 'false': helm installation by cluster admin user
     required: true
-    default: false
-    type: boolean
+    default: 'false'
 
   path_to_template:
     description: |
@@ -60,7 +59,6 @@ inputs:
     description: |
       Value for change version of service in chart(example - pgskipper-docker-patroni-18)
     required: false
-    type: string
     default: ""
 
 runs:
