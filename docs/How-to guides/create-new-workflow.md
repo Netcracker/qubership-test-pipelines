@@ -94,7 +94,7 @@ jobs:
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
-        # needed only for scripts/templates/resources; actions are resolved via `$/`
+        # only for scripts/templates/resources; actions use `$/`
         with:
           ref: '${{ job.workflow_sha }}'
           repository: '${{ job.workflow_repository }}'
