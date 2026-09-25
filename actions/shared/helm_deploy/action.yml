@@ -51,9 +51,10 @@ inputs:
     required: true
 
   resource_folder:
+    default: ""
     description: |
       Folder with resources for creating before installation
-    required: true
+    required: false
 
   image_replacement:
     description: |
@@ -141,7 +142,7 @@ runs:
 
     - name: Create restricted resources
       if: inputs.restricted == 'true'  && inputs.deploy_mode == 'install'
-      uses: ./qubership-test-pipelines/actions/shared/create_restricted_resources
+      uses: $/actions/shared/create_restricted_resources
       with:
         service_name: ${{inputs.service_name}}
         namespace: ${{inputs.namespace}}

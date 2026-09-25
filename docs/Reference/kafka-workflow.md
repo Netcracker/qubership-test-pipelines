@@ -8,7 +8,7 @@ Workflow performs testing of the [Qubership-kafka service](https://github.com/Ne
 | Parameter       | Type   | Required | Description                                              | Default |
 |-----------------|--------|----------|----------------------------------------------------------|---------|
 | service_branch  | string | No       | Branch of qubership-kafka repository                     | -       |
-| pipeline_branch | string | Yes      | Branch of qubership-test-pipelines repository            | -       |
+| pipeline_branch | string | No       | **Deprecated**, ignored                                  | -       |
 | runner_type     | string | No       | Runner type (ubuntu-latest or self-hosted)               | ubuntu-latest       |
 <!-- markdownlint-enable line-length -->
 

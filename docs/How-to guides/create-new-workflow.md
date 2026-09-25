@@ -29,7 +29,6 @@ jobs:
     uses: Netcracker/qubership-test-pipelines/.github/workflows/<service>.yaml@main
     with:
       service_branch: '${{ github.head_ref || github.ref_name }}'
-      pipeline_branch: 'main' #this value must match the value after '@' in 'uses'
 ```
 3. Add service-specific actions to this repository
 
@@ -55,7 +54,7 @@ runs:
   using: 'composite'
   steps:
     - name: Run <shared action> for <service>
-      uses: ./qubership-test-pipelines/actions/shared/<shared_action>
+      uses: $/actions/shared/<shared_action>
       with:
         param1: ${{inputs.param1}}
         param2: ${{inputs.param2}}
@@ -73,10 +72,6 @@ on:
       service_branch:
         required: false
         type: string
-      pipeline_branch:
-        description: 'Test pipeline branch name'
-        type: string
-        required: true
 ```
 6. Add jobs with test deploys to workflow
 
@@ -99,25 +94,26 @@ jobs:
     steps:
       - name: Checkout pipeline
         uses: actions/checkout@v4
+        # needed only for scripts/templates/resources; actions are resolved via `$/`
         with:
-          ref: '${{inputs.pipeline_branch}}'
-          repository: 'Netcracker/qubership-test-pipelines'
+          ref: '${{ job.workflow_sha }}'
+          repository: '${{ job.workflow_repository }}'
           path: 'qubership-test-pipelines'
       - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        uses: $/actions/shared/create_cluster
       - name: Clean Install <Service> [LATEST]
-        uses: ./qubership-test-pipelines/actions/<service>/helm_deploy_<service>
+        uses: $/actions/<service>/helm_deploy_<service>
         with:
           path_to_template: '<path to template with service parameters>'
           service_branch: '${{inputs.service_branch}}'
       - name: Verify <Service> installation
-        uses: ./qubership-test-pipelines/actions/<service>/verify_installation_<service>
+        uses: $/actions/<service>/verify_installation_<service>
       - name: Update to [LATEST] Version With Diff Params
-        uses: ./qubership-test-pipelines/actions/<service>/helm_deploy_<service>
+        uses: $/actions/<service>/helm_deploy_<service>
         with:
           path_to_template: '<path to template with service parameters>'
           service_branch: '${{inputs.service_branch}}'
           deploy_mode: upgrade
       - name: Verify <Service> upgrade
-        uses: ./qubership-test-pipelines/actions/<service>/verify_installation_<service>
+        uses: $/actions/<service>/verify_installation_<service>
 ```

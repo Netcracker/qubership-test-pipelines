@@ -39,7 +39,7 @@ runs:
   using: composite
   steps:
     - name: Install Monitoring
-      uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+      uses: $/actions/shared/helm_deploy
       id: monitoring_install
       with:
         path_to_template: templates/monitoring/vm_without_tests.yml
@@ -51,13 +51,13 @@ runs:
         restricted: false
 
     - name: Get Installed Monitoring CR name
-      uses: ./qubership-test-pipelines/actions/shared/get_crds
+      uses: $/actions/shared/get_crds
       id: install_monitoring_get_crds
       with:
         crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
 
     - name: Verify Monitoring installation
-      uses: ./qubership-test-pipelines/actions/shared/verify_installation
+      uses: $/actions/shared/verify_installation
       with:
         namespace: monitoring
         service_ready_max_retries: ${{ inputs.service_ready_max_retries }}
@@ -68,7 +68,7 @@ runs:
         check_tests: ${{ inputs.check_tests }}
 
     - name: Collect Diagnostics Monitoring installation
-      uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+      uses: $/actions/shared/collect_diag_info
       with:
         namespace: monitoring
         artifact_name: ${{ inputs.artifact_name }}
