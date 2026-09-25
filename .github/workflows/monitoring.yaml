@@ -212,14 +212,6 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
-      - name: Checkout Monitoring operator
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.service_branch }}
-          repository: ${{ inputs.repository_name }}
-          path: qubership-monitoring-operator
-          persist-credentials: false
-
       - name: Create cluster (Kind)
         if: matrix.test.engine != 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -300,44 +292,6 @@ jobs:
       # == End ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
       # == 01 End ======= Common pre-steps for all tests =======
 
-      - name: Apply monitoring CRDs
-        shell: bash
-        run: |
-          # ▶️ Apply/replace monitoring CRDs before installing the chart.
-          crd_dirs=(
-            "qubership-monitoring-operator/charts/qubership-monitoring-operator/crds"
-            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/grafana/crds"
-            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/victoriametrics/crds"
-            "qubership-monitoring-operator/charts/qubership-monitoring-crds/crds"
-          )
-          declare -A seen
-          for crd_dir in "${crd_dirs[@]}"; do
-            if [ ! -d "${crd_dir}" ]; then
-              echo "::warning::CRD directory not found: ${crd_dir}"
-              continue
-            fi
-            for file in "${crd_dir}"/*.yaml "${crd_dir}"/*.yml; do
-              [ -f "$file" ] || continue
-              crd_name=$(yq e '.metadata.name' "$file" 2>/dev/null)
-              if [ -z "${crd_name}" ] || [ "${crd_name}" = "null" ]; then
-                echo "::warning::Could not read CRD name from $file"
-                continue
-              fi
-              if [[ -n "${seen[${crd_name}]+x}" ]]; then
-                echo "  Skipping duplicate CRD ${crd_name} ($file)"
-                continue
-              fi
-              seen["${crd_name}"]=1
-              if kubectl get crd "${crd_name}" >/dev/null 2>&1; then
-                echo "  Replacing CRD ${crd_name} ($file)"
-                kubectl replace -f "$file"
-              else
-                echo "  Creating CRD ${crd_name} ($file)"
-                kubectl create -f "$file"
-              fi
-            done
-          done
-
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
@@ -393,25 +347,30 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
 
+      # Workaround for qubership-monitoring-operator#549: the operator recreates
+      # operator-managed ServiceMonitors/PodMonitors during a release->main upgrade.
+      # Remove this step once the issue is fixed:
+      # https://github.com/Netcracker/qubership-monitoring-operator/issues/549
       - name: Clean up operator-managed ServiceMonitors before Helm upgrade
         if: matrix.test.sequence == 'upgrade'
         shell: bash
         env:
           NAMESPACE: monitoring
+          OPERATOR_SELECTOR: app.kubernetes.io/component=qubership-monitoring-operator
         run: |
           echo "> Scaling down old monitoring-operator..."
+          # The operator Deployment is named 'monitoring-operator' and carries the
+          # app.kubernetes.io/component label, so this selector already covers it.
           kubectl scale deployment -n "${NAMESPACE}" \
             --replicas=0 \
-            --selector app.kubernetes.io/component=qubership-monitoring-operator || true
-          if kubectl get deployment monitoring-operator -n "${NAMESPACE}" >/dev/null 2>&1; then
-            replicas=$(kubectl get deployment monitoring-operator -n "${NAMESPACE}" \
-              -o jsonpath='{.spec.replicas}')
-            if [ "${replicas}" != "0" ]; then
-              echo "  Scaling deployment/monitoring-operator to 0"
-              kubectl scale deployment monitoring-operator -n "${NAMESPACE}" --replicas=0
-            fi
-          fi
-          sleep 10
+            --selector "${OPERATOR_SELECTOR}" || true
+
+          # 'kubectl scale' only patches the Deployment spec and returns before the
+          # pod is gone. Wait for the operator pods to actually terminate, otherwise
+          # a still-running operator could recreate the ServiceMonitors right after
+          # they are deleted below.
+          kubectl wait --for=delete pod -n "${NAMESPACE}" \
+            -l "${OPERATOR_SELECTOR}" --timeout=120s || true
 
           echo "> Deleting operator-managed ServiceMonitors/PodMonitors..."
           kubectl delete servicemonitors,podmonitors -n "${NAMESPACE}" \

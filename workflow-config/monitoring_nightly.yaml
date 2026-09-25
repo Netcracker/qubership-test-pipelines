@@ -46,3 +46,13 @@ jobs:
       version: ${service_branch}
       template: templates/monitoring/vm_with_smoke_and_simple_test_tls.yml
       artifact_name: Clean_${service_branch}_TLS
+
+  ## Clean install with allure report
+  - name: Clean [${service_branch}] with allure
+    sequence: clean
+    restricted: false
+    allure: true
+    install:
+      version: ${service_branch}
+      template: templates/monitoring/vm_with_smoke_and_simple_test_allure.yml
+      artifact_name: Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params
