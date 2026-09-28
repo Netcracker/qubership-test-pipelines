@@ -212,6 +212,15 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
 
+      - name: Checkout Monitoring operator
+        if: matrix.test.sequence == 'upgrade'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-monitoring-operator
+          persist-credentials: false
+
       - name: Create cluster (Kind)
         if: matrix.test.engine != 'microshift'
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
@@ -347,10 +356,6 @@ jobs:
         if: ${{ matrix.test.sequence == 'upgrade' }}
         run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
 
-      # Workaround for qubership-monitoring-operator#549: the operator recreates
-      # operator-managed ServiceMonitors/PodMonitors during a release->main upgrade.
-      # Remove this step once the issue is fixed:
-      # https://github.com/Netcracker/qubership-monitoring-operator/issues/549
       - name: Clean up operator-managed ServiceMonitors before Helm upgrade
         if: matrix.test.sequence == 'upgrade'
         shell: bash
@@ -378,6 +383,44 @@ jobs:
 
           echo "> Remaining ServiceMonitors/PodMonitors:"
           kubectl get servicemonitors,podmonitors -n "${NAMESPACE}" || true
+
+      - name: Apply monitoring CRDs
+        if: matrix.test.sequence == 'upgrade'
+        shell: bash
+        run: |
+          crd_dirs=(
+            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/grafana/crds"
+            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/victoriametrics/crds"
+            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/prometheus/crds"
+            "qubership-monitoring-operator/charts/qubership-monitoring-operator/charts/prometheusAdapter/crds"
+          )
+          declare -A seen
+          for crd_dir in "${crd_dirs[@]}"; do
+            if [ ! -d "${crd_dir}" ]; then
+              echo "::warning::CRD directory not found: ${crd_dir}"
+              continue
+            fi
+            for file in "${crd_dir}"/*.yaml "${crd_dir}"/*.yml; do
+              [ -f "$file" ] || continue
+              crd_name=$(yq e '.metadata.name' "$file" 2>/dev/null)
+              if [ -z "${crd_name}" ] || [ "${crd_name}" = "null" ]; then
+                echo "::warning::Could not read CRD name from $file"
+                continue
+              fi
+              if [[ -n "${seen[${crd_name}]+x}" ]]; then
+                echo "  Skipping duplicate CRD ${crd_name} ($file)"
+                continue
+              fi
+              seen["${crd_name}"]=1
+              if kubectl get crd "${crd_name}" >/dev/null 2>&1; then
+                echo "  Replacing CRD ${crd_name} ($file)"
+                kubectl replace -f "$file"
+              else
+                echo "  Creating CRD ${crd_name} ($file)"
+                kubectl create -f "$file"
+              fi
+            done
+          done
 
       - name: Upgrade Monitoring to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
@@ -423,9 +466,6 @@ jobs:
           crd_list: ${{ steps.upgrade_monitoring_get_crds.outputs.crd_names }}
           monitoring_pipeline: true
           repository_name: ${{ inputs.repository_name }}
-          # PlatformMonitoring CR can transiently report 'Failed' reconcile conditions
-          # (e.g. ReconcileCycleStatus / ReconcileGrafanaStatus) before becoming successful,
-          # so do not fail on the first 'failed' condition - keep polling instead.
           fail_on_cr_failed: true
 
       - name: Collect Diagnostics Monitoring installation
