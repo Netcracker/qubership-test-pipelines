@@ -366,7 +366,9 @@ jobs:
           kubectl -n "$NS" get deploy dbaas-mongo-adapter -o jsonpath='{.spec.template.spec.containers[0].env}' || true
           echo ""
           echo "===== dbaas-mongo-adapter RESTART REASON ====="
-          kubectl -n "$NS" get pods -l name=dbaas-mongo-adapter -o jsonpath='{range .items[*]}{.metadata.name}{" lastState="}{.status.containerStatuses[0].lastState}{" state="}{.status.containerStatuses[0].state}{"\n"}{end}' || true
+          kubectl -n "$NS" get pods -l name=dbaas-mongo-adapter \
+            -o jsonpath='{range .items[*]}{.metadata.name}{" lastState="}{.status.containerStatuses[0].lastState}{" state="}{.status.containerStatuses[0].state}{"\n"}{end}' \
+            || true
           echo "===== dbaas-mongo-adapter DESCRIBE ====="
           kubectl -n "$NS" describe pod -l name=dbaas-mongo-adapter || true
           echo "===== dbaas-mongo-adapter LOGS (current) ====="
