@@ -11,7 +11,9 @@ dbaas:
   install: true
   dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
 prometheusExporter:
-  install: true
+  install: false
+# set 'prometheusExporter' to 'true'
+# after fix https://github.com/Netcracker/qubership-mongodb-operator/issues/109
 robotTests:
   install: true
   dockerImage: ghcr.io/netcracker/mongodb-docker-tests:main
