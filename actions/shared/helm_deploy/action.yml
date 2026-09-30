@@ -60,7 +60,7 @@ inputs:
       Character used to replace '/' when normalizing the service branch name into an image tag.
     required: false
     type: string
-    default: "_"
+    default: _
 
   image_replacement:
     description: |
