@@ -11,6 +11,8 @@ dbaas:
   install: true
 prometheusExporter:
   install: false
+# set 'prometheusExporter' to 'true'
+# after fix https://github.com/Netcracker/qubership-mongodb-operator/issues/109
 robotTests:
   install: true
   tags: smoke

@@ -9,8 +9,9 @@ backup:
       - standard
 dbaas:
   install: true
+  multiUsers: true
 prometheusExporter:
   install: false
 robotTests:
   install: true
-  tags: smoke
+  tags: dbaas_multi_users
