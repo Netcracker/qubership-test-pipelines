@@ -33,6 +33,7 @@ GitHub Action to install or upgrade Kubernetes services using Helm.
 | `path_to_chart` | Path to the Helm chart directory within the service repository. Example: `charts/helm/consul-service` | Yes | - |
 | `namespace` | Kubernetes namespace for the installation. Created automatically in `install` mode. | Yes | - |
 | `resource_folder` | Path (relative to repo root) to a folder of Kubernetes manifests applied with `kubectl create` before installation. Pass an empty string to skip. | Yes | - |
+| `branch_name_separator` | Character used to replace `/` when normalizing the service branch name into an image tag. | No | `_` |
 | `image_replacement` | Full image name including tag to pin in `values.yaml`, e.g. `pgskipper-docker-patroni-18`. The base name (everything before the last `-`) is used to locate the existing value. Skipped when empty. | No | `""` |
 
 
@@ -72,8 +73,11 @@ This action produces no outputs.
 
 ### `service_branch` normalisation
 
-Before passing the branch or commit to `charts-values-update-action`, slashes are replaced with
-underscores. Commit SHAs (7–40 hex characters) are normalised to `git-<first7chars>`, e.g.
+Before passing the branch to `charts-values-update-action`, slashes are replaced with the
+character configured via `branch_name_separator` (default `_`). Set it to match the separator used 
+in the corresponding build workflow so that branch-based image tags
+resolve to the actually built image (e.g. `fix/robot-tests` → `fix-robot-tests` when
+`branch_name_separator: "-"`). Commit SHAs (7–40 hex characters) are normalised to `git-<first7chars>`, e.g.
 `git-a1b2c3d`.
 
 ### `restricted` mode

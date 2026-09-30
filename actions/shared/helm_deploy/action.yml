@@ -55,6 +55,13 @@ inputs:
       Folder with resources for creating before installation
     required: true
 
+  branch_name_separator:
+    description: |
+      Character used to replace '/' when normalizing the service branch name into an image tag.
+    required: false
+    type: string
+    default: "_"
+
   image_replacement:
     description: |
       Value for change version of service in chart(example - pgskipper-docker-patroni-18)
@@ -178,16 +185,17 @@ runs:
       shell: bash
       env:
         SERVICE_BRANCH: ${{ inputs.service_branch }}
+        BRANCH_NAME_SEPARATOR: ${{ inputs.branch_name_separator }}
       # language=bash
       run: |
         # ▶️ Normalize service branch name for image tag
-        # 1. Replace slash in service branch
+        # 1. Replace slash in service branch with the configured separator
         service_branch="${SERVICE_BRANCH}"
         # if branch is a commit hash (contains from 7 up to 40 characters: digits or letters from a to f), trim to 11 characters
         if echo "$service_branch" | grep -Eq '^[0-9a-f]{7,40}$'; then
           service_branch_updated="git-${service_branch:0:7}"
         else
-          service_branch_updated="${service_branch//\//_}"
+          service_branch_updated="${service_branch//\//${BRANCH_NAME_SEPARATOR}}"
         fi
         # 2. Convert to lowercase
         service_branch_updated="${service_branch_updated,,}"
