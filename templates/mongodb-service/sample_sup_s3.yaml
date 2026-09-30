@@ -17,10 +17,8 @@ backup:
     endpointUrl: https://s3.amazonaws.com
 dbaas:
   install: false
-  dockerImage: ghcr.io/netcracker/mongodb-docker-dbaas-adapter:main
 prometheusExporter:
   install: false
 robotTests:
   install: true
-  dockerImage: ghcr.io/netcracker/mongodb-docker-tests:main
   tags: backup

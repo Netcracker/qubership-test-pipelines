@@ -13,5 +13,4 @@ prometheusExporter:
   install: false
 robotTests:
   install: true
-  dockerImage: ghcr.io/netcracker/mongodb-docker-tests:main
   tags: smoke
