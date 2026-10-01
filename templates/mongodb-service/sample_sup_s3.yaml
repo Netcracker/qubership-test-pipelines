@@ -3,14 +3,22 @@ operator:
   initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 backup:
   install: true
+  storageDirectory: /backup-storage
   storage:
-    size: 4Gi
+    size: 1Gi
     storageClasses:
       - standard
+  s3:
+    enabled: true
+    secretName: mongo-backup-s3-credentials
+    bucketName: ""
+    accessKeyId: ""
+    accessKeySecret: ""
+    endpointUrl: https://s3.amazonaws.com
 dbaas:
-  install: true
+  install: false
 prometheusExporter:
   install: false
 robotTests:
   install: true
-  tags: smoke
+  tags: backup

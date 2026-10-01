@@ -11,15 +11,6 @@ integrationTests:
   timeoutBeforeStart: 60
   statusWriting:
     enabled: false
-  atpReport:
-    enabled: false
-    atpStorage:
-      provider: aws
-      serverUrl: s3.amazonaws.com
-      bucket: qstp-results
-      region: us-east-1
-      username: ""
-      password: ""
 kubernetesMonitors:
   kubeSchedulerServiceMonitor:
     install: true
@@ -49,3 +40,22 @@ victoriametrics:
     ingress:
       install: true
       host: vmagent-monitoring.testdomain.local
+
+pushgateway:
+  install: true
+graphite_remote_adapter:
+  install: true
+blackboxExporter:
+  install: true
+jsonExporter:
+  install: true
+networkLatencyExporter:
+  install: true
+versionExporter:
+  install: true
+cloudEventsExporter:
+  install: true
+goldpingerExporter:
+  install: true
+sslExporter:
+  install: true

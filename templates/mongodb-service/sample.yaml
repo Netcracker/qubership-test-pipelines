@@ -7,4 +7,6 @@ mongodb:
     size: 4Gi
     storageClasses:
       - standard
+prometheusExporter:
+  install: false
 DEPLOY_W_HELM: true
