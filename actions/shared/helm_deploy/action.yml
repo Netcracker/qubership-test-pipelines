@@ -14,7 +14,7 @@ inputs:
       - 'true': helm installation by user with restricted rights
       - 'false': helm installation by cluster admin user
     required: true
-    default: 'false'
+    default: "false"
 
   path_to_template:
     description: |
