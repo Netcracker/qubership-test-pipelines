@@ -17,9 +17,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Branch of qubership-test-pipelines repository
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -58,9 +58,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Branch of qubership-test-pipelines repository
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -114,8 +114,8 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: Netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
@@ -186,19 +186,19 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: Netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
       - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        uses: $/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == Start Monitoring installation =======
       - name: Install Monitoring
         if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/install_monitoring
+        uses: $/actions/shared/install_monitoring
         with:
           artifact_name: ${{ matrix.test.install.artifact_name }}_monitoring
       # == End Monitoring installation =======
@@ -206,14 +206,14 @@ jobs:
       # == Start ======= Specific steps for TLS =======
       - name: Setup TLS
         if: matrix.test.tls == true
-        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+        uses: $/actions/shared/setup_tls
         # == End ======= Specific steps for TLS =======
 
       # == Start ======= Specific steps for S3 =======
       - name: Create S3 bucket
         id: create_bucket
         if: matrix.test.install.s3 == true || matrix.test.upgrade.s3 == true
-        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        uses: $/actions/shared/setup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -265,7 +265,7 @@ jobs:
         run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
       - name: Install Consul [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: consul_install
         with:
           path_to_template: ${{ matrix.test.install.template }}
@@ -277,7 +277,7 @@ jobs:
           restricted: ${{ matrix.test.restricted }}
 
       - name: Verify Consul installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.NAMESPACE }}
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
@@ -285,7 +285,7 @@ jobs:
 
       - name: Collect Diagnostics Consul installation
         if: ${{ !cancelled() && steps.consul_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: consul
           artifact_name: ${{ matrix.test.install.artifact_name }}
@@ -323,7 +323,7 @@ jobs:
       # == Start ======= Specific steps for upgrade tests =======
       - name: Upgrade to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: consul_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.template }}
@@ -352,7 +352,7 @@ jobs:
 
       - name: Verify Consul upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           check_tests: ${{ env.CHECK_TESTS }}
           namespace: ${{ env.NAMESPACE }}
@@ -361,7 +361,7 @@ jobs:
 
       - name: Collect Diagnostics Consul upgrade
         if: ${{ !cancelled() && steps.consul_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: consul
           artifact_name: ${{ matrix.test.upgrade.artifact_name }}
@@ -371,7 +371,7 @@ jobs:
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
         if: always() && (matrix.test.install.s3 == true || matrix.test.upgrade.s3 == true)
-        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        uses: $/actions/shared/cleanup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -385,15 +385,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [Consul-Test-Cases]
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: Netcracker/qubership-test-pipelines
-          path: qubership-test-pipelines
-          persist-credentials: false
-
       - name: Check job status
-        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        uses: $/actions/shared/check_job_status
         with:
           job_result: ${{ needs.Consul-Test-Cases.result }}
