@@ -27,13 +27,13 @@ inputs:
     description: |
       Retry interval for monitoring verification.
     required: false
-    default: "10s"
+    default: 10s
 
   monitoring_branch:
     description: |
       Service branch for monitoring helm deploy.
     required: false
-    default: "v0.88.0"
+    default: v0.88.0
 
 runs:
   using: composite
