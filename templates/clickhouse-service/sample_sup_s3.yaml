@@ -1,0 +1,56 @@
+clickhouseCluster:
+  serviceMonitor: disable
+backupDaemon:
+  install: true
+  storage:
+    remote: s3
+    s3:
+      access_key: ""
+      bucket: ""
+      endpoint: https://s3.amazonaws.com
+      secret_key: ""
+      debug: true
+      disable_ssl: false
+      acl: private
+      force_path_style: true
+  orchestrator:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    pvSize: 2Gi
+    storageClassName: standard
+    accessModes:
+      - ReadWriteOnce
+    envs:
+      BACKUP_SCHEDULE: 0 * * * *
+      EVICTION_POLICY: 7d/7d,1y/delete
+    securityContext:
+      runAsUser: 101
+      runAsGroup: 101
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+dbaas:
+  install: true
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    registrationUsername: cluster-dba
+    registrationPassword: ""
+  labels:
+    clusterName: clickhouse
+  clickhouse:
+    username: nc_dbaas_user
+    password: ""
+  adapter:
+    username: dbaas-aggregator
+    password: ""
+integrationTests:
+  install: true
+  tags: backup

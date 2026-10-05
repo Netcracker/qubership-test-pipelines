@@ -35,6 +35,7 @@ qubership-test-pipelines/
 
 Added workflow for the following services:
 
+- [Qubership ClickHouse Operator](https://github.com/Netcracker/qubership-clickhouse-operator-helm)
 - [Qubership Consul](https://github.com/Netcracker/qubership-consul)
 - [Qubership ZooKeeper Service](https://github.com/Netcracker/qubership-zookeeper)
 - [Qubership OpenSearch](https://github.com/Netcracker/qubership-opensearch)

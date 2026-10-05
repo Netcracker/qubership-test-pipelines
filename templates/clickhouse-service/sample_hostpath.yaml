@@ -1,0 +1,27 @@
+clickhouseOperator:
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+      runAsUser: 101
+      runAsGroup: 101
+clickhouseCluster:
+  strictHealthCheck: false
+  replicasCount: 3
+  pvSize: 5Gi
+  zookeeperHost: zookeeper.zookeeper.svc
+  localStorage: true
+  storageClassName: manual
+  serviceMonitor: disable
+  ingressHttp:
+    host: clickhouse-cluster.qubership.com
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+clickhouseSecretMonitor:
+  install: false

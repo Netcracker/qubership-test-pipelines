@@ -1,0 +1,101 @@
+jobs:
+  ## A special configuration section for generating jobs for installing previous releases on the current version
+  - purpose: automation
+    name: Clean [${release_version}], Upgrade to [${service_branch}]
+    sequence: upgrade
+    restricted: false
+    zookeeper: true
+    install:
+      version: ${release_version}
+      template_operator: templates/clickhouse-service/sample.yaml
+      template_services: templates/clickhouse-service/sample_sup.yaml
+      artifact_name: Clean_${release_version}_Upgrade_CURRENT
+    upgrade:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample.yaml
+      template_services: templates/clickhouse-service/sample_sup.yaml
+      artifact_name: Clean_${release_version}_Upgrade_CURRENT
+  ## ===============================================================================
+
+  - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params
+    sequence: upgrade
+    restricted: false
+    zookeeper: true
+    install:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample.yaml
+      template_services: templates/clickhouse-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params
+    upgrade:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample.yaml
+      template_services: templates/clickhouse-service/sample_sup_updated.yaml
+      artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params
+
+  - name: Clean [${service_branch}] in TLS
+    sequence: install
+    restricted: false
+    tls: true
+    zookeeper: true
+    install:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample_tls.yaml
+      template_services: templates/clickhouse-service/sample_sup_tls.yaml
+      artifact_name: Clean_CURRENT_TLS
+
+  - name: Upgrade [${service_branch}] From Non-TLS To TLS
+    sequence: upgrade
+    restricted: false
+    tls: true
+    zookeeper: true
+    install:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample.yaml
+      template_services: templates/clickhouse-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT_Upgrade_TLS
+    upgrade:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample_tls.yaml
+      template_services: templates/clickhouse-service/sample_sup_tls.yaml
+      artifact_name: Clean_CURRENT_Upgrade_TLS
+
+  - name: Clean [${service_branch}] on S3 storage
+    sequence: install
+    restricted: false
+    zookeeper: true
+    install:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample.yaml
+      template_services: templates/clickhouse-service/sample_sup_s3.yaml
+      s3: true
+      artifact_name: Clean_CURRENT_S3
+
+  - name: Clean [${service_branch}] With HostPath Storage
+    sequence: install
+    restricted: false
+    zookeeper: true
+    install:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample_hostpath.yaml
+      template_services: templates/clickhouse-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT_HostPath
+
+  - name: Clean [${service_branch}] With Full Tests
+    sequence: install
+    restricted: false
+    zookeeper: true
+    install:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample.yaml
+      template_services: templates/clickhouse-service/sample_sup_full.yaml
+      artifact_name: Clean_CURRENT_Full_Tests
+
+  - name: Clean [${service_branch}] Restricted
+    sequence: install
+    restricted: true
+    zookeeper: true
+    install:
+      version: ${service_branch}
+      template_operator: templates/clickhouse-service/sample.yaml
+      template_services: templates/clickhouse-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT_Restricted

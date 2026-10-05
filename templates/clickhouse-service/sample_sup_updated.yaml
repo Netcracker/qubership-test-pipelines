@@ -1,0 +1,47 @@
+clickhouseCluster:
+  serviceMonitor: disable
+backupDaemon:
+  install: true
+  storage:
+    remote: none
+  orchestrator:
+    resources:
+      limits:
+        cpu: 515m
+        memory: 556Mi
+      requests:
+        cpu: 255m
+        memory: 278Mi
+    pvSize: 2Gi
+    storageClassName: standard
+    accessModes:
+      - ReadWriteOnce
+    envs:
+      BACKUP_SCHEDULE: 0 * * * *
+      EVICTION_POLICY: 7d/7d,1y/delete
+    securityContext:
+      runAsUser: 101
+      runAsGroup: 101
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+dbaas:
+  install: true
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    registrationUsername: cluster-dba
+    registrationPassword: ""
+  labels:
+    clusterName: clickhouse
+  clickhouse:
+    username: nc_dbaas_user
+    password: ""
+  adapter:
+    username: dbaas-aggregator
+    password: ""
+integrationTests:
+  install: true
+  tags: smoke
