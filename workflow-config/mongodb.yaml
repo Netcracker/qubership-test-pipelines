@@ -7,3 +7,58 @@ jobs:
       template_operator: templates/mongodb-service/sample.yaml
       template_services: templates/mongodb-service/sample_sup.yaml
       artifact_name: Clean_CURRENT
+
+  - name: Clean [${service_branch}] on S3 storage
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template_operator: templates/mongodb-service/sample.yaml
+      template_services: templates/mongodb-service/sample_sup_s3.yaml
+      s3: true
+      artifact_name: Clean_CURRENT_S3
+
+  - name: Clean [${service_branch}] W/O Backup and Dbaas
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template_operator: templates/mongodb-service/sample.yaml
+      template_services: templates/mongodb-service/sample_sup_without_dbaas_or_backup.yaml
+      artifact_name: Clean_CURRENT_WO_Backup_Dbaas
+
+  - name: Clean [${service_branch}] With Not Default Creds
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template_operator: templates/mongodb-service/sample_not_default_creds.yaml
+      template_services: templates/mongodb-service/sample_sup_not_default_creds.yaml
+      artifact_name: Clean_CURRENT_Not_Default_Creds
+
+  - name: Clean [${service_branch}] With Custom Configurations
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template_operator: templates/mongodb-service/sample_custom_configuration.yaml
+      template_services: templates/mongodb-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT_Custom_Configurations
+
+  - name: Clean [${service_branch}] multiUsers
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template_operator: templates/mongodb-service/sample.yaml
+      template_services: templates/mongodb-service/sample_sup_multiusers.yaml
+      artifact_name: Clean_CURRENT_multiUsers
+
+  - name: Clean [${service_branch}] Restricted
+    sequence: install
+    restricted: true
+    install:
+      version: ${service_branch}
+      template_operator: templates/mongodb-service/sample.yaml
+      template_services: templates/mongodb-service/sample_sup.yaml
+      artifact_name: Clean_CURRENT_Restricted

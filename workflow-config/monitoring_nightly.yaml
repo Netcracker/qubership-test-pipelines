@@ -1,14 +1,58 @@
 jobs:
+  ## A special configuration section for generating jobs for installing previous releases on the current version
+  ## Upgrade between releases: install the previous release with regular parameters,
+  ## then upgrade to the current branch with (almost) all exporters enabled.
+  - purpose: automation
+    name: Clean [${release_version}], Upgrade to [${service_branch}] all exporters
+    sequence: upgrade
+    restricted: false
+    install:
+      version: ${release_version}
+      template: templates/monitoring/vm_with_smoke_and_simple_test.yml
+      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}_All_Exporters
+    upgrade:
+      version: ${service_branch}
+      template: templates/monitoring/vm_all_exporters.yml
+      artifact_name: Clean_${release_version}_Upgrade_to_${service_branch}_All_Exporters
+  ## ===============================================================================
+
   ## Upgrade from previous releases to current
-  - name: Clean [${service_branch}], Upgrade [${service_branch}] Diff Params
+  - name: Clean [${service_branch}]
+    engine: kind
+    sequence: clean
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/monitoring/vm_with_smoke_and_simple_test.yml
+      artifact_name: Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params
+
+  ## OpenShift/MicroShift: same clean install, but via Gateway API instead of Ingress
+  - name: Clean [${service_branch}] on OpenShift (MicroShift) via Gateway API
+    engine: microshift
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/monitoring/vm_with_smoke_and_simple_test_gatewayapi.yml
+      artifact_name: Clean_${service_branch}_OpenShift_GatewayAPI
+
+  ## Clean install of the current version with TLS enabled for VictoriaMetrics (cert-manager)
+  - name: Clean [${service_branch}] TLS
+    engine: kind
+    sequence: install
+    restricted: false
+    tls: true
+    install:
+      version: ${service_branch}
+      template: templates/monitoring/vm_with_smoke_and_simple_test_tls.yml
+      artifact_name: Clean_${service_branch}_TLS
+
+  ## Clean install with allure report
+  - name: Clean [${service_branch}] with allure
     sequence: clean
     restricted: false
     allure: true
     install:
       version: ${service_branch}
       template: templates/monitoring/vm_with_smoke_and_simple_test_allure.yml
-      artifact_name: Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params
-    upgrade:
-      version: ${service_branch}
-      template: templates/monitoring/values_test.yml
       artifact_name: Clean_${service_branch}_Upgrade_${service_branch}_Diff_Params

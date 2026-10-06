@@ -2,6 +2,8 @@ check_cr_conditions() {
     local crd_name="$1"
     local namespace="$2"
 
+    local fail_on_failed="${3:-true}"
+
     if [ -z "$crd_name" ]; then
         echo "CRD name not specified"
         return 0
@@ -39,6 +41,11 @@ check_cr_conditions() {
     if [ -n "$failed_conditions" ]; then
         echo "📄 Conditions JSON:"
         echo "$conditions_json"
+        if [ "$fail_on_failed" = "false" ]; then
+
+            echo "::warning:: ❌ CR '$crd_name' has failed conditions but fail_on_failed=false; treating as in-progress and continuing to poll"
+            return 1
+        fi
         return 2
     elif [ -n "$in_progress_conditions" ]; then
         return 1

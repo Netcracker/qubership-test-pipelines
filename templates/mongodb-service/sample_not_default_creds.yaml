@@ -1,16 +1,14 @@
 operator:
-  image: ghcr.io/netcracker/mongodb-supplementary:main
+  image: ghcr.io/netcracker/qubership-mongodb-operator:main
   initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
-backup:
+mongodb:
   install: true
+  rootUser: M~!ch=EB@_DaDzm_uN
+  rootPassword: MAn[P%UG5qQh76b!@#:&*-(_G=Xd
   storage:
     size: 4Gi
     storageClasses:
       - standard
-dbaas:
-  install: true
 prometheusExporter:
   install: false
-robotTests:
-  install: true
-  tags: smoke
+DEPLOY_W_HELM: true
