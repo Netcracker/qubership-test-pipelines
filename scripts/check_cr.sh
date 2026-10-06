@@ -42,7 +42,6 @@ check_cr_conditions() {
         echo "📄 Conditions JSON:"
         echo "$conditions_json"
         if [ "$fail_on_failed" = "false" ]; then
-
             echo "::warning:: ❌ CR '$crd_name' has failed conditions but fail_on_failed=false; treating as in-progress and continuing to poll"
             return 1
         fi

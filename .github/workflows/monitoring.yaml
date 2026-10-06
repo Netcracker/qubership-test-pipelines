@@ -311,6 +311,7 @@ jobs:
         with:
           path_to_template: ${{ matrix.test.install.template }}
           service_branch: ${{ matrix.test.install.version }}
+          branch_name_separator: "-"
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
           PATH_TO_CHART: charts/qubership-monitoring-operator
@@ -429,6 +430,7 @@ jobs:
         with:
           path_to_template: ${{ matrix.test.upgrade.template }}
           service_branch: ${{ matrix.test.upgrade.version }}
+          branch_name_separator: "-"
           deploy_mode: upgrade
           service_name: monitoring
           repository_name: ${{ inputs.repository_name }}
