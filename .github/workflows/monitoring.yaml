@@ -261,7 +261,7 @@ jobs:
       # == Start TLS certs addition if needed =======
       - name: Setup TLS
         if: matrix.test.tls == true
-        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+        uses: $/actions/shared/setup_tls
       # == End TLS certs addition if needed =======
 
       # == Start ======= OpenShift/MicroShift: Gateway API instead of Ingress =======
