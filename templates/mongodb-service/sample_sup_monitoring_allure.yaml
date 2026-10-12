@@ -14,3 +14,12 @@ prometheusExporter:
 robotTests:
   install: true
   tags: smoke
+  atpReport:
+    enabled: false
+    atpStorage:
+      provider: aws
+      serverUrl: s3.amazonaws.com
+      bucket: qstp-results
+      region: us-east-1
+      username: ""
+      password: ""
