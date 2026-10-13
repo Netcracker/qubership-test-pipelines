@@ -38,7 +38,7 @@ dbaas:
   aggregator:
     dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas-infra:8080
 monitoringAgent:
-  install: true
+  install: false
 robotTests:
   install: true
   dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
