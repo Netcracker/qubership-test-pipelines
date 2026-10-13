@@ -41,11 +41,11 @@ monitoringAgent:
   install: false
 robotTests:
   install: true
-  dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
+  #dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.1
   tags: smoke
   iteration: "1"
   atpReport:
-    enabled: true
+    enabled: false
     atpStorage:
       provider: aws
       serverUrl: https://s3.amazonaws.com
