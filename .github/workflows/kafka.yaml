@@ -16,9 +16,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Test pipeline branch name
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -71,9 +71,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Test pipeline branch name
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -144,8 +144,8 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
@@ -235,24 +235,24 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
       - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        uses: $/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == Start TLS certs addition if needed =======
       - name: Setup TLS
         if: matrix.test.tls == true
-        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+        uses: $/actions/shared/setup_tls
       # == End TLS certs addition if needed =======
 
       # == Start Monitoring installation tests =======
       - name: Install Monitoring
         if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/install_monitoring
+        uses: $/actions/shared/install_monitoring
         with:
           artifact_name: Install_Monitoring_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
       # == End Monitoring installation tests =======
@@ -264,7 +264,7 @@ jobs:
 
       - name: Clean Install Zookeeper [LATEST]
         if: matrix.test.install.zookeeper == true
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: zoo_install
         with:
           path_to_template: ${{ matrix.test.install.zookeeper_template }}
@@ -276,14 +276,14 @@ jobs:
 
       - name: Get Installed Zookeeper CRD name
         if: matrix.test.install.zookeeper == true
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: install_zoo_get_crds
         with:
           crd_location: Netcracker/qubership-zookeeper/operator/charts/helm/zookeeper-service/crds
 
       - name: Verify Zookeeper installation
         if: matrix.test.install.zookeeper == true
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: zookeeper
           service_ready_max_retries: 80
@@ -293,7 +293,7 @@ jobs:
 
       - name: Collect Diagnostics Zookeeper installation
         if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: zookeeper
           artifact_name: Install_Zookeeper_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
@@ -320,7 +320,7 @@ jobs:
       - name: Create S3 bucket
         id: create_bucket
         if: matrix.test.install.s3 == true
-        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        uses: $/actions/shared/setup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -372,7 +372,7 @@ jobs:
         run: cat qubership-test-pipelines/${{ matrix.test.install.kafka_template }}
 
       - name: Clean Install Kafka [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_core_install
         with:
           path_to_template: ${{ matrix.test.install.kafka_template }}
@@ -385,13 +385,13 @@ jobs:
 
 
       - name: Get Installed Kafka CRD name
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: install_kafka_get_crds
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.KFK_PATH_TO_CHART}}/crds
 
       - name: Verify Kafka installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_MAX_ATTEMPTS }}
@@ -400,7 +400,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Core installation
         if: ${{ !cancelled() && steps.kafka_core_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Install_Kafka_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
@@ -416,7 +416,7 @@ jobs:
 
       # == Start kafka service installation tests =======
       - name: Clean Install Kafka Service [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_service_install
         with:
           path_to_template: ${{ matrix.test.install.kafka_service_template }}
@@ -428,13 +428,13 @@ jobs:
 
 
       - name: Get Installed Kafka-Service CRD name
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: install_kafka_service_get_crds
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_PATH_TO_CHART}}/crds
 
       - name: Verify Kafka Service installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
@@ -443,7 +443,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Service installation
         if: ${{ !cancelled() && steps.kafka_service_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Install_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.install.artifact_name }}
@@ -458,7 +458,7 @@ jobs:
 
       - name: Upgrade Kafka to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_core_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.kafka_template }}
@@ -473,7 +473,7 @@ jobs:
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: upgrade_kafka_get_crds
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.KFK_PATH_TO_CHART}}/crds
@@ -484,7 +484,7 @@ jobs:
 
       - name: Verify Kafka upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_MAX_ATTEMPTS }}
@@ -493,7 +493,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Core upgrade
         if: ${{ !cancelled() && steps.kafka_core_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Upgrade_Kafka_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
@@ -502,7 +502,7 @@ jobs:
 
       - name: Upgrade Kafka Service to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_service_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.kafka_service_template }}
@@ -516,7 +516,7 @@ jobs:
 
       - name: Get Upgraded Kafka CRD name
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: upgrade_kafka_service_get_crds
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_PATH_TO_CHART}}/crds
@@ -537,7 +537,7 @@ jobs:
 
       - name: Verify Kafka Service upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
@@ -546,7 +546,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Service upgrade
         if: ${{ !cancelled() && steps.kafka_service_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Upgrade_Kafka_Service_${{ matrix.service_image }}_${{ matrix.test.upgrade.artifact_name }}
@@ -561,7 +561,7 @@ jobs:
 
       - name: Migrate Kafka to Kraft scheme
         if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_migrate
         with:
           path_to_template: ${{ matrix.test.migrate.kafka_template }}
@@ -580,7 +580,7 @@ jobs:
 
       - name: Verify Kafka migration
         if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_MAX_ATTEMPTS }}
@@ -589,7 +589,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Migration
         if: ${{ !cancelled() && steps.kafka_migrate.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Migrate_${{ matrix.service_image }}_${{ matrix.test.migrate.artifact_name }}
@@ -603,7 +603,7 @@ jobs:
 
       - name: Upgrade Kafka to [${{ matrix.test.upgrade.version }}] (after migrate)
         if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_core_upgrade_migrate
         with:
           path_to_template: ${{ matrix.test.upgrade.kafka_template }}
@@ -622,7 +622,7 @@ jobs:
 
       - name: Verify Kafka upgrade (after migrate)
         if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_MAX_ATTEMPTS }}
@@ -631,7 +631,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka upgrade (after migrate)
         if: ${{ !cancelled() && steps.kafka_core_upgrade_migrate.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Upgrade_AfterMigrate_${{ matrix.service_image }}_${{ matrix.test.migrate.artifact_name }}
@@ -641,7 +641,7 @@ jobs:
       # Kafka Service after migration
       - name: Upgrade Kafka Service to [${{ matrix.test.upgrade.version }}] (after migrate)
         if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_service_upgrade_migrate
         with:
           path_to_template: ${{ matrix.test.upgrade.kafka_service_template }}
@@ -659,7 +659,7 @@ jobs:
 
       - name: Verify Kafka Service upgrade (after migrate)
         if: matrix.test.sequence == 'migrate'
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
@@ -668,7 +668,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Service upgrade (after migrate)
         if: ${{ !cancelled() && steps.kafka_service_upgrade_migrate.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: ServiceUpgrade_AfterMigrate_${{ matrix.service_image }}_${{ matrix.test.migrate.artifact_name }}
@@ -679,7 +679,7 @@ jobs:
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
         if: always() && matrix.test.install.s3 == true
-        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        uses: $/actions/shared/cleanup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -710,17 +710,17 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
       - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        uses: $/actions/shared/create_cluster
 
       # ===== 1. ZooKeeper =====
       - name: Install ZooKeeper
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: zoo_install
         with:
           path_to_template: ${{ env.ZK_TEMPLATE }}
@@ -731,13 +731,13 @@ jobs:
           namespace: zookeeper
 
       - name: Get ZooKeeper CRDs
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: zoo_get_crds
         with:
           crd_location: Netcracker/qubership-zookeeper/operator/charts/helm/zookeeper-service/crds
 
       - name: Verify ZooKeeper
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: zookeeper
           service_ready_max_retries: 80
@@ -747,7 +747,7 @@ jobs:
 
       - name: Collect Diagnostics ZooKeeper
         if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: zookeeper
           artifact_name: Migration_ZooKeeper_Install
@@ -756,7 +756,7 @@ jobs:
 
       # ===== 2. Kafka 3 Core with Zookeeper =====
       - name: Install [${{ inputs.service_branch }}] Kafka 3 Core
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_core_install
         with:
           path_to_template: ${{ env.KAFKA_INSTALL_TEMPLATE }}
@@ -768,13 +768,13 @@ jobs:
           image_replacement: qubership-docker-kafka-3
 
       - name: Get Kafka Core CRDs
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: core_get_crds
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.KFK_PATH_TO_CHART }}/crds
 
       - name: Verify Kafka 3 Core
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_MAX_ATTEMPTS }}
@@ -783,7 +783,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka 3 Core
         if: ${{ !cancelled() && steps.kafka_core_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Migration_Kafka3_Core
@@ -791,7 +791,7 @@ jobs:
           crd_list: ${{ steps.core_get_crds.outputs.crd_names }}
 
       - name: Install [${{ inputs.service_branch }}] Kafka 3 Service
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_service_install
         with:
           path_to_template: ${{ env.KAFKA_INSTALL_TEMPLATE }}
@@ -803,14 +803,14 @@ jobs:
           image_replacement: qubership-docker-kafka-3
 
       - name: Get Kafka Service CRDs
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        uses: $/actions/shared/get_crds
         id: service_get_crds
         with:
           crd_location: ${{ inputs.repository_name }}/${{ env.KFK_SRVC_PATH_TO_CHART }}/crds
 
       # ===== 3. Kafka 3 Service with Zookeeper =====
       - name: Verify Kafka 3 Service
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
@@ -819,7 +819,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka 3 Service
         if: ${{ !cancelled() && steps.kafka_service_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka3_Service
@@ -828,7 +828,7 @@ jobs:
 
       # ===== 4. Migration to Kafka 3 Core KRaft =====
       - name: Migrate [${{ inputs.service_branch }}] Kafka Core to KRaft
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_core_migrate
         with:
           path_to_template: ${{ env.KAFKA_MIGRATE_TEMPLATE }}
@@ -844,7 +844,7 @@ jobs:
         run: sleep 1m
 
       - name: Verify Kafka 3 Core KRaft
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_MAX_ATTEMPTS }}
@@ -853,7 +853,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka 3 Core KRaft
         if: ${{ !cancelled() && steps.kafka_core_migrate.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Migration_Kafka3_Core_KRaft
@@ -862,7 +862,7 @@ jobs:
 
       # ===== 5. Migration to Kafka 3 Service KRaft =====
       - name: Migrate [${{ inputs.service_branch }}] Kafka 3 Service to KRaft
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_service_migrate
         with:
           path_to_template: ${{ env.KAFKA_MIGRATE_TEMPLATE }}
@@ -878,7 +878,7 @@ jobs:
         run: sleep 1m
 
       - name: Verify Kafka 3 Service KRaft
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
@@ -887,7 +887,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Service KRaft
         if: ${{ !cancelled() && steps.kafka_service_migrate.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka3_Service_KRaft
@@ -896,7 +896,7 @@ jobs:
 
       # ===== 6. Upgrade to Kafka 4 Core =====
       - name: Upgrade Kafka 3 Core to [${{ inputs.service_branch }}] Kafka 4 Core
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_core_upgrade
         with:
           path_to_template: ${{ env.KAFKA_UPGRADE_TEMPLATE }}
@@ -912,7 +912,7 @@ jobs:
         run: sleep 1m
 
       - name: Verify Kafka Core Kafka 4
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_MAX_ATTEMPTS }}
@@ -921,7 +921,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Core Kafka 4
         if: ${{ !cancelled() && steps.kafka_core_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_NAMESPACE }}
           artifact_name: Migration_Kafka4_Core
@@ -930,7 +930,7 @@ jobs:
 
       # ===== 7. Upgrade to Kafka 4 Service =====
       - name: Upgrade Kafka 3 Service to [${{ inputs.service_branch }}] Kafka 4 Service
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: kafka_service_upgrade
         with:
           path_to_template: ${{ env.KAFKA_UPGRADE_TEMPLATE }}
@@ -945,7 +945,7 @@ jobs:
         run: sleep 1m
 
       - name: Verify Kafka Service Kafka 4
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           service_ready_max_retries: ${{ env.KFK_SRVC_MAX_ATTEMPTS }}
@@ -954,7 +954,7 @@ jobs:
 
       - name: Collect Diagnostics Kafka Service Kafka 4
         if: ${{ !cancelled() && steps.kafka_service_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.KFK_SRVC_NAMESPACE }}
           artifact_name: Migration_Kafka4_Service
@@ -966,18 +966,11 @@ jobs:
     runs-on: ubuntu-latest
     needs: [Kafka-Test-Cases, Kafka-Migration]
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
-          path: qubership-test-pipelines
-          persist-credentials: false
       - name: Check Kafka-Test-Cases job status
-        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        uses: $/actions/shared/check_job_status
         with:
           job_result: ${{ needs.Kafka-Test-Cases.result }}
       - name: Check Kafka-Migration job status
-        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        uses: $/actions/shared/check_job_status
         with:
           job_result: ${{ needs.Kafka-Migration.result }}
