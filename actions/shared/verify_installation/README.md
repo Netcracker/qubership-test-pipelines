@@ -55,6 +55,9 @@ The action runs three sequential verification phases, collecting failures into a
   success (exit 0), in-progress (exit 1), or failed (exit 2). A failure exits the loop
   and sets `ERROR_FLAG=true`; in-progress retries after `service_ready_retry_interval`
   seconds.
+- If the CR is still not ready after `service_ready_max_retries` attempts, the YAML of
+  every CR in `crd_list` (`kubectl get <cr> -n <namespace> -o yaml`) is printed to the log
+  so the not-ready CR can be diagnosed.
 - After the CR loop, `check_resources.sh` polls readiness of all Deployments, StatefulSets,
   and DaemonSets in the namespace. It checks `readyReplicas == replicas` for each resource.
   Pods are printed on each not-ready attempt.
@@ -98,6 +101,9 @@ The action runs three sequential verification phases, collecting failures into a
 - No matching condition → treated as in-progress (exit 1)
 
 If `crd_list` is empty, `check_cr.sh` returns exit 0 immediately and CR checking is skipped.
+
+If the CR never becomes ready within `service_ready_max_retries` attempts, the action prints
+the full YAML of each CR in `crd_list` before failing, to make debugging easier.
 
 ### Resource readiness check
 
