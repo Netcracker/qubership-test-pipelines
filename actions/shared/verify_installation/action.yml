@@ -158,6 +158,12 @@ runs:
 
         if [ "$cr_success" = "false" ]; then
           echo "::error:: ❌ CR check not successful after $SERVICE_READY_MAX_RETRIES retries"
+          # ▶️ Print the YAML of every checked CR so a not-ready CR can be diagnosed
+          for cr in $CRD_LIST; do
+            echo "::group::📄 CR '$cr' YAML"
+            kubectl get "$cr" -n "$NAMESPACE" -o yaml 2>/dev/null || echo "⚠️ Failed to get CR '$cr'"
+            echo "::endgroup::"
+          done
           echo "ERROR_FLAG=true" >> $GITHUB_ENV
         fi
         if [ "$resources_success" = "false" ]; then
