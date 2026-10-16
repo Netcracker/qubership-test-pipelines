@@ -99,7 +99,11 @@ on:
 
 env:
   namespace: cassandra
-  path_to_chart_cassandra: cassandra/cassandra-image/deployments/charts/cassandra_5.0.9
+  # NOTE: this is not the final chart path. It is only a base prefix that ends with
+  # the hardcoded major version ("cassandra_5"). The minor/patch suffix (e.g. ".0.8"
+  # or ".0.9") is discovered in the "Resolve Cassandra chart suffix" step below and
+  # is appended to this prefix when the chart path is actually used.
+  path_to_chart_cassandra: cassandra/cassandra-image/deployments/charts/cassandra_5
   path_to_chart_operator: operator/charts/helm/cassandra-operator
   path_to_chart_services: services/service/charts/helm/cassandra-services
 
@@ -280,6 +284,41 @@ jobs:
           --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}'
       # == End ======= Specific steps for Allure report =======
 
+      - name: Resolve Cassandra chart suffix
+        shell: bash
+        env:
+          CHART_PATH_PREFIX: ${{ env.path_to_chart_cassandra }}
+          OPERATOR_REPO: qubership-cassandra-operator
+        run: |
+          # The operator repository is checked out into "${OPERATOR_REPO}", while
+          # env.path_to_chart_cassandra is relative to the repository root. Resolve
+          # the chart path against the checked-out repository directory.
+          CHART_DIR="${OPERATOR_REPO}/$(dirname "$CHART_PATH_PREFIX")"
+          CHART_BASENAME=$(basename "$CHART_PATH_PREFIX")
+          if [ ! -d "$CHART_DIR" ]; then
+            echo "Directory not found: $CHART_DIR" >&2
+            exit 1
+          fi
+
+          # Find the Cassandra chart directory using the major version from
+          # env.path_to_chart_cassandra (e.g. "cassandra_5").
+          # If several minor versions exist, pick the newest one.
+          # Result: just the suffix — "" for "cassandra_5", or ".0.8" / ".0.9" / etc.
+          SUFFIX=$(find "$CHART_DIR" -maxdepth 1 -type d \
+            -regextype posix-extended \
+            -regex ".*/${CHART_BASENAME}(\.[0-9]+)*" \
+            | sed -E "s|.*/${CHART_BASENAME}||" \
+            | sort -V | tail -n1)
+
+          if [ -z "$SUFFIX" ] && [ ! -d "${CHART_DIR}/${CHART_BASENAME}" ]; then
+            echo "No ${CHART_BASENAME}* chart dir found in $CHART_DIR" >&2
+            ls -la "$CHART_DIR" >&2 || true
+            exit 1
+          fi
+
+          echo "Resolved cassandra chart dir: '${CHART_BASENAME}${SUFFIX}'"
+          echo "path_to_chart_cassandra_suffix=$SUFFIX" >> "$GITHUB_ENV"
+
       # == 02 Start ===== Install Cassandra =====
       - name: Install Cassandra [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
@@ -290,7 +329,7 @@ jobs:
           deploy_mode: install
           service_name: cassandra
           repository_name: ${{ inputs.repository_name }}
-          path_to_chart: ${{ env.path_to_chart_cassandra }}
+          path_to_chart: ${{ env.path_to_chart_cassandra }}${{ env.path_to_chart_cassandra_suffix }}
           namespace: ${{ env.namespace }}
           restricted: ${{ matrix.test.restricted }}
 
