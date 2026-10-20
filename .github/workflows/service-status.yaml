@@ -1,16 +1,17 @@
 name: Service Status
 
 on:
-  push: null
-  workflow_dispatch:
-    inputs:
-      services:
-        description: >-
-          Comma-separated list of service names to analyse (case-insensitive), or "all" to analyse
-          every service of workflow-config/service-status.yaml
-        required: false
-        type: string
-        default: all
+  push
+#  push: null
+#  workflow_dispatch:
+#    inputs:
+#      services:
+#        description: >-
+#          Comma-separated list of service names to analyse (case-insensitive), or "all" to analyse
+#          every service of workflow-config/service-status.yaml
+#        required: false
+#        type: string
+#        default: all
 
 permissions:
   contents: read
