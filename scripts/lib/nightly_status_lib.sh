@@ -94,18 +94,31 @@ clean_window_snippet() {
         NR < s || NR > e { next }
         {
             line = $0
+            explicit = 0
             sub(/^[^ ]+ /, "", line)
             had_ansi = (line ~ ansi)
             gsub(ansi, "", line)
             if (had_ansi) next
-            if (line ~ /^##\[/) next
+            # "::error:: <msg>" is logged by the runner as "##[error] <msg>". Render it as the
+            # "Error: <msg>" line GitHub shows, so the real message of the failing step is kept
+            # instead of being discarded together with the other ##[ markers.
+            if (line ~ /^##\[error\]Process completed with exit code/) {
+                next
+            } else if (line ~ /^##\[error\]/) {
+                line = "Error: " substr(line, 10)
+                explicit = 1
+            } else if (line ~ /^##\[/) next
             if (line ~ /^shell: / || line == "env:") next
-            # Environment of the step: for a composite action GitHub prints the variables right
-            # after the group header, without the "env:" marker. Only the LEADING block is
-            # dropped, so an output line such as "STATUS: deployed" of the step is kept.
-            if (!n && line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*: /) next
+            # Environment of the step: GitHub prints the variables as "KEY: value" lines, often
+            # at column 0 and sometimes after other output. Drop them wherever they appear so the
+            # reason never contains variables (SERVICE_READY_MAX_RETRIES, ERROR_FLAG, ...).
+            # Uppercase keys are matched on purpose: the rendered "Error: ..." line is mixed-case
+            # ("Error", not "ERROR"), so it is kept.
+            if (line ~ /^[[:space:]]*[A-Z][A-Z0-9_]*: /) next
+            if (!n && line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*: / && line !~ errpat) next
             if (line == "") next
             kept[++n] = line
+            explicit_line[n] = explicit
         }
         END {
             if (n == 0) exit
@@ -117,8 +130,14 @@ clean_window_snippet() {
                 }
             }
             if (first > 0) {
-                from = first - ctx_before
-                if (from < 1) from = 1
+                # An explicit "##[error]" message is self-contained: start at it, so the
+                # command preview / environment above it is not included.
+                if (explicit_line[first]) {
+                    from = first
+                } else {
+                    from = first - ctx_before
+                    if (from < 1) from = 1
+                }
                 to = first + ctx_after
                 if (to > n) to = n
             } else {
@@ -194,11 +213,14 @@ diagnostic_step_snippet() {
             had_ansi = (line ~ ansi)
             gsub(ansi, "", line)
             if (had_ansi) next
-            if (line ~ /^##\[error\]/) {
+            if (line ~ /^##\[error\]Process completed with exit code/) {
+                next
+            } else if (line ~ /^##\[error\]/) {
                 line = "Error: " substr(line, 10)
             } else if (line ~ /^##\[/) next
             if (line ~ /^shell: / || line == "env:") next
-            if (!n && line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*: /) next
+            if (line ~ /^[[:space:]]*[A-Z][A-Z0-9_]*: /) next
+            if (!n && line ~ /^[[:space:]]+[A-Za-z_][A-Za-z0-9_]*: / && line !~ errpat) next
             if (line == "") next
             kept[++n] = line
             if (line ~ retrypat) last_attempt = n
@@ -283,6 +305,13 @@ analyze_failed_job() {
             cur = line
             sub(/^##\[group\]Run /, "", cur)
             sub(/^[^A-Za-z0-9_]+/, "", cur)   # drop leading "# ▶️ " / emoji markers
+            # A composite action logs "##[start-action display=<step name>;id=...]" right
+            # before the run-group of the step. The group header is built from the script
+            # comment (e.g. "# ▶️ Check deploy status"), while display is the real step name
+            # from the workflow ("Check job status"), so prefer the latter.
+            if (lastStartDisp != "" && lastStartLine > 0 && NR - lastStartLine <= 5) {
+                cur = lastStartDisp
+            }
             curName = cur
             curRunLine = NR
             next
@@ -291,6 +320,10 @@ analyze_failed_job() {
             id = ""; disp = ""
             if (match(line, /id=[^;]*/)) id = substr(line, RSTART + 3, RLENGTH - 3)
             if (match(line, /display=[^;]*/)) disp = substr(line, RSTART + 8, RLENGTH - 8)
+            if (disp != "") {
+                lastStartDisp = disp
+                lastStartLine = NR
+            }
             if (id != "" && !(id in seenStart)) {
                 seenStart[id] = 1
                 dispOf[id] = disp
