@@ -1,0 +1,32 @@
+postgresUser: postgres
+postgresPassword: paSSw0rd
+replicatorPassword: replicator
+operator:
+  resources:
+    limits:
+      cpu: 50m
+      memory: 50Mi
+    requests:
+      cpu: 50m
+      memory: 50Mi
+patroni:
+  install: true
+  replicas: 1
+  securityContext:
+    fsGroup: 26
+    runAsUser: 26
+  resources:
+    requests:
+      cpu: 100m
+      memory: 200Mi
+    limits:
+      cpu: 200m
+      memory: 400Mi
+  storage:
+    type: provisioned
+    size: 1Gi
+    storageClass: standard
+tests:
+  install: false
+dbaas:
+  install: false

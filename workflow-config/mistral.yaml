@@ -1,0 +1,8 @@
+jobs:
+  - name: Clean [${service_branch}]
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/mistral/mistral_clean.yaml
+      artifact_name: Clean_CURRENT
