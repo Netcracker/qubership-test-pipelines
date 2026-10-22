@@ -1,0 +1,19 @@
+operator:
+  dockerImage: ghcr.io/netcracker/qubership-redis-operator:main
+  initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
+dbaas:
+  install: true
+  adapter:
+    username: 5n8Q4|%j2W
+    password: Qz7!mK4#pL9@vX2$wN6^tR8&
+  aggregator:
+    physicalDatabaseIdentifier: redis
+redis:
+  dockerImage: ghcr.io/netcracker/qubership-docker-redis-8:main
+  dockerImage7: ghcr.io/netcracker/qubership-docker-redis-7:main
+monitoringAgent:
+  install: false
+  dockerImage: ghcr.io/netcracker/qubership-redis-monitoring-agent:main
+robotTests:
+  install: true
+  dockerImage: ghcr.io/netcracker/qubership-redis-tests:main
