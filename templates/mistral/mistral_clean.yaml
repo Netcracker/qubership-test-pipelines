@@ -40,7 +40,7 @@ mistralMonitoring:
     limits:
       cpu: 500m
       memory: 500Mi
-  prometheusEnabled: true
+  prometheusEnabled: false
 mistralExecutor:
   replicas: 1
   resources:
