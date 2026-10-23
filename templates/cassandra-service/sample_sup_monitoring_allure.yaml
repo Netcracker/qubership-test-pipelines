@@ -42,7 +42,7 @@ monitoringAgent:
 robotTests:
   install: true
   dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.15
-  tags: smokeORalerts
+  tags: smoke
   iteration: "1"
   atpReport:
     enabled: false
