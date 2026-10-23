@@ -41,7 +41,7 @@ monitoringAgent:
   install: false
 robotTests:
   install: true
-  dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.15
+  #dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.15
   tags: smoke
   iteration: "1"
   atpReport:
