@@ -17,8 +17,30 @@ check_cr_conditions() {
     conditions_json=$(echo "$cr_json" | jq '.items[0].status.conditions')
 
     if [ -z "$conditions_json" ] || [ "$conditions_json" = "null" ]; then
-        echo "::warning:: Conditions not found"
-        return 1
+        # ▶️ Fallback for operators which do not expose .status.conditions.
+        # For example Altinity ClickHouseInstallation reports progress in
+        # .status.status: '', 'InProgress', 'Completed', 'Aborted'.
+        status_value=$(echo "$cr_json" | jq -r '.items[0].status.status // .items[0].status.state // empty' 2>/dev/null)
+        status_value_lower=$(echo "$status_value" | tr '[:upper:]' '[:lower:]')
+
+        echo "Conditions not found, .status.status is '${status_value}'"
+
+        case "$status_value_lower" in
+            completed|succeeded|ready|healthy)
+                echo "✅ CR '$crd_name' is ready (.status.status='${status_value}')"
+                return 0
+                ;;
+            failed|aborted|error)
+                echo "::error:: ❌ CR '$crd_name' failed (.status.status='${status_value}')"
+                echo "📄 CR JSON:"
+                echo "$cr_json"
+                return 2
+                ;;
+            *)
+                echo "::warning:: Conditions not found"
+                return 1
+                ;;
+        esac
     fi
 
     failed_conditions=$(echo "$conditions_json" | jq -r '.[] |
