@@ -1,6 +1,7 @@
 check_resources() {
     local namespace="$1"
     local all_ready=true
+    local not_ready=()
 
     deployments=$(kubectl get deployments -n "$namespace" -o jsonpath='{.items[*].metadata.name}')
     for deployment in $deployments; do
@@ -10,11 +11,12 @@ check_resources() {
         total=${total:-0}
         if [[ "$ready" -ne "$total" ]] || [[ "$total" -le 0 ]]; then
             echo "Deployment $deployment is not ready: $ready/$total"
+            not_ready+=("deployment/$deployment=${ready}/${total}")
             all_ready=false
         fi
     done
 
-    statefulsets=$(kubectl get statefulsets -n "$namespace" -o jsonpath="{.items[*].metadata.name}")
+    statefulsets=$(kubectl get statefulsets -n "$namespace" -o jsonpath='{.items[*].metadata.name}')
     for statefulset in $statefulsets; do
         ready=$(kubectl get statefulset "$statefulset" -n "$namespace" -o jsonpath="{.status.readyReplicas}" 2>/dev/null)
         total=$(kubectl get statefulset "$statefulset" -n "$namespace" -o jsonpath="{.status.replicas}" 2>/dev/null)
@@ -22,11 +24,12 @@ check_resources() {
         total=${total:-0}
         if [[ "$ready" -ne "$total" ]] || [[ "$total" -le 0 ]]; then
             echo "StatefulSet $statefulset is not ready: $ready/$total"
+            not_ready+=("statefulset/$statefulset=${ready}/${total}")
             all_ready=false
         fi
     done
 
-    daemonsets=$(kubectl get daemonsets -n "$namespace" -o jsonpath="{.items[*].metadata.name}")
+    daemonsets=$(kubectl get daemonsets -n "$namespace" -o jsonpath='{.items[*].metadata.name}')
     for daemonset in $daemonsets; do
         ready=$(kubectl get daemonset "$daemonset" -n "$namespace" -o jsonpath="{.status.numberReady}" 2>/dev/null)
         desired=$(kubectl get daemonset "$daemonset" -n "$namespace" -o jsonpath="{.status.desiredNumberScheduled}" 2>/dev/null)
@@ -34,6 +37,7 @@ check_resources() {
         desired=${desired:-0}
         if [[ "$ready" -ne "$desired" ]] || [[ "$desired" -le 0 ]]; then
             echo "DaemonSet $daemonset is not ready: $ready/$desired"
+            not_ready+=("daemonset/$daemonset=${ready}/${desired}")
             all_ready=false
         fi
     done
@@ -41,10 +45,12 @@ check_resources() {
     if [ "$all_ready" = true ]; then
         #All resources are ready
         return 0
-    else
-        #Some resources are not ready
-        return 1
     fi
+
+    # ▶️ Report exactly what is not ready: it shows up in the log AND as a run annotation
+    echo "::error::Not ready in namespace '${namespace}': ${not_ready[*]}"
+    kubectl get pods -n "$namespace" -o wide 2>/dev/null || true
+    return 1
 }
 
 check_resources "$@"
