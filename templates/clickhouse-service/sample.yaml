@@ -25,5 +25,10 @@ clickhouseCluster:
       runAsGroup: 101
     pod:
       fsGroup: 101
+  users:
+    ncdbaasuser:
+      profile: default
+      password: pAssW0RD1
+      networks/ip: "::/0"
 clickhouseSecretMonitor:
   install: false

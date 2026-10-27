@@ -38,7 +38,8 @@ backupDaemon:
     pod:
       fsGroup: 101
 dbaas:
-  install: true
+  # DBaaS adapter is DISABLED: CrashLoopBackOff in dbaas pod
+  install: false
   aggregator:
     registrationAddress: http://dbaas-aggregator.dbaas:8080
     registrationUsername: cluster-dba

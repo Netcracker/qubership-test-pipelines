@@ -37,8 +37,8 @@ dbaas:
   labels:
     clusterName: clickhouse
   clickhouse:
-    username: nc_dbaas_user
-    password: ""
+    username: ncdbaasuser
+    password: pAssW0RD1
   adapter:
     username: dbaas-aggregator
     password: ""
