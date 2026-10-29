@@ -199,6 +199,7 @@ jobs:
           service_ready_max_retries: 500
       # == End Monitoring installation tests =======
 
+      # == Start ======= Installation steps =======
       - name: Print clean install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
