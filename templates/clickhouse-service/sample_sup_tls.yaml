@@ -30,6 +30,7 @@ backupDaemon:
       fsGroup: 101
 dbaas:
   install: true
+  chPort: 9440
   aggregator:
     registrationAddress: http://dbaas-aggregator.dbaas:8080
     registrationUsername: cluster-dba
