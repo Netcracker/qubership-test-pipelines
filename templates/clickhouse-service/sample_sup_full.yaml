@@ -29,17 +29,17 @@ backupDaemon:
     pod:
       fsGroup: 101
 dbaas:
-  # DBaaS adapter is DISABLED: CrashLoopBackOff in dbaas pod
-  install: false
+  install: true
   aggregator:
     registrationAddress: http://dbaas-aggregator.dbaas:8080
     registrationUsername: cluster-dba
     registrationPassword: ""
   labels:
     clusterName: clickhouse
+  # Must match the ClickHouse user created in CHI (clickhouseCluster.users in sample.yaml)
   clickhouse:
-    username: nc_dbaas_user
-    password: ""
+    username: ncdbaasuser
+    password: pAssW0RD1
   adapter:
     username: dbaas-aggregator
     password: ""

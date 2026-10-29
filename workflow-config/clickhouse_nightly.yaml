@@ -81,16 +81,6 @@ jobs:
       s3: true
       artifact_name: Clean_CURRENT_S3
 
-  - name: Clean [${service_branch}] With HostPath Storage
-    sequence: install
-    restricted: false
-    zookeeper: true
-    install:
-      version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample_hostpath.yaml
-      template_services: templates/clickhouse-service/sample_sup.yaml
-      artifact_name: Clean_CURRENT_HostPath
-
   - name: Clean [${service_branch}] With Full Tests
     sequence: install
     restricted: false
