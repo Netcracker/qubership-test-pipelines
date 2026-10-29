@@ -11,7 +11,6 @@ backupDaemon:
       secret_key: ""
       debug: true
       disable_ssl: false
-      acl: private
       force_path_style: true
   orchestrator:
     resources:
@@ -28,6 +27,14 @@ backupDaemon:
     envs:
       BACKUP_SCHEDULE: 0 * * * *
       EVICTION_POLICY: 7d/7d,1y/delete
+      # The orchestrator builds its own S3 client for granular backups / .evictlock handling.
+      # It reads credentials from these env variables only (the mounted secret
+      # /var/run/secrets/clickhouse/s3-remote-storage-credentials is not used for that),
+      # otherwise the request fails with "static credentials are empty".
+      S3_ACCESS_KEY: ""
+      S3_SECRET_KEY: ""
+      AWS_ACCESS_KEY_ID: ""
+      AWS_SECRET_ACCESS_KEY: ""
     securityContext:
       runAsUser: 101
       runAsGroup: 101

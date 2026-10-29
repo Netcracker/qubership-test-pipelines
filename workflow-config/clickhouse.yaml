@@ -65,7 +65,7 @@ jobs:
     zookeeper: true
     install:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
+      template_operator: templates/clickhouse-service/sample_s3.yaml
       template_services: templates/clickhouse-service/sample_sup_s3.yaml
       s3: true
       artifact_name: Clean_CURRENT_S3

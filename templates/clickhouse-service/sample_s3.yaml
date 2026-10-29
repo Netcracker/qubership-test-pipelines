@@ -1,0 +1,68 @@
+clickhouseOperator:
+  image: altinity/clickhouse-operator:0.27.4
+  metricsExporterImage: altinity/metrics-exporter:0.27.4
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+      runAsUser: 101
+      runAsGroup: 101
+clickhouseCluster:
+  image: ghcr.io/netcracker/qubership-clickhouse-258:main
+  strictHealthCheck: false
+  replicasCount: 3
+  pvSize: 5Gi
+  zookeeperHost: zookeeper.zookeeper.svc
+  storageClassName: standard
+  serviceMonitor: disable
+  ingressHttp:
+    host: clickhouse-cluster.qubership.com
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+  # DBaaS adapter authenticates as this user (must match dbaas.clickhouse in sample_sup_s3.yaml)
+  users:
+    ncdbaasuser:
+      profile: default
+      password: pAssW0RD1
+      networks/ip: "::/0"
+backupDaemon:
+  install: yes
+  # clickhouse-backup reads S3_* env variables and they take precedence over the config file.
+  # This is a workaround for the chart bug: helm/clickhouse/templates/clickhouse-backup-daemon/
+  # clickhouse-backup-daemon-config.yaml renders the whole `s3:` block into one single line
+  # (because of `{{ $value -}}` trimming the newline), so only `access_key` survives as a real
+  # key and secret_key/bucket/endpoint are swallowed into its value. Without these envs
+  # clickhouse-backup fails with "static credentials are empty".
+  envs:
+    S3_ACCESS_KEY: ""
+    S3_SECRET_KEY: ""
+    S3_BUCKET: ""
+    S3_ENDPOINT: https://s3.amazonaws.com
+    S3_FORCE_PATH_STYLE: "true"
+    S3_DISABLE_SSL: "false"
+    S3_DEBUG: "true"
+    # some code paths of clickhouse-backup (e.g. granular backup / .evictlock handling)
+    # build the S3 client through the AWS default credential chain, which reads AWS_* only
+    AWS_ACCESS_KEY_ID: ""
+    AWS_SECRET_ACCESS_KEY: ""
+    AWS_REGION: us-east-1
+    AWS_DEFAULT_REGION: us-east-1
+  storage:
+    remote: s3
+    s3:
+      access_key: ""
+      secret_key: ""
+      bucket: ""
+      endpoint: https://s3.amazonaws.com
+      force_path_style: true
+      disable_ssl: false
+      debug: true
+      # 'acl' is intentionally not set: buckets with BucketOwnerEnforced reject ACL headers
+clickhouseSecretMonitor:
+  install: false

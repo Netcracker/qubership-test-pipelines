@@ -265,6 +265,82 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/setup_tls
       # == End ======= Specific steps for TLS =======
 
+      # == Start ======= Specific steps for S3 =======
+      - name: Create S3 bucket
+        id: create_bucket
+        if: matrix.test.install.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: clickhouse
+
+      - name: Add S3 secrets to ClickHouse templates
+        if: matrix.test.install.s3 == true
+        env:
+          ACCESS_KEY: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          SECRET_KEY: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          BUCKET_NAME: ${{ steps.create_bucket.outputs.bucket_name }}
+          TEMPLATE_OPERATOR: ${{ matrix.test.install.template_operator }}
+          TEMPLATE_SERVICES: ${{ matrix.test.install.template_services }}
+        # zizmor: ignore[template-injection]
+        run: |
+          for template in "$TEMPLATE_OPERATOR" "$TEMPLATE_SERVICES"; do
+            echo "Updating S3 settings in ${template}"
+            python qubership-test-pipelines/scripts/update_yaml.py \
+              --file="qubership-test-pipelines/${template}" \
+              --path='backupDaemon/storage/s3/access_key' --value="$ACCESS_KEY"
+            python qubership-test-pipelines/scripts/update_yaml.py \
+              --file="qubership-test-pipelines/${template}" \
+              --path='backupDaemon/storage/s3/secret_key' --value="$SECRET_KEY"
+            python qubership-test-pipelines/scripts/update_yaml.py \
+              --file="qubership-test-pipelines/${template}" \
+              --path='backupDaemon/storage/s3/bucket' --value="$BUCKET_NAME"
+          done
+
+          # Workaround for the chart bug in
+          # helm/clickhouse/templates/clickhouse-backup-daemon/clickhouse-backup-daemon-config.yaml:
+          # the `s3:` block is rendered on a single line (`{{ $value -}}` trims the newline), so
+          # only `access_key` survives and clickhouse-backup fails with
+          # "static credentials are empty". clickhouse-backup env variables override the config file.
+          echo "Setting S3 envs in ${TEMPLATE_OPERATOR} (clickhouse-backup env overrides)"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_OPERATOR}" \
+            --path='backupDaemon/envs/S3_ACCESS_KEY' --value="$ACCESS_KEY"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_OPERATOR}" \
+            --path='backupDaemon/envs/S3_SECRET_KEY' --value="$SECRET_KEY"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_OPERATOR}" \
+            --path='backupDaemon/envs/S3_BUCKET' --value="$BUCKET_NAME"
+
+          # clickhouse-backup builds the S3 client for some code paths (granular backup,
+          # .evictlock handling) through the AWS default credential chain, which reads AWS_* only
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_OPERATOR}" \
+            --path='backupDaemon/envs/AWS_ACCESS_KEY_ID' --value="$ACCESS_KEY"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_OPERATOR}" \
+            --path='backupDaemon/envs/AWS_SECRET_ACCESS_KEY' --value="$SECRET_KEY"
+
+          # The orchestrator handles granular backups and .evictlock and builds its own S3 client
+          # from env only: without these variables /backup fails with "static credentials are empty"
+          echo "Setting S3 envs in ${TEMPLATE_SERVICES} (orchestrator)"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_SERVICES}" \
+            --path='backupDaemon/orchestrator/envs/S3_ACCESS_KEY' --value="$ACCESS_KEY"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_SERVICES}" \
+            --path='backupDaemon/orchestrator/envs/S3_SECRET_KEY' --value="$SECRET_KEY"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_SERVICES}" \
+            --path='backupDaemon/orchestrator/envs/AWS_ACCESS_KEY_ID' --value="$ACCESS_KEY"
+          python qubership-test-pipelines/scripts/update_yaml.py \
+            --file="qubership-test-pipelines/${TEMPLATE_SERVICES}" \
+            --path='backupDaemon/orchestrator/envs/AWS_SECRET_ACCESS_KEY' --value="$SECRET_KEY"
+      # == End ======= Specific steps for S3 =======
+
       # == 02 Start ===== Install ClickHouse Operator + Cluster =====
       - name: Print operator install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.install.template_operator }}
@@ -307,35 +383,6 @@ jobs:
           service_branch: ${{ matrix.test.install.version }}
           crd_list: ${{ steps.install_clickhouse_operator_get_crds.outputs.crd_names }}
       # == 02 End ===== Install ClickHouse Operator + Cluster =====
-
-      # == Start ======= Specific steps for S3 =======
-      - name: Create S3 bucket
-        id: create_bucket
-        if: matrix.test.install.s3 == true
-        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
-        with:
-          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
-          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
-          region: us-east-1
-          prefix: clickhouse
-
-      - name: Add S3 secrets to ClickHouse services template
-        if: matrix.test.install.s3 == true
-        # zizmor: ignore[template-injection]
-        run: |
-          python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
-            --path='backupDaemon/storage/s3/access_key' \
-            --value='${{ secrets.AWS_S3_ACCESS_KEY_ID }}' \
-          && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
-            --path='backupDaemon/storage/s3/secret_key' \
-            --value='${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}' \
-          && python qubership-test-pipelines/scripts/update_yaml.py \
-            --file='qubership-test-pipelines/${{ matrix.test.install.template_services }}' \
-            --path='backupDaemon/storage/s3/bucket' \
-            --value="${{ steps.create_bucket.outputs.bucket_name }}"
-      # == End ======= Specific steps for S3 =======
 
       # == 03 Start ===== Install ClickHouse Services =====
       - name: Print services install deployment parameters
@@ -385,6 +432,102 @@ jobs:
           echo "=== Services ==="
           kubectl get svc -n ${{ env.namespace }} || true
       # == End ======= Debug: ClickHouse cluster =======
+
+      # == Start ======= Debug: S3 backup credentials =======
+      - name: Debug S3 backup credentials
+        if: always() && matrix.test.install.s3 == true
+        shell: bash
+        run: |
+          ns="${{ env.namespace }}"
+
+          echo "=== Secrets with s3 in name ==="
+          kubectl get secrets -n "$ns" | grep -i s3 || true
+
+          for s in s3-remote-storage-credentials s3-remote-storage-credentials-ch-backup; do
+            echo "=== Secret $s (value length after base64 decode) ==="
+            kubectl get secret "$s" -n "$ns" -o json 2>/dev/null \
+              | jq -r '.data // {} | to_entries[] | "\(.key): len=\(.value | @base64d | length)"' || true
+          done
+
+          echo "=== Helm releases and their backupDaemon.storage values ==="
+          helm list -n "$ns" || true
+          for rel in $(helm list -n "$ns" -q); do
+            echo "--- $rel ---"
+            helm get values "$rel" -n "$ns" -o json 2>/dev/null | jq -c '.backupDaemon.storage // empty' || true
+          done
+
+          echo "=== Backup pods ==="
+          kubectl get pods -n "$ns" -o wide | grep -i backup || true
+
+          for pod in $(kubectl get pods -n "$ns" --no-headers -o custom-columns=:metadata.name | grep -i backup); do
+            echo "--- $pod: env ---"
+            kubectl exec -n "$ns" "$pod" -- sh -c 'env | grep -i -E "s3|remote|storage" | sed -E "s/(SECRET|KEY|PASSWORD)=.*/\1=***/"' || true
+            echo "--- $pod: mounted s3 credentials ---"
+            kubectl exec -n "$ns" "$pod" -- sh -c 'for f in /var/run/secrets/clickhouse/s3-remote-storage-credentials/*; do [ -f "$f" ] && echo "$f: $(wc -c < "$f") bytes"; done' || true
+            echo "--- $pod: clickhouse-backup config (masked) ---"
+            kubectl exec -n "$ns" "$pod" -- sh -c 'for p in /etc/clickhouse-backup/config.yml /etc/clickhouse-backup/config.yaml /etc/clickhouse-backup/clickhouse-backup-config.yaml; do [ -f "$p" ] && echo "path: $p" && sed -E "s/(access_key|secret_key)([[:space:]]*):.*/\1\2: ***/" "$p"; done' || true
+
+            echo "--- $pod: logs (last 200 lines) ---"
+            kubectl logs -n "$ns" "$pod" --tail=200 2>&1 | tail -n 200 || true
+
+            echo "--- $pod: S3/AWS/evictlock strings inside the binary ---"
+            kubectl exec -n "$ns" "$pod" -- sh -c '
+              for b in /usr/local/bin/clickhouse-backup-orchestrator /app/clickhouse-backup-orchestrator /usr/local/bin/orchestrator; do
+                if [ -f "$b" ]; then
+                  echo "BIN: $b"
+                  grep -aoE "S3_[A-Za-z0-9_]+|AWS_[A-Za-z0-9_]+|evictlock|granular" "$b" | sort -u | head -n 60
+                fi
+              done' || true
+          done
+
+          echo "=== ClickHouse pods: containers, mounts and backup daemon config ==="
+          for pod in $(kubectl get pods -n "$ns" --no-headers -o custom-columns=:metadata.name | grep -i '^chi-'); do
+            echo "--- $pod: images ---"
+            kubectl get pod "$pod" -n "$ns" -o json \
+              | jq -r '.spec.containers[] | "\(.name) = \(.image)"'
+
+            echo "--- $pod: containers and volume mounts ---"
+            kubectl get pod "$pod" -n "$ns" -o json \
+              | jq -r '.spec.containers[] | "\(.name): " + ((.volumeMounts // []) | map(.mountPath) | join(", "))'
+
+            for c in $(kubectl get pod "$pod" -n "$ns" -o jsonpath='{range .spec.containers[*]}{.name}{"\n"}{end}'); do
+              echo "--- $pod/$c: clickhouse-backup config ---"
+              echo "CLICKHOUSE_BACKUP_CONFIG: $(kubectl exec -n "$ns" "$pod" -c "$c" -- sh -c 'echo $CLICKHOUSE_BACKUP_CONFIG' 2>/dev/null)"
+              kubectl exec -n "$ns" "$pod" -c "$c" -- sh -c 'ls -la /backup-config /etc/clickhouse-backup 2>/dev/null; for p in /backup-config/clickhouse-backup-config.yaml /etc/clickhouse-backup/config.yml; do [ -f "$p" ] && echo "PATH: $p" && cat "$p"; done' \
+                || echo "exec failed: $pod/$c"
+              echo "--- $pod/$c: s3/remote env ---"
+              kubectl exec -n "$ns" "$pod" -c "$c" -- sh -c 'env | grep -i -E "s3|remote|storage" | sed -E "s/(SECRET|KEY|PASSWORD)=.*/\1=***/"' \
+                || echo "exec failed: $pod/$c"
+            done
+          done
+
+          echo "=== ConfigMaps/secrets with backup in name ==="
+          kubectl get cm,secret -n "$ns" | grep -i backup || true
+
+          echo "=== ConfigMap clickhouse-backup-config.yaml (masked) ==="
+          kubectl get cm clickhouse-backup-config.yaml -n "$ns" -o yaml 2>/dev/null \
+            | sed -E "s/(access_key|secret_key)([[:space:]]*):.*/\1\2: ***/" || true
+
+          echo "=== clickhouse-backup daemon: logs / print-config / mounted creds ==="
+          for pod in $(kubectl get pods -n "$ns" --no-headers -o custom-columns=:metadata.name | grep -i '^chi-'); do
+            echo "--- $pod/clickhouse-backup: last 100 log lines ---"
+            kubectl logs -n "$ns" "$pod" -c clickhouse-backup --tail=100 2>&1 \
+              | sed -E "s/(AKIA[0-9A-Z]{16})/***/g; s/(secret[^ ]*|Secret[^ ]*)[=:][^ ]+/\1=***/g" || true
+
+            echo "--- $pod/clickhouse-backup: clickhouse-backup print-config (masked) ---"
+            kubectl exec -n "$ns" "$pod" -c clickhouse-backup -- clickhouse-backup print-config 2>&1 \
+              | sed -E "s/(access_key|secret_key)([[:space:]]*):.*/\1\2: ***/; s/(AKIA[0-9A-Z]{16})/***/g" || true
+
+            echo "--- $pod/clickhouse-backup: mounted s3 credentials ---"
+            kubectl exec -n "$ns" "$pod" -c clickhouse-backup -- \
+              sh -c 'ls -l /var/run/secrets/clickhouse/s3-remote-storage-credentials-ch-backup 2>/dev/null; for f in /var/run/secrets/clickhouse/s3-remote-storage-credentials-ch-backup/*; do [ -f "$f" ] && echo "$f: $(wc -c < "$f") bytes"; done' || true
+
+            echo "--- $pod/clickhouse-backup: probe remote storage (list remote) ---"
+            kubectl exec -n "$ns" "$pod" -c clickhouse-backup -- \
+              clickhouse-backup list remote 2>&1 | tail -n 20 \
+              | sed -E "s/(AKIA[0-9A-Z]{16})/***/g" || true
+          done
+      # == End ======= Debug: S3 backup credentials =======
 
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
