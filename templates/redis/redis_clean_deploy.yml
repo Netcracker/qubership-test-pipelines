@@ -1,5 +1,5 @@
 operator:
-  dockerImage: ghcr.io/netcracker/qubership-redis-operator:feat_add_test_pipeline
+  dockerImage: ghcr.io/netcracker/qubership-redis-operator:main
   initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
 dbaas:
   install: true
