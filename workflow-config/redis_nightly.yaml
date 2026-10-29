@@ -1,4 +1,13 @@
 jobs:
+  - name: Clean [${service_branch}] with Monitoring
+    sequence: install
+    restricted: false
+    monitoring: true
+    install:
+      version: ${service_branch}
+      template: templates/redis/redis_clean_with_monitoring.yml
+      artifact_name: Clean_CURRENT_Monitoring
+
   ## A special configuration section for generating jobs for installing previous releases on the current version
   - purpose: automation
     name: Clean [${release_version}], Upgrade to [${service_branch}]
