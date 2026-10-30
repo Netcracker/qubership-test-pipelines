@@ -1,0 +1,315 @@
+name: Reusable Redis Tests
+
+permissions:
+  contents: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository_name:
+        description: Repository with Redis service
+        required: false
+        type: string
+        default: Netcracker/qubership-redis
+      service_branch:
+        required: false
+        type: string
+        default: main
+      pipeline_branch:
+        description: Test pipeline branch name
+        type: string
+        required: true
+      runner_type:
+        description: Runner type (self-hosted or ubuntu-latest)
+        type: string
+        required: false
+        default: ubuntu-latest
+      scope:
+        description: Redis Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
+  workflow_call:
+    inputs:
+      repository_name:
+        description: Repository with Redis service
+        required: false
+        type: string
+        default: Netcracker/qubership-redis
+      service_branch:
+        required: false
+        type: string
+        default: main
+      pipeline_branch:
+        description: Test pipeline branch name
+        type: string
+        required: true
+      runner_type:
+        description: Runner type (self-hosted or ubuntu-latest)
+        type: string
+        required: false
+        default: ubuntu-latest
+      scope:
+        description: Redis Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 15
+
+jobs:
+  prepare:
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ${{ inputs.runner_type }}
+    outputs:
+      versions: ${{ steps.process-versions.outputs.versions }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_ready_max_retries: ${{ steps.calc-timeout.outputs.service_ready_max_retries }}
+      service_ready_retry_interval: ${{ steps.calc-timeout.outputs.service_ready_retry_interval }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-redis
+          persist-credentials: false
+
+      - name: Checkout pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+
+      - name: Calculate verify timeout parameters
+        id: calc-timeout
+        run: |
+          RETRY_INTERVAL=10
+          MAX_RETRIES=$(( ${{ inputs.verify_timeout_minutes }} * 60 / RETRY_INTERVAL ))
+          echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
+          echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
+
+      - name: Get latest tag
+        id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
+        run: |
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Process latest tag and matrix generation
+        id: process-versions
+        env:
+          SCOPE: ${{ inputs.scope }}
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
+        run: |
+          chmod +x ./scripts/matrix.sh
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/redis_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/redis.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'."
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
+
+  Redis-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
+    needs: prepare
+    runs-on: ${{ inputs.runner_type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.test.name }}
+    env:
+      NAMESPACE: redis
+      SERVICE_READY_MAX_RETRIES: ${{ needs.prepare.outputs.service_ready_max_retries }}
+      SERVICE_READY_RETRY_INTERVAL: ${{ needs.prepare.outputs.service_ready_retry_interval }}
+      PATH_TO_CHART: redis-operator/charts/helm/redis-operator
+    steps:
+      # == 01 Start ======= Common pre-steps for all tests =======
+      - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
+        run: |
+          echo "======== Job parameters ======="
+          echo "$MATRIX_JSON"
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+
+      - name: Checkout pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      # == 01 End ======= Common pre-steps for all tests =======
+
+      # == Start ======= Specific steps for TLS =======
+      - name: Setup TLS
+        if: ${{ matrix.test.tls == true }}
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+      # == End ======= Specific steps for TLS =======
+
+      # == Start Monitoring installation tests =======
+      - name: Install Monitoring
+        if: matrix.test.monitoring == true
+        uses: ./qubership-test-pipelines/actions/shared/install_monitoring
+        with:
+          artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
+          service_ready_max_retries: 500
+      # == End Monitoring installation tests =======
+
+      # == Start ======= Installation steps =======
+      - name: Print clean install deployment parameters
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
+
+      - name: Install Redis [${{ matrix.test.install.version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: redis_install
+        with:
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
+          restricted: ${{ matrix.test.restricted }}
+          service_name: redis-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
+          namespace: redis
+
+      - name: Get Installed Redis CRD name
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_redis_get_crds
+        with:
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
+
+      - name: Verify Redis installation [${{ matrix.test.install.version }}]
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: redis
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          crd_list: ${{ steps.install_redis_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Redis installation [${{ matrix.test.install.version }}]
+        if: ${{ !cancelled() && steps.redis_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: redis
+          artifact_name: Installation_${{ matrix.test.install.artifact_name }}
+          crd_list: ${{ steps.install_redis_get_crds.outputs.crd_names }}
+          service_branch: ${{ matrix.test.install.version }}
+
+      - name: Get Redis secrets
+        if: ${{ matrix.test.tls == true }}
+        run: |
+          kubectl get secrets -n redis
+      # == End ======= Installation steps =======
+
+      # == Start ===== Upgrade steps ============
+      - name: Print upgrade deployment parameters
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
+
+      - name: Sleep 1m before upgrade
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        run: sleep 1m
+
+      - name: Upgrade Redis to [${{ matrix.test.upgrade.version }}]
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: redis_upgrade
+        with:
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+          deploy_mode: upgrade
+          restricted: ${{ matrix.test.restricted }}
+          service_name: redis-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.PATH_TO_CHART }}
+          namespace: redis
+
+      - name: Get Upgraded Redis CRD name
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: upgrade_redis_get_crds
+        with:
+          crd_location: ${{ inputs.repository_name }}/${{ env.PATH_TO_CHART }}/crds
+
+      - name: Sleep 1m after upgrade
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        run: sleep 1m
+
+      - name: Verify Redis upgrade to [${{ matrix.test.upgrade.version }}]
+        if: ${{ matrix.test.sequence == 'upgrade' }}
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: redis
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          crd_list: ${{ steps.upgrade_redis_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Redis upgrade to [${{ matrix.test.upgrade.version }}]
+        if: ${{ !cancelled() && steps.redis_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: redis
+          artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          crd_list: ${{ steps.upgrade_redis_get_crds.outputs.crd_names }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+      # == End ===== Upgrade steps ============
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [Redis-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.Redis-Test-Cases.result }}
