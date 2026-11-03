@@ -45,5 +45,5 @@ dbaas:
     password: ""
 integrationTests:
   install: true
-  tags: clickhouse
+  tags: clickhouseNOTclickhouse_images
   timeoutBeforeStart: 30
