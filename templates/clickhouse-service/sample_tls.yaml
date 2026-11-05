@@ -26,7 +26,8 @@ clickhouseCluster:
     pod:
       fsGroup: 101
   users:
-    ncdbaasuser:
+    #ncdbaasuser:
+    nc_dbaas_user:
       profile: default
       password: pAssW0RD1
       networks/ip: "::/0"

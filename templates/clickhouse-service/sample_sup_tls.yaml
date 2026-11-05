@@ -39,7 +39,8 @@ dbaas:
     clusterName: clickhouse
   # Must match the ClickHouse user created in CHI (clickhouseCluster.users in sample.yaml)
   clickhouse:
-    username: ncdbaasuser
+    #username: ncdbaasuser
+    username: nc_dbaas_user
     password: pAssW0RD1
   adapter:
     username: dbaas-aggregator

@@ -27,7 +27,8 @@ clickhouseCluster:
       fsGroup: 101
   # DBaaS adapter authenticates as this user (must match dbaas.clickhouse in sample_sup_s3.yaml)
   users:
-    ncdbaasuser:
+    #ncdbaasuser:
+    nc_dbaas_user:
       profile: default
       password: pAssW0RD1
       networks/ip: "::/0"
