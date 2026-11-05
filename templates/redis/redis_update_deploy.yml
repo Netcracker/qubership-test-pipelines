@@ -1,0 +1,24 @@
+dbaas:
+  install: true
+  aggregator:
+    physicalDatabaseIdentifier: redis
+redis:
+  dockerImage: ghcr.io/netcracker/qubership-docker-redis-8:main
+  dockerImage7: ghcr.io/netcracker/qubership-docker-redis-7:main
+operator:
+  dockerImage: ghcr.io/netcracker/qubership-redis-operator:main
+  initImage: ghcr.io/netcracker/qubership-credential-manager:v0.0.15
+  resources:
+    requests:
+      cpu: 55m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+monitoringAgent:
+  install: false
+  dockerImage: ghcr.io/netcracker/qubership-redis-monitoring-agent:main
+  metricCollector: prometheus
+robotTests:
+  install: true
+  dockerImage: ghcr.io/netcracker/qubership-redis-tests:main
