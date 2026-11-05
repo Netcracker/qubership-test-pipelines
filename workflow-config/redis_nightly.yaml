@@ -1,0 +1,68 @@
+jobs:
+  - name: Clean [${service_branch}] with Monitoring
+    sequence: install
+    restricted: false
+    monitoring: true
+    install:
+      version: ${service_branch}
+      template: templates/redis/redis_clean_with_monitoring.yml
+      artifact_name: Clean_CURRENT_Monitoring
+
+  ## A special configuration section for generating jobs for installing previous releases on the current version
+  - purpose: automation
+    name: Clean [${release_version}], Upgrade to [${service_branch}]
+    sequence: upgrade
+    restricted: false
+    install:
+      version: ${release_version}
+      template: templates/redis/redis_clean_deploy.yml
+      artifact_name: Clean_${release_version}_Upgrade_CURRENT
+    upgrade:
+      version: ${service_branch}
+      template: templates/redis/redis_clean_deploy.yml
+      artifact_name: Clean_${release_version}_Upgrade_CURRENT
+  ## ===============================================================================
+  - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params
+    sequence: upgrade
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/redis/redis_clean_deploy.yml
+      artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params
+    upgrade:
+      version: ${service_branch}
+      template: templates/redis/redis_update_deploy.yml
+      artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params
+
+  - name: Clean [${service_branch}] in TLS
+    sequence: install
+    restricted: false
+    tls: true
+    install:
+      version: ${service_branch}
+      template: templates/redis/redis_clean_with_tls.yml
+      artifact_name: Clean_CURRENT_TLS
+
+  - name: Clean [${service_branch}] W/O Dbaas
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/redis/redis_clean_without_dbaas.yml
+      artifact_name: Clean_CURRENT_WO_Dbaas
+
+  - name: Clean [${service_branch}] With Not Default Creds
+    sequence: install
+    restricted: false
+    install:
+      version: ${service_branch}
+      template: templates/redis/redis_clean_non_default_creds.yml
+      artifact_name: Clean_CURRENT_Not_Default_Creds
+
+  - name: Clean [${service_branch}] Restricted
+    sequence: install
+    restricted: true
+    install:
+      version: ${service_branch}
+      template: templates/redis/redis_clean_deploy.yml
+      artifact_name: Clean_CURRENT_Restricted
