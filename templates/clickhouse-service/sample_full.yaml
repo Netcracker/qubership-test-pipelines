@@ -25,17 +25,14 @@ clickhouseCluster:
       runAsGroup: 101
     pod:
       fsGroup: 101
-  users:
-    #ncdbaasuser:
-    nc_dbaas_user:
-      profile: default
-      password: pAssW0RD1
-      networks/ip: "::/0"
-      grants/query: "GRANT ALL ON *.* WITH GRANT OPTION"
-clickhouseSecretMonitor:
-  install: false
 backupDaemon:
-  install: true
+  install: yes
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
   storage:
     remote: none
   orchestrator:
@@ -56,9 +53,23 @@ backupDaemon:
     securityContext:
       runAsUser: 101
       runAsGroup: 101
-  securityContext:
-    container:
-      runAsUser: 101
-      runAsGroup: 101
-    pod:
-      fsGroup: 101
+dbaas:
+  install: true
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    registrationUsername: cluster-dba
+    registrationPassword: ""
+  labels:
+    clusterName: clickhouse
+  clickhouse:
+    username: nc_dbaas_user
+    password: pAssW0RD1
+  adapter:
+    username: dbaas-aggregator
+    password: ""
+integrationTests:
+  install: true
+  tags: clickhouseNOTclickhouse_images
+  timeoutBeforeStart: 30
+clickhouseSecretMonitor:
+  install: false

@@ -1,6 +1,20 @@
 clickhouseOperator:
   image: altinity/clickhouse-operator:0.27.4
   metricsExporterImage: altinity/metrics-exporter:0.27.4
+  resources:
+    limits:
+      cpu: 201m
+      memory: 201Mi
+    requests:
+      cpu: 101m
+      memory: 101Mi
+  metricsExporterResources:
+    limits:
+      cpu: 201m
+      memory: 201Mi
+    requests:
+      cpu: 101m
+      memory: 101Mi
   securityContext:
     container:
       runAsUser: 101
@@ -25,15 +39,14 @@ clickhouseCluster:
       runAsGroup: 101
     pod:
       fsGroup: 101
-  # DBaaS adapter authenticates as this user (must match dbaas.clickhouse in sample_sup_s3.yaml)
-  users:
-    #ncdbaasuser:
-    nc_dbaas_user:
-      profile: default
-      password: pAssW0RD1
-      networks/ip: "::/0"
 backupDaemon:
   install: yes
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
   storage:
     remote: s3
     s3:
@@ -44,5 +57,37 @@ backupDaemon:
       force_path_style: true
       disable_ssl: false
       debug: true
+  orchestrator:
+    resources:
+      limits:
+        cpu: 500m
+        memory: 512Mi
+      requests:
+        cpu: 250m
+        memory: 256Mi
+    pvSize: 2Gi
+    storageClassName: standard
+    accessModes:
+      - ReadWriteOnce
+    securityContext:
+      runAsUser: 101
+      runAsGroup: 101
+dbaas:
+  install: true
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    registrationUsername: cluster-dba
+    registrationPassword: ""
+  labels:
+    clusterName: clickhouse
+  clickhouse:
+    username: nc_dbaas_user
+    password: pAssW0RD1
+  adapter:
+    username: dbaas-aggregator
+    password: ""
+integrationTests:
+  install: true
+  tags: smoke
 clickhouseSecretMonitor:
   install: false

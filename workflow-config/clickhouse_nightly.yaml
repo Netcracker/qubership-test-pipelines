@@ -7,13 +7,11 @@ jobs:
     zookeeper: true
     install:
       version: ${release_version}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup_full.yaml
+      template: templates/clickhouse-service/sample_full.yaml
       artifact_name: Clean_${release_version}_Upgrade_CURRENT
     upgrade:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup_full.yaml
+      template: templates/clickhouse-service/sample_full.yaml
       artifact_name: Clean_${release_version}_Upgrade_CURRENT
   ## ===============================================================================
 
@@ -24,8 +22,7 @@ jobs:
     zookeeper: true
     install:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup.yaml
+      template: templates/clickhouse-service/sample.yaml
       artifact_name: Clean_CURRENT_Monitoring
 
   - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params
@@ -34,13 +31,11 @@ jobs:
     zookeeper: true
     install:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup.yaml
+      template: templates/clickhouse-service/sample.yaml
       artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params
     upgrade:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup_updated.yaml
+      template: templates/clickhouse-service/sample_updated.yaml
       artifact_name: Clean_CURRENT_Update_CURRENT_Diff_Params
 
   - name: Clean [${service_branch}] in TLS
@@ -50,8 +45,7 @@ jobs:
     zookeeper: true
     install:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample_tls.yaml
-      template_services: templates/clickhouse-service/sample_sup_tls.yaml
+      template: templates/clickhouse-service/sample_tls.yaml
       artifact_name: Clean_CURRENT_TLS
 
   - name: Upgrade [${service_branch}] From Non-TLS To TLS
@@ -61,13 +55,11 @@ jobs:
     zookeeper: true
     install:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup.yaml
+      template: templates/clickhouse-service/sample.yaml
       artifact_name: Clean_CURRENT_Upgrade_TLS
     upgrade:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample_tls.yaml
-      template_services: templates/clickhouse-service/sample_sup_tls.yaml
+      template: templates/clickhouse-service/sample_tls.yaml
       artifact_name: Clean_CURRENT_Upgrade_TLS
 
   - name: Clean [${service_branch}] on S3 storage
@@ -76,8 +68,7 @@ jobs:
     zookeeper: true
     install:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup_s3.yaml
+      template: templates/clickhouse-service/sample_s3.yaml
       s3: true
       artifact_name: Clean_CURRENT_S3
 
@@ -87,8 +78,7 @@ jobs:
     zookeeper: true
     install:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup_full.yaml
+      template: templates/clickhouse-service/sample_full.yaml
       artifact_name: Clean_CURRENT_Full_Tests
 
   - name: Clean [${service_branch}] Restricted
@@ -97,6 +87,5 @@ jobs:
     zookeeper: true
     install:
       version: ${service_branch}
-      template_operator: templates/clickhouse-service/sample.yaml
-      template_services: templates/clickhouse-service/sample_sup.yaml
+      template: templates/clickhouse-service/sample.yaml
       artifact_name: Clean_CURRENT_Restricted

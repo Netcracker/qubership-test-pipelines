@@ -1,6 +1,20 @@
 clickhouseOperator:
   image: altinity/clickhouse-operator:0.27.4
   metricsExporterImage: altinity/metrics-exporter:0.27.4
+  resources:
+    limits:
+      cpu: 201m
+      memory: 201Mi
+    requests:
+      cpu: 101m
+      memory: 101Mi
+  metricsExporterResources:
+    limits:
+      cpu: 201m
+      memory: 201Mi
+    requests:
+      cpu: 101m
+      memory: 101Mi
   securityContext:
     container:
       runAsUser: 101
@@ -25,17 +39,65 @@ clickhouseCluster:
       runAsGroup: 101
     pod:
       fsGroup: 101
-  users:
-    #ncdbaasuser:
-    nc_dbaas_user:
-      profile: default
-      password: pAssW0RD1
-      networks/ip: "::/0"
 tls:
   enabled: true
   certificateSecretName: ch-cert
   generateCerts:
     enabled: true
     clusterIssuerName: test-clusterissuer
+backupDaemon:
+  install: yes
+  resources:
+    limits:
+      cpu: 101m
+      memory: 257Mi
+    requests:
+      cpu: 51m
+      memory: 257Mi
+  securityContext:
+    container:
+      runAsUser: 101
+      runAsGroup: 101
+    pod:
+      fsGroup: 101
+  storage:
+    remote: none
+  orchestrator:
+    resources:
+      limits:
+        cpu: 501m
+        memory: 513Mi
+      requests:
+        cpu: 251m
+        memory: 257Mi
+    pvSize: 2Gi
+    storageClassName: standard
+    accessModes:
+      - ReadWriteOnce
+    envs:
+      BACKUP_SCHEDULE: 0 * * * *
+      EVICTION_POLICY: 7d/7d,1y/delete
+      STORAGE: /backup-storage/
+    securityContext:
+      runAsUser: 101
+      runAsGroup: 101
+dbaas:
+  install: true
+  chPort: 9440
+  aggregator:
+    registrationAddress: http://dbaas-aggregator.dbaas:8080
+    registrationUsername: cluster-dba
+    registrationPassword: ""
+  labels:
+    clusterName: clickhouse
+  clickhouse:
+    username: nc_dbaas_user
+    password: pAssW0RD1
+  adapter:
+    username: dbaas-aggregator
+    password: ""
+integrationTests:
+  install: true
+  tags: smoke
 clickhouseSecretMonitor:
   install: false
