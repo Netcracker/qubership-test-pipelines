@@ -182,6 +182,17 @@ jobs:
           path: qubership-clickhouse-operator-helm
           persist-credentials: false
 
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -379,6 +390,9 @@ jobs:
           service_branch: ${{ matrix.test.install.version }}
           crd_list: ${{ steps.install_clickhouse_operator_get_crds.outputs.crd_names }}
       # == 02 End ===== Install ClickHouse Operator + Cluster =====
+
+      - name: Sleep
+        run: sleep 3m
 
       # == 03 Start ===== Install ClickHouse Services =====
       - name: Install ClickHouse Services [${{ matrix.test.install.version }}]
