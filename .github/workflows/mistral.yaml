@@ -63,7 +63,7 @@ on:
         description: Maximum time (in minutes) to wait for each service verification
         type: number
         required: false
-        default: 40
+        default: 60
 
 jobs:
   prepare:
