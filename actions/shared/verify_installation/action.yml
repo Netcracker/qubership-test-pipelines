@@ -70,6 +70,18 @@ inputs:
     type: boolean
     default: true
 
+  active_conditions_only:
+    description: |
+      When true, only conditions with status: true are taken into account when detecting
+      the 'in progress' and 'successful' states. Conditions left in the CR with
+      status: false are ignored (e.g. Mistral keeps an inactive 'In Progress' condition
+      after the deployment has succeeded).
+      The 'failed' condition is always matched by type, regardless of status.
+      When false (default), all conditions are checked exactly as before.
+    required: false
+    type: boolean
+    default: false
+
 runs:
   using: composite
   steps:
@@ -95,6 +107,7 @@ runs:
         MONITORING_PIPELINE: ${{ inputs.monitoring_pipeline }}
         REPOSITORY_NAME: ${{ inputs.repository_name }}
         FAIL_ON_CR_FAILED: ${{ inputs.fail_on_cr_failed }}
+        ACTIVE_CONDITIONS_ONLY: ${{ inputs.active_conditions_only }}
       # language=bash
       run: |
         # ▶️ Check service is ready
@@ -110,7 +123,7 @@ runs:
 
           if [ "$cr_success" = "false" ]; then
             set +e
-            ./qubership-test-pipelines/scripts/check_cr.sh "$CRD_LIST" "$NAMESPACE" "$FAIL_ON_CR_FAILED"
+            ./qubership-test-pipelines/scripts/check_cr.sh "$CRD_LIST" "$NAMESPACE" "$FAIL_ON_CR_FAILED" "$ACTIVE_CONDITIONS_ONLY"
             cr_exit_code=$?
             set -e
 

@@ -1,13 +1,9 @@
-# Mistral clean install (main) - YAML version of mistral_clean.txt
-# Dependencies are installed by the workflow before this template:
-#   PostgreSQL: templates/pgskipper/patroni-core-lite.yaml (pg-patroni.postgres-infra)
-#   RabbitMQ:   templates/rabbitmq-service/rabbitmq_clean_sc_lite.yml (rabbitmq.rabbitmq)
 mistral:
   tls:
     enabled: false
   ingress:
     enabled: true
-    host: mistral-mistral-ci.saas-rnd-cap-02.managed.netcracker.cloud
+    host: mistral-service.qubership.com
 name: mistral-service
 mistralCommonParams:
   postgres:

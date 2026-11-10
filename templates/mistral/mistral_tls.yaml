@@ -1,0 +1,73 @@
+name: mistral-service
+mistral:
+  tls:
+    enabled: true
+    secretName: mistral-tls-secret
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      clusterIssuerName: test-clusterissuer
+      duration: 365
+    services:
+      api:
+        enabled: true
+      monitoring:
+        enabled: true
+      postgres:
+        sslmode: verify-full
+      rabbitmq:
+        enabled: true
+      kafka:
+        enabled: false
+  ingress:
+    enabled: true
+    host: mistral-service-tls.qubership.com
+mistralCommonParams:
+  securityProfile: dev
+  postgres:
+    dbName: mistral_tls_new
+    host: pg-patroni.postgres-infra.svc
+    port: 5432
+  rabbit:
+    host: rabbitmq.rabbitmq.svc
+    port: 5671
+    vhost: mistral_tls_new
+  kafkaNotifications:
+    enabled: false
+    host: kafka.kafka-service
+    topic: mistral_vl
+    consumerGroupId: mistral_vl_notification
+    topicPartitionsCount: 1
+    securityEnabled: true
+  auth:
+    enable: false
+secrets:
+  kafkaSaslPlainUsername: client
+  kafkaSaslPlainPassword: client
+  idpRegistrationToken: ""
+  pgAdminPassword: p@ssW0rd1
+  pgAdminUser: postgres
+  pgPassword: mistral_operator
+  pgUser: mistral_operator
+  rabbitAdminPassword: admin
+  rabbitAdminUser: admin
+  rabbitPassword: admin
+  rabbitUser: admin
+mistralMonitoring:
+  replicas: 1
+  resources:
+    requests:
+      cpu: 150m
+      memory: 300Mi
+    limits:
+      cpu: 150m
+      memory: 300Mi
+  prometheusEnabled: false
+integrationTests:
+  enabled: true
+  runTestsOnly: false
+  waitTestResultOnJob: true
+  mistralReadyTimeout: 500
+  runAsUser: 5000
+ESCAPE_SEQUENCE: true
+CLOUD_CORE_INTEGRATION_ENABLED: false

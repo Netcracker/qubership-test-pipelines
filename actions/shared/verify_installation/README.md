@@ -33,6 +33,7 @@ pod readiness validation, and Robot Framework test result collection.
 | `monitoring_pipeline` | When `true`, runs additional VictoriaMetrics CR status checks using `check-vm-cr-statuses.sh`. Requires `repository_name` and the expected-vm-cr-statuses.json file to be present. | No | `false` |
 | `repository_name` | Full `org/repo` checkout path of the service repository. Required when `monitoring_pipeline` is `true` — used to locate `.github/expected-vm-cr-statuses.json`. | No | `""` |
 | `fail_on_cr_failed` | When `true` (default), a CR reporting a `failed` condition fails the check immediately. When `false`, a `failed` condition is treated like `in-progress` and the action keeps polling until the CR becomes successful or `service_ready_max_retries` is exhausted. | No | `true` |
+| `active_conditions_only` | When `true`, only conditions with `status: true` are used to detect the `in-progress` and `successful` states; conditions left in the CR with `status: false` are ignored. Needed for operators that keep historical conditions (e.g. Mistral keeps an inactive `In Progress` condition after a successful deploy). The `failed` condition is always matched by type, regardless of `status`. When `false` (default), all conditions are checked exactly as before. | No | `false` |
 
 ---
 
@@ -96,9 +97,30 @@ The action runs three sequential verification phases, collecting failures into a
 - Contains `failed` → exit 2 (hard failure, stops retrying). When the `fail_on_cr_failed`
   input is `false`, a `failed` condition instead returns exit 1 and the action keeps
   polling until the CR becomes successful (or `service_ready_max_retries` is exhausted).
+  This check ignores the `status` field, so failure detection is identical in both modes.
 - Contains `progress` → exit 1 (still running, retry)
 - Contains `success` → exit 0 (done)
 - No matching condition → treated as in-progress (exit 1)
+
+When `active_conditions_only: true` is set, only conditions with an active status
+(`status: true`, boolean or the string `"True"`, case-insensitive) are considered for the
+`progress` and `success` branches. Conditions with `status: false` are treated as historical
+or not-yet-reached and are ignored. Example: the Mistral operator keeps both conditions in
+its CR after a successful deployment:
+
+```yaml
+status:
+  conditions:
+    - type: In Progress   # status: false — left over from the deployment start
+    - type: Successful    # status: true  — deploy really finished
+```
+
+With `active_conditions_only: false` (default) the `In Progress` condition would always win
+and the check would retry until timeout. With `active_conditions_only: true` the inactive
+condition is ignored and the CR is reported as successful. Operators that signal an
+in-progress state with an inactive `progress` condition (e.g. a single `In progress: false`
+condition) are still treated as in-progress, because with no active `success`/`progress`
+condition the script falls through to the "no matching condition" branch (exit 1).
 
 If `crd_list` is empty, `check_cr.sh` returns exit 0 immediately and CR checking is skipped.
 

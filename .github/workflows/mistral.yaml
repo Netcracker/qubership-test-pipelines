@@ -172,12 +172,19 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
-      # == 02 Start ======= PostgreSQL dependency (main) =======
+      # == 02 Start ======= Specific steps for TLS =======
+      - name: Setup TLS
+        if: matrix.test.tls == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+      # == 02 End ======= Specific steps for TLS =======
+
+      # == 03 Start ======= PostgreSQL dependency =======
       - name: Install PostgreSQL
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: postgres_install
         with:
-          path_to_template: templates/pgskipper/patroni-core-lite.yaml
+          # TLS jobs use a TLS-enabled PostgreSQL dependency, other jobs use the lite one
+          path_to_template: ${{ matrix.test.tls == true && 'templates/pgskipper/patroni-core-tls-lite.yaml' || 'templates/pgskipper/patroni-core-lite.yaml' }}
           service_branch: main
           restricted: false
           service_name: pg-patroni
@@ -200,14 +207,15 @@ jobs:
           namespace: ${{ env.PG_NAMESPACE }}
           artifact_name: PostgreSQL_Installation
           service_branch: main
-      # == 02 End ======= PostgreSQL dependency =======
+      # == 03 End ======= PostgreSQL dependency =======
 
-      # == 03 Start ======= RabbitMQ dependency (main) =======
+      # == 04 Start ======= RabbitMQ dependency =======
       - name: Install RabbitMQ
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: rabbitmq_install
         with:
-          path_to_template: templates/rabbitmq-service/rabbitmq_clean_sc_lite.yml
+          # TLS jobs use a TLS-enabled RabbitMQ dependency, other jobs use the lite one
+          path_to_template: ${{ matrix.test.tls == true && 'templates/rabbitmq-service/rabbitmq_clean_sc_tls_lite.yml' || 'templates/rabbitmq-service/rabbitmq_clean_sc_lite.yml' }}
           service_branch: main
           restricted: false
           service_name: rabbitmq
@@ -230,9 +238,9 @@ jobs:
           namespace: ${{ env.RABBIT_NAMESPACE }}
           artifact_name: RabbitMQ_Installation
           service_branch: main
-      # == 03 End ======= RabbitMQ dependency =======
+      # == 04 End ======= RabbitMQ dependency =======
 
-      # == 04 Start ======= Mistral installation =======
+      # == 05 Start ======= Mistral installation =======
       - name: Print Mistral install deployment parameters
         run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
@@ -262,6 +270,8 @@ jobs:
           service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           test_completion_max_retries: 90
           test_completion_retry_interval: 10s
+          # Mistral keeps an inactive 'In Progress' condition (status: false) after success
+          active_conditions_only: true
           crd_list: ${{ steps.install_mistral_get_crds.outputs.crd_names }}
 
       - name: Collect Diagnostics Mistral installation [${{ matrix.test.install.version }}]
@@ -272,7 +282,56 @@ jobs:
           artifact_name: Mistral_Installation_${{ matrix.test.install.artifact_name }}
           crd_list: ${{ steps.install_mistral_get_crds.outputs.crd_names }}
           service_branch: ${{ matrix.test.install.version }}
-      # == 04 End ======= Mistral installation =======
+      # == 05 End ======= Mistral installation =======
+
+      # == 06 Start ======= Specific steps for upgrade tests =======
+      - name: Print Mistral upgrade deployment parameters
+        if: matrix.test.sequence == 'upgrade'
+        run: cat qubership-test-pipelines/${{ matrix.test.upgrade.template }}
+
+      - name: Upgrade Mistral to [${{ matrix.test.upgrade.version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: mistral_upgrade
+        with:
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+          deploy_mode: upgrade
+          # The operator keeps updating .spec.mistral.lastUpdate, which makes a Server-Side Apply
+          # upgrade fail with a field ownership conflict, so use client-side apply for the upgrade
+          disable_server_side_apply: true
+          restricted: ${{ matrix.test.restricted }}
+          service_name: mistral-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.MISTRAL_CHART }}
+          namespace: ${{ env.MISTRAL_NAMESPACE }}
+
+      - name: Sleep 90s after update
+        if: matrix.test.sequence == 'upgrade'
+        run: sleep 90s
+
+      - name: Verify Mistral upgrade [${{ matrix.test.upgrade.version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.MISTRAL_NAMESPACE }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          test_completion_max_retries: 90
+          test_completion_retry_interval: 10s
+          # Mistral keeps an inactive 'In Progress' condition (status: false) after success
+          active_conditions_only: true
+          crd_list: ${{ steps.install_mistral_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Mistral upgrade [${{ matrix.test.upgrade.version }}]
+        if: ${{ !cancelled() && steps.mistral_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.MISTRAL_NAMESPACE }}
+          artifact_name: Mistral_Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          crd_list: ${{ steps.install_mistral_get_crds.outputs.crd_names }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+      # == 06 End ======= Specific steps for upgrade tests =======
 
   final-status-check:
     if: ${{ always() }}

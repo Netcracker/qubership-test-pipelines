@@ -1,0 +1,36 @@
+mistral:
+  tls:
+    enabled: false
+name: mistral-service
+mistralCommonParams:
+  postgres:
+    dbName: mistral_regr
+    host: pg-patroni.postgres-infra.svc
+    port: 5432
+  rabbit:
+    host: rabbitmq.rabbitmq.svc
+    port: 5672
+    vhost: mistral_regr
+  kafkaNotifications:
+    enabled: false
+  auth:
+    enable: false
+  securityProfile: dev
+secrets:
+  pgAdminPassword: paSSw0rd
+  pgAdminUser: postgres
+  rabbitAdminPassword: admin
+  rabbitAdminUser: admin
+mistralMonitoring:
+  prometheusEnabled: false
+integrationTests:
+  enabled: true
+  runTestsOnly: false
+  waitTestResultOnJob: true
+  mistralReadyTimeout: 800
+  runAsUser: 5000
+bluegreenAgent:
+  enabled: true
+ESCAPE_SEQUENCE: true
+CLOUD_CORE_INTEGRATION_ENABLED: false
+CUSTOM_TIMEOUT_MIN: 30

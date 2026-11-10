@@ -69,6 +69,18 @@ inputs:
     type: string
     default: ""
 
+  disable_server_side_apply:
+    description: |
+      Apply the release with client-side apply (--server-side=false) instead of the
+      Helm 4 default Server-Side Apply. Needed for operators that keep updating fields
+      of their custom resource (e.g. Mistral writes .spec.mistral.lastUpdate), because
+      an SSA upgrade then fails with 'Apply failed with N conflict: conflict with ...'.
+      The flag is added only if the installed Helm supports --server-side; on Helm
+      versions without SSA (client-side apply is the default) it is skipped.
+    required: false
+    type: boolean
+    default: false
+
 runs:
   using: composite
   steps:
@@ -254,16 +266,34 @@ runs:
         PATH_TO_CHART: ${{ inputs.path_to_chart }}
         RESTRICTED: ${{ inputs.restricted }}
         NAMESPACE: ${{ inputs.namespace }}
+        DISABLE_SERVER_SIDE_APPLY: ${{ inputs.disable_server_side_apply }}
       # language=bash
       run: |
         # ▶️ Install/update service with Helm
         template_name=$(basename "${PATH_TO_TEMPLATE}")
         echo $template_name
+        echo "Helm version: $(helm version --short 2>/dev/null || echo 'unknown')"
+
+        # Helm 4 uses Server-Side Apply (SSA) by default and tracks field ownership per field
+        # manager. Operators may own fields inside the CR (e.g. Mistral updates
+        # .spec.mistral.lastUpdate), which makes an SSA upgrade fail with
+        # 'Apply failed with N conflict'. Forcing client-side apply avoids the conflict,
+        # because the release is then patched as a whole object (pre-Helm 4 behaviour).
+        HELM_APPLY_ARGS=""
+        if [[ "${DISABLE_SERVER_SIDE_APPLY}" == "true" ]]; then
+          if helm upgrade --help 2>&1 | grep -q -- "--server-side"; then
+            HELM_APPLY_ARGS="--server-side=false"
+            echo "Server-Side Apply is disabled for this release: ${HELM_APPLY_ARGS}"
+          else
+            echo "Installed helm has no --server-side flag, client-side apply is already the default"
+          fi
+        fi
+
         cd "${REPOSITORY_NAME}/${PATH_TO_CHART}"
         if [[ "${RESTRICTED}" == "false" ]]; then
-          helm "${DEPLOY_MODE}" "${SERVICE_NAME}" . -f "$template_name" -n "${NAMESPACE}" --timeout 10m
+          helm "${DEPLOY_MODE}" "${SERVICE_NAME}" . -f "$template_name" -n "${NAMESPACE}" --timeout 10m ${HELM_APPLY_ARGS}
         else
-          helm "${DEPLOY_MODE}" "${SERVICE_NAME}" . -f "$template_name" -n "${NAMESPACE}" --timeout 10m --skip-crds
+          helm "${DEPLOY_MODE}" "${SERVICE_NAME}" . -f "$template_name" -n "${NAMESPACE}" --timeout 10m --skip-crds ${HELM_APPLY_ARGS}
         fi
 
     - name: Get docker images

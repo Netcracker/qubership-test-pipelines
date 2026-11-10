@@ -1,0 +1,47 @@
+# RabbitMQ with TLS enabled - lightweight dependency template for service pipelines
+# (no in-cluster tests, no backup daemon, no disaster recovery).
+# Requires cert-manager and the test-clusterissuer created by actions/shared/setup_tls.
+name: rabbitmq-service
+global:
+  cloudIntegrationEnabled: false
+  tls:
+    enabled: true
+    cipherSuites: []
+    allowNonencryptedAccess: false
+    generateCerts:
+      enabled: true
+      certProvider: cert-manager
+      clusterIssuerName: test-clusterissuer
+rabbitmqPrometheusMonitoring: false
+rabbitmq:
+  fsGroup: 5000
+  runAsUser: 5000
+  hostpath_configuration: false
+  validate_state: false
+  clean_rabbitmq_pvs: false
+  auto_reboot: true
+  ingress:
+    enabled: false
+  custom_params:
+    rabbitmq_vm_memory_high_watermark: 90%
+    rabbitmq_default_user: admin
+    rabbitmq_default_password: admin
+  resources:
+    requests:
+      cpu: 100m
+      memory: 200Mi
+    limits:
+      cpu: 300m
+      memory: 300Mi
+    storageclass: standard
+  storage: 500Mi
+  enabledPlugins:
+    - rabbitmq_prometheus
+  perQueueMetrics: false
+backupDaemon:
+  enabled: false
+tests:
+  runTests: false
+  runTestsOnly: false
+  timeout: 300
+  waitTestResultOnJob: false
