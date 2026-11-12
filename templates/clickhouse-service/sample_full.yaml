@@ -70,6 +70,6 @@ dbaas:
 integrationTests:
   install: true
   tags: clickhouseNOTclickhouse_images
-  timeoutBeforeStart: 30
+  timeoutBeforeStart: 100
 clickhouseSecretMonitor:
   install: false

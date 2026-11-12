@@ -70,5 +70,6 @@ dbaas:
 integrationTests:
   install: true
   tags: smoke
+  timeoutBeforeStart: 100
 clickhouseSecretMonitor:
   install: false
