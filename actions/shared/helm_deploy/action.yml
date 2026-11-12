@@ -143,10 +143,6 @@ runs:
                 echo "CRD $CRD_NAME doesn't exist. Creating..."
                 kubectl create -f $file
             fi
-
-            echo "::group::📄 CRD '$CRD_NAME' after creation"
-            kubectl get crd "$CRD_NAME" -o yaml || true
-            echo "::endgroup::"
           fi
         done
 
