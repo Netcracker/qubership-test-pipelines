@@ -13,3 +13,4 @@ monitoringAgent:
 robotTests:
   install: false
   dockerImage: ghcr.io/netcracker/qubership-redis-tests:main
+ARTIFACT_DESCRIPTOR_VERSION: unknown
