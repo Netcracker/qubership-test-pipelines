@@ -88,7 +88,7 @@ on:
 env:
   namespace: mongodb
   path_to_chart_operator: operator/charts/helm/mongodb-operator
-  path_to_chart_services: services/service/charts/helm/mongodb-services
+  path_to_chart_services: ../../qubership-mongodb-operator/services/service/charts/helm/mongodb-services
 
 jobs:
   prepare:
@@ -316,6 +316,18 @@ jobs:
         # zizmor: ignore[template-injection]
         run: cat qubership-test-pipelines/${{ matrix.test.install.template_services }}
 
+      - name: Checkout MongoDB Services chart [${{ matrix.test.install.version }}]
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ matrix.test.install.version }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-mongodb-operator
+          persist-credentials: false
+
+      - name: Prepare MongoDB Services chart (gzip Grafana dashboards)
+        shell: bash
+        run: make -C qubership-mongodb-operator/services/service gzip-charts
+
       - name: Install MongoDB Services [${{ matrix.test.install.version }}]
         uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: mongodb_services_install
@@ -424,6 +436,20 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: MongoDB_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
+
+      - name: Checkout MongoDB Services chart [${{ matrix.test.upgrade.version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ matrix.test.upgrade.version }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-mongodb-operator
+          persist-credentials: false
+
+      - name: Prepare MongoDB Services chart (gzip Grafana dashboards)
+        if: matrix.test.sequence == 'upgrade'
+        shell: bash
+        run: make -C qubership-mongodb-operator/services/service gzip-charts
 
       - name: Upgrade MongoDB Services to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
