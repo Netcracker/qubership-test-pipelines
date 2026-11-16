@@ -47,7 +47,6 @@ check_resources() {
         return 0
     fi
 
-    # ▶️ Report exactly what is not ready: it shows up in the log AND as a run annotation
     echo "::error::Not ready in namespace '${namespace}': ${not_ready[*]}"
     kubectl get pods -n "$namespace" -o wide 2>/dev/null || true
     return 1

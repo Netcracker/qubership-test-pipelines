@@ -15,16 +15,6 @@ jobs:
       artifact_name: Clean_${release_version}_Upgrade_CURRENT
   ## ===============================================================================
 
-  - name: Clean [${service_branch}] with Monitoring
-    sequence: install
-    restricted: false
-    monitoring: true
-    zookeeper: true
-    install:
-      version: ${service_branch}
-      template: templates/clickhouse-service/sample.yaml
-      artifact_name: Clean_CURRENT_Monitoring
-
   - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params
     sequence: upgrade
     restricted: false

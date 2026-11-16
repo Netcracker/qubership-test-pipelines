@@ -364,12 +364,6 @@ jobs:
           namespace: ${{ env.namespace }}
           restricted: ${{ matrix.test.restricted }}
 
-      - name: Get Installed ClickHouse Operator CRD name
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
-        id: install_clickhouse_operator_get_crds
-        with:
-          crd_location: Netcracker/qubership-clickhouse-operator-helm/helm/clickhouse/crds
-
       - name: Verify ClickHouse Operator installation
         uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
@@ -385,10 +379,10 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: ClickHouse_Operator_Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
-          crd_list: ${{ steps.install_clickhouse_operator_get_crds.outputs.crd_names }}
+          crd_list: clickhouseinstallations.clickhouse.altinity.com
       # == 02 End ===== Install ClickHouse Operator + Cluster =====
 
-      - name: Sleep
+      - name: Sleep 3m
         run: sleep 3m
 
       # == 03 Start ===== Install ClickHouse Services =====
@@ -421,6 +415,7 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: ClickHouse_Services_Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
+          crd_list: clickhouseinstallations.clickhouse.altinity.com
       # == 03 End ===== Install ClickHouse Services =====
 
       # == Start ======= Specific steps for S3 =======
@@ -465,8 +460,12 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: ClickHouse_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
-          crd_list: ${{ steps.install_clickhouse_operator_get_crds.outputs.crd_names }}
+          crd_list: clickhouseinstallations.clickhouse.altinity.com
       # == 04 End ===== Upgrade ClickHouse Operator =====
+
+      - name: Sleep 3m
+        if: matrix.test.sequence == 'upgrade'
+        run: sleep 3m
 
       # == 05 Start ===== Upgrade ClickHouse Services =====
       - name: Upgrade ClickHouse Services to [${{ matrix.test.upgrade.version }}]
@@ -500,6 +499,7 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: ClickHouse_Services_Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
+          crd_list: clickhouseinstallations.clickhouse.altinity.com
       # == 05 End ===== Upgrade ClickHouse Services =====
 
   final-status-check:
