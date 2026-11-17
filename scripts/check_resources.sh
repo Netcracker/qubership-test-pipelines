@@ -1,3 +1,4 @@
+#!/bin/bash
 check_resources() {
     local namespace="$1"
     local all_ready=true
