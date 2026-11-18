@@ -1,6 +1,13 @@
 check_tests() {
     local namespace="$1"
     local pod_prefix="$2"
+    local wait_for_pod="${3:-false}"
+
+    case "$wait_for_pod" in
+        true|True|TRUE) wait_for_pod="true" ;;
+        *) wait_for_pod="false" ;;
+    esac
+
     local IFS=" "
     local -a pods
     IFS=" " read -ra pods <<< "$(kubectl get pods --no-headers -o custom-columns=":metadata.name" -n "$namespace" | tr "\n" " ")"
@@ -14,6 +21,10 @@ check_tests() {
     done
 
     if ! [[ "$test_pod" ]]; then
+      if [[ "$wait_for_pod" == "true" ]]; then
+        echo "⏳ No pod matching '$pod_prefix' in namespace $namespace yet, waiting for the test pod to appear"
+        exit 1
+      fi
       echo "::warning:: ℹ️ No test pod found in namespace $namespace"
       exit 0
     fi

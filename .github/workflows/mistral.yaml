@@ -270,6 +270,8 @@ jobs:
           service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           test_completion_max_retries: 90
           test_completion_retry_interval: 10s
+          # The operator recreates the mistral-tests deployment during redeploy, so wait for the pod
+          wait_for_test_pod: true
           # Mistral keeps an inactive 'In Progress' condition (status: false) after success
           active_conditions_only: true
           crd_list: ${{ steps.install_mistral_get_crds.outputs.crd_names }}
@@ -319,6 +321,8 @@ jobs:
           service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
           test_completion_max_retries: 90
           test_completion_retry_interval: 10s
+          # The operator recreates the mistral-tests deployment during redeploy, so wait for the pod
+          wait_for_test_pod: true
           # Mistral keeps an inactive 'In Progress' condition (status: false) after success
           active_conditions_only: true
           crd_list: ${{ steps.install_mistral_get_crds.outputs.crd_names }}

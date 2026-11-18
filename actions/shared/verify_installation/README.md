@@ -30,6 +30,7 @@ pod readiness validation, and Robot Framework test result collection.
 | `crd_list` | Space-separated list of Custom Resource names to check (e.g. `consul`). Pass empty to skip CR checks. | No | - |
 | `check_tests` | When `true`, waits for the test pod to complete and checks test results. Set to `false` to skip test checks entirely. | No | `true` |
 | `test_pod_prefix` | Substring of the test pod name to search for (e.g. `integration-robot-tests`). Finds the first pod with this value in its name. | No | `"tests"` |
+| `wait_for_test_pod` | When `true`, the action keeps polling for the test pod instead of skipping the test phase if no pod matching `test_pod_prefix` exists yet (treated as in-progress and retried). Needed for services whose test pod is created asynchronously (e.g. Mistral recreates the `mistral-tests` deployment during redeploy). When `false` (default), a missing test pod is reported as a warning and the phase is skipped. | No | `false` |
 | `monitoring_pipeline` | When `true`, runs additional VictoriaMetrics CR status checks using `check-vm-cr-statuses.sh`. Requires `repository_name` and the expected-vm-cr-statuses.json file to be present. | No | `false` |
 | `repository_name` | Full `org/repo` checkout path of the service repository. Required when `monitoring_pipeline` is `true` — used to locate `.github/expected-vm-cr-statuses.json`. | No | `""` |
 | `fail_on_cr_failed` | When `true` (default), a CR reporting a `failed` condition fails the check immediately. When `false`, a `failed` condition is treated like `in-progress` and the action keeps polling until the CR becomes successful or `service_ready_max_retries` is exhausted. | No | `true` |
@@ -80,7 +81,9 @@ The action runs three sequential verification phases, collecting failures into a
 - On completion it copies `/opt/robot/output` and `/tmp/clone` from the pod into
   `artifacts/robot-results/` and writes logs to `artifacts/<namespace>_tests.txt`.
 - Exit codes: `0` = passed, `1` = still running (retry), `2` = tests failed.
-- If no test pod is found, a warning is emitted and the phase is skipped.
+- If no test pod is found and `wait_for_test_pod` is `false` (default), a warning is emitted
+  and the phase is skipped. With `wait_for_test_pod: true` the check returns `1` (in-progress)
+  and keeps polling, which is required when the test pod is (re)created asynchronously.
 - After `test_completion_max_retries` attempts without completion, `ERROR_FLAG=true` is set.
 
 **Final step**: if `ERROR_FLAG` is `true`, the action exits with code `1`.
@@ -232,7 +235,10 @@ jobs:
 - The `monitoring_pipeline` step prints the full contents of `expected-vm-cr-statuses.json`
   to the workflow log before checking. Avoid storing secrets or sensitive values in that file.
 - When `check_tests: true` but no pod with `tests` in its name exists, the step emits a
-  warning and exits cleanly (does not set `ERROR_FLAG`).
+  warning and exits cleanly (does not set `ERROR_FLAG`). To wait for a test pod that is
+  created asynchronously (e.g. Mistral's `mistral-tests` deployment), set
+  `wait_for_test_pod: true` — the phase then keeps polling and fails if the pod never
+  appears within `test_completion_max_retries`.
 - `service_ready_max_retries` and `test_completion_max_retries` have no defaults in
   `action.yml` — callers must always provide explicit values.
 - Pin to a full 40-character commit SHA with the release tag as a trailing comment, e.g.

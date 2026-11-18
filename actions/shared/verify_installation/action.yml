@@ -48,6 +48,18 @@ inputs:
     required: false
     default: tests
 
+  wait_for_test_pod:
+    description: |
+      When true, the action keeps polling for the test pod instead of skipping the checks
+      if no pod matching 'test_pod_prefix' exists yet (in-progress, retried).
+      Needed for services whose test pod is created asynchronously, e.g. Mistral recreates
+      the 'mistral-tests' deployment during redeploy.
+      When false (default), a missing test pod is reported as a warning and the phase is
+      skipped, preserving the behaviour for all other services.
+    required: false
+    type: boolean
+    default: false
+
   monitoring_pipeline:
     description: |
       Only for Monitoring. Enable monitoring CRs checks (true) or disable them (false)
@@ -217,6 +229,7 @@ runs:
       env:
         NAMESPACE: ${{ inputs.namespace }}
         TEST_POD_PREFIX: ${{ inputs.test_pod_prefix }}
+        WAIT_FOR_TEST_POD: ${{ inputs.wait_for_test_pod }}
         TEST_COMPLETION_MAX_RETRIES: ${{ inputs.test_completion_max_retries }}
         TEST_COMPLETION_RETRY_INTERVAL: ${{ inputs.test_completion_retry_interval }}
       # language=bash
@@ -228,7 +241,7 @@ runs:
         for i in $(seq 1 "$TEST_COMPLETION_MAX_RETRIES"); do
           echo "Test check attempt $i/$TEST_COMPLETION_MAX_RETRIES"
           set +e
-          ./qubership-test-pipelines/scripts/check_tests.sh "$NAMESPACE" "$TEST_POD_PREFIX"
+          ./qubership-test-pipelines/scripts/check_tests.sh "$NAMESPACE" "$TEST_POD_PREFIX" "$WAIT_FOR_TEST_POD"
           tests_exit_code=$?
           set -e
 

@@ -24,51 +24,51 @@ mistralCommonParams:
   idpServer: http://identity-management.security-services2.svc.cluster.local:8080
   securityProfile: dev
 mistralApi:
-  replicas: 1
+  replicas: 2
   resources:
     requests:
-      cpu: 1005m
-      memory: 1002Mi
+      cpu: 300m
+      memory: 600Mi
     limits:
-      cpu: 1005m
-      memory: 1002Mi
+      cpu: 1200m
+      memory: 1200Mi
 mistralMonitoring:
   replicas: 1
   resources:
     requests:
-      cpu: 500m
-      memory: 500Mi
+      cpu: 150m
+      memory: 250Mi
     limits:
-      cpu: 510m
-      memory: 510Mi
+      cpu: 600m
+      memory: 600Mi
   prometheusEnabled: false
 mistralExecutor:
-  replicas: 2
-  resources:
-    requests:
-      cpu: 1000m
-      memory: 1000Mi
-    limits:
-      cpu: 1000m
-      memory: 1000Mi
-mistralEngine:
   replicas: 1
   resources:
     requests:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 300m
+      memory: 600Mi
     limits:
-      cpu: 1001m
-      memory: 1001Mi
+      cpu: 2400m
+      memory: 2400Mi
+mistralEngine:
+  replicas: 2
+  resources:
+    requests:
+      cpu: 600m
+      memory: 1200Mi
+    limits:
+      cpu: 2400m
+      memory: 2400Mi
 mistralNotifier:
   replicas: 1
   resources:
     requests:
-      cpu: 510m
-      memory: 510Mi
+      cpu: 150m
+      memory: 250Mi
     limits:
-      cpu: 510m
-      memory: 510Mi
+      cpu: 600m
+      memory: 600Mi
 secrets:
   kafkaSaslPlainUsername: client
   kafkaSaslPlainPassword: client
@@ -85,7 +85,7 @@ integrationTests:
   enabled: true
   runTestsOnly: false
   waitTestResultOnJob: true
-  mistralReadyTimeout: 801
+  mistralReadyTimeout: 1000
   runAsUser: 5000
 bluegreenAgent:
   enabled: true
