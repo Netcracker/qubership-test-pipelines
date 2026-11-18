@@ -158,5 +158,5 @@ jobs:
       version: ${service_branch}
       template: templates/cassandra-service/sample.yaml
       template_operator: templates/cassandra-service/sample.yaml
-      template_services: templates/cassandra-service/sample_sup.yaml
+      template_services: templates/cassandra-service/sample_sup_monitoring_allure.yaml
       artifact_name: Clean_CURRENT_Allure
