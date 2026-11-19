@@ -205,50 +205,6 @@ jobs:
         uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
-      # == Start Monitoring installation tests =======
-      - name: Install Monitoring [${{ matrix.test.install.version }}]
-        if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
-        id: monitoring_install
-        with:
-          path_to_template: templates/monitoring/vm_without_tests.yml
-          service_branch: v0.88.0
-          service_name: monitoring
-          repository_name: Netcracker/qubership-monitoring-operator
-          path_to_chart: charts/qubership-monitoring-operator
-          namespace: monitoring
-          restricted: false
-
-      - name: Get Installed Monitoring CR name
-        if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/get_crds
-        id: install_monitoring_get_crds
-        with:
-          crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
-
-      - name: Verify Monitoring installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
-        if: matrix.test.monitoring == true
-        with:
-          namespace: monitoring
-          test_completion_max_retries: 40
-          test_completion_retry_interval: 10s
-          service_ready_max_retries: 80
-          service_ready_retry_interval: 10s
-          monitoring_pipeline: true
-          repository_name: Netcracker/qubership-monitoring-operator
-          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-
-      - name: Collect Diagnostics Monitoring installation
-        if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
-        with:
-          namespace: monitoring
-          artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
-          service_branch: main
-          crd_list: ${{ steps.install_monitoring_get_crds.outputs.crd_names }}
-      # == End Monitoring installation tests =======
-
       # == Start ======= ClickHouse-specific dependency: ZooKeeper =======
       - name: Print Zookeeper install deployment parameters
         if: matrix.test.zookeeper == true
@@ -379,7 +335,6 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: ClickHouse_Operator_Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
-          crd_list: clickhouseinstallations.clickhouse.altinity.com
       # == 02 End ===== Install ClickHouse Operator + Cluster =====
 
       - name: Sleep 3m
@@ -415,7 +370,6 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: ClickHouse_Services_Install_${{ matrix.test.install.artifact_name }}
           service_branch: ${{ matrix.test.install.version }}
-          crd_list: clickhouseinstallations.clickhouse.altinity.com
       # == 03 End ===== Install ClickHouse Services =====
 
       # == Start ======= Specific steps for S3 =======
@@ -460,7 +414,6 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: ClickHouse_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
-          crd_list: clickhouseinstallations.clickhouse.altinity.com
       # == 04 End ===== Upgrade ClickHouse Operator =====
 
       - name: Sleep 3m
@@ -499,7 +452,6 @@ jobs:
           namespace: ${{ env.namespace }}
           artifact_name: ClickHouse_Services_Upgrade_${{ matrix.test.upgrade.artifact_name }}
           service_branch: ${{ matrix.test.upgrade.version }}
-          crd_list: clickhouseinstallations.clickhouse.altinity.com
       # == 05 End ===== Upgrade ClickHouse Services =====
 
   final-status-check:
