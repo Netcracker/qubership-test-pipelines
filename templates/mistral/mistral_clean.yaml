@@ -28,48 +28,48 @@ mistralApi:
   replicas: 2
   resources:
     requests:
-      cpu: 250m
-      memory: 500Mi
+      cpu: 100m
+      memory: 350Mi
     limits:
-      cpu: 1000m
-      memory: 1000Mi
+      cpu: 500m
+      memory: 350Mi
 mistralMonitoring:
   replicas: 1
   resources:
     requests:
       cpu: 100m
-      memory: 200Mi
+      memory: 350Mi
     limits:
       cpu: 500m
-      memory: 500Mi
+      memory: 350Mi
   prometheusEnabled: false
 mistralExecutor:
   replicas: 1
   resources:
     requests:
-      cpu: 250m
-      memory: 500Mi
+      cpu: 100m
+      memory: 350Mi
     limits:
-      cpu: 2000m
-      memory: 2000Mi
+      cpu: 500m
+      memory: 350Mi
 mistralEngine:
   replicas: 2
   resources:
     requests:
-      cpu: 500m
-      memory: 1000Mi
+      cpu: 250m
+      memory: 750Mi
     limits:
-      cpu: 2000m
-      memory: 2000Mi
+      cpu: 750m
+      memory: 750Mi
 mistralNotifier:
   replicas: 1
   resources:
     requests:
       cpu: 100m
-      memory: 200Mi
+      memory: 350Mi
     limits:
       cpu: 500m
-      memory: 500Mi
+      memory: 350Mi
 secrets:
   kafkaSaslPlainUsername: client
   kafkaSaslPlainPassword: client
