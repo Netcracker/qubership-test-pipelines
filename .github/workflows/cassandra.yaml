@@ -87,7 +87,7 @@ on:
 
 env:
   namespace: cassandra
-  path_to_chart_cassandra: cassandra/cassandra-image/deployments/charts/cassandra_5.0.8
+  path_to_chart_cassandra: cassandra/cassandra-image/deployments/charts/cassandra_5.0.9
   path_to_chart_operator: operator/charts/helm/cassandra-operator
   path_to_chart_services: services/service/charts/helm/cassandra-services
 
