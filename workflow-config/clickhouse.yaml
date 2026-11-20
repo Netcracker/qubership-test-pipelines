@@ -3,7 +3,6 @@ jobs:
   - purpose: automation
     name: Clean [${release_version}], Upgrade to [${service_branch}]
     sequence: upgrade
-    restricted: false
     zookeeper: true
     install:
       version: ${release_version}
@@ -17,7 +16,6 @@ jobs:
 
   - name: Clean [${service_branch}]. Update [${service_branch}] Diff Params
     sequence: upgrade
-    restricted: false
     zookeeper: true
     install:
       version: ${service_branch}
@@ -30,7 +28,6 @@ jobs:
 
   - name: Clean [${service_branch}] in TLS
     sequence: install
-    restricted: false
     tls: true
     zookeeper: true
     install:
@@ -40,7 +37,6 @@ jobs:
 
   - name: Upgrade [${service_branch}] From Non-TLS To TLS
     sequence: upgrade
-    restricted: false
     tls: true
     zookeeper: true
     install:
@@ -54,7 +50,6 @@ jobs:
 
   - name: Clean [${service_branch}] on S3 storage
     sequence: install
-    restricted: false
     zookeeper: true
     install:
       version: ${service_branch}
@@ -64,7 +59,6 @@ jobs:
 
   - name: Clean [${service_branch}] With Full Tests
     sequence: install
-    restricted: false
     zookeeper: true
     install:
       version: ${service_branch}

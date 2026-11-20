@@ -56,7 +56,6 @@ backupDaemon:
       endpoint: https://s3.amazonaws.com
       force_path_style: true
       disable_ssl: false
-      debug: true
   orchestrator:
     resources:
       limits:
