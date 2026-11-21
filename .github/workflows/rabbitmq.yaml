@@ -17,9 +17,9 @@ on:
         type: string
         default: main
       pipeline_branch:
-        description: Branch of qubership-test-pipelines repository
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -57,9 +57,9 @@ on:
         required: false
         type: string
       pipeline_branch:
-        description: Test pipeline branch name
+        description: "Deprecated: ignored, pipeline files are taken from the commit of this workflow"
         type: string
-        required: true
+        required: false
       runner_type:
         description: Runner type (self-hosted or ubuntu-latest)
         type: string
@@ -113,8 +113,8 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
@@ -181,19 +181,19 @@ jobs:
       - name: Checkout pipeline
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
+          ref: ${{ job.workflow_sha }}
+          repository: ${{ job.workflow_repository }}
           path: qubership-test-pipelines
           persist-credentials: false
 
       - name: Create cluster
-        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+        uses: $/actions/shared/create_cluster
       # == End Common steps ==
 
       # == Start Monitoring installation =======
       - name: Install Monitoring
         if: matrix.test.monitoring == true
-        uses: ./qubership-test-pipelines/actions/shared/install_monitoring
+        uses: $/actions/shared/install_monitoring
         with:
           artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
       # == End Monitoring installation =======
@@ -202,13 +202,13 @@ jobs:
       # TLS setup
       - name: Setup TLS
         if: matrix.test.tls == true
-        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+        uses: $/actions/shared/setup_tls
 
       # == Start ======= Specific steps for S3 =======
       # - name: Create S3 bucket
       #   id: create_bucket
       #   if: matrix.test.install.s3 == true
-      #   uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+      #   uses: $/actions/shared/setup_s3_bucket
       #   with:
       #     aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
       #     aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -258,7 +258,7 @@ jobs:
         run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
 
       - name: Clean Install RabbitMQ [${{ matrix.test.install.version }}]
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         id: rabbit_install
         with:
           path_to_template: ${{ matrix.test.install.template }}
@@ -270,7 +270,7 @@ jobs:
           namespace: rabbitmq
 
       - name: Verify RabbitMQ installation
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: rabbitmq
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
@@ -278,7 +278,7 @@ jobs:
 
       - name: Collect Diagnostics RabbitMQ installation
         if: ${{ !cancelled() && steps.rabbit_install.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: rabbitmq
           artifact_name: Installation_${{ matrix.test.install.artifact_name }}
@@ -293,7 +293,7 @@ jobs:
       - name: Upgrade RabbitMQ to [${{ matrix.test.upgrade.version }}]
         if: ${{ matrix.test.sequence == 'upgrade' }}
         id: rabbit_upgrade
-        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        uses: $/actions/shared/helm_deploy
         with:
           path_to_template: ${{ matrix.test.upgrade.template }}
           service_branch: ${{ matrix.test.upgrade.version }}
@@ -321,7 +321,7 @@ jobs:
 
       - name: Verify RabbitMQ upgrade
         if: ${{ matrix.test.sequence == 'upgrade' }}
-        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        uses: $/actions/shared/verify_installation
         with:
           namespace: rabbitmq
           service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
@@ -329,7 +329,7 @@ jobs:
 
       - name: Collect Diagnostics RabbitMQ upgrade
         if: ${{ !cancelled() && steps.rabbit_upgrade.conclusion != 'skipped' }}
-        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        uses: $/actions/shared/collect_diag_info
         with:
           namespace: rabbitmq
           artifact_name: Upgrade_${{ matrix.test.upgrade.artifact_name }}
@@ -340,7 +340,7 @@ jobs:
       # == Start ======= Specific steps for S3 =======
       # - name: Delete S3 bucket
       #   if: always() && matrix.test.install.s3 == true
-      #   uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+      #   uses: $/actions/shared/cleanup_s3_bucket
       #   with:
       #     aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
       #     aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -353,14 +353,7 @@ jobs:
     runs-on: ${{ inputs.runner_type }}
     needs: [RabbitMQ-Test-Cases]
     steps:
-      - name: Checkout pipeline
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ inputs.pipeline_branch }}
-          repository: netcracker/qubership-test-pipelines
-          path: qubership-test-pipelines
-          persist-credentials: false
       - name: Check job status
-        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        uses: $/actions/shared/check_job_status
         with:
           job_result: ${{ needs.RabbitMQ-Test-Cases.result }}
