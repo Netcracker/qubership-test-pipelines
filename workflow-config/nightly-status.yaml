@@ -53,3 +53,27 @@ components:
     workflow_file: run_nightly_tests.yaml
     branch: main
     lookback_hours: 24
+
+  - name: Cassandra
+    repository: Netcracker/qubership-cassandra-operator
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24
+
+  - name: ClickHouse
+    repository: Netcracker/qubership-clickhouse-operator-helm
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24
+
+  - name: MongoDB
+    repository: Netcracker/qubership-mongodb-operator
+    workflow_file: run_nightly_tests_.yaml
+    branch: main
+    lookback_hours: 24
+
+  - name: Redis
+    repository: Netcracker/qubership-redis
+    workflow_file: run_nightly_tests.yaml
+    branch: main
+    lookback_hours: 24

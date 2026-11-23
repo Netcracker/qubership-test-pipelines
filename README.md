@@ -41,6 +41,9 @@ Added workflow for the following services:
 - [Qubership OpenSearch](https://github.com/Netcracker/qubership-opensearch)
 - [Qubership Kafka Service](https://github.com/Netcracker/qubership-kafka)
 - [Qubership RabbitMQ Service](https://github.com/Netcracker/qubership-rabbitmq)
+- [Qubership Cassandra Operator](https://github.com/Netcracker/qubership-cassandra-operator)
+- [Qubership MongoDB Operator](https://github.com/Netcracker/qubership-mongodb-operator)
+- [Qubership Redis](https://github.com/Netcracker/qubership-redis)
 - [Qubership PGgskipper Operator](https://github.com/Netcracker/pgskipper-operator)
 - [Qubership Monitoring Operator](https://github.com/Netcracker/qubership-monitoring-operator)
 
