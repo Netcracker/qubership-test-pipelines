@@ -1,0 +1,476 @@
+name: Reusable ClickHouse Tests
+
+permissions:
+  contents: read
+  actions: read
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository_name:
+        description: Repository with ClickHouse operator
+        required: false
+        type: string
+        default: Netcracker/qubership-clickhouse-operator-helm
+      service_branch:
+        description: Branch of qubership-clickhouse-operator-helm repository
+        required: false
+        type: string
+        default: main
+      pipeline_branch:
+        description: Branch of qubership-test-pipelines repository
+        type: string
+        required: true
+      runner_type:
+        description: Runner type (self-hosted or ubuntu-latest)
+        type: string
+        required: false
+        default: ubuntu-latest
+      scope:
+        description: ClickHouse Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 30
+
+  workflow_call:
+    inputs:
+      repository_name:
+        description: Repository with ClickHouse operator
+        required: false
+        type: string
+        default: Netcracker/qubership-clickhouse-operator-helm
+      service_branch:
+        description: Branch of qubership-clickhouse-operator-helm repository
+        required: false
+        type: string
+        default: main
+      pipeline_branch:
+        description: Branch of qubership-test-pipelines repository
+        type: string
+        required: true
+      runner_type:
+        description: Runner type (self-hosted or ubuntu-latest)
+        type: string
+        required: false
+        default: ubuntu-latest
+      scope:
+        description: ClickHouse Test Scope (pr or nightly)
+        type: string
+        required: false
+        default: pr
+      skip_tests:
+        description: Skip all tests (for doc-only changes)
+        type: boolean
+        required: false
+        default: false
+      verify_timeout_minutes:
+        description: Maximum time (in minutes) to wait for each service verification
+        type: number
+        required: false
+        default: 30
+
+    secrets:
+      AWS_S3_ACCESS_KEY_ID:
+        required: true
+      AWS_S3_ACCESS_KEY_SECRET:
+        required: true
+
+env:
+  namespace: clickhouse
+  path_to_chart_operator: helm/clickhouse
+  path_to_chart_services: helm/clickhouse-services
+
+jobs:
+  prepare:
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ${{ inputs.runner_type }}
+    outputs:
+      versions: ${{ steps.process-versions.outputs.versions }}
+      matrix: ${{ steps.process-versions.outputs.matrix }}
+      service_ready_max_retries: ${{ steps.calc-timeout.outputs.service_ready_max_retries }}
+      service_ready_retry_interval: ${{ steps.calc-timeout.outputs.service_ready_retry_interval }}
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.service_branch }}
+          repository: ${{ inputs.repository_name }}
+          path: qubership-clickhouse-operator-helm
+          persist-credentials: false
+
+      - name: Checkout pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+
+      - name: Get latest tag
+        id: get-latest-tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_NAME: ${{ inputs.repository_name }}
+        run: |
+          LATEST_TAG=$(gh api repos/${REPO_NAME}/releases/latest --jq '.tag_name')
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Calculate verify timeout parameters
+        id: calc-timeout
+        run: |
+          RETRY_INTERVAL=10
+          MAX_RETRIES=$(( ${{ inputs.verify_timeout_minutes }} * 60 / RETRY_INTERVAL ))
+          echo "service_ready_max_retries=$MAX_RETRIES" >> $GITHUB_OUTPUT
+          echo "service_ready_retry_interval=${RETRY_INTERVAL}s" >> $GITHUB_OUTPUT
+
+      - name: Process versions file and matrix generation
+        id: process-versions
+        env:
+          SCOPE: ${{ inputs.scope }}
+          LATEST_TAG: ${{ steps.get-latest-tag.outputs.latest_tag }}
+          SERVICE_BRANCH: ${{ inputs.service_branch }}
+        working-directory: ${{ github.workspace }}/qubership-test-pipelines
+        run: |
+          chmod +x ./scripts/matrix.sh
+          if [[ "$SCOPE" == "nightly" ]]; then
+            CONFIG_FILE="./workflow-config/clickhouse_nightly.yaml"
+          elif [[ "$SCOPE" == "pr" ]]; then
+            CONFIG_FILE="./workflow-config/clickhouse.yaml"
+          else
+            echo "::error::Invalid scope parameter '$SCOPE'. Must be 'pr' or 'nightly'"
+            exit 1
+          fi
+          ./scripts/matrix.sh "$LATEST_TAG" "$CONFIG_FILE" "$SERVICE_BRANCH"
+
+  ClickHouse-Test-Cases:
+    if: ${{ !inputs.skip_tests }}
+    needs: prepare
+    runs-on: ${{ inputs.runner_type }}
+    strategy:
+      fail-fast: false
+      matrix:
+        test: ${{ fromJson(needs.prepare.outputs.matrix) }}
+    name: ${{ matrix.test.name }}
+    env:
+      SERVICE_READY_MAX_RETRIES: ${{ needs.prepare.outputs.service_ready_max_retries }}
+      SERVICE_READY_RETRY_INTERVAL: ${{ needs.prepare.outputs.service_ready_retry_interval }}
+    steps:
+      # == 01 Start ======= Common pre-steps for all tests =======
+      - name: Print job parameters
+        env:
+          MATRIX_JSON: ${{ toJson(matrix.test) }}
+        run: |
+          echo "======== Job parameters ======="
+          echo "$MATRIX_JSON"
+
+      # The service repository is not checked out here on purpose: every deploy
+      # step (helm_deploy) clones Netcracker/qubership-clickhouse-operator-helm
+      # itself at the required ref, and diagnostics work with kubectl only.
+      # Checkout of the pipeline repo below is what the templates need.
+
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: true
+
+      - name: Checkout pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+
+      - name: Create cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
+      # == 01 End ======= Common pre-steps for all tests =======
+
+      # == Start ======= ClickHouse-specific dependency: ZooKeeper =======
+      - name: Print Zookeeper install deployment parameters
+        if: matrix.test.zookeeper == true
+        run: cat qubership-test-pipelines/templates/zookeeper-service/zookeeper_install_APP_k8s.yml
+
+      - name: Clean Install Zookeeper [LATEST]
+        if: matrix.test.zookeeper == true
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: zoo_install
+        with:
+          path_to_template: templates/zookeeper-service/zookeeper_install_APP_k8s.yml
+          service_branch: main
+          service_name: zookeeper-service
+          repository_name: Netcracker/qubership-zookeeper
+          path_to_chart: operator/charts/helm/zookeeper-service
+          namespace: zookeeper
+
+      - name: Get Installed Zookeeper CRD name
+        if: matrix.test.zookeeper == true
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
+        id: install_zoo_get_crds
+        with:
+          crd_location: Netcracker/qubership-zookeeper/operator/charts/helm/zookeeper-service/crds
+
+      - name: Verify Zookeeper installation
+        if: matrix.test.zookeeper == true
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: zookeeper
+          service_ready_max_retries: 80
+          service_ready_retry_interval: 10s
+          repository_name: Netcracker/qubership-zookeeper
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
+
+      - name: Collect Diagnostics Zookeeper installation
+        if: ${{ !cancelled() && steps.zoo_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: zookeeper
+          artifact_name: Install_Zookeeper_${{ matrix.test.install.artifact_name }}
+          service_branch: main
+          crd_list: ${{ steps.install_zoo_get_crds.outputs.crd_names }}
+      # == End ======= ClickHouse-specific dependency: ZooKeeper =======
+
+      # == Start ======= Specific steps for TLS =======
+      - name: Setup TLS
+        if: matrix.test.tls == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
+      # == End ======= Specific steps for TLS =======
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Create S3 bucket
+        id: create_bucket
+        if: matrix.test.install.s3 == true
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          region: us-east-1
+          prefix: clickhouse
+
+      - name: Add S3 secrets to ClickHouse template
+        if: matrix.test.install.s3 == true
+        env:
+          ACCESS_KEY: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          SECRET_KEY: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          BUCKET_NAME: ${{ steps.create_bucket.outputs.bucket_name }}
+          TEMPLATE: ${{ matrix.test.install.template }}
+        # zizmor: ignore[template-injection]
+        run: |
+          file="qubership-test-pipelines/${TEMPLATE}"
+          echo "Updating S3 settings in ${TEMPLATE}"
+
+          set_value() {
+            python qubership-test-pipelines/scripts/update_yaml.py \
+              --file="${file}" --path="$1" --value="$2"
+          }
+
+          # Values of the clickhouse-backup config file generated by the operator chart
+          set_value 'backupDaemon/storage/s3/access_key' "$ACCESS_KEY"
+          set_value 'backupDaemon/storage/s3/secret_key' "$SECRET_KEY"
+          set_value 'backupDaemon/storage/s3/bucket' "$BUCKET_NAME"
+
+          # Env overrides for the clickhouse-backup container in ClickHouse pods (operator chart)
+          set_value 'backupDaemon/envs/S3_ACCESS_KEY' "$ACCESS_KEY"
+          set_value 'backupDaemon/envs/S3_SECRET_KEY' "$SECRET_KEY"
+          set_value 'backupDaemon/envs/S3_BUCKET' "$BUCKET_NAME"
+          set_value 'backupDaemon/envs/AWS_ACCESS_KEY_ID' "$ACCESS_KEY"
+          set_value 'backupDaemon/envs/AWS_SECRET_ACCESS_KEY' "$SECRET_KEY"
+
+          # Env overrides for the clickhouse-backup-orchestrator deployment (services chart)
+          set_value 'backupDaemon/orchestrator/envs/S3_ACCESS_KEY' "$ACCESS_KEY"
+          set_value 'backupDaemon/orchestrator/envs/S3_SECRET_KEY' "$SECRET_KEY"
+          set_value 'backupDaemon/orchestrator/envs/AWS_ACCESS_KEY_ID' "$ACCESS_KEY"
+          set_value 'backupDaemon/orchestrator/envs/AWS_SECRET_ACCESS_KEY' "$SECRET_KEY"
+      # == End ======= Specific steps for S3 =======
+
+      # == 02 Start ===== Install ClickHouse Operator + Cluster =====
+      - name: Print install deployment parameters
+        # zizmor: ignore[template-injection]
+        run: cat qubership-test-pipelines/${{ matrix.test.install.template }}
+
+      - name: Install ClickHouse Operator [${{ matrix.test.install.version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: clickhouse_operator_install
+        with:
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
+          deploy_mode: install
+          service_name: clickhouse-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_operator }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Verify ClickHouse Operator installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          check_tests: false
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+
+      - name: Collect Diagnostics ClickHouse Operator installation
+        if: ${{ !cancelled() && steps.clickhouse_operator_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: ClickHouse_Operator_Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
+      # == 02 End ===== Install ClickHouse Operator + Cluster =====
+
+      # CR ClickHouseInstallation has no .status.conditions,
+      # so service availability is verified by
+      # Kubernetes resources only (check_resources.sh).
+      # Without this pause the test suite was flaky
+      - name: Sleep 3m
+        run: sleep 3m
+
+      # == 03 Start ===== Install ClickHouse Services =====
+      - name: Install ClickHouse Services [${{ matrix.test.install.version }}]
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: clickhouse_services_install
+        with:
+          path_to_template: ${{ matrix.test.install.template }}
+          service_branch: ${{ matrix.test.install.version }}
+          deploy_mode: install
+          service_name: clickhouse-services
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_services }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Verify ClickHouse Services installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          test_completion_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+
+      - name: Collect Diagnostics ClickHouse Services installation
+        if: ${{ !cancelled() && steps.clickhouse_services_install.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: ClickHouse_Services_Install_${{ matrix.test.install.artifact_name }}
+          service_branch: ${{ matrix.test.install.version }}
+      # == 03 End ===== Install ClickHouse Services =====
+
+      # == 04 Start ===== Upgrade ClickHouse Operator =====
+      - name: Upgrade ClickHouse Operator to [${{ matrix.test.upgrade.version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: clickhouse_operator_upgrade
+        with:
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+          deploy_mode: upgrade
+          service_name: clickhouse-operator
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_operator }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Verify ClickHouse Operator upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          check_tests: false
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+
+      - name: Collect Diagnostics ClickHouse Operator upgrade
+        if: ${{ !cancelled() && steps.clickhouse_operator_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: ClickHouse_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+      # == 04 End ===== Upgrade ClickHouse Operator =====
+
+      # Same reason as after the operator install: after an upgrade the pods
+      # are Ready again while the operator keeps reconciling the cluster
+      # and skipping the pause made the test suite flaky.
+      - name: Sleep 3m
+        if: matrix.test.sequence == 'upgrade'
+        run: sleep 3m
+
+      # == 05 Start ===== Upgrade ClickHouse Services =====
+      - name: Upgrade ClickHouse Services to [${{ matrix.test.upgrade.version }}]
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
+        id: clickhouse_services_upgrade
+        with:
+          path_to_template: ${{ matrix.test.upgrade.template }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+          deploy_mode: upgrade
+          service_name: clickhouse-services
+          repository_name: ${{ inputs.repository_name }}
+          path_to_chart: ${{ env.path_to_chart_services }}
+          namespace: ${{ env.namespace }}
+          restricted: ${{ matrix.test.restricted }}
+
+      - name: Verify ClickHouse Services upgrade
+        if: matrix.test.sequence == 'upgrade'
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
+        with:
+          namespace: ${{ env.namespace }}
+          test_completion_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          test_completion_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+          service_ready_max_retries: ${{ env.SERVICE_READY_MAX_RETRIES }}
+          service_ready_retry_interval: ${{ env.SERVICE_READY_RETRY_INTERVAL }}
+
+      - name: Collect Diagnostics ClickHouse Services upgrade
+        if: ${{ !cancelled() && steps.clickhouse_services_upgrade.conclusion != 'skipped' }}
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
+        with:
+          namespace: ${{ env.namespace }}
+          artifact_name: ClickHouse_Services_Upgrade_${{ matrix.test.upgrade.artifact_name }}
+          service_branch: ${{ matrix.test.upgrade.version }}
+      # == 05 End ===== Upgrade ClickHouse Services =====
+
+      # == Start ======= Specific steps for S3 =======
+      - name: Delete S3 bucket
+        if: always() && (matrix.test.install.s3 == true || matrix.test.upgrade.s3 == true)
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
+        with:
+          aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
+          bucket_name: ${{ steps.create_bucket.outputs.bucket_name }}
+          region: us-east-1
+      # == End ======= Specific steps for S3 =======
+
+  final-status-check:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    needs: [ClickHouse-Test-Cases]
+    steps:
+      - name: Checkout pipeline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.pipeline_branch }}
+          repository: netcracker/qubership-test-pipelines
+          path: qubership-test-pipelines
+          persist-credentials: false
+      - name: Check job status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
+        with:
+          job_result: ${{ needs.ClickHouse-Test-Cases.result }}

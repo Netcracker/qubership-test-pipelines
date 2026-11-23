@@ -1,3 +1,4 @@
+#!/bin/bash
 check_cr_conditions() {
     local crd_name="$1"
     local namespace="$2"
