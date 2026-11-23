@@ -36,6 +36,7 @@ backupDaemon:
     bucketName: ""
     accessKeyId: ""
     accessKeySecret: ""
+    endpointUrl: https://s3.amazonaws.com
 dbaas:
   install: true
   dockerImage: ghcr.io/netcracker/cassandra-docker-dbaas-adapter:main
