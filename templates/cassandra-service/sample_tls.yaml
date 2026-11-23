@@ -29,3 +29,4 @@ dbaas:
 robotTests:
   install: true
 DEPLOY_W_HELM: "true"
+ARTIFACT_DESCRIPTOR_VERSION: unknown
