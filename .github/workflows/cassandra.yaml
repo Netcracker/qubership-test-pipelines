@@ -122,7 +122,7 @@ jobs:
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
-          path: qubership-cassandra-operator
+          path: ${{ inputs.repository_name }}
           persist-credentials: false
 
       - name: Checkout pipeline
@@ -196,7 +196,7 @@ jobs:
         with:
           ref: ${{ inputs.service_branch }}
           repository: ${{ inputs.repository_name }}
-          path: qubership-cassandra-operator
+          path: ${{ inputs.repository_name }}
           persist-credentials: false
 
       - name: Checkout pipeline
@@ -288,7 +288,7 @@ jobs:
         shell: bash
         env:
           CHART_PATH_PREFIX: ${{ env.path_to_chart_cassandra }}
-          OPERATOR_REPO: qubership-cassandra-operator
+          OPERATOR_REPO: ${{ inputs.repository_name }}
         run: |
           # The operator repository is checked out into "${OPERATOR_REPO}", while
           # env.path_to_chart_cassandra is relative to the repository root. Resolve

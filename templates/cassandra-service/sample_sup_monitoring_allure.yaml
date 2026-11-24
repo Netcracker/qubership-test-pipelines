@@ -38,10 +38,13 @@ dbaas:
   aggregator:
     dbaasAggregatorRegistrationAddress: http://dbaas-aggregator.dbaas-infra:8080
 monitoringAgent:
+  # replace to 'true' after fix
+  # https://github.com/Netcracker/qubership-cassandra-operator/issues/191
   install: false
 robotTests:
   install: true
-  #dockerImage: ghcr.io/netcracker/cassandra-docker-tests:2.16.15
+  # replace to 'cassandra'
+  # https://github.com/Netcracker/qubership-cassandra-operator/issues/191
   tags: smoke
   iteration: "1"
   atpReport:
