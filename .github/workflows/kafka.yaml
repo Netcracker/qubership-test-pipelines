@@ -527,7 +527,7 @@ jobs:
 
       - name: Hardening Check
         if: inputs.scope == 'hardening'
-        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@8b1f50086b028c0ad22dafd33352e2166189b742 # v2.7.0
+        uses: netcracker/qubership-workflow-hub/actions/k8s-hardening-scan@cf536587a99a23b3614aa4db4bdbf13cf36059b6 # v2.8.3
         with:
           namespaces: ${{ env.KFK_SRVC_NAMESPACE }}
           output-file: kafka-service-hardening-scan.json
