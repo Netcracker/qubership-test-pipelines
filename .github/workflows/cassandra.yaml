@@ -208,19 +208,19 @@ jobs:
           persist-credentials: false
 
       - name: Create cluster
-        uses: $/actions/shared/create_cluster
+        uses: ./qubership-test-pipelines/actions/shared/create_cluster
       # == 01 End ======= Common pre-steps for all tests =======
 
       # == Start ======= Specific steps for TLS =======
       - name: Setup TLS
         if: matrix.test.tls == true
-        uses: $/actions/shared/setup_tls
+        uses: ./qubership-test-pipelines/actions/shared/setup_tls
       # == End ======= Specific steps for TLS =======
 
       # == Start Monitoring installation tests =======
       - name: Install Monitoring [${{ matrix.test.install.version }}]
         if: matrix.test.monitoring == true
-        uses: $/actions/shared/helm_deploy
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: monitoring_install
         with:
           path_to_template: templates/monitoring/vm_without_tests.yml
@@ -233,13 +233,13 @@ jobs:
 
       - name: Get Installed Monitoring CR name
         if: matrix.test.monitoring == true
-        uses: $/actions/shared/get_crds
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_monitoring_get_crds
         with:
           crd_location: Netcracker/qubership-monitoring-operator/charts/qubership-monitoring-operator/crds
 
       - name: Verify Monitoring installation
-        uses: $/actions/shared/verify_installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         if: matrix.test.monitoring == true
         with:
           namespace: monitoring
@@ -253,7 +253,7 @@ jobs:
 
       - name: Collect Diagnostics Monitoring installation
         if: ${{ !cancelled() && steps.monitoring_install.conclusion != 'skipped' }}
-        uses: $/actions/shared/collect_diag_info
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: monitoring
           artifact_name: Install_Monitoring_${{ matrix.test.install.artifact_name }}
@@ -321,7 +321,7 @@ jobs:
 
       # == 02 Start ===== Install Cassandra =====
       - name: Install Cassandra [${{ matrix.test.install.version }}]
-        uses: $/actions/shared/helm_deploy
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_install
         with:
           path_to_template: ${{ matrix.test.install.template }}
@@ -334,7 +334,7 @@ jobs:
           restricted: ${{ matrix.test.restricted }}
 
       - name: Verify Cassandra installation
-        uses: $/actions/shared/verify_installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -344,7 +344,7 @@ jobs:
 
       - name: Collect Diagnostics Cassandra installation
         if: ${{ !cancelled() && steps.cassandra_install.conclusion != 'skipped' }}
-        uses: $/actions/shared/collect_diag_info
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Install_${{ matrix.test.install.artifact_name }}
@@ -356,7 +356,7 @@ jobs:
         run: cat qubership-test-pipelines/${{ matrix.test.install.template_operator }}
 
       - name: Install Cassandra Operator [${{ matrix.test.install.version }}]
-        uses: $/actions/shared/helm_deploy
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_operator_install
         with:
           path_to_template: ${{ matrix.test.install.template_operator }}
@@ -369,13 +369,13 @@ jobs:
           restricted: ${{ matrix.test.restricted }}
 
       - name: Get Installed Cassandra Operator CRD name
-        uses: $/actions/shared/get_crds
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_cassandra_operator_get_crds
         with:
           crd_location: Netcracker/qubership-cassandra-operator/operator/charts/helm/cassandra-operator/crds
 
       - name: Verify Cassandra Operator installation
-        uses: $/actions/shared/verify_installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -386,7 +386,7 @@ jobs:
 
       - name: Collect Diagnostics Cassandra Operator installation
         if: ${{ !cancelled() && steps.cassandra_operator_install.conclusion != 'skipped' }}
-        uses: $/actions/shared/collect_diag_info
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Operator_Install_${{ matrix.test.install.artifact_name }}
@@ -408,7 +408,7 @@ jobs:
       - name: Create S3 bucket
         id: create_bucket
         if: matrix.test.install.s3 == true
-        uses: $/actions/shared/setup_s3_bucket
+        uses: ./qubership-test-pipelines/actions/shared/setup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -439,7 +439,7 @@ jobs:
 
       # == 04 Start ===== Install Cassandra Services =====
       - name: Install Cassandra Services [${{ matrix.test.install.version }}]
-        uses: $/actions/shared/helm_deploy
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_services_install
         with:
           path_to_template: ${{ matrix.test.install.template_services }}
@@ -452,13 +452,13 @@ jobs:
           restricted: ${{ matrix.test.restricted }}
 
       - name: Get Installed Cassandra Services CRD name
-        uses: $/actions/shared/get_crds
+        uses: ./qubership-test-pipelines/actions/shared/get_crds
         id: install_cassandra_services_get_crds
         with:
           crd_location: Netcracker/qubership-cassandra-operator/services/service/charts/helm/cassandra-services/crds
 
       - name: Verify Cassandra Services installation
-        uses: $/actions/shared/verify_installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -469,7 +469,7 @@ jobs:
 
       - name: Collect Diagnostics Cassandra Services installation
         if: ${{ !cancelled() && steps.cassandra_services_install.conclusion != 'skipped' }}
-        uses: $/actions/shared/collect_diag_info
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Services_Install_${{ matrix.test.install.artifact_name }}
@@ -480,7 +480,7 @@ jobs:
       # == Start ======= Specific steps for S3 =======
       - name: Delete S3 bucket
         if: always() && matrix.test.install.s3 == true
-        uses: $/actions/shared/cleanup_s3_bucket
+        uses: ./qubership-test-pipelines/actions/shared/cleanup_s3_bucket
         with:
           aws_access_key_id: ${{ secrets.AWS_S3_ACCESS_KEY_ID }}
           aws_secret_access_key: ${{ secrets.AWS_S3_ACCESS_KEY_SECRET }}
@@ -492,7 +492,7 @@ jobs:
 
       - name: Upgrade Cassandra Operator to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: $/actions/shared/helm_deploy
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_operator_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.template_operator }}
@@ -506,7 +506,7 @@ jobs:
 
       - name: Verify Cassandra Operator upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: $/actions/shared/verify_installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -517,7 +517,7 @@ jobs:
 
       - name: Collect Diagnostics Cassandra Operator upgrade
         if: ${{ !cancelled() && steps.cassandra_operator_upgrade.conclusion != 'skipped' }}
-        uses: $/actions/shared/collect_diag_info
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Operator_Upgrade_${{ matrix.test.upgrade.artifact_name }}
@@ -528,7 +528,7 @@ jobs:
       # == 06 Start ===== Upgrade Cassandra Services =====
       - name: Upgrade Cassandra Services to [${{ matrix.test.upgrade.version }}]
         if: matrix.test.sequence == 'upgrade'
-        uses: $/actions/shared/helm_deploy
+        uses: ./qubership-test-pipelines/actions/shared/helm_deploy
         id: cassandra_services_upgrade
         with:
           path_to_template: ${{ matrix.test.upgrade.template_services }}
@@ -542,7 +542,7 @@ jobs:
 
       - name: Verify Cassandra Services upgrade
         if: matrix.test.sequence == 'upgrade'
-        uses: $/actions/shared/verify_installation
+        uses: ./qubership-test-pipelines/actions/shared/verify_installation
         with:
           namespace: ${{ env.namespace }}
           test_completion_max_retries: 50
@@ -553,7 +553,7 @@ jobs:
 
       - name: Collect Diagnostics Cassandra Services upgrade
         if: ${{ !cancelled() && steps.cassandra_services_upgrade.conclusion != 'skipped' }}
-        uses: $/actions/shared/collect_diag_info
+        uses: ./qubership-test-pipelines/actions/shared/collect_diag_info
         with:
           namespace: ${{ env.namespace }}
           artifact_name: Cassandra_Services_Upgrade_${{ matrix.test.upgrade.artifact_name }}
@@ -574,6 +574,6 @@ jobs:
           path: qubership-test-pipelines
           persist-credentials: false
       - name: Check job status
-        uses: $/actions/shared/check_job_status
+        uses: ./qubership-test-pipelines/actions/shared/check_job_status
         with:
           job_result: ${{ needs.Cassandra-Test-Cases.result }}
