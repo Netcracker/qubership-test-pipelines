@@ -2,6 +2,14 @@ mistral:
   tls:
     enabled: false
 name: mistral-service
+operator:
+  resources:
+    requests:
+      cpu: 100m
+      memory: 100Mi
+    limits:
+      cpu: 100m
+      memory: 300Mi
 mistralCommonParams:
   postgres:
     dbName: mistral_regr
@@ -20,16 +28,16 @@ mistralApi:
   replicas: 1
   resources:
     requests:
-      cpu: 100m
+      cpu: 150m
       memory: 350Mi
     limits:
-      cpu: 500m
+      cpu: 400m
       memory: 350Mi
 mistralMonitoring:
   replicas: 1
   resources:
     requests:
-      cpu: 100m
+      cpu: 150m
       memory: 350Mi
     limits:
       cpu: 500m
@@ -39,7 +47,7 @@ mistralExecutor:
   replicas: 1
   resources:
     requests:
-      cpu: 100m
+      cpu: 200m
       memory: 350Mi
     limits:
       cpu: 500m
@@ -48,16 +56,16 @@ mistralEngine:
   replicas: 1
   resources:
     requests:
-      cpu: 250m
+      cpu: 300m
       memory: 750Mi
     limits:
-      cpu: 750m
+      cpu: 1000m
       memory: 750Mi
 mistralNotifier:
   replicas: 1
   resources:
     requests:
-      cpu: 100m
+      cpu: 150m
       memory: 350Mi
     limits:
       cpu: 500m
