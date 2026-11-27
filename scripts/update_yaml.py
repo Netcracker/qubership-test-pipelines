@@ -27,6 +27,12 @@ def set_new_value(data, path, value):
 
 def main(args_):
     path_to_file = args_.file
+    if not args_.value:
+        print(
+            f"WARNING: Empty value provided for path '{args_.path}' "
+            f"in file '{path_to_file}'. The field will be set to an empty string.",
+            file=sys.stderr,
+        )
     try:
         with open(path_to_file) as f:
             data_ = yaml.safe_load(f)

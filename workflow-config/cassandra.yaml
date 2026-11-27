@@ -8,7 +8,8 @@ jobs:
       version: ${release_version}
       template: templates/cassandra-service/sample.yaml
       template_operator: templates/cassandra-service/sample.yaml
-      template_services: templates/cassandra-service/sample_sup.yaml
+      # Old releases need the old test image tag, see sample_sup_old_tests_image.yaml
+      template_services: templates/cassandra-service/sample_sup_old_tests_image.yaml
       artifact_name: Clean_${release_version}_Upgrade_CURRENT
     upgrade:
       version: ${service_branch}
